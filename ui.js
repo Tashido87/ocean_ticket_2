@@ -1035,6 +1035,164 @@ export function addPassengerForm(name = '', idNo = '', gender = 'MR') {
 }
 
 /**
+ * Adds a new passenger form with client auto-suggest functionality.
+ * Prioritizes clients matching the currently selected Social Media Account.
+ */
+export function addExistingPassengerForm() {
+    const container = document.getElementById('passenger-forms-container');
+    if (!container) return;
+
+    const formCount = container.children.length;
+    const newForm = document.createElement('div');
+    newForm.className = 'passenger-form';
+    newForm.innerHTML = `
+        ${formCount > 0 ? '<hr style="border-color: rgba(255,255,255,0.2); margin: 1.5rem 0;">' : ''}
+        <h4>Passenger ${formCount + 1} (Existing Client)</h4>
+        <div class="form-grid">
+            <div class="passenger-name-group">
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select class="passenger-gender">
+                        <option value="MR">MR</option>
+                        <option value="MS">MS</option>
+                        <option value="MSTR">MSTR</option>
+                        <option value="MISS">MISS</option>
+                    </select>
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label>Full Name</label>
+                    <input type="text" class="passenger-name" placeholder="Type to search..." autocomplete="off" required>
+                    <div class="autosuggest-box" style="display:none; position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: var(--glass-bg); backdrop-filter: blur(var(--blur-amount)); border: var(--liquid-border); z-index: 10;"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>NRC / Passport No.</label>
+                <input type="text" class="passenger-id" placeholder="ID NUMBER">
+            </div>
+            <div class="form-group">
+                <label>Base Fare</label>
+                <input type="number" class="passenger-base-fare" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label>Net Amount</label>
+                <input type="number" class="passenger-net-amount" placeholder="0" required>
+            </div>
+            <div class="form-group">
+                <label>Extra Fare</label>
+                <input type="number" class="passenger-extra-fare" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label>Commission</label>
+                <input type="number" class="passenger-commission" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label>Remarks</label>
+                <input type="text" class="passenger-remarks" placeholder="Optional notes">
+            </div>
+        </div>
+    `;
+    container.appendChild(newForm);
+
+    const nameInput = newForm.querySelector('.passenger-name');
+    const suggestBox = newForm.querySelector('.autosuggest-box');
+    const idInput = newForm.querySelector('.passenger-id');
+    const genderSelect = newForm.querySelector('.passenger-gender');
+
+    setupPassengerAutoSuggest(nameInput, suggestBox, (client) => {
+        nameInput.value = client.name.toUpperCase();
+        idInput.value = client.id_no || '';
+        if (client.gender) genderSelect.value = client.gender;
+        suggestBox.style.display = 'none';
+    });
+
+    const removeBtn = document.getElementById('removePassengerBtn');
+    if (container.children.length > 1) {
+        removeBtn.style.display = 'inline-flex';
+    } else {
+        removeBtn.style.display = 'none';
+    }
+}
+
+/**
+ * Sets up the auto-suggest logic for passenger name inputs.
+ * @param {HTMLInputElement} input The input element to attach listener to.
+ * @param {HTMLElement} box The suggestion box container.
+ * @param {Function} onSelect Callback when a client is selected.
+ */
+function setupPassengerAutoSuggest(input, box, onSelect) {
+    input.addEventListener('input', () => {
+        const val = input.value.trim().toLowerCase();
+        if (!val) {
+            box.style.display = 'none';
+            return;
+        }
+
+        const currentAccount = (document.getElementById('account_name')?.value || '').toLowerCase();
+
+        // Filter clients - excluding (Fees) entries
+        const matches = state.allClients.filter(c => {
+            const nameLower = c.name.toLowerCase();
+            return nameLower.includes(val) && !nameLower.includes('(fees)');
+        });
+        
+        // Sort: Prioritize same social account name, then alphabetical
+        matches.sort((a, b) => {
+            const aAcc = (a.account_name || '').toLowerCase();
+            const bAcc = (b.account_name || '').toLowerCase();
+            const aMatch = aAcc === currentAccount && currentAccount !== '';
+            const bMatch = bAcc === currentAccount && currentAccount !== '';
+
+            if (aMatch && !bMatch) return -1;
+            if (!aMatch && bMatch) return 1;
+            return a.name.localeCompare(b.name);
+        });
+
+        const topMatches = matches.slice(0, 8); // Limit to 8 suggestions
+
+        if (topMatches.length === 0) {
+            box.style.display = 'none';
+            return;
+        }
+
+        box.innerHTML = '';
+        topMatches.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'autosuggest-item';
+            div.style.padding = '8px 12px';
+            div.style.cursor = 'pointer';
+            div.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+            
+            // Highlight text if it matches current account
+            const isPrioritized = (c.account_name || '').toLowerCase() === currentAccount && currentAccount !== '';
+            const star = isPrioritized ? '<i class="fa-solid fa-star" style="color:var(--primary-accent); margin-right:5px; font-size:0.8em;"></i>' : '';
+            
+            div.innerHTML = `
+                <div style="font-weight:500;">${star}${c.name}</div>
+                <div style="font-size:0.8em; opacity:0.7;">
+                    ${c.phone ? `<i class="fa-solid fa-phone"></i> ${c.phone}` : ''} 
+                    ${c.account_name ? `| ${c.account_name}` : ''}
+                </div>
+            `;
+            
+            // Hover effect
+            div.onmouseover = () => { div.style.backgroundColor = 'rgba(255,255,255,0.1)'; };
+            div.onmouseout = () => { div.style.backgroundColor = 'transparent'; };
+
+            div.addEventListener('click', () => onSelect(c));
+            box.appendChild(div);
+        });
+        box.style.display = 'block';
+    });
+
+    // Hide on click outside
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !box.contains(e.target)) {
+            box.style.display = 'none';
+        }
+    });
+}
+
+/**
  * Removes the last passenger form from the 'Sell Ticket' view.
  */
 export function removePassengerForm() {
