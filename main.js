@@ -20,7 +20,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { initHotelService } from './hotel.js'; 
 
 // UI Modules
-import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements } from './ui.js';
+import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm } from './ui.js';
 
 /**
  * Main application initialization function. Called after authentication.
@@ -118,6 +118,7 @@ function setupEventListeners() {
         updateToggleLabels();
     });
     document.getElementById('addPassengerBtn').addEventListener('click', () => addPassengerForm());
+    document.getElementById('addExistingPassengerBtn').addEventListener('click', () => addExistingPassengerForm());
     document.getElementById('removePassengerBtn').addEventListener('click', removePassengerForm);
 
 
