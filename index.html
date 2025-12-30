@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocean Ticket Management</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/datepicker-full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+</head>
+<body class="material-theme">
+    <div class="main-container">
+        <header class="header">
+            <div class="header-left">
+                <div class="brand" aria-label="Ocean Ticket">
+                    <i class="fa-solid fa-plane-departure logo-icon" aria-hidden="true"></i>
+                    <h1 class="title">Ocean Ticket</h1>
+                </div>
+            </div>
+
+            <nav class="nav" aria-label="Primary navigation">
+                <button class="nav-btn active" data-view="home"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Dashboard</span></button>
+                <button class="nav-btn" data-view="clients"><i class="fa-solid fa-users" aria-hidden="true"></i><span>Clients</span></button>
+                <button class="nav-btn" data-view="sell"><i class="fa-solid fa-ticket" aria-hidden="true"></i><span>Sell Ticket</span></button>
+                <button class="nav-btn" data-view="manage"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Manage Ticket</span></button>
+                <button class="nav-btn" data-view="booking"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span>Booking</span></button>
+                <button class="nav-btn" data-view="settle"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span>Settle</span></button>
+                <button class="nav-btn" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></button>
+            </nav>
+
+            <div class="header-right">
+                <a href="https://docs.google.com/spreadsheets/d/1SGc80isz0VRVt447R_q-fBdZ_me52H_Z32W5HauHMWQ/edit" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Open Google Sheet" aria-label="Open Google Sheet">
+                    <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+                </a>
+                <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Open settings">
+                    <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section id="home-view" class="view active">
+                <div class="loading-indicator" id="loading">
+                    <div class="spinner"></div>
+                    <p>Loading data...</p>
+                </div>
+                
+                <div class="dashboard-content-wrapper" id="dashboard-content" style="display: none;">
+
+                    <div class="info-grid dashboard-grid">
+                        <div id="total-tickets-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Total Tickets</h3>
+                                <i class="icon fa-solid fa-ticket-simple" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value" id="total-tickets-value"></div>
+                            <div class="stat-foot"><span class="sub-value">Tickets</span></div>
+                        </div>
+
+                        <div id="monthly-revenue-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Total Revenue</h3>
+                                <i class="icon fa-solid fa-sack-dollar" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value" id="monthly-revenue-value"></div>
+                            <div class="stat-foot"><span class="sub-value">MMK</span></div>
+                        </div>
+
+                        <div id="notification-panel-box" class="glass-card dashboard-panel notification-panel">
+                            <div class="panel-header">
+                                <a href="#" id="notification-title-link" class="panel-title-link">
+                                    <h3><i class="fa-solid fa-bell" aria-hidden="true"></i> Notifications</h3>
+                                </a>
+                                <span class="panel-hint">Live</span>
+                            </div>
+                            <div id="notification-list" class="notification-list panel-list"></div>
+                        </div>
+
+                        <div id="monthly-commission-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Total Commission</h3>
+                                <i class="icon fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value" id="monthly-commission-value"></div>
+                            <div class="stat-foot"><span class="sub-value">MMK</span></div>
+                        </div>
+
+                        <div id="monthly-extra-fare-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Total Extra Fare</h3>
+                                <i class="icon fa-solid fa-dollar-sign" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value" id="monthly-extra-fare-value"></div>
+                            <div class="stat-foot"><span class="sub-value">MMK</span></div>
+                        </div>
+
+                        <div id="upcoming-pnr-box" class="glass-card dashboard-panel upcoming-panel">
+                            <div class="panel-header">
+                                <a href="#" id="upcoming-title-link" class="panel-title-link">
+                                    <h3><i class="fa-solid fa-plane-up" aria-hidden="true"></i> Upcoming PNR</h3>
+                                </a>
+                                <span class="panel-hint">Next 14 days</span>
+                            </div>
+                            <div id="upcoming-pnr-list" class="upcoming-list panel-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="actions-grid">
+                        <div class="search-section glass-card">
+                            <h3><i class="fa-solid fa-magnifying-glass"></i> Search Tickets</h3>
+                            <form id="searchForm" onsubmit="return false;">
+                                <div class="search-inputs">
+                                    <input type="text" id="searchName" placeholder="Client Name" autocomplete="off">
+                                    <input type="text" id="searchBooking" placeholder="Booking Reference" autocomplete="off">
+                                    <div class="date-range-group">
+                                        <input type="text" id="searchStartDate" placeholder="Start Date" autocomplete="off">
+                                        <input type="text" id="searchEndDate" placeholder="End Date" autocomplete="off">
+                                    </div>
+                                    <div class="desktop-only">
+                                        <div class="date-range-presets">
+                                            <button type="button" class="preset-btn" data-range="7">Last 7 Days</button>
+                                            <button type="button" class="preset-btn" data-range="30">Last 30 Days</button>
+                                            <button type="button" class="preset-btn" data-range="month">This Month</button>
+                                        </div>
+                                        <input type="text" id="searchTravelDate" placeholder="Travel Date (MM/DD/YYYY)" autocomplete="off">
+                                        <select id="searchDeparture">
+                                            <option value="" disabled selected>DEPARTURE</option>
+                                        </select>
+                                        <select id="searchDestination">
+                                            <option value="" disabled selected>DESTINATION</option>
+                                        </select>
+                                        <select id="searchAirline">
+                                            <option value="" disabled selected>AIRLINE</option>
+                                        </select>
+                                        <div class="toggle-switch">
+                                            <label for="searchNotPaidToggle" id="unpaid-only-label">Unpaid Only</label>
+                                            <label class="switch">
+                                                <input type="checkbox" id="searchNotPaidToggle">
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="search-buttons">
+                                    <button id="searchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i> Search</button>
+                                    <button id="clearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
+                                </div>
+                                <div id="saved-searches-container" class="saved-searches-container"></div>
+                            </form>
+                        </div>
+
+                        <div class="results-section glass-card">
+                            <div class="results-header">
+                                <h3>Search Results</h3>
+                                <div>
+                                    <button id="exportPdfBtn" class="btn btn-secondary" title="Export Agent Report to PDF">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                        <span class="desktop-only">Agent Report</span>
+                                    </button>
+                                    <button id="exportPrivateReportBtn" class="btn btn-primary" title="Export Private Report to PDF">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                        <span class="desktop-only">Private Report</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="resultsBodyContainer" class="table-container">
+                                </div>
+                            <div id="pagination" class="pagination-container"></div>
+                        </div>
+                    </div>
+                    <div class="comparison-section glass-card">
+                        <h3><i class="fa-solid fa-chart-line"></i> Yearly Overview</h3>
+                        <div class="chart-container">
+                            <canvas id="comparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="clients-view" class="view">
+            </section>
+
+            <section id="settle-view" class="view">
+                <div class="dashboard-content-wrapper">
+                    <div class="info-grid">
+                        <div id="settlement-net-amount-box" class="info-card glass-card"></div>
+                        <div id="settlement-monthly-due-box" class="info-card glass-card"></div>
+                        <div id="settlement-commission-box" class="info-card glass-card"></div>
+                    </div>
+                    <div id="settle-form-container" class="form-container glass-card" style="display: none; margin-top: 1.5rem;">
+                        <h2><i class="fa-solid fa-handshake"></i> New Settlement</h2>
+                        <form id="newSettlementForm">
+                            <div class="form-grid">
+                               <div class="form-group"><label for="settlement_date">Settlement Date</label><input type="text" id="settlement_date" placeholder="DD-MMM-YYYY" required autocomplete="off"></div>
+                               <div class="form-group"><label for="settlement_amount_paid">Amount Paid</label><input type="number" id="settlement_amount_paid" required></div>
+                               <div class="form-group"><label for="settlement_payment_method">Payment Method</label>
+                                   <select id="settlement_payment_method" required>
+                                       <option value="" disabled selected>Select Payment Method</option>
+                                       <option value="KBZ Pay">KBZ Pay</option>
+                                       <option value="Mobile Banking">Mobile Banking</option>
+                                       <option value="Aya Pay">Aya Pay</option>
+                                       <option value="Cash">Cash</option>
+                                   </select>
+                               </div>
+                               <div class="form-group"><label for="settlement_transaction_id">Transaction ID</label><input type="text" id="settlement_transaction_id"></div>
+                               <div class="form-group full-width"><label for="settlement_notes">Notes</label><textarea id="settlement_notes" rows="3"></textarea></div>
+                            </div>
+                            <div class="form-actions" style="margin-top: 2rem;">
+                               <button type="button" class="btn btn-secondary" id="cancelNewSettlementBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                               <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Settlement</button>
+                            </div>
+                        </form>
+                    </div>
+    
+                    <div id="settle-display-container" class="results-section glass-card" style="margin-top: 1.5rem;">
+                         <div class="table-header">
+                            <h3><i class="fa-solid fa-list-check"></i> Settlement Records</h3>
+                            <div class="table-controls">
+                               <button id="newSettlementBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Settlement</button>
+                            </div>
+                        </div>
+                        <div id="settlementTableContainer" class="table-container">
+                        </div>
+                        <div id="settlementPagination" class="pagination-container"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="booking-view" class="view">
+                <div id="booking-form-container" class="form-container glass-card" style="display: none;">
+                    <h2><i class="fa-solid fa-calendar-plus"></i> New Booking Request</h2>
+                    <form id="newBookingForm">
+                        <div class="form-grid">
+                           <div class="form-group"><label for="booking_phone">Phone</label><input type="tel" id="booking_phone" autocomplete="off"></div>
+                           <div class="form-group"><label for="booking_pnr">PNR Code (Optional)</label><input type="text" id="booking_pnr" autocomplete="off"></div>
+                           <div class="form-group"><label for="booking_account_name">Social Account Name</label><input type="text" id="booking_account_name" autocomplete="off"></div>
+                           <div class="form-group"><label for="booking_account_type">Social Account Type</label><select id="booking_account_type"><option value="" disabled selected>Select Type</option><option value="Facebook Page">Facebook Page</option><option value="Messenger">Messenger</option><option value="Viber">Viber</option><option value="Telegram">Telegram</option><option value="WeChat">WeChat</option><option value="Phone">Phone</option></select></div>
+                           <div class="form-group"><label for="booking_account_link">Account Link</label><input type="text" id="booking_account_link" placeholder="URL, phone or @username"></div>
+                           <div class="form-group"><label for="booking_departure">Departure</label><select id="booking_departure" required><option value="" disabled selected>Select Departure</option>
+                        </select></div>
+                           <div class="form-group"><label for="booking_destination">Destination</label><select id="booking_destination" required><option value="" disabled selected>Select Destination</option>
+                        </select></div>
+                           <div class="form-group"><label for="booking_departing_on">Travel Date</label><input type="text" id="booking_departing_on" placeholder="MM/DD/YYYY" required autocomplete="off"></div>
+                           <div class="form-group"><label for="booking_end_date">Booking End Date</label><input type="text" id="booking_end_date" placeholder="MM/DD/YYYY" autocomplete="off"></div>
+                           <div class="form-group">
+                                <label for="booking_end_time_hour">Booking End Time</label>
+                                <div class="time-picker-group">
+                                    <select id="booking_end_time_hour">
+                                        </select>
+                                    <select id="booking_end_time_minute">
+                                        </select>
+                                    <select id="booking_end_time_ampm">
+                                        <option>AM</option>
+                                        <option>PM</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <hr style="border-color: rgba(255,255,255,0.2); margin: 1.5rem 0;">
+                        <div id="booking-passenger-forms-container">
+                        </div>
+                        <div class="form-actions" style="justify-content: flex-start; margin-top: 1rem;">
+                           <button type="button" class="btn btn-secondary" id="addBookingPassengerBtn"><i class="fa-solid fa-plus"></i> Add Passenger</button>
+                           <button type="button" class="btn btn-secondary" id="removeBookingPassengerBtn" style="display: none;"><i class="fa-solid fa-minus"></i> Remove Last</button>
+                        </div>
+                        <div class="form-actions" style="margin-top: 2rem;">
+                           <button type="button" class="btn btn-secondary" id="cancelNewBookingBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                           <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Booking</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="booking-display-container" class="results-section glass-card">
+                     <div class="table-header">
+                        <h3><i class="fa-solid fa-calendar-check"></i> Booking Requests</h3>
+                        <div class="table-controls">
+                           <button id="newBookingBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Booking</button>
+                        </div>
+                    </div>
+                    <div class="booking-search-section">
+                        <select id="bookingSearchRoute">
+                            <option value="">-- SEARCH BY ROUTE --</option>
+                        </select>
+                        <button id="bookingSearchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i></button>
+                        <button id="bookingClearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i></button>
+                    </div>
+                    <div id="bookingTableContainer" class="table-container">
+                        </div>
+                    <div id="bookingPagination" class="pagination-container"></div>
+                </div>
+            </section>
+
+            <section id="sell-view" class="view">
+                <div class="form-container glass-card">
+                   <div class="form-header">
+                       <h2><i class="fa-solid fa-ticket"></i> Sell New Ticket(s)</h2>
+                       <div class="flight-type-toggle">
+                           <span id="domestic-label">Domestic</span>
+                           <label class="switch">
+                               <input type="checkbox" id="flightTypeToggle">
+                               <span class="slider round"></span>
+                           </label>
+                           <span id="international-label">International</span>
+                       </div>
+                   </div>
+                   <form id="sellForm">
+                       <div class="form-grid">
+                           <div class="form-group"><label for="issued_date">Issued Date</label><input type="text" id="issued_date" placeholder="MM/DD/YYYY" required autocomplete="off"></div>
+                           <div class="form-group"><label for="booking_reference">PNR Code</label><input type="text" id="booking_reference" required autocomplete="off"></div>
+                           <div class="form-group client-autosuggest-group">
+                               <label for="phone">Contact Phone</label>
+                               <input type="tel" id="phone" required autocomplete="off">
+                               <div class="autosuggest-box" id="phone_autosuggest"></div>
+                           </div>
+                           <div class="form-group client-autosuggest-group">
+                               <label for="account_name">Social Media Account Name</label>
+                               <input type="text" id="account_name" required autocomplete="off">
+                               <div class="autosuggest-box" id="account_name_autosuggest"></div>
+                            </div>
+                           <div class="form-group"><label for="account_type">Social Media Account Type</label><select id="account_type" required><option value="" disabled selected>Select Account Type</option><option value="Facebook Page">Facebook Page</option><option value="Messenger">Messenger</option><option value="Viber">Viber</option><option value="Telegram">Telegram</option><option value="WeChat">WeChat</option><option value="Phone">Phone</option></select></div>
+                           <div class="form-group"><label for="account_link">Account Link</label><input type="text" id="account_link" placeholder="URL, phone number or @username"></div>
+                           <div class="form-group"><label for="departure">Departure</label><select id="departure" required><option value="" disabled selected>Select Departure</option></select></div>
+                           <div class="form-group"><label for="destination">Destination</label><select id="destination" required><option value="" disabled selected>Select Destination</option></select></div>
+                           <div class="form-group"><label for="departing_on">Travel Date</label><input type="text" id="departing_on" placeholder="MM/DD/YYYY" required autocomplete="off"></div>
+                           <div class="form-group">
+                               <label for="airline">Airline</label>
+                               <select id="airline" required>
+                                   <option value="" disabled selected>Select Airline</option>
+                                   <option value="MNA">MNA</option>
+                                   <option value="MAI">MAI</option>
+                                   <option value="ManYadanarpon">ManYadanarpon</option>
+                                   <option value="AirThanLwin">AirThanLwin</option>
+                                   <option value="CUSTOM">CUSTOM</option>
+                               </select>
+                           </div>
+                           <div class="form-group" id="custom_airline_group" style="display: none;"><label for="custom_airline">Custom Airline Name</label><input type="text" id="custom_airline"></div>
+                           <div class="form-group"><label for="payment_method">Payment Method</label><select id="payment_method"><option value="">Select Payment Method</option><option value="KBZ Pay">KBZ Pay</option><option value="Mobile Banking">Mobile Banking</option><option value="Aya Pay">Aya Pay</option><option value="Cash">Cash</option></select></div>
+                           <div class="form-group"><label for="paid_date">Paid Date</label><input type="text" id="paid_date" placeholder="MM/DD/YYYY" autocomplete="off"></div>
+                           <div class="form-group checkbox-group"><label for="paid">Paid</label><input type="checkbox" id="paid"></div>
+                       </div>
+                       <hr style="border-color: rgba(255,255,255,0.2); margin: 1.5rem 0;">
+                       <div id="passenger-forms-container">
+                           </div>
+                       <div class="form-actions" style="justify-content: flex-start; margin-top: 1rem;">
+                           <button type="button" class="btn btn-secondary" id="addPassengerBtn"><i class="fa-solid fa-plus"></i> Add Passenger</button>
+                           <button type="button" class="btn btn-secondary" id="removePassengerBtn" style="display: none;"><i class="fa-solid fa-minus"></i> Remove Last</button>
+                       </div>
+
+                       <div class="form-actions" style="margin-top: 2rem;">
+                           <button type="button" class="btn btn-secondary" onclick="showView('home')"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                           <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Submit Ticket(s)</button>
+                       </div>
+                   </form>
+               </div>
+           </section>
+            
+            <section id="manage-view" class="view">
+                 <div class="form-container glass-card">
+                    <h2><i class="fa-solid fa-wrench"></i> Manage Ticket</h2>
+                    <form class="centered-form" onsubmit="return false;">
+                        <div class="form-group">
+                            <label for="managePnr">Enter PNR Code to Manage</label>
+                            <input type="text" id="managePnr" name="managePnr" placeholder="e.g., BDUVUU" autocomplete="off">
+                        </div>
+                        <div class="form-actions">
+                            <button id="findTicketBtn" type="button" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Find Ticket</button>
+                            <button id="clearManageBtn" type="button" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
+                        </div>
+                    </form>
+                    <div id="manageResultsContainer" class="results-section" style="padding: 1rem 0 0 0; background: transparent; border: none; box-shadow: none;"></div>
+                    
+                    <div id="modificationHistoryContainer" class="results-section glass-card" style="margin-top: 2rem; display: none;">
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Modification & Cancellation History</h3>
+                        <div class="table-container">
+                            <table id="modificationHistoryTable">
+                                <thead>
+                                    <tr><th>Date</th><th>Name</th><th>Booking Ref</th><th>Details</th></tr>
+                                </thead>
+                                <tbody id="modificationHistoryBody"></tbody>
+                            </table>
+                        </div>
+                        <div id="modificationHistoryPagination" class="pagination-container"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="services-view" class="view">
+                <div id="services-container">
+                    
+                    <div class="service-panel">
+                        <h2>Generate Invoice/Receipt</h2>
+                        <form id="invoiceForm" class="invoice-horizontal-form" onsubmit="return false;">
+                            <div class="form-group">
+                                <label for="invoice_pnr_list">PNR Code(s)</label>
+                                <input type="text" id="invoice_pnr_list" placeholder="PNR, PNR, ..." required>
+                            </div>
+                            
+                            <div class="form-group short-input">
+                                <label for="document_type">Type</label>
+                                <select id="document_type" required>
+                                    <option value="Invoice" selected>Invoice</option>
+                                    <option value="Receipt">Receipt</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="invoice_date">Date</label>
+                                <input type="text" id="invoice_date" placeholder="MM/DD/YYYY" required autocomplete="off">
+                            </div>
+
+                            <div class="invoice-actions">
+                                <button type="submit" class="btn-service btn-pdf"><i class="fa-solid fa-print"></i> PDF</button>
+                                <button type="button" id="invoiceGenPhotoBtn" class="btn-service btn-png"><i class="fa-solid fa-image"></i> Photo</button>
+                                <button type="button" id="invoiceClearBtn" class="btn-service btn-clear"><i class="fa-solid fa-eraser"></i> Clear</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="service-panel">
+                        <h2>Hotel Booking Voucher</h2>
+                        <form id="hotelBookingForm" class="hotel-booking-form" onsubmit="return false;">
+                            <div class="hotel-input-grid">
+                                <div class="form-group">
+                                    <label for="hotel-city">City</label>
+                                    <select id="hotel-city">
+                                        <option value="BKK">Bangkok (BKK)</option>
+                                        <option value="KUL">Kuala Lumpur (KUL)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="hotel-pnr">PNR Code(s)</label>
+                                    <input type="text" id="hotel-pnr" placeholder="PNR for Names" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="hotel-arrival">Arrival Date</label>
+                                    <input type="text" id="hotel-arrival" placeholder="Date" required autocomplete="off">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="hotel-departure">Departure Date</label>
+                                    <input type="text" id="hotel-departure" placeholder="Date" required autocomplete="off">
+                                </div>
+
+                                <div class="form-group short-input">
+                                    <label for="hotel-bed-qty">Bed Qty</label>
+                                    <input type="number" id="hotel-bed-qty" value="1" min="1">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="hotel-bed-type">Bed Type</label>
+                                    <select id="hotel-bed-type">
+                                        <option value="Double">Double</option>
+                                        <option value="Twin">Twin</option>
+                                    </select>
+                                </div>
+
+                                <div class="hotel-checkbox-group">
+                                    <input type="checkbox" id="hotel-extra-bed">
+                                    <label for="hotel-extra-bed">Extra Bed</label>
+                                </div>
+                            </div>
+
+                            <div class="invoice-actions">
+                                <button type="button" id="hotel-pdf-btn" class="btn-service btn-pdf"><i class="fa-solid fa-print"></i> PDF</button>
+                                <button type="button" id="hotel-png-btn" class="btn-service btn-png"><i class="fa-solid fa-image"></i> Photo</button>
+                                <button type="button" id="clear-hotel-btn" class="btn-service btn-clear"><i class="fa-solid fa-eraser"></i> Clear</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="voucher-render-container"></div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <div id="settings-panel" class="glass-card settings-panel solid-bg" aria-label="Settings panel">
+        <div class="settings-header">
+            <h3 class="settings-title">Settings</h3>
+            <button id="settings-close-btn" class="icon-btn icon-btn-sm" title="Close" aria-label="Close settings">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title"><i class="fa-solid fa-cloud" aria-hidden="true"></i> Google Sheet</div>
+            <p class="settings-help">Sign in to sync tickets, bookings, and settlements with Google Sheets.</p>
+            <button id="authorize_button" class="btn btn-primary" style="display: none;"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Sign In</button>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title"><i class="fa-solid fa-palette" aria-hidden="true"></i> Appearance</div>
+
+            <div class="setting-item" id="material-theme-setting">
+                <div class="setting-label-group">
+                    <label for="theme-toggle">Material / Liquid Glass</label>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="theme-toggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <div class="setting-item" id="dark-mode-container">
+                <div class="setting-label-group">
+                    <label for="dark-mode-toggle">Dark Mode</label>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="dark-mode-toggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <div id="glass-settings-container" style="display: none;">
+                <div class="setting-item">
+                    <div class="setting-label-group">
+                        <label for="opacity-slider">Opacity</label>
+                        <span id="opacity-value">0.05</span>
+                    </div>
+                    <input type="range" id="opacity-slider" min="0" max="0.3" step="0.01">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label-group">
+                        <label for="blur-slider">Blur</label>
+                        <span id="blur-value">20</span>
+                    </div>
+                    <input type="range" id="blur-slider" min="0" max="50" step="1">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label-group">
+                        <label for="overlay-slider">Dark Overlay</label>
+                        <span id="overlay-value">0.5</span>
+                    </div>
+                    <input type="range" id="overlay-slider" min="0" max="0.9" step="0.01">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label-group">
+                        <label for="glass-slider">Glass Border</label>
+                        <span id="glass-value">0.15</span>
+                    </div>
+                    <input type="range" id="glass-slider" min="0" max="1" step="0.01">
+                </div>
+                <div class="setting-item" id="glass-text-settings-container">
+                    <div class="setting-label-group">
+                        <label for="glass-text-toggle">Dark Text Color</label>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="glass-text-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section" id="background-settings-section">
+            <div class="settings-section-title"><i class="fa-solid fa-image" aria-hidden="true"></i> Background</div>
+            <p class="settings-help">Optional wallpaper (disabled in Material mode, kept for compatibility).</p>
+            <input type="file" id="background-uploader" accept="image/*" style="display: none;">
+            <div class="settings-actions-row">
+                <button id="background-upload-btn" class="btn btn-secondary btn-sm" type="button"><i class="fa-solid fa-upload" aria-hidden="true"></i> Upload</button>
+                <button id="background-reset-btn" class="btn btn-secondary btn-sm" type="button"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
+            </div>
+        </div>
+
+        <div class="settings-section commission-settings">
+            <div class="settings-section-title"><i class="fa-solid fa-percent" aria-hidden="true"></i> Commission</div>
+            <div class="setting-item">
+                <div class="setting-label-group"><label for="agent-cut-slider">Agent Cut</label><span id="agent-cut-value">60%</span></div>
+                <input type="range" id="agent-cut-slider" min="0" max="100" step="1" value="60">
+            </div>
+        </div>
+
+        <button id="reset-settings-btn" class="btn btn-secondary btn-full" type="button"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset Settings</button>
+    </div>
+
+    <div id="modal" class="modal"><div class="modal-content glass-card"><div id="modalBody"></div></div></div>
+    
+    <div id="exportConfirmModal" class="modal">
+        <div class="modal-content glass-card small-modal">
+            <div id="exportConfirmModalBody">
+                <h2>Confirm PDF Export</h2>
+                <p>Please select the data you want to export.</p>
+                <div class="export-options">
+                    <div class="radio-group">
+                        <input type="radio" id="exportFiltered" name="exportType" value="filtered" checked>
+                        <label for="exportFiltered">Export current search results</label>
+                    </div>
+                    <div class="radio-group">
+                        <input type="radio" id="exportRange" name="exportType" value="range">
+                        <label for="exportRange">Export by date range</label>
+                    </div>
+                </div>
+                <div id="exportDateRange" style="display: none; margin-top: 1rem;">
+                    <div class="form-grid">
+                         <div class="form-group">
+                            <label>Start Date</label>
+                            <input type="text" id="exportStartDate" placeholder="MM/DD/YYYY" autocomplete="off">
+                        </div>
+                         <div class="form-group">
+                            <label>End Date</label>
+                            <input type="text" id="exportEndDate" placeholder="MM/DD/YYYY" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="toggle-switch-container">
+                        <label for="mergeToggle">Merge by Social Account</label>
+                        <label class="switch">
+                            <input type="checkbox" id="mergeToggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                 <div class="form-actions" style="margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('exportConfirmModal').classList.remove('show')">Cancel</button>
+                    <button id="confirmExportBtn" type="button" class="btn btn-primary">Export PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="toast"><span id="toastMessage"></span></div>
+
+    <script src="main.js" type="module"></script>
+</body>
+</html>
