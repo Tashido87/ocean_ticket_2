@@ -1,7 +1,7 @@
 /**
  * @fileoverview Manages all logic related to financial settlements, including loading,
  * displaying, creating, and calculating settlement dashboard figures.
- * UPDATED: Reset Date changed to Dec 1, 2025 to clear November carry-over.
+ * UPDATED: Reset Date changed to Mar 1, 2026 to clear previous carry-over.
  */
 
 import {
@@ -201,9 +201,9 @@ export function updateSettlementDashboard() {
     const firstDayOfCurrentMonth = new Date(Date.UTC(currentYear, currentMonth, 1)); 
 
     // --- Previous Balance Calculation (Corrected Logic with Reset Date) ---
-    // UPDATED: User requested a hard reset starting December 1, 2025.
-    // 11 is for December in JS (0=Jan, 11=Dec)
-    const RESET_DATE = new Date(Date.UTC(2025, 11, 1)); 
+    // UPDATED: User requested a hard reset starting March 1, 2026.
+    // 2 is for March in JS (0=Jan, 2=Mar)
+    const RESET_DATE = new Date(Date.UTC(2026, 2, 1)); 
 
     let previousEndOfMonthDue = 0;
 
