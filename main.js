@@ -482,46 +482,6 @@ export function updateComparisonChart() {
 }
 
 
-/**
- * Initializes the Invisible Ink privacy effect for KPI cards.
- */
-function initializeInvisibleInk() {
-    const toggles = document.querySelectorAll('.ink-toggle');
-    toggles.forEach(toggle => {
-        toggle.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent card clicks if any
-            // Find the closest card
-            const card = e.target.closest('.info-card');
-            if (!card) return;
-            
-            const wrapper = card.querySelector('.ink-wrapper');
-            const icon = toggle.querySelector('i');
-            
-            if (!wrapper || !icon) return;
-            
-            // Toggle state
-            const isConcealed = wrapper.classList.contains('concealed');
-            
-            if (isConcealed) {
-                // Reveal
-                wrapper.classList.remove('concealed');
-                wrapper.classList.add('revealed');
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-                toggle.setAttribute('aria-label', 'Hide value');
-                toggle.setAttribute('aria-pressed', 'true');
-            } else {
-                // Conceal
-                wrapper.classList.remove('revealed');
-                wrapper.classList.add('concealed');
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-                toggle.setAttribute('aria-label', 'Reveal value');
-                toggle.setAttribute('aria-pressed', 'false');
-            }
-        });
-    });
-}
 
 // --- APP START ---
 window.onload = async () => {
@@ -535,7 +495,7 @@ window.onload = async () => {
     resetPassengerForms();
     resetBookingPassengerForms();
     initializePaymentMethodEnhancements();
-    initializeInvisibleInk();
+
 
     if (typeof gapi === 'undefined' || typeof google === 'undefined') {
         showToast('Google API scripts not loaded.', 'error');

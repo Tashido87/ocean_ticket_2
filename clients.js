@@ -41,7 +41,8 @@ export function buildClientList() {
                 gender: ticket.gender,
                 ticket_count: 0,
                 total_spent: 0,
-                last_travel: new Date(0)
+                last_travel: new Date(0),
+                last_issued: new Date(0)
             };
         }
         if (!lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund')) {
@@ -52,9 +53,15 @@ export function buildClientList() {
         if (travelDate > clients[clientKey].last_travel) {
             clients[clientKey].last_travel = travelDate;
         }
+
+        const issuedDate = parseSheetDate(ticket.issued_date);
+        if (issuedDate > clients[clientKey].last_issued) {
+            clients[clientKey].last_issued = issuedDate;
+        }
     });
 
-    state.allClients = Object.values(clients).sort((a, b) => a.name.localeCompare(b.name));
+    state.allClients = Object.values(clients);
+    // Sort logic removed from here as it will be handled directly in renderClientsView
 }
 
 /**
@@ -83,6 +90,12 @@ export function renderClientsView(page) {
                         <div class="client-search-box" style="display: flex; gap: 0.5rem; align-items: center;">
                             <button id="featuredFilterBtn" class="icon-btn" title="Show Featured Only"><i class="fa-regular fa-star"></i></button>
                             <input type="text" id="clientSearchInput" placeholder="Search by name, phone, or social media...">
+                            <select id="clientSortSelect" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--glass-bg); color: var(--text-color);">
+                                <option value="alphabetical">Alphabetical</option>
+                                <option value="recently_issued">Recently Issued</option>
+                                <option value="most_tickets">Most Tickets</option>
+                                <option value="highest_spent">Highest Spent</option>
+                            </select>
                             <button id="clientClearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i></button>
                         </div>
                     </div>
@@ -114,11 +127,21 @@ export function renderClientsView(page) {
             state.onlyShowFeatured = !state.onlyShowFeatured;
             renderClientsView(1);
         });
+        document.getElementById('clientSortSelect').addEventListener('change', (e) => {
+            localStorage.setItem('clientSortOption', e.target.value);
+            renderClientsView(1);
+        });
     }
 
     const tbody = document.getElementById('clientListTableBody');
     const paginationContainer = document.getElementById('clientListPagination');
     const featuredFilterBtn = document.getElementById('featuredFilterBtn');
+    const clientSortSelect = document.getElementById('clientSortSelect');
+
+    const savedSortOption = localStorage.getItem('clientSortOption') || 'alphabetical';
+    if (clientSortSelect) {
+        clientSortSelect.value = savedSortOption;
+    }
 
     featuredFilterBtn.classList.toggle('active', state.onlyShowFeatured);
     document.getElementById('clientSearchInput').value = searchQuery;
@@ -152,6 +175,15 @@ export function renderClientsView(page) {
         const bIsFeatured = state.featuredClients.includes(b.name);
         if (aIsFeatured && !bIsFeatured) return -1;
         if (!aIsFeatured && bIsFeatured) return 1;
+
+        if (savedSortOption === 'recently_issued') {
+            return b.last_issued - a.last_issued;
+        } else if (savedSortOption === 'most_tickets') {
+            return b.ticket_count - a.ticket_count;
+        } else if (savedSortOption === 'highest_spent') {
+            return b.total_spent - a.total_spent;
+        }
+
         return a.name.localeCompare(b.name);
     });
 

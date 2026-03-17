@@ -877,14 +877,14 @@ async function handleUpdateTicket(e) {
                 masterTicket.airline,
                 0, // Base Fare 0
                 masterTicket.booking_reference,
-                0, // Net Amount 0 (We use the fee columns below)
+                (extraFare + dateChangeFees), // Net Amount (Populated for external app compatibility)
                 finalPaid,          // <-- This uses the form status (Unpaid if unchecked)
                 finalPaymentMethod,
                 feePaidDate,
-                0, // Commission 0
+                extraFare, // Commission (Extra fare is profit, mapped here)
                 "Fee Entry", // Remarks
-                extraFare,      // Place Extra Fare here
-                dateChangeFees, // Place Date Change Fee here
+                0, // Extra Fare zeroed out to prevent double-counting
+                0, // Date Change Fee zeroed out to prevent double-counting
                 masterTicket.gender
             ];
 
