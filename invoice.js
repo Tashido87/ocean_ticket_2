@@ -85,6 +85,10 @@ function formatQuantity(value) {
     });
 }
 
+function formatCurrency(value) {
+    return `MMK ${formatMoney(value)}`;
+}
+
 function resolveDocumentDate(dateStr) {
     if (!dateStr) return new Date();
 
@@ -559,9 +563,9 @@ function buildInvoiceHtml(data) {
                 </table>
 
                 <div class="inv-totals">
-                    <div class="inv-total-row"><span>Sub Total</span><span>MMK${formatMoney(totalAmount)}</span></div>
-                    <div class="inv-total-row"><span>Total</span><span>MMK${formatMoney(totalAmount)}</span></div>
-                    <div class="inv-total-row balance"><span>${escapeHtml(balanceLabel)}</span><span>MMK${formatMoney(totalAmount)}</span></div>
+                    <div class="inv-total-row"><span>Sub Total</span><span>${formatCurrency(totalAmount)}</span></div>
+                    <div class="inv-total-row"><span>Total</span><span>${formatCurrency(totalAmount)}</span></div>
+                    <div class="inv-total-row balance"><span>${escapeHtml(balanceLabel)}</span><span>${formatCurrency(totalAmount)}</span></div>
                 </div>
 
                 <div class="inv-payment-area">
@@ -738,9 +742,9 @@ function renderInvoicePage(doc, data, logoAsset) {
     const totalsX = 128;
     const totalsWidth = 67;
     const totalRows = [
-        { label: 'Sub Total', value: `MMK${formatMoney(totalAmount)}`, color: INVOICE_THEME.mutedRgb },
-        { label: 'Total', value: `MMK${formatMoney(totalAmount)}`, color: INVOICE_THEME.textRgb, bold: true },
-        { label: balanceLabel, value: `MMK${formatMoney(totalAmount)}`, color: INVOICE_THEME.accentRgb, bold: true }
+        { label: 'Sub Total', value: formatCurrency(totalAmount), color: INVOICE_THEME.mutedRgb },
+        { label: 'Total', value: formatCurrency(totalAmount), color: INVOICE_THEME.textRgb, bold: true },
+        { label: balanceLabel, value: formatCurrency(totalAmount), color: INVOICE_THEME.accentRgb, bold: true }
     ];
 
     totalRows.forEach((row, index) => {
