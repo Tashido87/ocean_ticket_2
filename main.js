@@ -165,6 +165,7 @@ function setupEventListeners() {
             const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim()).filter(p => p);
             
             const type = document.getElementById('document_type').value;
+            const brand = document.getElementById('invoice_brand').value;
             const date = document.getElementById('invoice_date').value;
 
             if (pnrList.length === 0) {
@@ -185,7 +186,7 @@ function setupEventListeners() {
                 showInvoiceOptionModal(async (selectedMode) => {
                     try {
                         showToast(`Generating ${type} PDF (${selectedMode})...`, 'info');
-                        await generateInvoice(pnrList, type, date, selectedMode);
+                        await generateInvoice(pnrList, type, date, selectedMode, brand);
                     } catch (error) {
                         console.error(error);
                         showToast('Failed to generate document.', 'error');
@@ -194,7 +195,7 @@ function setupEventListeners() {
             } else {
                 try {
                     showToast(`Generating ${type} PDF...`, 'info');
-                    await generateInvoice(pnrList, type, date, 'auto');
+                    await generateInvoice(pnrList, type, date, 'auto', brand);
                 } catch (error) {
                     console.error(error);
                     showToast('Failed to generate document.', 'error');
@@ -210,6 +211,7 @@ function setupEventListeners() {
                 const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim()).filter(p => p);
                 
                 const type = document.getElementById('document_type').value;
+                const brand = document.getElementById('invoice_brand').value;
                 const date = document.getElementById('invoice_date').value;
 
                 if (pnrList.length === 0) {
@@ -230,7 +232,7 @@ function setupEventListeners() {
                     showInvoiceOptionModal(async (selectedMode) => {
                         try {
                             showToast(`Generating ${type} Image (${selectedMode})...`, 'info');
-                            await generateInvoiceImage(pnrList, type, date, selectedMode);
+                            await generateInvoiceImage(pnrList, type, date, selectedMode, brand);
                         } catch (error) {
                             console.error(error);
                             showToast('Failed to generate image.', 'error');
@@ -239,7 +241,7 @@ function setupEventListeners() {
                 } else {
                     try {
                         showToast(`Generating ${type} Image...`, 'info');
-                        await generateInvoiceImage(pnrList, type, date, 'auto');
+                        await generateInvoiceImage(pnrList, type, date, 'auto', brand);
                     } catch (error) {
                         console.error(error);
                         showToast('Failed to generate image.', 'error');
@@ -255,6 +257,7 @@ function setupEventListeners() {
                 document.getElementById('invoice_pnr_list').value = '';
                 document.getElementById('invoice_date').value = '';
                 document.getElementById('document_type').value = 'Invoice';
+                document.getElementById('invoice_brand').value = 'ocean';
             });
         }
     }

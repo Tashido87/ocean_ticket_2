@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="title desc">
+  <title id="title">Magical Land Travel and Tour logo</title>
+  <desc id="desc">Orange sun above a purple skyline with the text Magical Land Travel and Tour.</desc>
+  <defs>
+    <linearGradient id="sunGradient" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f0582c"/>
+      <stop offset="100%" stop-color="#ffb03a"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="420" fill="#ffffff"/>
+  <g transform="translate(40 10)">
+    <circle cx="190" cy="128" r="112" fill="url(#sunGradient)"/>
+    <path d="M113 206c12-63 22-112 40-112 12 0 18 20 23 62 13-52 27-70 47-70 13 0 21 17 27 50 12-27 22-37 35-37 11 0 20 14 26 42l7 58H113z" fill="#ffffff"/>
+    <path d="M82 234c22-18 54-33 69-50 3-18 7-57 12-57 5 0 9 22 10 57 11-12 16-20 22-20 6 0 11 9 13 20 6-10 11-20 18-20 8 0 14 16 18 42 8-7 14-17 23-17 8 0 14 13 18 34 27-7 40-18 56-31-11 22-30 43-56 62H82z" fill="#4a357d"/>
+  </g>
+  <text x="360" y="305" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="64" font-weight="700" letter-spacing="2" fill="#4a357d">MAGICAL LAND</text>
+  <text x="360" y="364" text-anchor="middle" font-family="'Brush Script MT', 'Snell Roundhand', cursive" font-size="42" fill="#1f1f1f">Travel &amp; Tour</text>
+</svg>

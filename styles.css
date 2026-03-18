@@ -3838,13 +3838,9 @@ body.material-theme.dark-theme .notification-count {
    ----------------------------------------- */
 .invoice-horizontal-form {
     display: grid;
-    /* PNR (1fr) expands to original length. 
-       Type & Date (180px) remain compact. 
-       Buttons (auto) fit their content. */
-    grid-template-columns: 1fr 180px 180px auto;
-    align-items: end; /* Aligns inputs and buttons at the bottom */
+    grid-template-columns: minmax(260px, 1fr) 150px 160px 180px auto;
+    align-items: end;
     gap: 10px;
-    /* No max-width restriction allows PNR to stretch */
 }
 
 .invoice-horizontal-form .form-group {
@@ -4001,16 +3997,13 @@ body.material-theme .btn-clear:hover {
 /* Responsive adjustments */
 @media screen and (max-width: 900px) {
     .invoice-horizontal-form {
-        grid-template-columns: 1fr 1fr; /* 2 columns on tablet */
+        grid-template-columns: 1fr 1fr;
     }
     .invoice-horizontal-form .form-group:first-child {
-        grid-column: span 2; /* PNR takes full width on row 1 */
-    }
-    .invoice-horizontal-form .form-group:nth-child(3) {
-        grid-column: auto; /* Date shares row 2 with Type */
+        grid-column: span 2;
     }
     .invoice-actions {
-        grid-column: span 2; /* Buttons take full width row 3 */
+        grid-column: span 2;
         justify-content: flex-end;
         margin-top: 5px;
     }
