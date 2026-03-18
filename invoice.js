@@ -72,16 +72,16 @@ function escapeHtml(value) {
 function formatMoney(value) {
     const numeric = Number(value) || 0;
     return numeric.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
     });
 }
 
 function formatQuantity(value) {
     const numeric = Number(value) || 0;
     return numeric.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
     });
 }
 
