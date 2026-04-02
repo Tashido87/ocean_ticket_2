@@ -193,17 +193,15 @@ export async function handleNewSettlementSubmit(e) {
  * Calculates and updates the figures on the settlement dashboard.
  */
 export function updateSettlementDashboard() {
-    const now = new Date(); // Current system date
+    const now = new Date(); 
     const currentMonth = now.getMonth(); 
     const currentYear = now.getFullYear(); 
     
-    // We use UTC to prevent timezone issues in comparison.
-    const firstDayOfCurrentMonth = new Date(Date.UTC(currentYear, currentMonth, 1)); 
+    const firstDayOfCurrentMonth = new Date(currentYear, currentMonth, 1); 
 
     // --- Previous Balance Calculation (Corrected Logic with Reset Date) ---
     // UPDATED: User requested a hard reset starting March 1, 2026.
-    // 2 is for March in JS (0=Jan, 2=Mar)
-    const RESET_DATE = new Date(Date.UTC(2026, 2, 1)); 
+    const RESET_DATE = new Date(2026, 2, 1); 
 
     let previousEndOfMonthDue = 0;
 
@@ -235,7 +233,7 @@ export function updateSettlementDashboard() {
         // --- NEW CORRECT LOGIC (For Dec 1, 2025 and after) ---
         // This calculates the true running balance *since the last reset*.
         
-        // We calculate all transactions from the RESET_DATE (Dec 1) up to the start of the current month.
+        // We calculate all transactions from the RESET_DATE (Mar 1) up to the start of the current month.
         const filterStartDate = RESET_DATE;
         
         const ticketsBefore = state.allTickets.filter(t => {
@@ -275,11 +273,12 @@ export function updateSettlementDashboard() {
     const totalSettlementsThisMonth = settlementsThisMonth.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
     // --- Update Dashboard Cards ---
-    const totalOutstandingRevenue = (revenueThisMonth + previousEndOfMonthDue) - totalSettlementsThisMonth;
+    // Outstanding Revenue is now the NET outstanding (Revenue - Commissions - Settlements)
+    const totalOutstandingRevenue = (revenueThisMonth - commissionThisMonth + previousEndOfMonthDue) - totalSettlementsThisMonth;
     const netAmountBox = document.getElementById('settlement-net-amount-box');
     netAmountBox.innerHTML = `<div class="info-card-content"><h3>Total Outstanding Revenue</h3><div class="main-value">${totalOutstandingRevenue.toLocaleString()}</div><span class="sub-value">MMK</span><i class="icon fa-solid fa-file-invoice-dollar"></i></div>`;
 
-    const endOfMonthSettlement = totalOutstandingRevenue - commissionThisMonth;
+    const endOfMonthSettlement = totalOutstandingRevenue; // Since totalOutstandingRevenue already subtracted commission
     const monthlyDueBox = document.getElementById('settlement-monthly-due-box');
     monthlyDueBox.innerHTML = `<div class="info-card-content"><h3>End-of-Month Settlement Due</h3><div class="main-value">${endOfMonthSettlement.toLocaleString()}</div><span class="sub-value">MMK</span><i class="icon fa-solid fa-cash-register"></i></div>`;
 

@@ -181,13 +181,11 @@ export async function exportToPdf() {
         
         // --- Previous Balance Calculation (Corrected Logic with Reset Date) ---
         
-        // User requested a hard reset. As of Nov 1, 2025, the balance is 0.
-        // We use UTC to prevent timezone issues in comparison.
-        const RESET_DATE = new Date(Date.UTC(2025, 10, 1)); // 10 is for November in JS
+        // User requested a hard reset. As of Mar 1, 2026, the balance is 0.
+        const RESET_DATE = new Date(2026, 2, 1); // 2 is for March in JS
         
         // 'startDate' is the first day of the reporting period (e.g., Nov 1).
-        // We set its time to 0 to compare dates cleanly.
-        const reportStartDate = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()));
+        const reportStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
         
         let previousEndOfMonthDue = 0;
 
@@ -220,8 +218,8 @@ export async function exportToPdf() {
             // This calculates the true running balance *since the last reset*.
             
             // We calculate all transactions from the RESET_DATE up to the start of the current report.
-            // e.g., If report is for Dec (startDate = Dec 1), this finds balance from Nov 1 to Nov 30.
-            const filterStartDate = RESET_DATE; // Start counting from Nov 1
+            // e.g., If report is for April (startDate = Apr 1), this finds balance from Mar 1 to Mar 31.
+            const filterStartDate = RESET_DATE; // Start counting from Mar 1
             
             const ticketsBefore = state.allTickets.filter(t => {
                 const ticketDate = parseSheetDate(t.issued_date);
