@@ -330,7 +330,7 @@ export function updateComparisonChart() {
     const isFeeEntryRow = (t) => /\(fees\)\s*$/i.test(String(t?.name || '')) || String(t?.remarks || '').toLowerCase().includes('fee entry');
     const ticketsThisYear = state.allTickets.filter(t => {
         const ticketDate = parseSheetDate(t.issued_date);
-        return ticketDate.getFullYear() === currentYear && !t.remarks?.toLowerCase().includes('full refund');
+        return ticketDate.getFullYear() === currentYear;
     });
 
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

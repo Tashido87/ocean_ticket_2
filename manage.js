@@ -411,7 +411,7 @@ function openManageModal(rowIndex) {
                 <div class="toggle-switch-container" style="font-size: 0.85rem;">
                     <label for="update_pnr_sync" style="margin-right: 8px;">Apply to entire PNR?</label>
                     <label class="switch" style="transform: scale(0.8);">
-                        <input type="checkbox" id="update_pnr_sync" checked>
+                        <input type="checkbox" id="update_pnr_sync">
                         <span class="slider round"></span>
                     </label>
                 </div>
@@ -793,20 +793,29 @@ async function handleUpdateTicket(e) {
 
     const hasNewFees = dateChangeFees > 0 || extraFare > 0;
 
-    if (newTravelDateVal && parseSheetDate(newTravelDateVal).getTime() !== parseSheetDate(masterTicket.departing_on).getTime()) historyDetails.push(`Travel Date: ${masterTicket.departing_on} to ${newTravelDateVal}`);
-    if (!isNaN(newBaseFare) && newBaseFare !== masterTicket.base_fare) historyDetails.push(`Base Fare: ${masterTicket.base_fare} to ${newBaseFare}`);
-    if (!isNaN(newNetAmount) && newNetAmount !== masterTicket.net_amount) historyDetails.push(`Net Amount: ${masterTicket.net_amount} to ${newNetAmount}`);
-    if (!isNaN(newCommission) && newCommission !== masterTicket.commission) historyDetails.push(`Commission: ${masterTicket.commission} to ${newCommission}`);
+    // Detect exactly what the user changed relative to the opened ticket
+    const dateChanged = newTravelDateVal && parseSheetDate(newTravelDateVal).getTime() !== parseSheetDate(masterTicket.departing_on).getTime();
+    const baseFareChanged = !isNaN(newBaseFare) && newBaseFare !== masterTicket.base_fare;
+    const netAmountChanged = !isNaN(newNetAmount) && newNetAmount !== masterTicket.net_amount;
+    const commissionChanged = !isNaN(newCommission) && newCommission !== masterTicket.commission;
+    const paidChanged = finalPaid !== originalPaid;
+    const methodChanged = finalPaymentMethod !== originalMethod;
+    const paidDateChanged = finalPaidDate !== originalPaidDate;
+
+    if (dateChanged) historyDetails.push(`Travel Date: ${masterTicket.departing_on} to ${newTravelDateVal}`);
+    if (baseFareChanged) historyDetails.push(`Base Fare: ${masterTicket.base_fare} to ${newBaseFare}`);
+    if (netAmountChanged) historyDetails.push(`Net Amount: ${masterTicket.net_amount} to ${newNetAmount}`);
+    if (commissionChanged) historyDetails.push(`Commission: ${masterTicket.commission} to ${newCommission}`);
 
     if (dateChangeFees > 0) historyDetails.push(`Date Change Fees Added: ${dateChangeFees}`);
     if (extraFare > 0) historyDetails.push(`Extra Fare Added: ${extraFare}`);
 
     if (!hasNewFees) {
-        if (finalPaid !== originalPaid) historyDetails.push(`Payment: ${originalPaid ? 'Paid' : 'Unpaid'} to ${finalPaid ? 'Paid' : 'Unpaid'}`);
-        if (finalPaymentMethod !== (finalPaid ? originalMethod : '')) {
+        if (paidChanged) historyDetails.push(`Payment: ${originalPaid ? 'Paid' : 'Unpaid'} to ${finalPaid ? 'Paid' : 'Unpaid'}`);
+        if (methodChanged) {
             historyDetails.push(`Payment Method: ${originalMethod || '—'} to ${finalPaymentMethod || '—'}`);
         }
-        if (finalPaidDate !== (finalPaid ? originalPaidDate : '')) {
+        if (paidDateChanged) {
             historyDetails.push(`Paid Date: ${originalPaidDate || '—'} to ${finalPaidDate || '—'}`);
         }
     }
@@ -821,9 +830,15 @@ async function handleUpdateTicket(e) {
 
         // 1. UPDATE SELECTED TICKET(S)
         const dataForBatchUpdate = ticketsToUpdate.map(ticket => {
-            const rowPaid = hasNewFees ? ticket.paid : finalPaid;
-            const rowMethod = hasNewFees ? ticket.payment_method : finalPaymentMethod;
-            const rowPaidDate = hasNewFees ? ticket.paid_date : finalPaidDate;
+            // Apply new value ONLY if user changed it in the modal, otherwise preserve existing row value
+            const rowPaid = hasNewFees ? ticket.paid : (paidChanged ? finalPaid : ticket.paid);
+            const rowMethod = hasNewFees ? ticket.payment_method : (methodChanged ? finalPaymentMethod : ticket.payment_method);
+            const rowPaidDate = hasNewFees ? ticket.paid_date : (paidDateChanged ? finalPaidDate : ticket.paid_date);
+            
+            const tTravelDate = dateChanged ? formatDateForSheet(newTravelDateVal) : ticket.departing_on;
+            const tBaseFare = baseFareChanged && !isFeeRow(ticket) ? newBaseFare : ticket.base_fare;
+            const tNetAmount = netAmountChanged && !isFeeRow(ticket) ? newNetAmount : ticket.net_amount;
+            const tCommission = commissionChanged && !isFeeRow(ticket) ? newCommission : ticket.commission;
             
             const values = [
                 ticket.issued_date, 
@@ -835,15 +850,15 @@ async function handleUpdateTicket(e) {
                 ticket.account_link,
                 ticket.departure,
                 ticket.destination,
-                newTravelDateVal ? formatDateForSheet(newTravelDateVal) : ticket.departing_on, 
+                tTravelDate, 
                 ticket.airline,
-                !isNaN(newBaseFare) && !isFeeRow(ticket) ? newBaseFare : ticket.base_fare,
+                tBaseFare,
                 ticket.booking_reference,
-                !isNaN(newNetAmount) && !isFeeRow(ticket) ? newNetAmount : ticket.net_amount,
+                tNetAmount,
                 rowPaid,           
                 rowMethod,         
                 rowPaidDate,       
-                !isNaN(newCommission) && !isFeeRow(ticket) ? newCommission : ticket.commission,
+                tCommission,
                 ticket.remarks,
                 ticket.extra_fare, 
                 ticket.date_change,

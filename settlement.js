@@ -215,7 +215,7 @@ export function updateSettlementDashboard() {
         const ticketsLastMonth = state.allTickets.filter(t => {
             const ticketDate = parseSheetDate(t.issued_date);
             const lowerRemarks = t.remarks?.toLowerCase() || '';
-            return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear && !lowerRemarks.includes('full refund');
+            return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear;
         });
 
         const revenueLastMonth = ticketsLastMonth.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
@@ -238,8 +238,7 @@ export function updateSettlementDashboard() {
         
         const ticketsBefore = state.allTickets.filter(t => {
             const ticketDate = parseSheetDate(t.issued_date);
-            const lowerRemarks = t.remarks?.toLowerCase() || '';
-            return ticketDate >= filterStartDate && ticketDate < firstDayOfCurrentMonth && !lowerRemarks.includes('full refund');
+            return ticketDate >= filterStartDate && ticketDate < firstDayOfCurrentMonth;
         });
         const revenueBefore = ticketsBefore.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
         const commissionBefore = ticketsBefore.reduce((sum, t) => sum + (t.commission || 0), 0);
@@ -258,8 +257,7 @@ export function updateSettlementDashboard() {
     // --- Current Month's Figures ---
     const ticketsThisMonth = state.allTickets.filter(t => {
         const ticketDate = parseSheetDate(t.issued_date);
-        const lowerRemarks = t.remarks?.toLowerCase() || '';
-        return ticketDate.getMonth() === currentMonth && ticketDate.getFullYear() === currentYear && !lowerRemarks.includes('full refund');
+        return ticketDate.getMonth() === currentMonth && ticketDate.getFullYear() === currentYear;
     });
 
     const revenueThisMonth = ticketsThisMonth.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);

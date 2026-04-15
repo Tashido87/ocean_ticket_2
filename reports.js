@@ -199,7 +199,7 @@ export async function exportToPdf() {
 
             const ticketsLastMonth = state.allTickets.filter(t => {
                 const ticketDate = parseSheetDate(t.issued_date);
-                return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear && !t.remarks?.toLowerCase().includes('full refund');
+                return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear;
             });
 
             const revenueLastMonth = ticketsLastMonth.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
@@ -223,7 +223,7 @@ export async function exportToPdf() {
             
             const ticketsBefore = state.allTickets.filter(t => {
                 const ticketDate = parseSheetDate(t.issued_date);
-                return ticketDate >= filterStartDate && ticketDate < startDate && !t.remarks?.toLowerCase().includes('full refund');
+                return ticketDate >= filterStartDate && ticketDate < startDate;
             });
             const revenueBefore = ticketsBefore.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
             const commissionBefore = ticketsBefore.reduce((sum, t) => sum + (t.commission || 0), 0);
@@ -500,7 +500,7 @@ export async function exportPrivateReportToPdf() {
     // --- Data Aggregation for Comparison ---
     const ticketsThisYear = state.allTickets.filter(t => {
         const ticketDate = parseSheetDate(t.issued_date);
-        return ticketDate.getFullYear() === currentYear && !t.remarks?.toLowerCase().includes('full refund');
+        return ticketDate.getFullYear() === currentYear;
     });
 
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
