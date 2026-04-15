@@ -97,7 +97,7 @@ export function displaySettlements() {
  * @param {number} page The page number to render.
  * @param {Array<Object>} settlements The array of settlements to display.
  */
-function renderSettlementPage(page, settlements) {
+export function renderSettlementPage(page, settlements) {
     state.settlementPage = page;
     const tbody = document.getElementById('settlementTableBody');
     if (!tbody) return;

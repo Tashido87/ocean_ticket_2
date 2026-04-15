@@ -9,7 +9,7 @@ import { state } from './state.js';
 import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline } from './utils.js';
 import { renderClientsView } from './clients.js';
 import { clearManageResults } from './manage.js';
-import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard } from './settlement.js';
+import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard, renderSettlementPage } from './settlement.js';
 import { showToast } from './utils.js';
 import { displayTickets } from './tickets.js';
 import { renderBookingPage } from './booking.js';
@@ -1441,8 +1441,6 @@ export function setupBookingPagination(bookings = state.filteredBookings) {
  * @param {Array<Object>} settlements The array of settlements to paginate.
  */
 export function setupSettlementPagination(settlements) {
-    const { renderSettlementPage } =
-    import ('./settlement.js');
     setupGenericPagination(settlements, 'settlementPagination', (page) => renderSettlementPage(page, settlements), state.settlementPage);
 }
 
