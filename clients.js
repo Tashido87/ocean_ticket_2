@@ -32,6 +32,7 @@ export function buildClientList() {
         const lowerRemarks = ticket.remarks?.toLowerCase() || '';
         if (!clients[clientKey]) {
             clients[clientKey] = {
+                client_key: clientKey,
                 name: ticket.name,
                 phone: ticket.phone,
                 account_name: ticket.account_name,
@@ -171,8 +172,8 @@ export function renderClientsView(page) {
     }
 
     filteredClients.sort((a, b) => {
-        const aIsFeatured = state.featuredClients.includes(a.name);
-        const bIsFeatured = state.featuredClients.includes(b.name);
+        const aIsFeatured = state.featuredClients.includes(a.client_key) || state.featuredClients.includes(a.name);
+        const bIsFeatured = state.featuredClients.includes(b.client_key) || state.featuredClients.includes(b.name);
         if (aIsFeatured && !bIsFeatured) return -1;
         if (!aIsFeatured && bIsFeatured) return 1;
 
@@ -203,7 +204,7 @@ export function renderClientsView(page) {
     const paginated = filteredClients.slice((pageToRender - 1) * state.rowsPerPage, pageToRender * state.rowsPerPage);
 
     paginated.forEach(client => {
-        const isFeatured = state.featuredClients.includes(client.name);
+        const isFeatured = state.featuredClients.includes(client.client_key) || state.featuredClients.includes(client.name);
         const row = tbody.insertRow();
         row.innerHTML = `
             <td><i class="fa-regular fa-star star-icon ${isFeatured ? 'featured' : ''}"></i></td>
@@ -220,11 +221,11 @@ export function renderClientsView(page) {
             </td>
         `
         // Add event listeners
-        row.querySelector('.star-icon').addEventListener('click', (e) => toggleFeaturedClient(e, client.name));
-        row.querySelector('[title="Detail"]').addEventListener('click', () => viewClientHistory(client.name));
+        row.querySelector('.star-icon').addEventListener('click', (e) => toggleFeaturedClient(e, client.client_key));
+        row.querySelector('[title="Detail"]').addEventListener('click', () => viewClientHistory(client.client_key));
         row.querySelector('[title="Copy Info"]').addEventListener('click', () => copyClientInfo(client.name, client.id_no, client.phone, client.gender));
-        row.querySelector('[title="New Booking"]').addEventListener('click', () => bookForClient(client.name));
-        row.querySelector('[title="Sell New Ticket"]').addEventListener('click', () => sellTicketForClient(client.name));
+        row.querySelector('[title="New Booking"]').addEventListener('click', () => bookForClient(client.client_key));
+        row.querySelector('[title="Sell New Ticket"]').addEventListener('click', () => sellTicketForClient(client.client_key));
     });
 
     const pageCount = Math.ceil(filteredClients.length / state.rowsPerPage);
@@ -286,10 +287,15 @@ function copyClientInfo(name, id, phone, gender) {
 
 /**
  * Displays a modal with a client's complete ticket history and stats.
- * @param {string} clientName The name of the client to view.
+ * @param {string} clientKey The unique key of the client to view.
  */
-function viewClientHistory(clientName) {
-    const clientTickets = state.allTickets.filter(t => t.name === clientName)
+function viewClientHistory(clientKey) {
+    const activeClient = state.allClients.find(c => c.client_key === clientKey);
+    const clientName = activeClient ? activeClient.name : 'Unknown';
+
+    const clientTickets = state.allTickets.filter(t => 
+        `${t.name}|${t.phone}|${t.account_name}` === clientKey
+    )
         .sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date));
 
     if (clientTickets.length === 0) {
@@ -342,7 +348,7 @@ function viewClientHistory(clientName) {
     `;
 
     openModal(content, 'large-modal');
-    document.getElementById('sellForClientBtn').addEventListener('click', () => sellTicketForClient(clientName));
+    document.getElementById('sellForClientBtn').addEventListener('click', () => sellTicketForClient(clientKey));
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 }
 
@@ -364,21 +370,29 @@ function saveFeaturedClients() {
 /**
  * Toggles a client's featured status.
  * @param {Event} event The click event.
- * @param {string} clientName The name of the client to toggle.
+ * @param {string} clientKey The unique key of the client to toggle.
  */
-function toggleFeaturedClient(event, clientName) {
+function toggleFeaturedClient(event, clientKey) {
     event.stopPropagation();
     const icon = event.target;
-    const index = state.featuredClients.indexOf(clientName);
+    
+    // First, check if legacy name-only is featured and remove it
+    const clientInfo = state.allClients.find(c => c.client_key === clientKey);
+    if (clientInfo) {
+        const legacyIndex = state.featuredClients.indexOf(clientInfo.name);
+        if (legacyIndex > -1) state.featuredClients.splice(legacyIndex, 1);
+    }
+
+    const index = state.featuredClients.indexOf(clientKey);
 
     if (index > -1) {
         state.featuredClients.splice(index, 1);
         icon.classList.remove('featured');
-        showToast(`${clientName} removed from featured.`, 'info');
+        showToast(`Removed from featured.`, 'info');
     } else {
-        state.featuredClients.push(clientName);
+        state.featuredClients.push(clientKey);
         icon.classList.add('featured');
-        showToast(`${clientName} added to featured!`, 'success');
+        showToast(`Added to featured!`, 'success');
     }
 
     saveFeaturedClients();
@@ -387,10 +401,10 @@ function toggleFeaturedClient(event, clientName) {
 
 /**
  * Pre-fills the "Sell Ticket" form for a specific client.
- * @param {string} clientName The name of the client.
+ * @param {string} clientKey The unique key of the client.
  */
-function sellTicketForClient(clientName) {
-    const client = state.allClients.find(c => c.name === clientName);
+function sellTicketForClient(clientKey) {
+    const client = state.allClients.find(c => c.client_key === clientKey);
     if (!client) {
         showToast('Could not find client details.', 'error');
         return;
@@ -417,10 +431,10 @@ function sellTicketForClient(clientName) {
 
 /**
  * Pre-fills the "New Booking" form for a specific client.
- * @param {string} clientName The name of the client.
+ * @param {string} clientKey The unique key of the client.
  */
-function bookForClient(clientName) {
-    const client = state.allClients.find(c => c.name === clientName);
+function bookForClient(clientKey) {
+    const client = state.allClients.find(c => c.client_key === clientKey);
     if (!client) {
         showToast('Could not find client details.', 'error');
         return;
