@@ -754,8 +754,8 @@ input:checked + .slider:before {
     font-size: 0.95rem;
     font-weight: 500;
     color: var(--text-primary);
-    background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.12);
+    background: var(--surface-1, #ffffff);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -786,8 +786,8 @@ input:checked + .slider:before {
     position: absolute;
     top: calc(100% + 8px);
     left: 0; right: 0;
-    background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.12);
+    background: var(--surface-1, #ffffff);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10), 0 24px 60px rgba(0, 0, 0, 0.10);
     z-index: 100;
@@ -814,7 +814,7 @@ input:checked + .slider:before {
 }
 
 .custom-option:hover {
-    background: rgba(38, 37, 30, 0.05);
+    background: var(--surface-2);
     color: var(--text-primary);
     padding-left: 1.25rem;
 }
@@ -832,12 +832,7 @@ input:checked + .slider:before {
     font-size: 0.8rem;
 }
 
-/* Light theme is now default */
-body.dark-text-theme .custom-select-trigger {
-    color: var(--text-primary);
-    border-color: rgba(38, 37, 30, 0.12);
-    background: #ffffff;
-}
+
 .slider.round:before {
     border-radius: 50%;
 }
@@ -1456,8 +1451,8 @@ body.dark-text-theme:not(.material-theme) .datepicker-view .days .day.selected:n
     padding: 0.4rem;
     font-size: 0.75rem;
     font-weight: 500;
-    background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.10);
+    background: var(--surface-1, #ffffff);
+    border: 1px solid var(--border-color);
     color: var(--text-secondary);
     border-radius: 8px;
     cursor: pointer;
@@ -1479,8 +1474,8 @@ body.dark-text-theme:not(.material-theme) .datepicker-view .days .day.selected:n
     top: 100%;
     left: 0;
     right: 0;
-    background: #1c2128;
-    border: 1px solid var(--glass-border);
+    background: var(--surface-1, #ffffff);
+    border: 1px solid var(--border-color);
     border-radius: 0 0 var(--liquid-radius) var(--liquid-radius);
     z-index: 100;
     max-height: 200px;
@@ -1492,7 +1487,7 @@ body.dark-text-theme:not(.material-theme) .datepicker-view .days .day.selected:n
     transition: background-color 0.2s ease;
 }
 .autosuggest-item:hover {
-    background-color: var(--glass-bg-hover);
+    background-color: var(--surface-2);
 }
 .autosuggest-item strong {
     color: var(--primary-accent);
