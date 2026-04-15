@@ -1517,25 +1517,9 @@ export function removeBookingPassengerForm() {
  */
 export function initializeUISettings() {
     // --- Get all UI elements ---
-    const themeToggle = document.getElementById('theme-toggle');
     const darkModeToggle = document.getElementById('dark-mode-toggle');
-    const backgroundUploader = document.getElementById('background-uploader');
-    const glassSettings = document.getElementById('glass-settings-container');
-    const backgroundSection = document.getElementById('background-settings-section');
-    const backgroundResetBtn = document.getElementById('background-reset-btn');
     const resetSettingsBtn = document.getElementById('reset-settings-btn');
-
-    // Glass effect sliders
-    const opacitySlider = document.getElementById('opacity-slider');
-    const opacityValue = document.getElementById('opacity-value');
-    const blurSlider = document.getElementById('blur-slider');
-    const blurValue = document.getElementById('blur-value');
-    const overlaySlider = document.getElementById('overlay-slider');
-    const overlayValue = document.getElementById('overlay-value');
-    const glassSlider = document.getElementById('glass-slider');
-    const glassValue = document.getElementById('glass-value');
-    const glassTextToggle = document.getElementById('glass-text-toggle');
-
+    
     // Commission slider
     const agentCutSlider = document.getElementById('agent-cut-slider');
     const agentCutValue = document.getElementById('agent-cut-value');
@@ -1543,19 +1527,11 @@ export function initializeUISettings() {
     // Font Selector (Custom)
     const fontSelectContainer = document.getElementById('font-custom-select');
     const fontSelectTrigger = fontSelectContainer?.querySelector('.custom-select-trigger');
-    const fontSelectOptions = fontSelectContainer?.querySelector('.custom-options');
     const fontCurrentName = fontSelectContainer?.querySelector('.current-font-name');
     const fontOptions = fontSelectContainer?.querySelectorAll('.custom-option');
 
     // --- Define default settings ---
     const defaultSettings = {
-        opacity: 0.05,
-        blur: 20,
-        overlay: 0.5,
-        glassBorder: 0.15,
-        darkText: false,
-        glassBorder: 0.15,
-        darkText: false,
         agentCut: 60,
         font: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     };
@@ -1568,40 +1544,14 @@ export function initializeUISettings() {
     };
 
     const applySettings = (settings) => {
-        // Apply glass effect styles via CSS variables
-        const opacity = Number(settings.opacity);
-        const blur = Number(settings.blur);
-        const hoverOpacity = Math.min(opacity + 0.03, 0.35);
-        const hoverBlur = Math.min(blur + 10, 70);
-
-        document.documentElement.style.setProperty('--glass-bg', `rgba(255, 255, 255, ${opacity})`);
-        document.documentElement.style.setProperty('--glass-bg-hover', `rgba(255, 255, 255, ${hoverOpacity})`);
-        document.documentElement.style.setProperty('--glass-opacity', `${opacity}`);
-        document.documentElement.style.setProperty('--blur-amount', `${blur}px`);
-        document.documentElement.style.setProperty('--blur-amount-hover', `${hoverBlur}px`);
-        document.documentElement.style.setProperty('--overlay-opacity', settings.overlay);
-        document.documentElement.style.setProperty('--liquid-border', `1px solid rgba(255, 255, 255, ${settings.glassBorder})`);
-
-        // Apply dark text class for glass mode
-        document.body.classList.toggle('dark-text-theme', settings.darkText);
-
         // Update agent cut in global state for calculations
         state.commissionRates.cut = settings.agentCut / 100;
 
-        // Update UI controls to reflect the new values
-        opacitySlider.value = settings.opacity;
-        opacityValue.textContent = Number(settings.opacity).toFixed(2);
-        blurSlider.value = settings.blur;
-        blurValue.textContent = settings.blur;
-        overlaySlider.value = settings.overlay;
-        overlayValue.textContent = Number(settings.overlay).toFixed(2);
-        glassSlider.value = settings.glassBorder;
-        glassValue.textContent = Number(settings.glassBorder).toFixed(2);
-        glassTextToggle.checked = settings.darkText;
-        agentCutSlider.value = settings.agentCut;
-        agentCutValue.textContent = `${settings.agentCut}%`;
+        // Update UI controls
+        if (agentCutSlider) agentCutSlider.value = settings.agentCut;
+        if (agentCutValue) agentCutValue.textContent = `${settings.agentCut}%`;
 
-        // Apply Font (Decoupled from UI element existence)
+        // Apply Font
         if (settings.font) {
             document.documentElement.style.setProperty('--font-main', settings.font);
         }
@@ -1618,109 +1568,33 @@ export function initializeUISettings() {
     };
 
     const loadSettings = () => {
-        const saved = JSON.parse(localStorage.getItem('uiCustomSettings'));
+        const saved = JSON.parse(localStorage.getItem('uiCustomSettings')) || {};
         currentSettings = { ...defaultSettings, ...saved };
         applySettings(currentSettings);
     };
 
-    const renderBackground = () => {
-        const isMaterial = document.body.classList.contains('material-theme');
-        const savedBackground = localStorage.getItem('backgroundImage');
-
-        if (isMaterial) {
-            document.body.style.backgroundImage = 'none';
-        } else {
-            if (savedBackground) {
-                document.body.style.backgroundImage = `url(${savedBackground})`;
-            } else {
-                document.body.style.removeProperty('background-image');
-            }
-        }
-    };
-
-    const updateUIState = (isMaterial) => {
-        if (glassSettings) {
-            glassSettings.style.display = isMaterial ? 'none' : 'block';
-        }
-        if (backgroundSection) {
-            backgroundSection.style.display = isMaterial ? 'none' : 'block';
-        }
-    };
-
-    const applyTheme = (isMaterial) => {
-        document.body.classList.add('theme-transitioning');
-        document.body.classList.toggle('material-theme', isMaterial);
-        updateUIState(isMaterial);
-        renderBackground();
-        setTimeout(() => {
-            document.body.classList.remove('theme-transitioning');
-            document.body.dispatchEvent(new CustomEvent('themeChanged')); // Fire event
-        }, 100);
-    };
-
     // --- Event Listeners ---
-    themeToggle.addEventListener('change', (e) => {
-        const isMaterial = e.target.checked;
-        applyTheme(isMaterial);
-        localStorage.setItem('theme', isMaterial ? 'material' : 'glass');
-    });
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('change', (e) => {
+            const isDark = e.target.checked;
+            document.body.classList.toggle('dark-theme', isDark);
+            localStorage.setItem('darkMode', isDark);
+            document.body.dispatchEvent(new CustomEvent('themeChanged')); // Fire event
+        });
+    }
 
-    darkModeToggle.addEventListener('change', (e) => {
-        const isDark = e.target.checked;
-        document.body.classList.toggle('dark-theme', isDark);
-        localStorage.setItem('darkMode', isDark);
-        document.body.dispatchEvent(new CustomEvent('themeChanged')); // Fire event
-    });
-
-    backgroundUploader.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            // Increase the size limit to 4.5MB, which is safer for a 5MB quota
-            if (file.size > 4.5 * 1024 * 1024) {
-                showToast('Image is too large. Please choose a file smaller than 4.5MB.', 'error');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const bgData = event.target.result;
-                try {
-                    // Clear the old item first to make space.
-                    localStorage.removeItem('backgroundImage');
-                    localStorage.setItem('backgroundImage', bgData);
-                    renderBackground();
-                } catch (error) {
-                    if (error.name === 'QuotaExceededError') {
-                        showToast('Browser storage is full. This image is too large even after clearing the old one.', 'error');
-                    } else {
-                        showToast('An error occurred while saving the background.', 'error');
-                    }
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-
-    backgroundResetBtn.addEventListener('click', () => {
-        localStorage.removeItem('backgroundImage');
-        renderBackground();
-    });
-
-    opacitySlider.addEventListener('input', (e) => { currentSettings.opacity = e.target.value; applySettings(currentSettings); saveSettings(); });
-    blurSlider.addEventListener('input', (e) => { currentSettings.blur = e.target.value; applySettings(currentSettings); saveSettings(); });
-    overlaySlider.addEventListener('input', (e) => { currentSettings.overlay = e.target.value; applySettings(currentSettings); saveSettings(); });
-    glassSlider.addEventListener('input', (e) => { currentSettings.glassBorder = e.target.value; applySettings(currentSettings); saveSettings(); });
-    glassTextToggle.addEventListener('change', (e) => { currentSettings.darkText = e.target.checked; applySettings(currentSettings); saveSettings(); });
-    agentCutSlider.addEventListener('input', (e) => {
-        currentSettings.agentCut = e.target.value;
-        applySettings(currentSettings);
-        saveSettings();
-    });
+    if (agentCutSlider) {
+        agentCutSlider.addEventListener('input', (e) => {
+            currentSettings.agentCut = e.target.value;
+            applySettings(currentSettings);
+            saveSettings();
+        });
+    }
 
     // Custom Font Dropdown Logic
     if (fontSelectContainer) {
         fontSelectTrigger.addEventListener('click', (e) => {
-            e.stopPropagation(); // prevent document click from closing immediately
+            e.stopPropagation();
             fontSelectContainer.classList.toggle('open');
         });
 
@@ -1732,10 +1606,8 @@ export function initializeUISettings() {
                 const value = option.getAttribute('data-value');
                 const text = option.textContent;
 
-                // Update settings
                 currentSettings.font = value;
                 
-                // Update UI state
                 fontCurrentName.textContent = text;
                 fontOptions.forEach(opt => opt.classList.remove('selected'));
                 option.classList.add('selected');
@@ -1747,7 +1619,6 @@ export function initializeUISettings() {
             });
         });
 
-        // Close when clicking outside
         document.addEventListener('click', (e) => {
             if (!fontSelectContainer.contains(e.target)) {
                 fontSelectContainer.classList.remove('open');
@@ -1755,25 +1626,25 @@ export function initializeUISettings() {
         });
     }
 
-    resetSettingsBtn.addEventListener('click', () => {
-        currentSettings = { ...defaultSettings };
-        localStorage.removeItem('uiCustomSettings');
-        applySettings(currentSettings);
-    });
+    if (resetSettingsBtn) {
+        resetSettingsBtn.addEventListener('click', () => {
+            currentSettings = { ...defaultSettings };
+            localStorage.removeItem('uiCustomSettings');
+            applySettings(currentSettings);
+        });
+    }
 
     // --- Initial Load & Render ---
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'material') {
-        themeToggle.checked = true;
-    }
+    // Enforce Material (Cursor) theme permanently
+    document.body.classList.add('material-theme');
+
     const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode === 'true') {
+    if (savedDarkMode === 'true' && darkModeToggle) {
         darkModeToggle.checked = true;
         document.body.classList.add('dark-theme');
     }
 
     loadSettings();
-    applyTheme(themeToggle.checked);
 }
 
 

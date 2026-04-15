@@ -568,16 +568,6 @@
         <div class="settings-section">
             <div class="settings-section-title"><i class="fa-solid fa-palette" aria-hidden="true"></i> Appearance</div>
 
-            <div class="setting-item" id="material-theme-setting">
-                <div class="setting-label-group">
-                    <label for="theme-toggle">Notion / Liquid Glass</label>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="theme-toggle" checked>
-                    <span class="slider round"></span>
-                </label>
-            </div>
-
             <div class="setting-item" id="dark-mode-container">
                 <div class="setting-label-group">
                     <label for="dark-mode-toggle">Dark Mode</label>
@@ -586,56 +576,6 @@
                     <input type="checkbox" id="dark-mode-toggle">
                     <span class="slider round"></span>
                 </label>
-            </div>
-
-            <div id="glass-settings-container" style="display: none;">
-                <div class="setting-item">
-                    <div class="setting-label-group">
-                        <label for="opacity-slider">Opacity</label>
-                        <span id="opacity-value">0.05</span>
-                    </div>
-                    <input type="range" id="opacity-slider" min="0" max="0.3" step="0.01">
-                </div>
-                <div class="setting-item">
-                    <div class="setting-label-group">
-                        <label for="blur-slider">Blur</label>
-                        <span id="blur-value">20</span>
-                    </div>
-                    <input type="range" id="blur-slider" min="0" max="50" step="1">
-                </div>
-                <div class="setting-item">
-                    <div class="setting-label-group">
-                        <label for="overlay-slider">Dark Overlay</label>
-                        <span id="overlay-value">0.5</span>
-                    </div>
-                    <input type="range" id="overlay-slider" min="0" max="0.9" step="0.01">
-                </div>
-                <div class="setting-item">
-                    <div class="setting-label-group">
-                        <label for="glass-slider">Glass Border</label>
-                        <span id="glass-value">0.15</span>
-                    </div>
-                    <input type="range" id="glass-slider" min="0" max="1" step="0.01">
-                </div>
-                <div class="setting-item" id="glass-text-settings-container">
-                    <div class="setting-label-group">
-                        <label for="glass-text-toggle">Dark Text Color</label>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="glass-text-toggle">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div class="settings-section" id="background-settings-section">
-            <div class="settings-section-title"><i class="fa-solid fa-image" aria-hidden="true"></i> Background</div>
-            <p class="settings-help">Optional wallpaper (disabled in Notion mode, kept for compatibility).</p>
-            <input type="file" id="background-uploader" accept="image/*" style="display: none;">
-            <div class="settings-actions-row">
-                <button id="background-upload-btn" class="btn btn-secondary btn-sm" type="button"><i class="fa-solid fa-upload" aria-hidden="true"></i> Upload</button>
-                <button id="background-reset-btn" class="btn btn-secondary btn-sm" type="button"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
             </div>
         </div>
 
