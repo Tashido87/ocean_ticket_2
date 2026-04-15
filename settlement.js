@@ -271,12 +271,13 @@ export function updateSettlementDashboard() {
     const totalSettlementsThisMonth = settlementsThisMonth.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
     // --- Update Dashboard Cards ---
-    // Outstanding Revenue is now the NET outstanding (Revenue - Commissions - Settlements)
-    const totalOutstandingRevenue = (revenueThisMonth - commissionThisMonth + previousEndOfMonthDue) - totalSettlementsThisMonth;
+    // Rule: Total outstanding revenue = total revenue of current month + carried over from previous month.
+    const totalOutstandingRevenue = revenueThisMonth + previousEndOfMonthDue;
     const netAmountBox = document.getElementById('settlement-net-amount-box');
     netAmountBox.innerHTML = `<div class="info-card-content"><h3>Total Outstanding Revenue</h3><div class="main-value">${totalOutstandingRevenue.toLocaleString()}</div><span class="sub-value">MMK</span><i class="icon fa-solid fa-file-invoice-dollar"></i></div>`;
 
-    const endOfMonthSettlement = totalOutstandingRevenue; // Since totalOutstandingRevenue already subtracted commission
+    // Rule: End-of-Month Settlement Due = Total Outstanding Revenue - (settlements from current month + total commissions of current month)
+    const endOfMonthSettlement = totalOutstandingRevenue - (totalSettlementsThisMonth + commissionThisMonth); 
     const monthlyDueBox = document.getElementById('settlement-monthly-due-box');
     monthlyDueBox.innerHTML = `<div class="info-card-content"><h3>End-of-Month Settlement Due</h3><div class="main-value">${endOfMonthSettlement.toLocaleString()}</div><span class="sub-value">MMK</span><i class="icon fa-solid fa-cash-register"></i></div>`;
 
