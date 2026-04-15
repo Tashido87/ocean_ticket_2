@@ -78,9 +78,6 @@ function setupEventListeners() {
     document.getElementById('settings-btn').addEventListener('click', () => document.getElementById('settings-panel').classList.toggle('show'));
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     if (settingsCloseBtn) settingsCloseBtn.addEventListener('click', () => document.getElementById('settings-panel').classList.remove('show'));
-    document.getElementById('background-upload-btn').addEventListener('click', () => document.getElementById('background-uploader').click());
-
-
     // Dashboard Search
     document.getElementById('searchName').addEventListener('input', () => debounce(performSearch, 300));
     document.getElementById('searchBooking').addEventListener('input', () => debounce(performSearch, 300));
