@@ -381,11 +381,34 @@ function getInvoiceCSS() {
     `;
 }
 
+function isFeeRow(ticket) {
+   return String(ticket.remarks || '').toLowerCase().includes('fee entry') || String(ticket.name || '').toLowerCase().includes('(fees)');
+}
+
+function getOriginalTravelDate(pnr) {
+    if (!state.history || !Array.isArray(state.history)) return null;
+    const modifications = state.history.filter(h => h.pnr === pnr && h.details.includes('Travel Date:'));
+    if (modifications.length > 0) {
+        // Find the oldest record affecting Travel Date
+        const oldestMod = modifications[modifications.length - 1]; 
+        const match = oldestMod.details.match(/Travel Date:\s*(.+?)\s*to/);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+    return null;
+}
+
+function formatClientNameDisplay(name) {
+    if (!name) return '';
+    return name.replace(/\s*\(\s*fees\s*\)\s*$/i, '').trim();
+}
+
 function buildInvoiceGroups(tickets, mode) {
     if (mode === 'separate') {
         const ticketsByName = {};
         tickets.forEach((ticket) => {
-            const key = ticket.name.trim();
+            const key = formatClientNameDisplay(ticket.name);
             if (!ticketsByName[key]) ticketsByName[key] = [];
             ticketsByName[key].push(ticket);
         });
@@ -397,7 +420,7 @@ function buildInvoiceGroups(tickets, mode) {
         }));
     }
 
-    const uniqueNames = [...new Set(tickets.map((ticket) => ticket.name.trim()))];
+    const uniqueNames = [...new Set(tickets.map((ticket) => formatClientNameDisplay(ticket.name)))];
     return [{
         clientName: uniqueNames.join(', '),
         tickets,
@@ -406,51 +429,65 @@ function buildInvoiceGroups(tickets, mode) {
 }
 
 function buildInvoiceLineItems(groupTickets, mode) {
+    const processTicket = (ticket) => {
+        const isFee = isFeeRow(ticket);
+        const route = `${(ticket.departure || '').split(' ')[0]}-${(ticket.destination || '').split(' ')[0]}`;
+        const airline = ticket.airline || '';
+        const price = (ticket.net_amount || 0) + (ticket.extra_fare || 0);
+        
+        let displayDate = ticket.departing_on;
+        let prefix = '';
+
+        if (isFee) {
+            prefix = 'Date Change Fee: ';
+        } else {
+            const hasFeeInGroup = groupTickets.some(t => t.booking_reference === ticket.booking_reference && isFeeRow(t));
+            if (hasFeeInGroup) {
+                const oldDate = getOriginalTravelDate(ticket.booking_reference);
+                if (oldDate) displayDate = oldDate;
+            }
+        }
+
+        const dateStr = formatDateToDMMMY(displayDate);
+        return {
+            description: `${prefix}${route}, ${dateStr} (${airline})`,
+            qty: 1,
+            rate: price,
+            amount: price,
+            rawDate: displayDate,
+            isFee: isFee
+        };
+    };
+
     if (mode === 'combined') {
         const itemMap = {};
-
         groupTickets.forEach((ticket) => {
-            const routeSignature = getRouteSignature(ticket);
-            const airline = ticket.airline || '';
-            const price = (ticket.net_amount || 0) + (ticket.extra_fare || 0);
-            const key = `${routeSignature}|${airline}|${price}`;
-
+            const processed = processTicket(ticket);
+            const key = `${processed.description}|${processed.rate}`;
             if (!itemMap[key]) {
-                const [routing, date] = routeSignature.split('|');
-                itemMap[key] = {
-                    description: `${routing}, ${date} (${airline})`,
-                    qty: 0,
-                    rate: price,
-                    rawDate: ticket.departing_on
-                };
+                itemMap[key] = { ...processed, qty: 0 };
             }
-
             itemMap[key].qty += 1;
+            itemMap[key].amount = itemMap[key].qty * itemMap[key].rate;
         });
 
         return Object.values(itemMap)
-            .sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate))
-            .map((item, index) => ({
-                index: index + 1,
-                description: item.description,
-                qty: item.qty,
-                rate: item.rate,
-                amount: item.rate * item.qty
-            }));
+            .sort((a, b) => {
+                if (a.isFee !== b.isFee) return a.isFee ? 1 : -1;
+                return new Date(a.rawDate) - new Date(b.rawDate);
+            })
+            .map((item, index) => {
+                item.index = index + 1;
+                return item;
+            });
     }
 
-    return groupTickets.map((ticket, index) => {
-        const route = `${ticket.departure.split(' ')[0]}-${ticket.destination.split(' ')[0]}`;
-        const date = formatDateToDMMMY(ticket.departing_on);
-        const price = (ticket.net_amount || 0) + (ticket.extra_fare || 0);
-
-        return {
-            index: index + 1,
-            description: `${route}, ${date} (${ticket.airline})`,
-            qty: 1,
-            rate: price,
-            amount: price
-        };
+    return groupTickets.map(ticket => processTicket(ticket)).sort((a, b) => {
+        if (a.isFee !== b.isFee) return a.isFee ? 1 : -1;
+        return new Date(a.rawDate) - new Date(b.rawDate);
+    }).map((item, index) => {
+        item.index = index + 1;
+        return item;
     });
 }
 
