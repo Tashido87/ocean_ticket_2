@@ -4,16 +4,13 @@
  */
 
 import {
-    CONFIG
-} from './config.js';
-import {
     state
 } from './state.js';
 import {
-    fetchFromSheet,
-    batchUpdateSheet,
-    appendToSheet
-} from './api.js';
+    getBookings,
+    updateBooking,
+    addBookings
+} from './db.js';
 import {
     showToast,
     parseSheetDate,
@@ -38,85 +35,44 @@ import {
 } from './ui.js';
 
 /**
- * Loads booking data from the Google Sheet.
+ * Loads booking data from Firestore.
  */
 export async function loadBookingData() {
     try {
-        const response = await fetchFromSheet(`${CONFIG.BOOKING_SHEET_NAME}!A:M`, 'bookingData');
-
-        if (response.values) {
-            state.allBookings = parseBookingData(response.values);
-            await handleExpiredBookings(); // Automatically update expired bookings
-        } else {
-            state.allBookings = [];
-        }
+        const bookings = await getBookings();
+        state.allBookings = bookings;
+        await handleExpiredBookings();
         populateBookingSearchOptions();
         displayBookings();
     } catch (error) {
-        renderEmptyState('bookingTableContainer', 'fa-calendar-xmark', 'Failed to load bookings', 'Could not retrieve booking data from the sheet. Please check permissions and try again.');
+        renderEmptyState('bookingTableContainer', 'fa-calendar-xmark', 'Failed to load bookings', 'Could not retrieve booking data. Please check permissions and try again.');
     }
 }
 
 /**
- * Parses raw sheet data into an array of booking objects.
- * @param {Array<Array<string>>} values The raw values from the sheet.
- * @returns {Array<Object>} An array of booking objects.
- */
-function parseBookingData(values) {
-    if (values.length < 1) return [];
-    const headers = values[0].map(h => h.toLowerCase().replace(/\s+/g, '_').replace('nrc_no', 'id_no'));
-    return values.slice(1).map((row, i) => {
-        const booking = {};
-        headers.forEach((h, j) => {
-            const value = row[j] || '';
-            let propertyName = h;
-            if (propertyName === 'remark') {
-                propertyName = 'remark';
-            }
-            booking[propertyName] = typeof value === 'string' ? value.trim() : value;
-        });
-        booking.rowIndex = i + 2;
-        const groupIdBase = booking.pnr || `${booking.phone}-${booking.account_link}`;
-        booking.groupId = `${groupIdBase}-${booking.departing_on}-${booking.departure}-${booking.destination}`;
-        return booking;
-    });
-}
-
-/**
- * Finds expired bookings and updates their status to 'end' in the sheet.
+ * Finds expired bookings and updates their status to 'end' in Firestore.
  */
 async function handleExpiredBookings() {
     const now = new Date();
-    const expiredBookingsToUpdate = [];
+    const expiredBookings = [];
 
     state.allBookings.forEach(booking => {
         const deadline = parseDeadline(booking.enddate, booking.endtime);
         const hasNoAction = !booking.remark || String(booking.remark).trim() === '';
 
         if (hasNoAction && deadline && deadline < now) {
-            const values = [
-                booking.name || '', booking.id_no || '', booking.phone || '',
-                booking.account_name || '', booking.account_type || '', booking.account_link || '',
-                booking.departure || '', booking.destination || '', booking.departing_on || '',
-                booking.pnr || '', 'end', // Set remark to 'end'
-                booking.enddate || '', booking.endtime || '',
-            ];
-            expiredBookingsToUpdate.push({
-                range: `${CONFIG.BOOKING_SHEET_NAME}!A${booking.rowIndex}:M${booking.rowIndex}`,
-                values: [values]
-            });
+            expiredBookings.push({ ...booking, remark: 'end' });
         }
     });
 
-    if (expiredBookingsToUpdate.length > 0) {
-        console.log(`Found ${expiredBookingsToUpdate.length} expired bookings to update.`);
+    if (expiredBookings.length > 0) {
+        console.log(`Found ${expiredBookings.length} expired bookings to update.`);
         try {
-            await batchUpdateSheet(expiredBookingsToUpdate);
+            for (const booking of expiredBookings) {
+                await updateBooking(booking.id, { remark: 'end' });
+            }
             console.log('Successfully updated expired bookings.');
-            state.cache['bookingData'] = null;
-            const updatedRowIndices = expiredBookingsToUpdate.map(upd => parseInt(upd.range.match(/\d+$/)[0], 10));
-            state.allBookings = state.allBookings.filter(b => !updatedRowIndices.includes(b.rowIndex));
-
+            state.allBookings = state.allBookings.filter(b => !expiredBookings.some(eb => eb.id === b.id));
         } catch (error) {
             console.error('Failed to update expired bookings:', error);
             showToast('Could not update expired bookings automatically.', 'error');
@@ -150,15 +106,15 @@ export function displayBookings(bookingsToDisplay) {
         if (!acc[booking.groupId]) {
             acc[booking.groupId] = { ...booking,
                 passengers: [],
-                rowIndices: []
+                docIds: []
             };
         }
         acc[booking.groupId].passengers.push({
             name: booking.name,
             id_no: booking.id_no,
-            rowIndex: booking.rowIndex
+            docId: booking.id
         });
-        acc[booking.groupId].rowIndices.push(booking.rowIndex);
+        acc[booking.groupId].docIds.push(booking.id);
         return acc;
     }, {});
 
@@ -200,7 +156,7 @@ export function renderBookingPage(page) {
     const paginated = state.filteredBookings.slice((page - 1) * state.rowsPerPage, page * state.rowsPerPage);
 
     paginated.forEach(group => {
-        const rowIndicesStr = group.rowIndices.join(',');
+        const docIdsStr = group.docIds.join(',');
         const firstPassengerName = group.passengers[0] ? group.passengers[0].name : 'N/A';
         const passengerCount = group.passengers.length;
         const deadline = parseDeadline(group.enddate, group.endtime);
@@ -224,10 +180,10 @@ export function renderBookingPage(page) {
         `;
         // Add event listeners
         const checkboxes = row.querySelectorAll('.action-checkbox');
-        checkboxes[0].addEventListener('click', () => handleGetTicket(rowIndicesStr));
-        checkboxes[1].addEventListener('click', () => handleCancelBooking(rowIndicesStr));
-        row.querySelector('[title="View Details"]').addEventListener('click', () => showBookingDetails(rowIndicesStr));
-        row.querySelector('[title="Sell Ticket"]').addEventListener('click', () => sellTicketFromBooking(rowIndicesStr));
+        checkboxes[0].addEventListener('click', () => handleGetTicket(docIdsStr));
+        checkboxes[1].addEventListener('click', () => handleCancelBooking(docIdsStr));
+        row.querySelector('[title="View Details"]').addEventListener('click', () => showBookingDetails(docIdsStr));
+        row.querySelector('[title="Sell Ticket"]').addEventListener('click', () => sellTicketFromBooking(docIdsStr));
     });
 
     setupBookingPagination(state.filteredBookings);
@@ -235,72 +191,58 @@ export function renderBookingPage(page) {
 
 /**
  * Handles the "Get Ticket" action for a booking.
- * @param {string} rowIndicesStr A comma-separated string of row indices.
+ * @param {string} docIdsStr A comma-separated string of Firestore document IDs.
  */
-function handleGetTicket(rowIndicesStr) {
-    const rowIndices = rowIndicesStr.split(',').map(Number);
-    const bookingGroup = state.filteredBookings.find(g => g.rowIndices.includes(rowIndices[0]));
+function handleGetTicket(docIdsStr) {
+    const docIds = docIdsStr.split(',');
+    const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
     const clientName = bookingGroup ? bookingGroup.passengers[0].name : 'this booking';
     const passengerCount = bookingGroup ? bookingGroup.passengers.length : 1;
     const message = `Are you sure you want to mark the booking for <strong>${clientName} ${passengerCount > 1 ? `and ${passengerCount - 1} other(s)` : ''}</strong> as "Get Ticket"? This will remove it from the list.`;
     showConfirmModal(message, async () => {
         closeModal();
-        await updateBookingStatus(rowIndices, 'complete');
+        await updateBookingStatus(docIds, 'complete');
     });
 }
 
 /**
  * Handles the "Cancel" action for a booking.
- * @param {string} rowIndicesStr A comma-separated string of row indices.
+ * @param {string} docIdsStr A comma-separated string of Firestore document IDs.
  */
-function handleCancelBooking(rowIndicesStr) {
-    const rowIndices = rowIndicesStr.split(',').map(Number);
-    const bookingGroup = state.filteredBookings.find(g => g.rowIndices.includes(rowIndices[0]));
+function handleCancelBooking(docIdsStr) {
+    const docIds = docIdsStr.split(',');
+    const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
     const clientName = bookingGroup ? bookingGroup.passengers[0].name : 'this booking';
     const passengerCount = bookingGroup ? bookingGroup.passengers.length : 1;
     const message = `Are you sure you want to <strong>CANCEL</strong> the booking for <strong>${clientName} ${passengerCount > 1 ? `and ${passengerCount - 1} other(s)` : ''}</strong>? This will remove it from the list.`;
     showConfirmModal(message, async () => {
         closeModal();
-        await updateBookingStatus(rowIndices, 'cancel');
+        await updateBookingStatus(docIds, 'cancel');
     });
 }
 
 /**
- * Updates the status of one or more booking rows in the sheet.
- * @param {number[]} rowIndices An array of row indices to update.
+ * Updates the status of one or more booking documents in Firestore.
+ * @param {string[]} docIds An array of Firestore document IDs to update.
  * @param {string} remarks The new remark to set (e.g., 'complete', 'cancel').
  */
-export async function updateBookingStatus(rowIndices, remarks) {
+export async function updateBookingStatus(docIds, remarks) {
     if (state.isSubmitting) return;
     state.isSubmitting = true;
     showToast('Updating booking status...', 'info');
 
-    const bookingsToUpdate = rowIndices.map(rowIndex => state.allBookings.find(b => b.rowIndex === rowIndex)).filter(Boolean);
+    const bookingsToUpdate = docIds.map(id => state.allBookings.find(b => b.id === id)).filter(Boolean);
 
     // Optimistic UI update
     const originalAllBookings = [...state.allBookings];
-    state.allBookings = state.allBookings.filter(b => !rowIndices.includes(b.rowIndex));
+    state.allBookings = state.allBookings.filter(b => !docIds.includes(b.id));
     displayBookings();
     updateNotifications();
 
     try {
-        const data = bookingsToUpdate.map(booking => {
-            const values = [
-                booking.name || '', booking.id_no || '', booking.phone || '',
-                booking.account_name || '', booking.account_type || '', booking.account_link || '',
-                booking.departure || '', booking.destination || '', booking.departing_on || '',
-                booking.pnr || '', remarks, booking.enddate || '', booking.endtime || '',
-            ];
-            return {
-                range: `${CONFIG.BOOKING_SHEET_NAME}!A${booking.rowIndex}:M${booking.rowIndex}`,
-                values: [values]
-            };
-        });
-
-        if (data.length === 0) throw new Error("Could not find booking records to update.");
-
-        await batchUpdateSheet(data);
-        state.cache['bookingData'] = null;
+        for (const booking of bookingsToUpdate) {
+            await updateBooking(booking.id, { remark: remarks });
+        }
         showToast('Booking updated successfully!', 'success');
     } catch (error) {
         state.allBookings = originalAllBookings;
@@ -313,11 +255,11 @@ export async function updateBookingStatus(rowIndices, remarks) {
 
 /**
  * Shows a detailed modal view for a booking group.
- * @param {string} rowIndicesStr A comma-separated string of row indices.
+ * @param {string} docIdsStr A comma-separated string of Firestore document IDs.
  */
-function showBookingDetails(rowIndicesStr) {
-    const rowIndices = rowIndicesStr.split(',').map(Number);
-    const bookingGroup = state.filteredBookings.find(g => g.rowIndices.includes(rowIndices[0]));
+function showBookingDetails(docIdsStr) {
+    const docIds = docIdsStr.split(',');
+    const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
 
     if (bookingGroup) {
         const passengerListHtml = bookingGroup.passengers.map(p => `<li><strong>${p.name}</strong> (ID: ${p.id_no || 'N/A'})</li>`).join('');
@@ -407,15 +349,23 @@ export async function handleNewBookingSubmit(e) {
         closeModal();
 
         try {
-            const values = passengerData.map(passenger => [
-                `${passenger.gender} ${passenger.name}`, passenger.id_no, sharedData.phone,
-                sharedData.account_name, sharedData.account_type, sharedData.account_link,
-                sharedData.departure, sharedData.destination, formatDateForSheet(sharedData.departing_on),
-                sharedData.pnr, '', formatDateForSheet(sharedData.enddate), sharedData.endtime
-            ]);
+            const bookingObjects = passengerData.map(passenger => ({
+                name: `${passenger.gender} ${passenger.name}`,
+                id_no: passenger.id_no,
+                phone: sharedData.phone,
+                account_name: sharedData.account_name,
+                account_type: sharedData.account_type,
+                account_link: sharedData.account_link,
+                departure: sharedData.departure,
+                destination: sharedData.destination,
+                departing_on: sharedData.departing_on,
+                pnr: sharedData.pnr,
+                remark: '',
+                enddate: sharedData.enddate,
+                endtime: sharedData.endtime
+            }));
 
-            await appendToSheet(`${CONFIG.BOOKING_SHEET_NAME}!A:M`, values);
-            state.cache['bookingData'] = null;
+            await addBookings(bookingObjects);
             showToast(`Booking for ${passengerData.length} passenger(s) saved!`, 'success');
             hideNewBookingForm();
             await loadBookingData();
@@ -426,7 +376,6 @@ export async function handleNewBookingSubmit(e) {
         }
     });
 }
-
 
 /**
  * Populates the route search dropdown with unique routes from active bookings.
@@ -488,18 +437,18 @@ export function clearBookingSearch() {
 
 /**
  * Pre-fills the "Sell Ticket" form with data from a booking.
- * @param {string} rowIndicesStr A comma-separated string of row indices from the booking.
+ * @param {string} docIdsStr A comma-separated string of Firestore document IDs from the booking.
  */
-export function sellTicketFromBooking(rowIndicesStr) {
-    const rowIndices = rowIndicesStr.split(',').map(Number);
-    const bookingGroup = state.filteredBookings.find(g => g.rowIndices.includes(rowIndices[0]));
+export function sellTicketFromBooking(docIdsStr) {
+    const docIds = docIdsStr.split(',');
+    const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
 
     if (!bookingGroup) {
         showToast('Could not find booking details.', 'error');
         return;
     }
 
-    state.bookingToUpdate = rowIndices;
+    state.bookingToUpdate = docIds;
     showView('sell');
 
     document.getElementById('booking_reference').value = bookingGroup.pnr || '';

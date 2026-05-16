@@ -4,7 +4,7 @@
  * UPDATED: Fixed 'Unknown' name issue for Date Change fees by looking up related PNR names.
  */
 
-import { CITIES, CONFIG } from './config.js';
+import { CITIES } from './config.js';
 import { state } from './state.js';
 import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline } from './utils.js';
 import { renderClientsView } from './clients.js';

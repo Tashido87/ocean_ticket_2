@@ -1,0 +1,198 @@
+/**
+ * @fileoverview Firebase Firestore data layer.
+ * Replaces api.js. All database operations go through this file.
+ */
+
+import { db } from './firebase-config.js';
+import {
+    collection,
+    doc,
+    getDocs,
+    getDoc,
+    addDoc,
+    setDoc,
+    updateDoc,
+    deleteDoc,
+    writeBatch,
+    query,
+    orderBy,
+    where,
+    onSnapshot,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { showToast } from './utils.js';
+
+// --- COLLECTION REFERENCES ---
+const ticketsCol = collection(db, 'tickets');
+const bookingsCol = collection(db, 'bookings');
+const settlementsCol = collection(db, 'settlements');
+const historyCol = collection(db, 'history');
+
+// --- TICKETS ---
+
+export async function getTickets() {
+    const q = query(ticketsCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export function onTicketsChange(callback) {
+    const q = query(ticketsCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const tickets = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callback(tickets);
+    });
+}
+
+export async function addTicket(data) {
+    const docRef = await addDoc(ticketsCol, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+}
+
+export async function addTickets(ticketObjects) {
+    const batch = writeBatch(db);
+    const ids = [];
+    ticketObjects.forEach(data => {
+        const docRef = doc(ticketsCol);
+        batch.set(docRef, {
+            ...data,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+        ids.push(docRef.id);
+    });
+    await batch.commit();
+    return ids;
+}
+
+export async function updateTicket(docId, data) {
+    const docRef = doc(db, 'tickets', docId);
+    await updateDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+    });
+}
+
+export async function batchUpdateTickets(updates) {
+    // updates: array of { id: string, data: object }
+    const batch = writeBatch(db);
+    updates.forEach(({ id, data }) => {
+        const docRef = doc(db, 'tickets', id);
+        batch.update(docRef, { ...data, updatedAt: serverTimestamp() });
+    });
+    await batch.commit();
+}
+
+// --- BOOKINGS ---
+
+export async function getBookings() {
+    const q = query(bookingsCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export function onBookingsChange(callback) {
+    const q = query(bookingsCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const bookings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callback(bookings);
+    });
+}
+
+export async function addBookings(bookingObjects) {
+    const batch = writeBatch(db);
+    const ids = [];
+    bookingObjects.forEach(data => {
+        const docRef = doc(bookingsCol);
+        batch.set(docRef, {
+            ...data,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+        ids.push(docRef.id);
+    });
+    await batch.commit();
+    return ids;
+}
+
+export async function updateBooking(docId, data) {
+    const docRef = doc(db, 'bookings', docId);
+    await updateDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+    });
+}
+
+export async function batchUpdateBookings(updates) {
+    const batch = writeBatch(db);
+    updates.forEach(({ id, data }) => {
+        const docRef = doc(db, 'bookings', id);
+        batch.update(docRef, { ...data, updatedAt: serverTimestamp() });
+    });
+    await batch.commit();
+}
+
+// --- SETTLEMENTS ---
+
+export async function getSettlements() {
+    const q = query(settlementsCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export function onSettlementsChange(callback) {
+    const q = query(settlementsCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const settlements = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callback(settlements);
+    });
+}
+
+export async function addSettlement(data) {
+    const docRef = await addDoc(settlementsCol, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+}
+
+// --- HISTORY ---
+
+export async function getHistory() {
+    const q = query(historyCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function addHistory(data) {
+    const docRef = await addDoc(historyCol, {
+        ...data,
+        createdAt: serverTimestamp()
+    });
+    return docRef.id;
+}
+
+// --- GENERIC ---
+
+export async function deleteDocument(collectionName, docId) {
+    await deleteDoc(doc(db, collectionName, docId));
+}
+
+export function onHistoryChange(callback) {
+    const q = query(historyCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const history = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callback(history);
+    });
+}
+
+export async function getDocument(collectionName, docId) {
+    const docRef = doc(db, collectionName, docId);
+    const snap = await getDoc(docRef);
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}

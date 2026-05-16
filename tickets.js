@@ -4,9 +4,8 @@
  * displaying, searching, and handling the ticket selling form.
  */
 
-import { CONFIG } from './config.js';
 import { state } from './state.js';
-import { fetchFromSheet, appendToSheet } from './api.js';
+import { getTickets, addTickets } from './db.js';
 import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
@@ -47,8 +46,15 @@ function refreshTicketView() {
 }
 
 
+function getTimestampMs(ts) {
+    if (!ts) return 0;
+    if (typeof ts.toMillis === 'function') return ts.toMillis();
+    if (ts.seconds) return ts.seconds * 1000;
+    return 0;
+}
+
 /**
- * Loads ticket data from the Google Sheet.
+ * Loads ticket data from Firestore.
  */
 export async function loadTicketData() {
     const loading = document.getElementById('loading');
@@ -56,43 +62,22 @@ export async function loadTicketData() {
     try {
         loading.style.display = 'block';
         dashboardContent.style.display = 'none';
-        const response = await fetchFromSheet(`${CONFIG.SHEET_NAME}!A:V`, 'ticketData');
+        const tickets = await getTickets();
 
-        if (response.values && response.values.length > 1) {
-            state.allTickets = parseTicketData(response.values);
+        if (tickets.length > 0) {
+            state.allTickets = tickets;
             populateSearchAirlines();
             updateUnpaidCount();
-            refreshTicketView(); // Use the new refresh logic
+            refreshTicketView();
         } else {
             renderEmptyState('resultsBodyContainer', 'fa-ticket', 'No Tickets Found', 'There are no tickets in the system yet. Start by selling a new ticket.');
         }
         loading.style.display = 'none';
         dashboardContent.style.display = 'flex';
     } catch (error) {
-        showToast(`Error loading ticket data: ${error.result?.error?.message || error}`, 'error');
+        showToast(`Error loading ticket data: ${error.message || error}`, 'error');
         loading.style.display = 'none';
     }
-}
-
-/**
- * Parses raw sheet data into an array of ticket objects.
- * @param {Array<Array<string>>} values The raw values from the sheet.
- * @returns {Array<Object>} An array of ticket objects.
- */
-function parseTicketData(values) {
-    const headers = values[0].map(h => h.toLowerCase().replace(/\s+/g, '_').replace('nrc', 'id'));
-    return values.slice(1).map((row, i) => {
-        const ticket = {};
-        headers.forEach((h, j) => {
-            const value = row[j] || '';
-            ticket[h] = typeof value === 'string' ? value.trim() : value;
-        });
-        const safeParse = (val) => parseFloat(String(val).replace(/,/g, '')) || 0;
-        ['base_fare', 'net_amount', 'commission', 'extra_fare', 'date_change'].forEach(key => ticket[key] = safeParse(ticket[key]));
-        ticket.paid = ticket.paid === 'TRUE';
-        ticket.rowIndex = i + 2;
-        return ticket;
-    });
 }
 
 /**
@@ -100,8 +85,11 @@ function parseTicketData(values) {
  * MODIFICATION: Removed the .slice(0, 50) limit to allow navigating through all tickets.
  */
 export function displayInitialTickets() {
-    const sorted = [...state.allTickets].sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date) || b.rowIndex - a.rowIndex);
-    // Removed slice to show all tickets via pagination
+    const sorted = [...state.allTickets].sort((a, b) => {
+        const dateDiff = parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date);
+        if (dateDiff !== 0) return dateDiff;
+        return getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt);
+    });
     state.filteredTickets = sorted;
     displayTickets(sorted, 1);
 }
@@ -156,7 +144,7 @@ export function displayTickets(tickets, page = 1) {
                 <button class="icon-btn icon-btn-table" title="Manage Ticket"><i class="fa-solid fa-pen-to-square"></i></button>
             </td>
         `;
-        row.querySelector('[title="View Details"]').addEventListener('click', () => showDetails(ticket.rowIndex));
+        row.querySelector('[title="View Details"]').addEventListener('click', () => showDetails(ticket.id));
         
         // Manage Ticket logic
         row.querySelector('[title="Manage Ticket"]').addEventListener('click', async () => {
@@ -171,10 +159,10 @@ export function displayTickets(tickets, page = 1) {
 
 /**
  * Shows a detailed modal view for a specific ticket.
- * @param {number} rowIndex The row index of the ticket in the sheet.
+ * @param {string} docId The Firestore document ID.
  */
-export function showDetails(rowIndex) {
-    const ticket = state.allTickets.find(t => t.rowIndex === rowIndex);
+export function showDetails(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
     if (!ticket) return;
 
     let statusClass = 'confirmed';
@@ -315,9 +303,6 @@ async function confirmAndSaveTicket(form, sharedData, passengerData) {
         populateFlightLocations();
         updateToggleLabels();
 
-        // FIX: Clear entire cache to ensure fresh data
-        state.cache = {};
-
         await loadTicketData();
         updateDashboardData();
         buildClientList();
@@ -396,40 +381,40 @@ function collectFormData(form) {
 }
 
 /**
- * Saves ticket data to the Google Sheet by appending new rows.
+ * Saves ticket data to Firestore.
  * @param {Object} sharedData The shared data for all tickets.
  * @param {Array<Object>} passengerData The data for each passenger.
  */
 async function saveTicket(sharedData, passengerData) {
-    const values = passengerData.map(p => {
+    const ticketObjects = passengerData.map(p => {
         const agentCommission = calculateAgentCut(p.commission);
-        return [
-            formatDateForSheet(sharedData.issued_date),
-            p.name,
-            p.id_no,
-            sharedData.phone,
-            sharedData.account_name,
-            sharedData.account_type,
-            sharedData.account_link,
-            sharedData.departure,
-            sharedData.destination,
-            formatDateForSheet(sharedData.departing_on),
-            sharedData.airline,
-            p.base_fare,
-            sharedData.booking_reference,
-            p.net_amount,
-            sharedData.paid,
-            sharedData.payment_method,
-            formatDateForSheet(sharedData.paid_date),
-            agentCommission,
-            p.remarks,
-            p.extra_fare,
-            0,
-            p.gender
-        ];
+        return {
+            issued_date: formatDateForSheet(sharedData.issued_date),
+            name: p.name,
+            id_no: p.id_no,
+            phone: sharedData.phone,
+            account_name: sharedData.account_name,
+            account_type: sharedData.account_type,
+            account_link: sharedData.account_link,
+            departure: sharedData.departure,
+            destination: sharedData.destination,
+            departing_on: formatDateForSheet(sharedData.departing_on),
+            airline: sharedData.airline,
+            base_fare: p.base_fare || 0,
+            booking_reference: sharedData.booking_reference,
+            net_amount: p.net_amount || 0,
+            paid: sharedData.paid,
+            payment_method: sharedData.payment_method,
+            paid_date: formatDateForSheet(sharedData.paid_date),
+            commission: agentCommission,
+            remarks: p.remarks || '',
+            extra_fare: p.extra_fare || 0,
+            date_change: 0,
+            gender: p.gender
+        };
     });
 
-    await appendToSheet(`${CONFIG.SHEET_NAME}!A:V`, values);
+    await addTickets(ticketObjects);
 }
 
 
@@ -469,7 +454,11 @@ export function performSearch() {
         const paidMatch = !notPaidOnly || !t.paid;
 
         return nameMatch && bookRefMatch && issuedDateMatch && travelDateMatch && departureMatch && destinationMatch && airlineMatch && paidMatch;
-    }).sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date) || b.rowIndex - a.rowIndex);
+    }).sort((a, b) => {
+        const dateDiff = parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date);
+        if (dateDiff !== 0) return dateDiff;
+        return getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt);
+    });
 
     state.filteredTickets = results;
     displayTickets(state.filteredTickets, 1);

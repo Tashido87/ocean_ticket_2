@@ -5,15 +5,16 @@
  */
 
 // Core Modules
-import { loadGapiClient, loadGisClient, handleAuthClick } from './auth.js';
-import { state, getAuth } from './state.js';
+import { initAuth, handleAuthClick } from './auth.js';
+import { state, setCurrentUser } from './state.js';
+import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange } from './db.js';
 import { showToast, parseSheetDate, debounce } from './utils.js';
 
 // Feature Modules
-import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines } from './tickets.js';
-import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch } from './booking.js';
+import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
+import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import { loadHistory } from './history.js';
-import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard } from './settlement.js';
+import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements } from './settlement.js';
 import { buildClientList, renderClientsView, loadFeaturedClients } from './clients.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
@@ -30,8 +31,13 @@ import { showView, initializeDatepickers, initializeTimePicker, initializeCityDr
  */
 export async function initializeApp() {
     try {
-        loadFeaturedClients(); // Load this from local storage first
-        // Load initial data from sheets
+        loadFeaturedClients();
+
+        // Unsubscribe from any existing listeners
+        state.unsubscribers.forEach(unsub => unsub && unsub());
+        state.unsubscribers = [];
+
+        // Load initial data
         await Promise.all([
             loadTicketData(),
             loadBookingData(),
@@ -41,25 +47,47 @@ export async function initializeApp() {
 
         // Build derived data
         buildClientList();
-        renderClientsView(); // Initial render for the clients view
-
-        // Populate UI elements that depend on data
+        renderClientsView();
         initializeDashboardSelectors();
 
+        // Set up real-time listeners
+        state.unsubscribers.push(
+            onTicketsChange((tickets) => {
+                state.allTickets = tickets;
+                populateSearchAirlines();
+                updateUnpaidCount();
+                displayInitialTickets();
+                updateNotifications();
+                buildClientList();
+            })
+        );
+
+        state.unsubscribers.push(
+            onBookingsChange((bookings) => {
+                state.allBookings = bookings;
+                displayBookings();
+                updateNotifications();
+            })
+        );
+
+        state.unsubscribers.push(
+            onSettlementsChange((settlements) => {
+                state.allSettlements = settlements;
+                displaySettlements();
+                updateSettlementDashboard();
+            })
+        );
+
+        state.unsubscribers.push(
+            onHistoryChange((history) => {
+                state.history = history;
+            })
+        );
 
         // Start dynamic updates
         if (state.timeUpdateInterval) clearInterval(state.timeUpdateInterval);
-        state.timeUpdateInterval = setInterval(updateDynamicTimes, 60000); // Update every minute
-        updateDynamicTimes(); // Run once immediately
-
-        // Set up a token refresh interval
-        setInterval(() => {
-            console.log("Refreshing access token automatically...");
-            const { tokenClient } = getAuth();
-            if (tokenClient) {
-                tokenClient.requestAccessToken({ prompt: '' });
-            }
-        }, 2700000); // 45 minutes
+        state.timeUpdateInterval = setInterval(updateDynamicTimes, 60000);
+        updateDynamicTimes();
 
     } catch (error) {
         console.error("Initialization failed:", error);
@@ -496,17 +524,15 @@ window.onload = async () => {
     resetBookingPassengerForms();
     initializePaymentMethodEnhancements();
 
-
-    if (typeof gapi === 'undefined' || typeof google === 'undefined') {
-        showToast('Google API scripts not loaded.', 'error');
-        return;
-    }
-    try {
-        await Promise.all([loadGapiClient(), loadGisClient()]);
-    } catch (error) {
-        showToast('Failed to load Google APIs. Please refresh.', 'error');
-        const authBtn = document.getElementById('authorize_button');
-        if (authBtn) authBtn.style.display = 'block';
-        document.getElementById('loading').style.display = 'none';
-    }
+    // Initialize Firebase Auth
+    initAuth(
+        (user) => {
+            setCurrentUser(user);
+            initializeApp();
+        },
+        () => {
+            setCurrentUser(null);
+            document.getElementById('loading').style.display = 'none';
+        }
+    );
 };

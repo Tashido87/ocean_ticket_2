@@ -30,30 +30,17 @@ export const state = {
     commissionRates: { // Default commission rates
         cut: 0.60 // 60%
     },
-    timeUpdateInterval: null // To hold the timer
+    timeUpdateInterval: null, // To hold the timer
+    unsubscribers: [] // Firestore real-time listener unsubscribe functions
 };
 
 // --- AUTHENTICATION STATE ---
-let tokenClient;
-let gapiInited = false;
-let gisInited = false;
+let currentUser = null;
 
-export function getAuth() {
-    return {
-        tokenClient,
-        gapiInited,
-        gisInited
-    };
+export function getCurrentUserState() {
+    return currentUser;
 }
 
-export function setTokenClient(client) {
-    tokenClient = client;
-}
-
-export function setGapiInited(value) {
-    gapiInited = value;
-}
-
-export function setGisInited(value) {
-    gisInited = value;
+export function setCurrentUser(user) {
+    currentUser = user;
 }

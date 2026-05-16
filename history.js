@@ -3,15 +3,12 @@
  */
 
 import {
-    CONFIG
-} from './config.js';
-import {
     state
 } from './state.js';
 import {
-    fetchFromSheet,
-    appendToSheet
-} from './api.js';
+    getHistory,
+    addHistory
+} from './db.js';
 import {
     showToast
 } from './utils.js';
@@ -20,19 +17,12 @@ import {
 } from './ui.js';
 
 /**
- * Loads the modification history from the Google Sheet.
+ * Loads the modification history from Firestore.
  */
 export async function loadHistory() {
     try {
-        const response = await fetchFromSheet(`${CONFIG.HISTORY_SHEET}!A:D`, 'historyData');
-        if (response.values) {
-            state.history = response.values.slice(1).map(row => ({
-                date: row[0],
-                name: row[1],
-                pnr: row[2],
-                details: row[3]
-            })).reverse(); // Show most recent first
-        }
+        const history = await getHistory();
+        state.history = history.reverse(); // Show most recent first
     } catch (error) {
         console.error("Error loading history:", error);
     }
@@ -51,12 +41,13 @@ export async function saveHistory(ticket, details) {
     const year = now.getFullYear();
     const timestamp = `${day}-${month}-${year}`;
 
-    const values = [
-        [timestamp, ticket.name, ticket.booking_reference, details]
-    ];
-
     try {
-        await appendToSheet(`${CONFIG.HISTORY_SHEET}!A:D`, values);
+        await addHistory({
+            date: timestamp,
+            name: ticket.name,
+            pnr: ticket.booking_reference,
+            details: details
+        });
     } catch (error) {
         console.error("Could not save history:", error);
         showToast('Failed to log action to history.', 'error');

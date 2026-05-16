@@ -1,14 +1,11 @@
-// Configuration for Google Sheets API and application settings
+// Application settings (Firebase config is in firebase-config.js)
 export const CONFIG = {
-    SHEET_ID: '1SGc80isz0VRVt447R_q-fBdZ_me52H_Z32W5HauHMWQ',
-    API_KEY: 'AIzaSyC9JSD6VWXMQ7Pe8VPf-gIlNUtcwQhkG1o', // It is strongly recommended to move this to a secure backend.
-    CLIENT_ID: '254093944424-mfvk48avc9n86de6jit9oai7kqrsr2f7.apps.googleusercontent.com', // IMPORTANT: REPLACE WITH YOUR CLIENT ID
-    SCOPES: 'https://www.googleapis.com/auth/spreadsheets',
-    DISCOVERY_DOC: 'https://sheets.googleapis.com/$discovery/rest?version=v4',
-    SHEET_NAME: '2025',
-    BOOKING_SHEET_NAME: 'booking',
-    HISTORY_SHEET: 'history', // Consolidated history sheet
-    SETTLE_SHEET_NAME: 'settle'
+    COLLECTIONS: {
+        TICKETS: 'tickets',
+        BOOKINGS: 'bookings',
+        HISTORY: 'history',
+        SETTLEMENTS: 'settlements'
+    }
 };
 
 // City data for flight type toggle

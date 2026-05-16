@@ -1,0 +1,13 @@
+{
+  "name": "ocean-ticket-migration",
+  "version": "1.0.0",
+  "description": "One-time migration from Google Sheets to Firebase Firestore",
+  "type": "module",
+  "scripts": {
+    "migrate": "node migrate.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.1.1",
+    "googleapis": "^137.1.0"
+  }
+}

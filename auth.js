@@ -1,111 +1,64 @@
 /**
- * @fileoverview Manages Google API client initialization and user authentication.
+ * @fileoverview Manages Firebase Authentication (Google Sign-In).
+ * Replaces the old Google Sheets OAuth flow.
  */
 
-import {
-    CONFIG
-} from './config.js';
-import {
-    getAuth,
-    setTokenClient,
-    setGapiInited,
-    setGisInited
-} from './state.js';
-import {
-    initializeApp
-} from './main.js';
-import {
-    showToast
-} from './utils.js';
+import { auth, googleProvider } from './firebase-config.js';
+import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { showToast } from './utils.js';
 
-let tokenClient;
+let authStateCallback = null;
 
 /**
- * Initializes the GAPI client.
- * @returns {Promise<void>} A promise that resolves when the client is initialized.
+ * Initializes auth state listener.
+ * @param {Function} onUserSignedIn Called when a user signs in.
+ * @param {Function} onUserSignedOut Called when a user signs out.
  */
-export function loadGapiClient() {
-    return new Promise((resolve, reject) => {
-        gapi.load('client', async () => {
-            try {
-                await gapi.client.init({
-                    apiKey: CONFIG.API_KEY,
-                    discoveryDocs: [CONFIG.DISCOVERY_DOC]
-                });
-                setGapiInited(true);
-                tryAutoSignIn();
-                resolve();
-            } catch (error) {
-                reject(error);
-            }
-        });
-    });
-}
+export function initAuth(onUserSignedIn, onUserSignedOut) {
+    onAuthStateChanged(auth, (user) => {
+        const authorizeButton = document.getElementById('authorize_button');
+        const loading = document.getElementById('loading');
 
-/**
- * Initializes the Google Identity Services (GIS) client.
- * @returns {Promise<void>} A promise that resolves when the client is initialized.
- */
-export function loadGisClient() {
-    return new Promise((resolve, reject) => {
-        try {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CONFIG.CLIENT_ID,
-                scope: CONFIG.SCOPES,
-                callback: async (tokenResponse) => {
-                    const authorizeButton = document.getElementById('authorize_button');
-                    const loading = document.getElementById('loading');
-
-                    if (tokenResponse.error) {
-                        console.log('Token request failed:', tokenResponse.error);
-                        if (authorizeButton) authorizeButton.style.display = 'block';
-                        if (loading) loading.style.display = 'none';
-                        return;
-                    }
-                    gapi.client.setToken(tokenResponse);
-                    setTokenClient(tokenClient);
-                    if (authorizeButton) authorizeButton.style.display = 'none';
-                    await initializeApp();
-                },
-            });
-            setGisInited(true);
-            tryAutoSignIn();
-            resolve();
-        } catch (error) {
-            reject(error);
+        if (user) {
+            console.log('User signed in:', user.displayName);
+            if (authorizeButton) authorizeButton.style.display = 'none';
+            if (loading) loading.style.display = 'none';
+            if (onUserSignedIn) onUserSignedIn(user);
+        } else {
+            if (authorizeButton) authorizeButton.style.display = 'block';
+            if (loading) loading.style.display = 'none';
+            if (onUserSignedOut) onUserSignedOut();
         }
     });
 }
 
 /**
- * Tries to sign in the user automatically without prompting.
+ * Handles the click event for the sign-in button.
  */
-function tryAutoSignIn() {
-    const {
-        gapiInited,
-        gisInited
-    } = getAuth();
-    if (gapiInited && gisInited) {
-        tokenClient.requestAccessToken({
-            prompt: ''
-        });
+export async function handleAuthClick() {
+    try {
+        await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+        console.error('Sign-in error:', error);
+        showToast(`Sign-in failed: ${error.message}`, 'error');
     }
 }
 
 /**
- * Handles the click event for the manual sign-in button.
+ * Signs out the current user.
  */
-export function handleAuthClick() {
-    if (gapi.client.getToken() === null) {
-        // Prompt the user to select a Google Account and ask for consent to share their data
-        // when establishing a new session.
-        tokenClient.requestAccessToken({
-            prompt: 'consent'
-        });
-    } else {
-        // Skip display of account chooser and consent dialog for an existing session.
-        tokenClient.requestAccessToken({
-            prompt: ''
-        });
+export async function handleSignOut() {
+    try {
+        await signOut(auth);
+        showToast('Signed out.', 'info');
+    } catch (error) {
+        console.error('Sign-out error:', error);
     }
+}
+
+/**
+ * Returns the current Firebase user or null.
+ */
+export function getCurrentUser() {
+    return auth.currentUser;
 }

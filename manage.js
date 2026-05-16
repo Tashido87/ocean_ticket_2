@@ -4,16 +4,12 @@
  */
 
 import {
-    CONFIG
-} from './config.js';
-import {
     state
 } from './state.js';
 import {
-    batchUpdateSheet,
-    updateSheet,
-    appendToSheet
-} from './api.js';
+    updateTicket,
+    addTickets
+} from './db.js';
 import {
     showToast,
     parseSheetDate,
@@ -34,6 +30,13 @@ import {
     displayHistory
 } from './history.js';
 
+function getTimestampMs(ts) {
+    if (!ts) return 0;
+    if (typeof ts.toMillis === 'function') return ts.toMillis();
+    if (ts.seconds) return ts.seconds * 1000;
+    return 0;
+}
+
 /**
  * Finds tickets by PNR and displays them in the manage view.
  * @param {string|null} [pnrFromClick=null] Optional PNR passed from a button click.
@@ -51,8 +54,8 @@ export function findTicketForManage(pnrFromClick = null) {
     }
 
     const found = state.allTickets.filter(t => t.booking_reference === pnr);
-    // Sort by Row Index DESCENDING so the newest fees/splits appear at the top
-    found.sort((a, b) => b.rowIndex - a.rowIndex);
+    // Sort by createdAt DESCENDING so the newest fees/splits appear at the top
+    found.sort((a, b) => getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt));
     
     displayManageResults(found);
 
@@ -117,7 +120,7 @@ function displayManageResults(tickets) {
         } else {
             const btnText = isFee ? 'Update Fee' : 'Manage';
             const btnClass = isFee ? 'btn-secondary' : 'btn-primary';
-            actionButton = `<button class="btn ${btnClass} manage-btn" data-row-index="${t.rowIndex}">${btnText}</button>`;
+            actionButton = `<button class="btn ${btnClass} manage-btn" data-id="${t.id}">${btnText}</button>`;
         }
 
         // --- TYPE & NAME COLUMN ---
@@ -153,13 +156,13 @@ function displayManageResults(tickets) {
     // Add event listeners after rendering
     container.querySelectorAll('.manage-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const rowIndex = parseInt(e.currentTarget.dataset.rowIndex);
-            const ticket = state.allTickets.find(t => t.rowIndex === rowIndex);
+            const docId = e.currentTarget.dataset.id;
+            const ticket = state.allTickets.find(t => t.id === docId);
             
             if (isFeeRow(ticket)) {
-                openFeeManageModal(rowIndex);
+                openFeeManageModal(docId);
             } else {
-                openManageModal(rowIndex);
+                openManageModal(docId);
             }
         });
     });
@@ -168,8 +171,8 @@ function displayManageResults(tickets) {
 /**
  * Opens a SIMPLIFIED modal specifically for managing a Fee/Balance Row.
  */
-function openFeeManageModal(rowIndex) {
-    const ticket = state.allTickets.find(t => t.rowIndex === rowIndex);
+function openFeeManageModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
     if (!ticket) return;
 
     const feeAmount = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
@@ -201,7 +204,7 @@ function openFeeManageModal(rowIndex) {
             <p style="margin: 5px 0 0; font-size: 0.85rem;">${ticket.name}</p>
         </div>
 
-        <form id="updateFeeForm" data-row-index="${rowIndex}">
+        <form id="updateFeeForm" data-id="${docId}">
             <div class="form-grid">
                 <div class="form-group">
                     <label for="fee_issued_date">Date Added (Issued Date)</label>
@@ -271,15 +274,14 @@ function openFeeManageModal(rowIndex) {
     
     document.getElementById('feeDeleteBtn').addEventListener('click', () => {
          showConfirmModal('Are you sure you want to <strong>VOID</strong> this entry? This sets the amount to 0.', async () => {
-             const voidRow = [...Object.values(ticket).slice(0, 22)];
-             voidRow[11] = 0; // Base Fare
-             voidRow[13] = 0; // Net Amount
-             voidRow[17] = 0; // Commission
-             voidRow[18] = "VOIDED ENTRY"; // Remarks
-             voidRow[19] = 0; // Extra Fare
-             voidRow[20] = 0; // Date Change
-             
-             await updateSheet(`${CONFIG.SHEET_NAME}!A${rowIndex}:V${rowIndex}`, [voidRow]);
+             await updateTicket(docId, {
+                 base_fare: 0,
+                 net_amount: 0,
+                 commission: 0,
+                 remarks: 'VOIDED ENTRY',
+                 extra_fare: 0,
+                 date_change: 0
+             });
              
              showToast('Entry voided.', 'success');
              closeModal();
@@ -304,8 +306,8 @@ function openFeeManageModal(rowIndex) {
 async function handleUpdateFeeRow(e) {
     e.preventDefault();
     const form = e.target;
-    const rowIndex = parseInt(form.dataset.rowIndex);
-    const ticket = state.allTickets.find(t => t.rowIndex === rowIndex);
+    const docId = form.dataset.id;
+    const ticket = state.allTickets.find(t => t.id === docId);
 
     const newIssuedDate = document.getElementById('fee_issued_date').value || ticket.issued_date;
     const newPaid = document.getElementById('fee_paid').checked;
@@ -320,32 +322,12 @@ async function handleUpdateFeeRow(e) {
     try {
         showToast('Updating status...', 'info');
         
-        const updatedRow = [
-                formatDateForSheet(newIssuedDate), 
-                ticket.name,
-                ticket.id_no,
-                ticket.phone,
-                ticket.account_name,
-                ticket.account_type,
-                ticket.account_link,
-                ticket.departure,
-                ticket.destination,
-                ticket.departing_on, 
-                ticket.airline,
-                ticket.base_fare,
-                ticket.booking_reference,
-                ticket.net_amount,
-                newPaid,           
-                finalMethod,       
-                newDate,           
-                ticket.commission,
-                ticket.remarks,
-                ticket.extra_fare, 
-                ticket.date_change,
-                ticket.gender
-        ];
-
-        await updateSheet(`${CONFIG.SHEET_NAME}!A${rowIndex}:V${rowIndex}`, [updatedRow]);
+        await updateTicket(docId, {
+            issued_date: formatDateForSheet(newIssuedDate),
+            paid: newPaid,
+            payment_method: finalMethod,
+            paid_date: newDate
+        });
         
         showToast('Updated successfully!', 'success');
         closeModal();
@@ -370,8 +352,8 @@ async function handleUpdateFeeRow(e) {
 /**
  * Opens the modal for managing a specific ticket (Original Ticket Logic).
  */
-function openManageModal(rowIndex) {
-    const ticket = state.allTickets.find(t => t.rowIndex === rowIndex);
+function openManageModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
     if (!ticket) {
         showToast('Ticket not found.', 'error');
         return;
@@ -399,7 +381,7 @@ function openManageModal(rowIndex) {
 
     const content = `
         <h2>Manage Ticket: ${ticket.name}</h2>
-        <form id="updateForm" data-pnr="${ticket.booking_reference}" data-master-row-index="${rowIndex}">
+        <form id="updateForm" data-pnr="${ticket.booking_reference}" data-master-id="${docId}">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <h4>Modify Details</h4>
@@ -480,8 +462,8 @@ function openManageModal(rowIndex) {
     syncPaymentFields();
     
     document.getElementById('updateForm').addEventListener('submit', handleUpdateTicket);
-    document.getElementById('cancelRefundBtn').addEventListener('click', () => openCancelSubModal(rowIndex));
-    document.getElementById('partialPayBtn').addEventListener('click', () => openPartialPaymentModal(rowIndex));
+    document.getElementById('cancelRefundBtn').addEventListener('click', () => openCancelSubModal(docId));
+    document.getElementById('partialPayBtn').addEventListener('click', () => openPartialPaymentModal(docId));
     document.getElementById('modalBackBtn').addEventListener('click', closeModal);
 }
 
@@ -490,8 +472,8 @@ function openManageModal(rowIndex) {
  * - If "Apply to entire PNR" is ON: Calculates TOTAL debt for all rows and distributes payment (Knock-off).
  * - If OFF: Handles just the single selected row.
  */
-function openPartialPaymentModal(rowIndex) {
-    const ticket = state.allTickets.find(t => t.rowIndex === rowIndex);
+function openPartialPaymentModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
     if (!ticket) return;
 
     // Check the toggle state from the parent modal
@@ -501,14 +483,14 @@ function openPartialPaymentModal(rowIndex) {
     let ticketsToPay = [];
     if (applyToAll) {
         // Find ALL unpaid non-cancelled tickets for this PNR
-        ticketsToPay = state.allTickets.filter(t => 
-            t.booking_reference === ticket.booking_reference && 
-            !t.paid && 
+        ticketsToPay = state.allTickets.filter(t =>
+            t.booking_reference === ticket.booking_reference &&
+            !t.paid &&
             !String(t.remarks||'').toLowerCase().includes('cancel') &&
             !String(t.remarks||'').toLowerCase().includes('refund')
         );
-        // Sort by row index to pay oldest/top first
-        ticketsToPay.sort((a,b) => a.rowIndex - b.rowIndex);
+        // Sort by createdAt to pay oldest first
+        ticketsToPay.sort((a,b) => getTimestampMs(a.createdAt) - getTimestampMs(b.createdAt));
     } else {
         ticketsToPay = [ticket];
     }
@@ -625,94 +607,76 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
     try {
         showToast('Processing payment distribution...', 'info');
 
-        let rowsToUpdate = [];
-        let rowsToAppend = [];
+        const updates = [];
+        const newRows = [];
         
         // --- KNOCK-OFF LOGIC ---
-        // Distribute payAmount across ticketsToPay
-        
         for (const ticket of ticketsToPay) {
-            if (payAmount <= 0) break; // Money used up
+            if (payAmount <= 0) break;
 
             const ticketTotal = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
             
             if (payAmount >= ticketTotal) {
-                // Case 1: Fully pay this ticket
-                const updatedRow = [
-                    ticket.issued_date, ticket.name, ticket.id_no, ticket.phone, ticket.account_name, ticket.account_type, ticket.account_link, ticket.departure, ticket.destination, ticket.departing_on, ticket.airline,
-                    ticket.base_fare, ticket.booking_reference, ticket.net_amount,
-                    true, // PAID
-                    payMethod, payDate,
-                    ticket.commission, ticket.remarks, ticket.extra_fare, ticket.date_change, ticket.gender
-                ];
-                
-                rowsToUpdate.push({
-                    range: `${CONFIG.SHEET_NAME}!A${ticket.rowIndex}:V${ticket.rowIndex}`,
-                    values: [updatedRow]
-                });
-                
-                payAmount -= ticketTotal; // Deduct paid amount
+                updates.push(updateTicket(ticket.id, {
+                    paid: true,
+                    payment_method: payMethod,
+                    paid_date: payDate
+                }));
+                payAmount -= ticketTotal;
             } else {
-                // Case 2: Partial pay this ticket (Split it)
-                // This is the "Split" logic from before, applied to this specific ticket
-                
                 const remainder = ticketTotal - payAmount;
                 const ratio = payAmount / ticketTotal;
-                
                 const part1_Base = Math.floor((ticket.base_fare || 0) * ratio);
                 const part1_Comm = Math.floor((ticket.commission || 0) * ratio);
-                
                 const part2_Base = (ticket.base_fare || 0) - part1_Base;
                 const part2_Comm = (ticket.commission || 0) - part1_Comm;
 
-                // 2a. Update Original (Paid Chunk)
-                const updatedRow1 = [
-                    ticket.issued_date, ticket.name, ticket.id_no, ticket.phone, ticket.account_name, ticket.account_type, ticket.account_link, ticket.departure, ticket.destination, ticket.departing_on, ticket.airline,
-                    part1_Base, // Split Base
-                    ticket.booking_reference,
-                    payAmount,  // This ticket consumes the REST of the payAmount
-                    true,       // PAID
-                    payMethod, payDate,
-                    part1_Comm, // Split Comm
-                    `Partial Pmt (${payAmount.toLocaleString()}) - ${ticket.remarks}`,
-                    0, 0, ticket.gender
-                ];
-                
-                rowsToUpdate.push({
-                    range: `${CONFIG.SHEET_NAME}!A${ticket.rowIndex}:V${ticket.rowIndex}`,
-                    values: [updatedRow1]
+                updates.push(updateTicket(ticket.id, {
+                    base_fare: part1_Base,
+                    net_amount: payAmount,
+                    commission: part1_Comm,
+                    paid: true,
+                    payment_method: payMethod,
+                    paid_date: payDate,
+                    remarks: `Partial Pmt (${payAmount.toLocaleString()}) - ${ticket.remarks}`,
+                    extra_fare: 0,
+                    date_change: 0
+                }));
+
+                newRows.push({
+                    issued_date: ticket.issued_date,
+                    name: `${ticket.name} (Balance)`,
+                    id_no: ticket.id_no,
+                    phone: ticket.phone,
+                    account_name: ticket.account_name,
+                    account_type: ticket.account_type,
+                    account_link: ticket.account_link,
+                    departure: ticket.departure,
+                    destination: ticket.destination,
+                    departing_on: ticket.departing_on,
+                    airline: ticket.airline,
+                    base_fare: part2_Base,
+                    booking_reference: ticket.booking_reference,
+                    net_amount: remainder,
+                    paid: false,
+                    payment_method: '',
+                    paid_date: '',
+                    commission: part2_Comm,
+                    remarks: `Balance Due (${remainder.toLocaleString()})`,
+                    extra_fare: 0,
+                    date_change: 0,
+                    gender: ticket.gender
                 });
 
-                // 2b. Create New Balance Row
-                const newRow2 = [
-                    ticket.issued_date, 
-                    `${ticket.name} (Balance)`, 
-                    ticket.id_no, ticket.phone, ticket.account_name, ticket.account_type, ticket.account_link, ticket.departure, ticket.destination, ticket.departing_on, ticket.airline,
-                    part2_Base,
-                    ticket.booking_reference,
-                    remainder,  // Remaining Net
-                    false,      // UNPAID
-                    "", "",
-                    part2_Comm,
-                    `Balance Due (${remainder.toLocaleString()})`,
-                    0, 0, ticket.gender
-                ];
-                rowsToAppend.push(newRow2);
-
-                payAmount = 0; // All money used
+                payAmount = 0;
             }
         }
 
-        // Execute updates
-        if (rowsToUpdate.length > 0) {
-            await batchUpdateSheet(rowsToUpdate);
-        }
-        if (rowsToAppend.length > 0) {
-            await appendToSheet(`${CONFIG.SHEET_NAME}!A:V`, rowsToAppend);
+        await Promise.all(updates);
+        if (newRows.length > 0) {
+            await addTickets(newRows);
         }
 
-        // Refresh Everything
-        state.cache = {};
         const { loadTicketData } = await import('./tickets.js');
         const { updateDashboardData } = await import('./main.js');
         const { updateNotifications } = await import('./ui.js');
@@ -723,8 +687,6 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
         await loadTicketData();
         updateDashboardData();
         updateNotifications();
-        
-        // Refresh manage view for the PNR
         findTicketForManage(ticketsToPay[0].booking_reference);
 
     } catch (error) {
@@ -741,7 +703,7 @@ async function handleUpdateTicket(e) {
     e.preventDefault();
     const form = e.target;
     const pnr = form.dataset.pnr;
-    const masterRowIndex = parseInt(form.dataset.masterRowIndex);
+    const masterId = form.dataset.masterId;
     const applyToAll = document.getElementById('update_pnr_sync')?.checked;
 
     let historyDetails = [];
@@ -752,14 +714,14 @@ async function handleUpdateTicket(e) {
         ticketsToUpdate = state.allTickets.filter(t => t.booking_reference === pnr);
     } else {
         // Only the specific row we opened the modal for
-        const single = state.allTickets.find(t => t.rowIndex === masterRowIndex);
+        const single = state.allTickets.find(t => t.id === masterId);
         if (single) ticketsToUpdate = [single];
     }
     
     if (ticketsToUpdate.length === 0) return;
 
     // Use the specific row as the "master" for comparison logic
-    const masterTicket = state.allTickets.find(t => t.rowIndex === masterRowIndex) || ticketsToUpdate[0];
+    const masterTicket = state.allTickets.find(t => t.id === masterId) || ticketsToUpdate[0];
 
     const newTravelDateVal = document.getElementById('update_departing_on').value;
     const newBaseFare = parseFloat(document.getElementById('update_base_fare').value);
@@ -824,87 +786,57 @@ async function handleUpdateTicket(e) {
         showToast('Updating tickets...', 'info');
 
         // 1. UPDATE SELECTED TICKET(S)
-        const dataForBatchUpdate = ticketsToUpdate.map(ticket => {
-            // Apply new value ONLY if user changed it in the modal, otherwise preserve existing row value
+        for (const ticket of ticketsToUpdate) {
             const rowPaid = hasNewFees ? ticket.paid : (paidChanged ? finalPaid : ticket.paid);
             const rowMethod = hasNewFees ? ticket.payment_method : (methodChanged ? finalPaymentMethod : ticket.payment_method);
             const rowPaidDate = hasNewFees ? ticket.paid_date : (paidDateChanged ? finalPaidDate : ticket.paid_date);
             
-            const tTravelDate = dateChanged ? formatDateForSheet(newTravelDateVal) : ticket.departing_on;
-            const tBaseFare = baseFareChanged && !isFeeRow(ticket) ? newBaseFare : ticket.base_fare;
-            const tNetAmount = netAmountChanged && !isFeeRow(ticket) ? newNetAmount : ticket.net_amount;
-            const tCommission = commissionChanged && !isFeeRow(ticket) ? newCommission : ticket.commission;
-            
-            const values = [
-                ticket.issued_date, 
-                ticket.name,
-                ticket.id_no,
-                ticket.phone,
-                ticket.account_name,
-                ticket.account_type,
-                ticket.account_link,
-                ticket.departure,
-                ticket.destination,
-                tTravelDate, 
-                ticket.airline,
-                tBaseFare,
-                ticket.booking_reference,
-                tNetAmount,
-                rowPaid,           
-                rowMethod,         
-                rowPaidDate,       
-                tCommission,
-                ticket.remarks,
-                ticket.extra_fare, 
-                ticket.date_change,
-                ticket.gender
-            ];
-            return {
-                range: `${CONFIG.SHEET_NAME}!A${ticket.rowIndex}:V${ticket.rowIndex}`,
-                values: [values]
-            };
-        });
+            const updateData = {};
+            if (dateChanged) updateData.departing_on = formatDateForSheet(newTravelDateVal);
+            if (baseFareChanged && !isFeeRow(ticket)) updateData.base_fare = newBaseFare;
+            if (netAmountChanged && !isFeeRow(ticket)) updateData.net_amount = newNetAmount;
+            if (commissionChanged && !isFeeRow(ticket)) updateData.commission = newCommission;
+            if (paidChanged || hasNewFees) updateData.paid = rowPaid;
+            if (methodChanged || hasNewFees) updateData.payment_method = rowMethod;
+            if (paidDateChanged || hasNewFees) updateData.paid_date = rowPaidDate;
 
-        await batchUpdateSheet(dataForBatchUpdate);
+            if (Object.keys(updateData).length > 0) {
+                await updateTicket(ticket.id, updateData);
+            }
+        }
 
         // 2. CREATE NEW ROW FOR FEES (If any)
-        
         if (hasNewFees) {
             const today = formatDateForSheet(new Date());
             const feePaidDate = finalPaid ? (newPaidDate ? formatDateForSheet(newPaidDate) : today) : '';
             
-            const feeRow = [
-                today, // Issued Date = TODAY
-                `${masterTicket.name} (Fees)`, // Name with suffix
-                masterTicket.id_no,
-                masterTicket.phone,
-                masterTicket.account_name,
-                masterTicket.account_type,
-                masterTicket.account_link,
-                masterTicket.departure,
-                masterTicket.destination,
-                newTravelDateVal ? formatDateForSheet(newTravelDateVal) : masterTicket.departing_on,
-                masterTicket.airline,
-                0, // Base Fare 0
-                masterTicket.booking_reference,
-                (extraFare + dateChangeFees), // Net Amount (Populated for external app compatibility)
-                finalPaid,          // <-- This uses the form status (Unpaid if unchecked)
-                finalPaymentMethod,
-                feePaidDate,
-                extraFare, // Commission (Extra fare is profit, mapped here)
-                "Fee Entry", // Remarks
-                0, // Extra Fare zeroed out to prevent double-counting
-                0, // Date Change Fee zeroed out to prevent double-counting
-                masterTicket.gender
-            ];
-
-            await appendToSheet(`${CONFIG.SHEET_NAME}!A:V`, [feeRow]);
+            await addTickets([{
+                issued_date: today,
+                name: `${masterTicket.name} (Fees)`,
+                id_no: masterTicket.id_no,
+                phone: masterTicket.phone,
+                account_name: masterTicket.account_name,
+                account_type: masterTicket.account_type,
+                account_link: masterTicket.account_link,
+                departure: masterTicket.departure,
+                destination: masterTicket.destination,
+                departing_on: newTravelDateVal ? formatDateForSheet(newTravelDateVal) : masterTicket.departing_on,
+                airline: masterTicket.airline,
+                base_fare: 0,
+                booking_reference: masterTicket.booking_reference,
+                net_amount: extraFare + dateChangeFees,
+                paid: finalPaid,
+                payment_method: finalPaymentMethod,
+                paid_date: feePaidDate,
+                commission: extraFare,
+                remarks: 'Fee Entry',
+                extra_fare: 0,
+                date_change: 0,
+                gender: masterTicket.gender
+            }]);
         }
 
         await saveHistory(masterTicket, `MODIFIED: ${historyDetails.join('; ')}`);
-
-        // FIX: Clear entire cache to ensure fresh data
-        state.cache = {};
 
         showToast('Updated successfully!', 'success');
         closeModal();
@@ -928,8 +860,8 @@ async function handleUpdateTicket(e) {
 /**
  * Opens a sub-modal for cancellation and refund options.
  */
-function openCancelSubModal(rowIndex) {
-    const ticket = state.allTickets.find(t => t.rowIndex === rowIndex);
+function openCancelSubModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
     if (!ticket) return;
 
     const content = `
@@ -953,7 +885,7 @@ function openCancelSubModal(rowIndex) {
     openModal(content);
     const refundMethodSel = document.getElementById('refund_payment_method');
     if (refundMethodSel) enhanceMobileBankingSelect(refundMethodSel);
-    document.getElementById('fullRefundBtn').addEventListener('click', () => handleCancelTicket(rowIndex, 'refund'));
+    document.getElementById('fullRefundBtn').addEventListener('click', () => handleCancelTicket(docId, 'refund'));
     document.getElementById('cancelForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const details = {
@@ -965,45 +897,44 @@ function openCancelSubModal(rowIndex) {
             ),
             transactionId: document.getElementById('refund_transaction_id').value
         };
-        handleCancelTicket(rowIndex, 'cancel', details);
+        handleCancelTicket(docId, 'cancel', details);
     });
-    document.getElementById('backToModifyBtn').addEventListener('click', () => openManageModal(rowIndex));
+    document.getElementById('backToModifyBtn').addEventListener('click', () => openManageModal(docId));
 }
 
 /**
  * Processes the cancellation or refund of a ticket.
  */
-async function handleCancelTicket(rowIndex, type, details = {}) {
-    const ticket = state.allTickets.find(t => t.rowIndex === rowIndex);
+async function handleCancelTicket(docId, type, details = {}) {
+    const ticket = state.allTickets.find(t => t.id === docId);
     if (!ticket) return;
 
     const message = type === 'refund' ? `Process a <strong>Full Refund</strong> for ${ticket.name}?` : `Process <strong>Partial Cancellation</strong> for ${ticket.name}?`;
 
     showConfirmModal(message, async () => {
-        let updatedValues, historyDetails;
         const dateStr = formatDateForSheet(new Date());
-
-        if (type === 'refund') {
-            updatedValues = [...Object.values(ticket).slice(0, 22)]; 
-            updatedValues[11] = 0; // base_fare
-            updatedValues[13] = 0; // net_amount
-            updatedValues[17] = 0; // commission
-            updatedValues[18] = `Full Refund on ${dateStr}`; // remarks
-            historyDetails = "CANCELED: Full Refund processed.";
-        } else {
-            updatedValues = [...Object.values(ticket).slice(0, 22)];
-            updatedValues[13] = details.cancellationFee; // net_amount
-            updatedValues[18] = `Canceled on ${dateStr} with ${details.refundAmount.toLocaleString()} refund`; // remarks
-            historyDetails = `CANCELED: Partial. Refunded: ${details.refundAmount.toLocaleString()} MMK.`;
-        }
+        let historyDetails;
 
         try {
             showToast('Processing cancellation...', 'info');
-            await updateSheet(`${CONFIG.SHEET_NAME}!A${rowIndex}:V${rowIndex}`, [updatedValues]);
-            await saveHistory(ticket, historyDetails);
             
-            // FIX: Clear entire cache
-            state.cache = {};
+            if (type === 'refund') {
+                await updateTicket(docId, {
+                    base_fare: 0,
+                    net_amount: 0,
+                    commission: 0,
+                    remarks: `Full Refund on ${dateStr}`
+                });
+                historyDetails = "CANCELED: Full Refund processed.";
+            } else {
+                await updateTicket(docId, {
+                    net_amount: details.cancellationFee,
+                    remarks: `Canceled on ${dateStr} with ${details.refundAmount.toLocaleString()} refund`
+                });
+                historyDetails = `CANCELED: Partial. Refunded: ${details.refundAmount.toLocaleString()} MMK.`;
+            }
+            
+            await saveHistory(ticket, historyDetails);
             
             showToast('Ticket canceled successfully!', 'success');
             closeModal();
@@ -1016,9 +947,10 @@ async function handleCancelTicket(rowIndex, type, details = {}) {
 
             await Promise.all([loadTicketData(), loadHistory()]);
             updateDashboardData();
-            updateNotifications(); // FORCE UI UPDATE
+            updateNotifications();
         } catch (error) {
-            // Error handled by api.js
+            console.error('Cancel error:', error);
+            showToast('Error canceling ticket: ' + error.message, 'error');
         }
     });
 }

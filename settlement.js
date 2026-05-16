@@ -5,15 +5,12 @@
  */
 
 import {
-    CONFIG
-} from './config.js';
-import {
     state
 } from './state.js';
 import {
-    fetchFromSheet,
-    appendToSheet
-} from './api.js';
+    getSettlements,
+    addSettlement
+} from './db.js';
 import {
     showToast,
     parseSheetDate,
@@ -26,40 +23,16 @@ import {
 } from './ui.js';
 
 /**
- * Loads settlement data from the Google Sheet.
+ * Loads settlement data from Firestore.
  */
 export async function loadSettlementData() {
     try {
-        const response = await fetchFromSheet(`${CONFIG.SETTLE_SHEET_NAME}!A:G`, 'settlementData');
-        if (response.values) {
-            state.allSettlements = parseSettlementData(response.values);
-        } else {
-            state.allSettlements = [];
-        }
+        const settlements = await getSettlements();
+        state.allSettlements = settlements;
         displaySettlements();
     } catch (error) {
-        renderEmptyState('settlementTableContainer', 'fa-handshake-slash', 'Failed to load settlements', 'Could not retrieve settlement data from the sheet.');
+        renderEmptyState('settlementTableContainer', 'fa-handshake-slash', 'Failed to load settlements', 'Could not retrieve settlement data.');
     }
-}
-
-/**
- * Parses raw sheet data into an array of settlement objects.
- * @param {Array<Array<string>>} values The raw values from the sheet.
- * @returns {Array<Object>} An array of settlement objects.
- */
-function parseSettlementData(values) {
-    if (values.length < 1) return [];
-    const headers = values[0].map(h => h.toLowerCase().replace(/\s+/g, '_'));
-    return values.slice(1).map((row, i) => {
-        const settlement = {};
-        headers.forEach((h, j) => {
-            const value = row[j] || '';
-            settlement[h] = typeof value === 'string' ? value.trim() : value;
-        });
-        settlement.amount_paid = parseFloat(String(settlement.amount_paid).replace(/,/g, '')) || 0;
-        settlement.rowIndex = i + 2;
-        return settlement;
-    });
 }
 
 /**
@@ -164,25 +137,21 @@ export async function handleNewSettlementSubmit(e) {
             throw new Error('Settlement Date and Amount Paid are required.');
         }
 
-        const values = [[
-            formatDateToDDMMMYYYY(settlementData.settlement_date),
-            '', // Empty value for 'net_amount' column
-            settlementData.amount_paid,
-            settlementData.payment_method,
-            settlementData.transaction_id,
-            "Paid",
-            settlementData.notes
-        ]];
-
-        await appendToSheet(`${CONFIG.SETTLE_SHEET_NAME}!A:G`, values);
-
-        state.cache['settlementData'] = null;
+        await addSettlement({
+            settlement_date: formatDateToDDMMMYYYY(settlementData.settlement_date),
+            net_amount: '',
+            amount_paid: parseFloat(settlementData.amount_paid) || 0,
+            payment_method: settlementData.payment_method,
+            transaction_id: settlementData.transaction_id,
+            status: 'Paid',
+            notes: settlementData.notes
+        });
         showToast('Settlement saved successfully!', 'success');
         hideNewSettlementForm();
         await loadSettlementData();
         updateSettlementDashboard();
     } catch (error) {
-        // Error is shown by api.js
+        showToast(error.message || 'Failed to save settlement.', 'error');
     } finally {
         state.isSubmitting = false;
         if (submitButton) submitButton.disabled = false;
