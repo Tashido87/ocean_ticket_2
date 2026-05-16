@@ -51,36 +51,73 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Sign-in button */
+/* Liquid Glass sign-in button */
 .landing-signin-btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    background: rgba(255,255,255,0.95);
-    color: #0f4c75;
-    border: 1px solid rgba(255,255,255,0.8);
-    padding: 14px 36px;
+    background: rgba(255, 255, 255, 0.22);
+    color: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    padding: 16px 40px;
     border-radius: 50px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
     box-shadow:
-        0 8px 24px rgba(15,76,117,0.18),
-        0 2px 6px rgba(15,76,117,0.1);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, background 0.3s ease;
+        inset 0 1px 1px rgba(255, 255, 255, 0.65),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.15),
+        0 10px 30px rgba(15, 23, 42, 0.18),
+        0 2px 8px rgba(15, 23, 42, 0.08);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, background 0.35s ease, border-color 0.35s ease;
     font-family: inherit;
     letter-spacing: 0.01em;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+/* Subtle top-light highlight (glass reflection) */
+.landing-signin-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.15) 35%,
+        rgba(255, 255, 255, 0) 60%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Soft glow underneath */
+.landing-signin-btn::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0));
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+    z-index: -2;
 }
 
 .landing-signin-btn:hover {
     transform: translateY(-3px) scale(1.04);
-    background: white;
+    background: rgba(255, 255, 255, 0.32);
+    border-color: rgba(255, 255, 255, 0.65);
     box-shadow:
-        0 14px 36px rgba(15,76,117,0.28),
-        0 4px 10px rgba(15,76,117,0.15);
+        inset 0 1px 1px rgba(255, 255, 255, 0.75),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.2),
+        0 18px 40px rgba(15, 23, 42, 0.25),
+        0 4px 12px rgba(15, 23, 42, 0.12);
 }
+
+.landing-signin-btn:hover::after { opacity: 1; }
 
 .landing-signin-btn:active {
     transform: translateY(-1px) scale(1.02);
