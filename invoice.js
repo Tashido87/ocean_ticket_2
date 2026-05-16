@@ -22,7 +22,7 @@ const BRANDS = {
         selectorLabel: 'Ocean',
         displayName: 'Ocean Ticket',
         legalName: 'OCEAN TICKET',
-        logoUrl: './ocean-logo-invoice.png',
+        logoUrl: './ocean-travel-logo.png',
         documentCode: 'OC',
         addressLines: [
             'A3-1, Room 603, Myanma Gone Yi Housing,',
