@@ -21,23 +21,41 @@ export function initAuth(onUserSignedIn, onUserSignedOut) {
         authorizeButton.addEventListener('click', handleAuthClick);
     }
 
+    // Wire up the sign-out button with confirmation
+    const signoutButton = document.getElementById('signout-btn');
+    if (signoutButton) {
+        signoutButton.addEventListener('click', confirmSignOut);
+    }
+
     onAuthStateChanged(auth, (user) => {
         const authContainer = document.getElementById('auth-container');
         const loading = document.getElementById('loading');
         const dashboardContent = document.getElementById('dashboard-content');
+        const mainHeader = document.getElementById('main-header');
 
         if (user) {
             console.log('User signed in:', user.displayName);
             if (authContainer) authContainer.style.display = 'none';
-            if (loading) loading.style.display = 'block';
+            if (mainHeader) mainHeader.style.display = '';
+            if (loading) loading.style.display = 'flex';
             if (onUserSignedIn) onUserSignedIn(user);
         } else {
             if (authContainer) authContainer.style.display = 'block';
+            if (mainHeader) mainHeader.style.display = 'none';
             if (loading) loading.style.display = 'none';
             if (dashboardContent) dashboardContent.style.display = 'none';
             if (onUserSignedOut) onUserSignedOut();
         }
     });
+}
+
+/**
+ * Shows a confirmation dialog before signing out.
+ */
+function confirmSignOut() {
+    if (window.confirm('Are you sure you want to sign out?')) {
+        handleSignOut();
+    }
 }
 
 /**

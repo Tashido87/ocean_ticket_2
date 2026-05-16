@@ -23,7 +23,7 @@
 </head>
 <body class="material-theme">
     <div class="main-container">
-        <header class="header">
+        <header class="header" id="main-header" style="display:none;">
             <div class="header-left">
                 <div class="brand" aria-label="Ocean Ticket">
                     <i class="fa-solid fa-plane-departure logo-icon" aria-hidden="true"></i>
@@ -48,17 +48,20 @@
                 <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Open settings">
                     <i class="fa-solid fa-gear" aria-hidden="true"></i>
                 </button>
+                <button id="signout-btn" class="icon-btn" title="Sign out" aria-label="Sign out">
+                    <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                </button>
             </div>
         </header>
 
         <main class="main-content">
             <section id="home-view" class="view active">
-                <div class="loading-indicator" id="loading">
+                <div class="loading-indicator" id="loading" style="display:none;">
                     <div class="spinner"></div>
                     <p>Loading data...</p>
                 </div>
 
-                <div id="auth-container" class="landing-page" style="display:none;">
+                <div id="auth-container" class="landing-page">
                     <div class="landing-sky">
                         <div class="cloud cloud-1"></div>
                         <div class="cloud cloud-2"></div>
