@@ -15,18 +15,26 @@ let authStateCallback = null;
  * @param {Function} onUserSignedOut Called when a user signs out.
  */
 export function initAuth(onUserSignedIn, onUserSignedOut) {
+    // Wire up the sign-in button click
+    const authorizeButton = document.getElementById('authorize_button');
+    if (authorizeButton) {
+        authorizeButton.addEventListener('click', handleAuthClick);
+    }
+
     onAuthStateChanged(auth, (user) => {
-        const authorizeButton = document.getElementById('authorize_button');
+        const authContainer = document.getElementById('auth-container');
         const loading = document.getElementById('loading');
+        const dashboardContent = document.getElementById('dashboard-content');
 
         if (user) {
             console.log('User signed in:', user.displayName);
-            if (authorizeButton) authorizeButton.style.display = 'none';
-            if (loading) loading.style.display = 'none';
+            if (authContainer) authContainer.style.display = 'none';
+            if (loading) loading.style.display = 'block';
             if (onUserSignedIn) onUserSignedIn(user);
         } else {
-            if (authorizeButton) authorizeButton.style.display = 'block';
+            if (authContainer) authContainer.style.display = 'block';
             if (loading) loading.style.display = 'none';
+            if (dashboardContent) dashboardContent.style.display = 'none';
             if (onUserSignedOut) onUserSignedOut();
         }
     });
