@@ -8,68 +8,43 @@
     height: 100vh;
     overflow: hidden;
     z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-/* Background image with subtle Ken Burns zoom effect */
+/* Static background image */
 .landing-bg {
     position: absolute;
-    inset: -20px;
+    inset: 0;
     background-image: url('travel-bg.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    animation: ken-burns 25s ease-in-out infinite alternate;
-    filter: saturate(1.05);
 }
 
-@keyframes ken-burns {
-    0%   { transform: scale(1) translate(0, 0); }
-    100% { transform: scale(1.08) translate(-10px, -10px); }
-}
-
-/* Soft white-to-blue overlay for readability and dreamy feel */
-.landing-overlay {
+/* Top-left corner logo */
+.landing-corner-logo {
     position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(ellipse at center, rgba(255,255,255,0.15) 0%, rgba(186,230,253,0.25) 70%, rgba(125,211,252,0.35) 100%),
-        linear-gradient(180deg, rgba(255,255,255,0.0) 60%, rgba(255,255,255,0.4) 100%);
-    backdrop-filter: blur(0.5px);
-    -webkit-backdrop-filter: blur(0.5px);
-}
-
-/* Centered content */
-.landing-content {
-    position: relative;
+    top: 28px;
+    left: 36px;
+    height: 64px;
+    width: auto;
     z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2rem;
-    padding: 2rem;
-    animation: content-fade 1.2s ease-out;
+    filter: drop-shadow(0 4px 12px rgba(15,76,117,0.2));
+    animation: fade-in 0.8s ease-out;
 }
 
-@keyframes content-fade {
-    from { opacity: 0; transform: translateY(15px); }
+/* Content area positioned below "Your journey starts here" text in the bg */
+.landing-content {
+    position: absolute;
+    /* The text in the background image sits roughly around 30% from top, 22% from left */
+    top: 45%;
+    left: 8%;
+    z-index: 10;
+    animation: fade-in 1.2s ease-out 0.3s backwards;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Logo */
-.landing-logo-img {
-    width: clamp(220px, 32vw, 360px);
-    height: auto;
-    filter: drop-shadow(0 8px 30px rgba(15,76,117,0.25));
-    animation: logo-float 5s ease-in-out infinite;
-}
-
-@keyframes logo-float {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50%      { transform: translateY(-10px) rotate(0.5deg); }
 }
 
 /* Sign-in button */
@@ -108,8 +83,18 @@
 }
 
 /* Mobile */
-@media (max-width: 600px) {
-    .landing-logo-img { width: 220px; }
+@media (max-width: 768px) {
+    .landing-corner-logo {
+        top: 16px;
+        left: 16px;
+        height: 48px;
+    }
+    .landing-content {
+        top: auto;
+        bottom: 8%;
+        left: 50%;
+        transform: translateX(-50%);
+    }
     .landing-signin-btn { padding: 12px 28px; font-size: 0.95rem; }
 }
 
