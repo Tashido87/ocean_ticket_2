@@ -387,11 +387,6 @@ function openManageModal(rowIndex) {
         }
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const travelDate = parseSheetDate(ticket.departing_on);
-    const isPast = travelDate < today;
-
     let paidDateForInput = '';
     if (ticket.paid_date) {
         const pd = parseSheetDate(ticket.paid_date);
@@ -418,7 +413,7 @@ function openManageModal(rowIndex) {
             </div>
 
             <div class="form-grid" style="margin-top: 1rem;">
-                <div class="form-group"><label>New Travel Date</label><input type="text" id="update_departing_on" placeholder="MM/DD/YYYY" value="${travelDateForInput}" ${isPast ? 'disabled' : ''}></div>
+                <div class="form-group"><label>New Travel Date</label><input type="text" id="update_departing_on" placeholder="MM/DD/YYYY" value="${travelDateForInput}"></div>
                 <div class="form-group"><label>New Base Fare</label><input type="number" id="update_base_fare" placeholder="${(ticket.base_fare||0).toLocaleString()}"></div>
                 <div class="form-group"><label>New Net Amount</label><input type="number" id="update_net_amount" placeholder="${(ticket.net_amount||0).toLocaleString()}"></div>
                 <div class="form-group"><label>New Commission</label><input type="number" id="update_commission" placeholder="${(ticket.commission||0).toLocaleString()}"></div>
