@@ -14,7 +14,7 @@
 .landing-bg {
     position: absolute;
     inset: 0;
-    background-image: url('travel-bg.png');
+    background-image: url('travel-bg.jpeg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -23,12 +23,12 @@
 /* Top-left corner logo */
 .landing-corner-logo {
     position: absolute;
-    top: 28px;
-    left: 36px;
-    height: 64px;
+    top: 24px;
+    left: 32px;
+    height: 130px;
     width: auto;
     z-index: 10;
-    filter: drop-shadow(0 4px 12px rgba(15,76,117,0.2));
+    filter: drop-shadow(0 6px 18px rgba(15,76,117,0.25));
     animation: fade-in 0.8s ease-out;
 }
 
@@ -87,7 +87,7 @@
     .landing-corner-logo {
         top: 16px;
         left: 16px;
-        height: 48px;
+        height: 80px;
     }
     .landing-content {
         top: auto;
