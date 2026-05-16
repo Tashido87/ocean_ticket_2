@@ -32,6 +32,7 @@ export function initAuth(onUserSignedIn, onUserSignedOut) {
         const loading = document.getElementById('loading');
         const dashboardContent = document.getElementById('dashboard-content');
         const mainHeader = document.getElementById('main-header');
+        const initialSplash = document.getElementById('initial-splash');
 
         if (user) {
             console.log('User signed in:', user.displayName);
@@ -40,11 +41,18 @@ export function initAuth(onUserSignedIn, onUserSignedOut) {
             if (loading) loading.style.display = 'flex';
             if (onUserSignedIn) onUserSignedIn(user);
         } else {
-            if (authContainer) authContainer.style.display = 'block';
+            if (authContainer) authContainer.style.display = 'grid';
             if (mainHeader) mainHeader.style.display = 'none';
             if (loading) loading.style.display = 'none';
             if (dashboardContent) dashboardContent.style.display = 'none';
             if (onUserSignedOut) onUserSignedOut();
+        }
+
+        // Hide the initial splash now that auth state is known
+        if (initialSplash) {
+            initialSplash.style.opacity = '0';
+            initialSplash.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => { initialSplash.style.display = 'none'; }, 300);
         }
     });
 }

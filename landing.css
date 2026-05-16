@@ -8,6 +8,8 @@
     height: 100vh;
     overflow: hidden;
     z-index: 9999;
+    display: grid;
+    place-items: center;
 }
 
 /* Static background image */
@@ -20,26 +22,27 @@
     background-repeat: no-repeat;
 }
 
-/* Logo (centered, all black) */
-.landing-corner-logo {
-    width: clamp(280px, 38vw, 480px);
-    height: auto;
-    filter: brightness(0) drop-shadow(0 6px 20px rgba(0,0,0,0.25));
-    animation: fade-in 0.8s ease-out;
-}
-
-/* Center the logo + button vertically and horizontally */
-.landing-page {
+/* Centered stack (logo + button) */
+.landing-stack {
+    position: relative;
+    z-index: 10;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2rem;
+    gap: 2.5rem;
+    text-align: center;
+}
+
+.landing-corner-logo {
+    width: clamp(280px, 38vw, 480px);
+    height: auto;
+    display: block;
+    filter: brightness(0) drop-shadow(0 6px 20px rgba(0,0,0,0.25));
+    animation: fade-in 0.8s ease-out;
 }
 
 .landing-content {
-    position: relative;
-    z-index: 10;
     animation: fade-in 1.2s ease-out 0.3s backwards;
 }
 
