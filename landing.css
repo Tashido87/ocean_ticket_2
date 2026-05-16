@@ -20,24 +20,25 @@
     background-repeat: no-repeat;
 }
 
-/* Top-left corner logo */
+/* Logo (centered, all black) */
 .landing-corner-logo {
-    position: absolute;
-    top: 24px;
-    left: 32px;
-    height: 130px;
-    width: auto;
-    z-index: 10;
-    filter: drop-shadow(0 6px 18px rgba(15,76,117,0.25));
+    width: clamp(280px, 38vw, 480px);
+    height: auto;
+    filter: brightness(0) drop-shadow(0 6px 20px rgba(0,0,0,0.25));
     animation: fade-in 0.8s ease-out;
 }
 
-/* Content area positioned below "Your journey starts here" text in the bg */
+/* Center the logo + button vertically and horizontally */
+.landing-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+}
+
 .landing-content {
-    position: absolute;
-    /* The text in the background image sits roughly around 30% from top, 22% from left */
-    top: 45%;
-    left: 8%;
+    position: relative;
     z-index: 10;
     animation: fade-in 1.2s ease-out 0.3s backwards;
 }
@@ -84,17 +85,7 @@
 
 /* Mobile */
 @media (max-width: 768px) {
-    .landing-corner-logo {
-        top: 16px;
-        left: 16px;
-        height: 80px;
-    }
-    .landing-content {
-        top: auto;
-        bottom: 8%;
-        left: 50%;
-        transform: translateX(-50%);
-    }
+    .landing-corner-logo { width: 75vw; }
     .landing-signin-btn { padding: 12px 28px; font-size: 0.95rem; }
 }
 
