@@ -9,7 +9,7 @@ import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCne_lEm_tMAUn70gljCI0-hL1xv9Icxk0",
+    apiKey: "AIzaSyCne_lEm_tMAUn70gljCl0-hL1xv9Icxk0",
     authDomain: "ocean-ticket-bf235.firebaseapp.com",
     projectId: "ocean-ticket-bf235",
     storageBucket: "ocean-ticket-bf235.firebasestorage.app",
