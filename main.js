@@ -23,7 +23,7 @@ import { initHotelService } from './hotel.js';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
-import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm } from './ui.js';
+import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview } from './ui.js';
 
 /**
  * Main application initialization function. Called after authentication.
@@ -149,6 +149,8 @@ function setupEventListeners() {
     document.getElementById('flightTypeToggle').addEventListener('change', () => {
         populateFlightLocations();
         updateToggleLabels();
+        applyFlightTypeToAllPaxForms();
+        updateSellRoutePreview();
     });
     document.getElementById('addPassengerBtn').addEventListener('click', () => addPassengerForm());
     // MODIFIED: Restored event listener for Previous Client Name
@@ -523,6 +525,7 @@ window.onload = async () => {
     resetPassengerForms();
     resetBookingPassengerForms();
     initializePaymentMethodEnhancements();
+    initializeSellFormEnhancements();
 
     // Initialize Firebase Auth
     initAuth(

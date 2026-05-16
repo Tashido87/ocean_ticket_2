@@ -16,11 +16,12 @@ import {
     closeModal,
     showView,
     resetPassengerForms,
-    addPassengerForm,
+    populatePassengerCardFromClient,
     resetBookingPassengerForms,
     addBookingPassengerForm,
     showNewBookingForm
 } from './ui.js';
+import { openPhotoLightbox } from './passport.js';
 
 /**
  * Builds a comprehensive list of unique clients from the ticket data.
@@ -39,6 +40,14 @@ export function buildClientList() {
                 account_type: ticket.account_type,
                 account_link: ticket.account_link,
                 id_no: ticket.id_no,
+                nrc_no: ticket.nrc_no || ticket.id_no,
+                document_type: ticket.document_type || 'NRC',
+                passport_no: ticket.passport_no || '',
+                passport_expiry: ticket.passport_expiry || '',
+                passport_photo_url: ticket.passport_photo_url || '',
+                passport_photo_path: ticket.passport_photo_path || '',
+                dob: ticket.dob || '',
+                nationality: ticket.nationality || 'MM',
                 gender: ticket.gender,
                 ticket_count: 0,
                 total_spent: 0,
@@ -46,6 +55,15 @@ export function buildClientList() {
                 last_issued: new Date(0)
             };
         }
+        if (ticket.nrc_no) clients[clientKey].nrc_no = ticket.nrc_no;
+        if (ticket.id_no) clients[clientKey].id_no = ticket.id_no;
+        if (ticket.passport_no) clients[clientKey].passport_no = ticket.passport_no;
+        if (ticket.passport_expiry) clients[clientKey].passport_expiry = ticket.passport_expiry;
+        if (ticket.passport_photo_url) clients[clientKey].passport_photo_url = ticket.passport_photo_url;
+        if (ticket.passport_photo_path) clients[clientKey].passport_photo_path = ticket.passport_photo_path;
+        if (ticket.dob) clients[clientKey].dob = ticket.dob;
+        if (ticket.nationality) clients[clientKey].nationality = ticket.nationality;
+
         if (!lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund')) {
             clients[clientKey].ticket_count++;
             clients[clientKey].total_spent += (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
@@ -158,8 +176,8 @@ export function renderClientsView(page) {
 
     if (searchQuery) {
         filteredClients = filteredClients.filter(c =>
-            c.name.toLowerCase().includes(query) ||
-            c.phone.toLowerCase().includes(query) ||
+            String(c.name || '').toLowerCase().includes(query) ||
+            String(c.phone || '').toLowerCase().includes(query) ||
             (c.account_name && c.account_name.toLowerCase().includes(query)) ||
             (c.account_type && c.account_type.toLowerCase().includes(query))
         );
@@ -208,10 +226,10 @@ export function renderClientsView(page) {
         const row = tbody.insertRow();
         row.innerHTML = `
             <td><i class="fa-regular fa-star star-icon ${isFeatured ? 'featured' : ''}"></i></td>
-            <td class="client-name-cell">${client.name}</td>
-            <td>${client.phone}</td>
-            <td>${client.account_name}</td>
-            <td>${client.account_type}</td>
+            <td class="client-name-cell">${client.name || ''}</td>
+            <td>${client.phone || ''}</td>
+            <td>${client.account_name || ''}</td>
+            <td>${client.account_type || ''}</td>
             <td>${client.ticket_count}</td>
             <td class="client-actions">
                 <button class="icon-btn icon-btn-table" title="Detail"><i class="fa-solid fa-eye"></i></button>
@@ -223,7 +241,7 @@ export function renderClientsView(page) {
         // Add event listeners
         row.querySelector('.star-icon').addEventListener('click', (e) => toggleFeaturedClient(e, client.client_key));
         row.querySelector('[title="Detail"]').addEventListener('click', () => viewClientHistory(client.client_key));
-        row.querySelector('[title="Copy Info"]').addEventListener('click', () => copyClientInfo(client.name, client.id_no, client.phone, client.gender));
+        row.querySelector('[title="Copy Info"]').addEventListener('click', () => copyClientInfo(client.name, client.nrc_no || client.id_no, client.phone, client.gender));
         row.querySelector('[title="New Booking"]').addEventListener('click', () => bookForClient(client.client_key));
         row.querySelector('[title="Sell New Ticket"]').addEventListener('click', () => sellTicketForClient(client.client_key));
     });
@@ -310,6 +328,10 @@ function viewClientHistory(clientKey) {
     });
     const totalSpent = activeClientTickets.reduce((sum, t) => sum + (t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0), 0);
     const totalProfit = activeClientTickets.reduce((sum, t) => sum + (t.commission || 0) + (t.extra_fare || 0), 0);
+    const primaryId = activeClient?.nrc_no || firstTicket.nrc_no || firstTicket.id_no || 'N/A';
+    const passportNo = activeClient?.passport_no || firstTicket.passport_no || '';
+    const passportExpiry = activeClient?.passport_expiry || firstTicket.passport_expiry || '';
+    const passportPhotoUrl = activeClient?.passport_photo_url || firstTicket.passport_photo_url || '';
 
     let historyHtml = '<div class="table-container"><table id="clientHistoryTable"><thead><tr><th>Issued</th><th>PNR</th><th>Route</th><th>Travel Date</th><th>Airline</th><th>Net Amount</th></tr></thead><tbody>';
     clientTickets.forEach(t => {
@@ -326,12 +348,34 @@ function viewClientHistory(clientKey) {
         `;
     });
     historyHtml += '</tbody></table></div>';
+    const documentsHtml = `
+        <div class="client-documents">
+            <h3><i class="fa-solid fa-passport"></i> Travel Documents</h3>
+            <div class="client-documents-grid">
+                <div class="client-doc-card">
+                    <span class="doc-label">NRC</span>
+                    <strong>${primaryId}</strong>
+                </div>
+                <div class="client-doc-card">
+                    <span class="doc-label">Passport</span>
+                    <strong>${passportNo || 'N/A'}</strong>
+                    <small>Expiry: ${passportExpiry || 'N/A'}</small>
+                </div>
+                ${passportPhotoUrl ? `
+                    <button type="button" class="client-doc-photo" id="clientDocPhotoBtn">
+                        <img src="${passportPhotoUrl}" alt="Passport photo">
+                        <span>View passport photo</span>
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
 
     const content = `
         <div class="client-history-header">
             <div class="client-history-info">
                 <h2>${clientName}</h2>
-                <p>ID: ${firstTicket.id_no || 'N/A'} | Phone: ${firstTicket.phone || 'N/A'} | Social: ${firstTicket.account_name || 'N/A'} (${firstTicket.account_type || 'N/A'})</p>
+                <p>NRC: ${primaryId} | Phone: ${firstTicket.phone || 'N/A'} | Social: ${firstTicket.account_name || 'N/A'} (${firstTicket.account_type || 'N/A'})</p>
             </div>
             <div class="client-history-actions">
                 <button class="btn btn-primary" id="sellForClientBtn"><i class="fa-solid fa-ticket"></i> Sell New Ticket</button>
@@ -343,6 +387,7 @@ function viewClientHistory(clientKey) {
             <div class="stat-card"><div class="label">Total Spent</div><div class="value">${totalSpent.toLocaleString()} MMK</div></div>
             <div class="stat-card"><div class="label">Total Profit</div><div class="value">${totalProfit.toLocaleString()} MMK</div></div>
         </div>
+        ${documentsHtml}
         <h3>Ticket History</h3>
         ${historyHtml}
     `;
@@ -350,6 +395,7 @@ function viewClientHistory(clientKey) {
     openModal(content, 'large-modal');
     document.getElementById('sellForClientBtn').addEventListener('click', () => sellTicketForClient(clientKey));
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    document.getElementById('clientDocPhotoBtn')?.addEventListener('click', () => openPhotoLightbox(passportPhotoUrl));
 }
 
 /**
@@ -419,12 +465,8 @@ function sellTicketForClient(clientKey) {
     document.getElementById('account_link').value = client.account_link || '';
 
     resetPassengerForms();
-    const passengerGenderSelect = document.querySelector('#passenger-forms-container .passenger-gender');
-    const passengerNameInput = document.querySelector('#passenger-forms-container .passenger-name');
-    const passengerIdInput = document.querySelector('#passenger-forms-container .passenger-id');
-    if (passengerGenderSelect) passengerGenderSelect.value = client.gender || 'MR';
-    if (passengerNameInput) passengerNameInput.value = client.name.toUpperCase();
-    if (passengerIdInput) passengerIdInput.value = client.id_no || '';
+    const passengerCard = document.querySelector('#passenger-forms-container .passenger-form');
+    if (passengerCard) populatePassengerCardFromClient(passengerCard, client);
 
     showToast(`Form pre-filled for ${client.name}.`, 'info');
 }

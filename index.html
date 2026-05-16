@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="ocean-travel-logo.png">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="landing.css">
+    <link rel="stylesheet" href="sell.css">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -329,71 +330,188 @@
             </section>
 
             <section id="sell-view" class="view">
-                <div class="form-container glass-card">
-                   <div class="form-header">
-                       <h2><i class="fa-solid fa-ticket"></i> Sell New Ticket(s)</h2>
-                       <div class="flight-type-toggle">
-                           <span id="domestic-label">Domestic</span>
-                           <label class="switch">
-                               <input type="checkbox" id="flightTypeToggle">
-                               <span class="slider round"></span>
-                           </label>
-                           <span id="international-label">International</span>
-                       </div>
-                   </div>
-                   <form id="sellForm">
-                       <div class="form-grid">
-                           <div class="form-group"><label for="issued_date">Issued Date</label><input type="text" id="issued_date" placeholder="MM/DD/YYYY" required autocomplete="off"></div>
-                           <div class="form-group"><label for="booking_reference">PNR Code</label><input type="text" id="booking_reference" required autocomplete="off"></div>
-                           <div class="form-group client-autosuggest-group">
-                               <label for="phone">Contact Phone</label>
-                               <input type="tel" id="phone" required autocomplete="off">
-                               <div class="autosuggest-box" id="phone_autosuggest"></div>
-                           </div>
-                           <div class="form-group client-autosuggest-group">
-                               <label for="account_name">Social Media Account Name</label>
-                               <input type="text" id="account_name" required autocomplete="off">
-                               <div class="autosuggest-box" id="account_name_autosuggest"></div>
-                            </div>
-                           <div class="form-group"><label for="account_type">Social Media Account Type</label><select id="account_type" required><option value="" disabled selected>Select Account Type</option><option value="Facebook Page">Facebook Page</option><option value="Messenger">Messenger</option><option value="Viber">Viber</option><option value="Telegram">Telegram</option><option value="WeChat">WeChat</option><option value="Phone">Phone</option></select></div>
-                           <div class="form-group"><label for="account_link">Account Link</label><input type="text" id="account_link" placeholder="URL, phone number or @username"></div>
-                           <div class="form-group"><label for="departure">Departure</label><select id="departure" required><option value="" disabled selected>Select Departure</option></select></div>
-                           <div class="form-group"><label for="destination">Destination</label><select id="destination" required><option value="" disabled selected>Select Destination</option></select></div>
-                           <div class="form-group" id="custom_departure_group" style="display: none;"><label for="custom_departure">Custom Departure</label><input type="text" id="custom_departure"></div>
-                           <div class="form-group" id="custom_destination_group" style="display: none;"><label for="custom_destination">Custom Destination</label><input type="text" id="custom_destination"></div>
-                           <div class="form-group"><label for="departing_on">Travel Date</label><input type="text" id="departing_on" placeholder="MM/DD/YYYY" required autocomplete="off"></div>
-                           <div class="form-group">
-                               <label for="airline">Airline</label>
-                               <select id="airline" required>
-                                   <option value="" disabled selected>Select Airline</option>
-                                   <option value="MNA">MNA</option>
-                                   <option value="MAI">MAI</option>
-                                   <option value="ManYadanarpon">ManYadanarpon</option>
-                                   <option value="AirThanLwin">AirThanLwin</option>
-                                   <option value="CUSTOM">CUSTOM</option>
-                               </select>
-                           </div>
-                           <div class="form-group" id="custom_airline_group" style="display: none;"><label for="custom_airline">Custom Airline Name</label><input type="text" id="custom_airline"></div>
-                           <div class="form-group"><label for="payment_method">Payment Method</label><select id="payment_method"><option value="">Select Payment Method</option><option value="KBZ Pay">KBZ Pay</option><option value="Mobile Banking">Mobile Banking</option><option value="Aya Pay">Aya Pay</option><option value="Cash">Cash</option></select></div>
-                           <div class="form-group"><label for="paid_date">Paid Date</label><input type="text" id="paid_date" placeholder="MM/DD/YYYY" autocomplete="off"></div>
-                           <div class="form-group checkbox-group"><label for="paid">Paid</label><input type="checkbox" id="paid"></div>
-                       </div>
-                       <hr style="border-color: rgba(255,255,255,0.2); margin: 1.5rem 0;">
-                       <div id="passenger-forms-container">
-                           </div>
-                       <div class="form-actions" style="justify-content: flex-start; margin-top: 1rem;">
-                           <button type="button" class="btn btn-secondary" id="addPassengerBtn"><i class="fa-solid fa-plus"></i> Add Passenger</button>
-                           <button type="button" class="btn btn-secondary" id="addExistingPassengerBtn"><i class="fa-solid fa-user-plus"></i> Add Existing Passenger</button>
-                           <button type="button" class="btn btn-secondary" id="removePassengerBtn" style="display: none;"><i class="fa-solid fa-minus"></i> Remove Last</button>
-                       </div>
+                <form id="sellForm" class="sell-sections">
 
-                       <div class="form-actions" style="margin-top: 2rem;">
-                           <button type="button" class="btn btn-secondary" id="cancelSellBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
-                           <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Submit Ticket(s)</button>
-                       </div>
-                   </form>
-               </div>
-           </section>
+                    <!-- ========== SECTION 1: BOOKING CONTEXT ========== -->
+                    <div class="sell-section" id="section-booking">
+                        <div class="sell-section-header">
+                            <span class="section-icon"><i class="fa-solid fa-plane-departure"></i></span>
+                            <div class="section-titles">
+                                <h3>Booking Context</h3>
+                                <p class="section-subtitle">Flight, route, and reference for this booking</p>
+                            </div>
+                            <span id="route-preview" class="route-preview" style="display:none;">
+                                <i class="fa-solid fa-plane"></i>
+                                <span id="route-preview-text"></span>
+                            </span>
+                            <div class="flight-type-toggle">
+                                <span id="domestic-label">Domestic</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="flightTypeToggle">
+                                    <span class="slider round"></span>
+                                </label>
+                                <span id="international-label">International</span>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="issued_date">Issued Date <span class="req">*</span></label>
+                                <input type="text" id="issued_date" placeholder="MM/DD/YYYY" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="booking_reference">PNR Code <span class="req">*</span></label>
+                                <input type="text" id="booking_reference" required autocomplete="off" placeholder="e.g. BDUVUU">
+                            </div>
+                            <div class="form-group">
+                                <label for="departing_on">Travel Date <span class="req">*</span></label>
+                                <input type="text" id="departing_on" placeholder="MM/DD/YYYY" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="airline">Airline <span class="req">*</span></label>
+                                <select id="airline" required>
+                                    <option value="" disabled selected>Select Airline</option>
+                                    <option value="MNA">MNA</option>
+                                    <option value="MAI">MAI</option>
+                                    <option value="ManYadanarpon">ManYadanarpon</option>
+                                    <option value="AirThanLwin">AirThanLwin</option>
+                                    <option value="CUSTOM">CUSTOM</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="custom_airline_group" style="display: none;">
+                                <label for="custom_airline">Custom Airline Name</label>
+                                <input type="text" id="custom_airline">
+                            </div>
+                            <div class="form-group">
+                                <label for="departure">Departure <span class="req">*</span></label>
+                                <select id="departure" required><option value="" disabled selected>Select Departure</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="destination">Destination <span class="req">*</span></label>
+                                <select id="destination" required><option value="" disabled selected>Select Destination</option></select>
+                            </div>
+                            <div class="form-group" id="custom_departure_group" style="display: none;">
+                                <label for="custom_departure">Custom Departure</label>
+                                <input type="text" id="custom_departure">
+                            </div>
+                            <div class="form-group" id="custom_destination_group" style="display: none;">
+                                <label for="custom_destination">Custom Destination</label>
+                                <input type="text" id="custom_destination">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== SECTION 2: CLIENT / ACCOUNT ========== -->
+                    <div class="sell-section" id="section-client">
+                        <div class="sell-section-header">
+                            <span class="section-icon"><i class="fa-solid fa-user"></i></span>
+                            <div class="section-titles">
+                                <h3>Client &amp; Account</h3>
+                                <p class="section-subtitle">Contact details for this booking</p>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group client-autosuggest-group">
+                                <label for="phone">Contact Phone <span class="req">*</span></label>
+                                <input type="tel" id="phone" required autocomplete="off" placeholder="09xxxxxxxxx">
+                                <div class="autosuggest-box" id="phone_autosuggest"></div>
+                                <div id="phone_match_chip" class="match-chip" style="display:none;">
+                                    <i class="fa-solid fa-check-circle"></i> <span></span>
+                                </div>
+                            </div>
+                            <div class="form-group client-autosuggest-group">
+                                <label for="account_name">Social Media Account Name <span class="req">*</span></label>
+                                <input type="text" id="account_name" required autocomplete="off">
+                                <div class="autosuggest-box" id="account_name_autosuggest"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="account_type">Account Type <span class="req">*</span></label>
+                                <select id="account_type" required>
+                                    <option value="" disabled selected>Select Account Type</option>
+                                    <option value="Facebook Page">Facebook Page</option>
+                                    <option value="Messenger">Messenger</option>
+                                    <option value="Viber">Viber</option>
+                                    <option value="Telegram">Telegram</option>
+                                    <option value="WeChat">WeChat</option>
+                                    <option value="Phone">Phone</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="account_link">Account Link</label>
+                                <input type="text" id="account_link" placeholder="URL, phone or @username">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== SECTION 3: PASSENGERS ========== -->
+                    <div class="sell-section" id="section-passengers">
+                        <div class="sell-section-header">
+                            <span class="section-icon"><i class="fa-solid fa-users"></i></span>
+                            <div class="section-titles">
+                                <h3>Passengers <span id="passengerCountBadge" class="passenger-count-badge">0</span></h3>
+                                <p class="section-subtitle">Add each passenger and their travel documents</p>
+                            </div>
+                            <div class="passengers-section-actions">
+                                <button type="button" class="btn btn-secondary" id="addExistingPassengerBtn" title="Search and pre-fill an existing client">
+                                    <i class="fa-solid fa-user-check"></i> Existing
+                                </button>
+                                <button type="button" class="btn btn-primary" id="addPassengerBtn">
+                                    <i class="fa-solid fa-plus"></i> Add Passenger
+                                </button>
+                            </div>
+                        </div>
+                        <div id="passenger-forms-container"></div>
+                        <button type="button" class="btn btn-secondary" id="removePassengerBtn" style="display: none; margin-top: 0.75rem;">
+                            <i class="fa-solid fa-minus"></i> Remove Last Passenger
+                        </button>
+                    </div>
+
+                    <!-- ========== STICKY PAYMENT SUMMARY BAR ========== -->
+                    <div class="sticky-summary-bar" id="stickySummaryBar">
+                        <div class="sticky-summary-inner">
+                            <div class="summary-stats">
+                                <div class="summary-stat">
+                                    <span class="stat-label">Passengers</span>
+                                    <span class="stat-value" id="summaryPaxCount">0</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="stat-label">Total Net</span>
+                                    <span class="stat-value is-positive" id="summaryTotal">0 MMK</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="stat-label">Commission</span>
+                                    <span class="stat-value is-muted" id="summaryCommission">0 MMK</span>
+                                </div>
+                            </div>
+                            <div class="summary-payment-controls">
+                                <label class="paid-toggle">
+                                    <input type="checkbox" id="paid">
+                                    <span>Paid</span>
+                                </label>
+                                <div class="form-group" style="margin:0; min-width:160px;">
+                                    <select id="payment_method" aria-label="Payment Method">
+                                        <option value="">Payment Method</option>
+                                        <option value="KBZ Pay">KBZ Pay</option>
+                                        <option value="Mobile Banking">Mobile Banking</option>
+                                        <option value="Aya Pay">Aya Pay</option>
+                                        <option value="Cash">Cash</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin:0; min-width:140px;">
+                                    <input type="text" id="paid_date" placeholder="Paid Date" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="summary-actions">
+                                <button type="button" class="btn btn-secondary" id="cancelSellBtn">
+                                    <i class="fa-solid fa-xmark"></i> Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-check"></i> Submit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </section>
             
             <section id="manage-view" class="view">
                  <div class="form-container glass-card">

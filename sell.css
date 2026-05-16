@@ -1,0 +1,920 @@
+/* ==========================================================
+   SELL TICKET PAGE — PROFESSIONAL REDESIGN
+   ========================================================== */
+
+/* ----- Sections (Booking Context, Client, Passengers) ----- */
+.sell-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-bottom: 140px; /* space for sticky summary bar */
+}
+
+.sell-section {
+    background: #ffffff;
+    border: 1px solid rgba(38, 37, 30, 0.10);
+    border-radius: var(--liquid-radius);
+    padding: 1.75rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.sell-section:hover {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 12px 32px rgba(0,0,0,0.07);
+    border-color: rgba(38, 37, 30, 0.15);
+}
+
+.sell-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid rgba(38, 37, 30, 0.06);
+}
+
+.sell-section-header .section-icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(245, 78, 0, 0.10);
+    color: var(--primary-accent);
+    font-size: 1rem;
+}
+
+.sell-section-header h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+.sell-section-header .section-subtitle {
+    margin: 0.125rem 0 0 0;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.sell-section-header .section-titles {
+    flex: 1;
+}
+
+/* Route preview chip in booking section header */
+.route-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.85rem;
+    background: rgba(31, 138, 101, 0.08);
+    border: 1px solid rgba(31, 138, 101, 0.18);
+    color: var(--secondary-accent);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.route-preview .fa-plane {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+/* ----- Flight type toggle (re-styled to fit section header) ----- */
+.sell-section-header .flight-type-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* ----- Passengers section ----- */
+.passengers-section-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.passenger-count-badge {
+    background: var(--primary-accent);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    min-width: 22px;
+    text-align: center;
+}
+
+/* ----- Passenger card (3-panel) ----- */
+#passenger-forms-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.passenger-form {
+    background: #fafaf8;
+    border: 1px solid rgba(38, 37, 30, 0.09);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.passenger-form:hover {
+    border-color: rgba(38, 37, 30, 0.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.passenger-form.is-incomplete {
+    border-left: 3px solid var(--danger-accent, #cf2d56);
+}
+
+.passenger-form.is-complete {
+    border-left: 3px solid var(--success-accent, #1f8a65);
+}
+
+/* Card header (always visible, click to collapse) */
+.pax-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.9rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+    background: #ffffff;
+    border-bottom: 1px solid rgba(38, 37, 30, 0.06);
+    transition: background 0.15s ease;
+}
+
+.pax-card-header:hover {
+    background: #fcfbf9;
+}
+
+.pax-card-header .pax-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f54e00, #d94400);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+}
+
+.pax-card-header .pax-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.pax-card-header .pax-number {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.pax-card-header .pax-summary {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pax-card-header .pax-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.pax-status.status-complete {
+    background: rgba(31, 138, 101, 0.10);
+    color: var(--success-accent, #1f8a65);
+}
+
+.pax-status.status-incomplete {
+    background: rgba(207, 45, 86, 0.10);
+    color: var(--danger-accent, #cf2d56);
+}
+
+.pax-card-header .pax-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.pax-card-header .pax-actions .icon-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.85rem;
+}
+
+.pax-card-header .pax-collapse-chevron {
+    transition: transform 0.25s ease;
+    color: var(--text-secondary);
+    margin-left: 0.25rem;
+}
+
+.passenger-form.is-collapsed .pax-collapse-chevron {
+    transform: rotate(-90deg);
+}
+
+.passenger-form.is-collapsed .pax-card-body {
+    display: none;
+}
+
+/* Card body (panels) */
+.pax-card-body {
+    padding: 1.25rem 1.25rem 1.5rem;
+    background: #fafaf8;
+}
+
+.pax-panel {
+    margin-bottom: 1.5rem;
+}
+
+.pax-panel:last-child {
+    margin-bottom: 0;
+}
+
+.pax-panel-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 0.875rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pax-panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(38, 37, 30, 0.08);
+}
+
+/* ----- Identity panel: gender as segmented control ----- */
+.gender-segment {
+    display: inline-flex;
+    background: #ffffff;
+    border: 1px solid rgba(38, 37, 30, 0.12);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.gender-segment input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.gender-segment label {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0;
+    user-select: none;
+}
+
+.gender-segment input:checked + label {
+    background: var(--primary-accent);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(245, 78, 0, 0.3);
+}
+
+.gender-segment label:hover {
+    color: var(--text-primary);
+}
+
+.gender-segment input:checked + label:hover {
+    color: #fff;
+}
+
+.age-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.55rem;
+    background: rgba(38, 37, 30, 0.06);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+/* ----- Documents panel: tabs ----- */
+.doc-tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid rgba(38, 37, 30, 0.08);
+    margin-bottom: 1rem;
+}
+
+.doc-tab {
+    background: transparent;
+    border: none;
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: inherit;
+}
+
+.doc-tab:hover {
+    color: var(--text-primary);
+}
+
+.doc-tab.is-active {
+    color: var(--primary-accent);
+    border-bottom-color: var(--primary-accent);
+}
+
+.doc-tab .required-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--danger-accent, #cf2d56);
+    display: none;
+}
+
+.doc-tab.is-required .required-dot {
+    display: inline-block;
+}
+
+.doc-tab[data-tab="passport"][hidden] {
+    display: none !important;
+}
+
+.doc-panel {
+    display: none;
+}
+
+.doc-panel.is-active {
+    display: block;
+    animation: fadeInPanel 0.25s ease;
+}
+
+@keyframes fadeInPanel {
+    from { opacity: 0; transform: translateY(2px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ----- Structured NRC input ----- */
+.nrc-input {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #ffffff;
+    border: 1px solid rgba(38, 37, 30, 0.12);
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 0;
+    height: 44px;
+    width: fit-content;
+    max-width: 100%;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nrc-input:focus-within {
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(245, 78, 0, 0.12);
+}
+
+.nrc-input input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 0.5rem !important;
+    margin: 0 !important;
+    height: 100% !important;
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace !important;
+    font-size: 0.92rem !important;
+    text-align: center !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.nrc-input input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.nrc-input .nrc-region { width: 36px; }
+.nrc-input .nrc-township { width: 80px; text-transform: uppercase; }
+.nrc-input .nrc-type { width: 36px; text-transform: uppercase; }
+.nrc-input .nrc-serial { width: 90px; }
+
+.nrc-input .nrc-sep {
+    color: var(--text-secondary);
+    font-weight: 600;
+    user-select: none;
+    padding: 0 0.1rem;
+}
+
+.nrc-input.is-invalid {
+    border-color: var(--danger-accent, #cf2d56);
+}
+
+.nrc-helper {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.nrc-helper.is-error {
+    color: var(--danger-accent, #cf2d56);
+}
+
+/* ----- Passport photo drop zone ----- */
+.passport-photo-zone {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 140px;
+    padding: 1rem;
+    border: 2px dashed rgba(38, 37, 30, 0.18);
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.passport-photo-zone:hover,
+.passport-photo-zone.is-dragover {
+    border-color: var(--primary-accent);
+    background: rgba(245, 78, 0, 0.03);
+}
+
+.passport-photo-zone .pz-icon {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+}
+
+.passport-photo-zone .pz-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.passport-photo-zone .pz-text strong {
+    color: var(--primary-accent);
+}
+
+.passport-photo-zone .pz-hint {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.passport-photo-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Uploading state */
+.passport-photo-zone.is-uploading {
+    pointer-events: none;
+}
+
+.passport-photo-zone.is-uploading .pz-content {
+    opacity: 0.5;
+}
+
+.passport-photo-zone .pz-progress {
+    display: none;
+    width: 100%;
+    max-width: 200px;
+    height: 6px;
+    background: rgba(38, 37, 30, 0.1);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.passport-photo-zone.is-uploading .pz-progress {
+    display: block;
+}
+
+.passport-photo-zone .pz-progress-bar {
+    height: 100%;
+    background: var(--primary-accent);
+    width: 0;
+    transition: width 0.2s ease;
+}
+
+/* Uploaded state */
+.passport-photo-preview {
+    display: none;
+    position: relative;
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(38, 37, 30, 0.10);
+    background: #ffffff;
+}
+
+.passport-photo-preview.is-visible {
+    display: block;
+}
+
+.passport-photo-preview img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    display: block;
+    background: #f4f4f0;
+    cursor: zoom-in;
+}
+
+.passport-photo-preview .pz-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: #fafaf8;
+    border-top: 1px solid rgba(38, 37, 30, 0.06);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.passport-photo-preview .pz-meta-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.passport-photo-preview .pz-meta-actions button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.passport-photo-preview .pz-meta-actions button:hover {
+    background: rgba(38, 37, 30, 0.06);
+    color: var(--text-primary);
+}
+
+.passport-photo-preview .pz-meta-actions button.pz-remove:hover {
+    color: var(--danger-accent, #cf2d56);
+}
+
+/* Lightbox for full-size photo */
+.photo-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.photo-lightbox.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.photo-lightbox img {
+    max-width: 92vw;
+    max-height: 92vh;
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.photo-lightbox .pl-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ----- Pricing panel ----- */
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.pricing-grid .form-group input[type="number"] {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    text-align: right;
+}
+
+.pricing-totals {
+    margin-top: 0.875rem;
+    padding: 0.75rem 1rem;
+    background: rgba(31, 138, 101, 0.06);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.pricing-totals .label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.pricing-totals .value {
+    font-weight: 700;
+    color: var(--success-accent, #1f8a65);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+}
+
+/* ----- Sticky payment summary bar ----- */
+.sticky-summary-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid rgba(38, 37, 30, 0.10);
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.05);
+    padding: 1rem 2rem;
+    z-index: 100;
+    display: none;
+}
+
+.sticky-summary-bar.is-visible {
+    display: block;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.sticky-summary-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.summary-stats {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.summary-stat {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.summary-stat .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+}
+
+.summary-stat .stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    letter-spacing: -0.01em;
+}
+
+.summary-stat .stat-value.is-positive {
+    color: var(--success-accent, #1f8a65);
+}
+
+.summary-stat .stat-value.is-muted {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.summary-payment-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.summary-payment-controls .paid-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.summary-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ----- Section grid layout tweaks ----- */
+.sell-section .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.125rem;
+}
+
+.sell-section .form-group label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+}
+
+.sell-section .form-group label .req {
+    color: var(--danger-accent, #cf2d56);
+    margin-left: 2px;
+}
+
+/* Inline match chip (e.g. matched client by phone) */
+.match-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.4rem;
+    padding: 0.2rem 0.55rem;
+    background: rgba(31, 138, 101, 0.08);
+    color: var(--success-accent, #1f8a65);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+/* Client history travel documents */
+.client-documents {
+    margin: 1.25rem 0;
+}
+
+.client-documents h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.client-documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.client-doc-card,
+.client-doc-photo {
+    background: #fafaf8;
+    border: 1px solid rgba(38, 37, 30, 0.10);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    text-align: left;
+}
+
+.client-doc-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.client-doc-card .doc-label,
+.client-doc-card small {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+}
+
+.client-doc-card strong {
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.client-doc-photo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-family: inherit;
+}
+
+.client-doc-photo img {
+    width: 54px;
+    height: 54px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #f4f4f0;
+}
+
+/* Hide passport-only fields when domestic */
+.sell-section.is-domestic .domestic-hidden,
+.passenger-form.is-domestic .domestic-hidden {
+    display: none;
+}
+
+.sell-section.is-international .intl-hidden,
+.passenger-form.is-international .intl-hidden {
+    display: none;
+}
+
+/* Empty passengers prompt */
+.no-passengers-prompt {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    border: 1px dashed rgba(38, 37, 30, 0.15);
+    border-radius: 10px;
+    background: #fafaf8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sell-section {
+        padding: 1.25rem 1rem;
+    }
+    .pax-card-header {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+    }
+    .pax-card-header .pax-actions {
+        order: 5;
+        margin-left: auto;
+    }
+    .sticky-summary-bar {
+        padding: 0.875rem 1rem;
+    }
+    .summary-stats {
+        gap: 1rem;
+    }
+    .nrc-input .nrc-township { width: 70px; }
+    .nrc-input .nrc-serial { width: 80px; }
+}

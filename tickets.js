@@ -53,6 +53,40 @@ function getTimestampMs(ts) {
     return 0;
 }
 
+function readPassengerInput(formEl, selector) {
+    return (formEl.querySelector(selector)?.value || '').trim();
+}
+
+function readMoneyInput(formEl, selector) {
+    const value = parseFloat(readPassengerInput(formEl, selector));
+    if (!Number.isFinite(value) || value < 0) return 0;
+    return Math.round(value);
+}
+
+function collectNrcParts(formEl) {
+    return {
+        region: readPassengerInput(formEl, '.nrc-region').replace(/[^0-9]/g, ''),
+        township: readPassengerInput(formEl, '.nrc-township').toUpperCase().replace(/[^A-Z]/g, ''),
+        type: readPassengerInput(formEl, '.nrc-type').toUpperCase().replace(/[^A-Z]/g, ''),
+        serial: readPassengerInput(formEl, '.nrc-serial').replace(/[^0-9]/g, '')
+    };
+}
+
+function joinNrcParts(parts) {
+    if (!parts.region || !parts.township || !parts.type || !parts.serial) return '';
+    return `${parts.region}/${parts.township}(${parts.type})${parts.serial}`;
+}
+
+function getPassengerValidationError(passenger, index, isInternational) {
+    const label = `Passenger ${index + 1}`;
+    if (!passenger.name) return `${label}: passenger name is required.`;
+    if (!passenger.net_amount) return `${label}: net amount is required.`;
+    if (!passenger.nrc_no) return `${label}: complete NRC number is required.`;
+    if (isInternational && !passenger.passport_no) return `${label}: passport number is required for international tickets.`;
+    if (isInternational && passenger.passport_no.length < 5) return `${label}: passport number looks too short.`;
+    return '';
+}
+
 /**
  * Loads ticket data from Firestore.
  */
@@ -246,6 +280,22 @@ export async function handleSellTicket(e) {
         showToast('PNR Code is required.', 'error');
         return;
     }
+    if (!sharedData.departure || !sharedData.destination) {
+        showToast('Departure and destination are required.', 'error');
+        return;
+    }
+    if (!sharedData.airline) {
+        showToast('Airline is required.', 'error');
+        return;
+    }
+
+    const validationError = passengerData
+        .map((p, idx) => getPassengerValidationError(p, idx, sharedData.is_international))
+        .find(Boolean);
+    if (validationError) {
+        showToast(validationError, 'error');
+        return;
+    }
 
     const isDuplicate = passengerData.some(p =>
         state.allTickets.some(t =>
@@ -261,14 +311,15 @@ export async function handleSellTicket(e) {
         return;
     }
 
-    const totalNetAmount = passengerData.reduce((sum, p) => sum + p.net_amount, 0);
+    const totalAmount = passengerData.reduce((sum, p) => sum + p.net_amount + p.extra_fare, 0);
     const confirmationMessage = `
         <h3>Confirm Submission</h3>
         <p>Please review the details before submitting:</p>
         <ul style="list-style: none; padding-left: 0; margin: 1rem 0;">
             <li><strong>PNR Code:</strong> ${sharedData.booking_reference}</li>
+            <li><strong>Flight Type:</strong> ${sharedData.flight_type}</li>
             <li><strong>Total Passengers:</strong> ${passengerData.length}</li>
-            <li><strong>Total Net Amount:</strong> ${totalNetAmount.toLocaleString()} MMK</li>
+            <li><strong>Total Amount:</strong> ${totalAmount.toLocaleString()} MMK</li>
             <li><strong>Payment Status:</strong> ${sharedData.paid ? `Paid via ${sharedData.payment_method}` : 'Not Paid'}</li>
         </ul>
     `;
@@ -340,6 +391,7 @@ function collectFormData(form) {
         destinationVal = form.querySelector('#custom_destination').value;
     }
 
+    const isInternational = !!document.getElementById('flightTypeToggle')?.checked;
     const sharedData = {
         issued_date: form.querySelector('#issued_date').value,
         phone: form.querySelector('#phone').value,
@@ -351,6 +403,8 @@ function collectFormData(form) {
         departing_on: form.querySelector('#departing_on').value,
         airline: form.querySelector('#airline').value === 'CUSTOM' ? form.querySelector('#custom_airline').value : form.querySelector('#airline').value,
         booking_reference: form.querySelector('#booking_reference').value.toUpperCase(),
+        flight_type: isInternational ? 'International' : 'Domestic',
+        is_international: isInternational,
         paid: form.querySelector('#paid').checked,
         payment_method: finalPaymentMethod,
         paid_date: form.querySelector('#paid_date').value
@@ -359,15 +413,27 @@ function collectFormData(form) {
     const passengerData = [];
     const passengerForms = form.querySelectorAll('.passenger-form');
     passengerForms.forEach(pForm => {
+        const nrc = collectNrcParts(pForm);
+        const nrcNo = joinNrcParts(nrc);
+        const passportNo = readPassengerInput(pForm, '.passenger-passport-no').toUpperCase();
         const passenger = {
-            gender: pForm.querySelector('.passenger-gender').value,
-            name: pForm.querySelector('.passenger-name').value.toUpperCase(),
-            id_no: pForm.querySelector('.passenger-id').value.toUpperCase(),
-            base_fare: parseFloat(pForm.querySelector('.passenger-base-fare').value) || 0,
-            net_amount: parseFloat(pForm.querySelector('.passenger-net-amount').value) || 0,
-            extra_fare: parseFloat(pForm.querySelector('.passenger-extra-fare').value) || 0,
-            commission: parseFloat(pForm.querySelector('.passenger-commission').value) || 0,
-            remarks: pForm.querySelector('.passenger-remarks').value
+            gender: pForm.querySelector('.passenger-gender:checked')?.value || 'MR',
+            name: readPassengerInput(pForm, '.passenger-name').toUpperCase(),
+            dob: readPassengerInput(pForm, '.passenger-dob'),
+            nationality: (readPassengerInput(pForm, '.passenger-nationality') || 'MM').toUpperCase(),
+            document_type: isInternational ? 'Passport' : 'NRC',
+            id_no: nrcNo || passportNo,
+            nrc,
+            nrc_no: nrcNo,
+            passport_no: passportNo,
+            passport_expiry: readPassengerInput(pForm, '.passenger-passport-expiry'),
+            passport_photo_url: readPassengerInput(pForm, '.passenger-passport-photo-url'),
+            passport_photo_path: readPassengerInput(pForm, '.passenger-passport-photo-path'),
+            base_fare: readMoneyInput(pForm, '.passenger-base-fare'),
+            net_amount: readMoneyInput(pForm, '.passenger-net-amount'),
+            extra_fare: readMoneyInput(pForm, '.passenger-extra-fare'),
+            commission: readMoneyInput(pForm, '.passenger-commission'),
+            remarks: readPassengerInput(pForm, '.passenger-remarks')
         };
         if (passenger.name) {
             passengerData.push(passenger);
@@ -392,6 +458,15 @@ async function saveTicket(sharedData, passengerData) {
             issued_date: formatDateForSheet(sharedData.issued_date),
             name: p.name,
             id_no: p.id_no,
+            nrc: p.nrc || {},
+            nrc_no: p.nrc_no || '',
+            document_type: p.document_type || 'NRC',
+            passport_no: p.passport_no || '',
+            passport_expiry: p.passport_expiry || '',
+            passport_photo_url: p.passport_photo_url || '',
+            passport_photo_path: p.passport_photo_path || '',
+            dob: p.dob || '',
+            nationality: p.nationality || '',
             phone: sharedData.phone,
             account_name: sharedData.account_name,
             account_type: sharedData.account_type,
@@ -400,12 +475,14 @@ async function saveTicket(sharedData, passengerData) {
             destination: sharedData.destination,
             departing_on: formatDateForSheet(sharedData.departing_on),
             airline: sharedData.airline,
+            flight_type: sharedData.flight_type,
+            is_international: sharedData.is_international,
             base_fare: p.base_fare || 0,
             booking_reference: sharedData.booking_reference,
             net_amount: p.net_amount || 0,
             paid: sharedData.paid,
             payment_method: sharedData.payment_method,
-            paid_date: formatDateForSheet(sharedData.paid_date),
+            paid_date: sharedData.paid ? formatDateForSheet(sharedData.paid_date) : '',
             commission: agentCommission,
             remarks: p.remarks || '',
             extra_fare: p.extra_fare || 0,
