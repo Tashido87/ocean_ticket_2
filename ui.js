@@ -1666,6 +1666,7 @@ function _buildPassengerCardHtml(idx, opts) {
                             <input type="text" class="passenger-passport-expiry" placeholder="MM/DD/YYYY" value="${passport?.expiry || ''}" autocomplete="off">
                         </div>
                     </div>
+                    <div class="passport-expiry-warning" data-role="expiry-warning" hidden></div>
                     <div class="form-group" style="margin-top:1rem;">
                         <label>Passport Photo <span style="color:var(--text-secondary); font-weight:400; text-transform:none; letter-spacing:0;">(optional)</span></label>
                         <div class="passport-photo-zone" data-role="photo-zone">
@@ -1817,7 +1818,10 @@ export function populatePassengerCardFromClient(formEl, client) {
 
     const passportNo = client.passport_no || (!parsed.region ? client.id_no : '');
     if (passportNo) formEl.querySelector('.passenger-passport-no').value = String(passportNo).toUpperCase();
-    if (client.passport_expiry) formEl.querySelector('.passenger-passport-expiry').value = client.passport_expiry;
+    if (client.passport_expiry) {
+        formEl.querySelector('.passenger-passport-expiry').value = client.passport_expiry;
+        checkPassportExpiryWarning(formEl);
+    }
     if (client.dob) formEl.querySelector('.passenger-dob').value = client.dob;
     if (client.nationality) formEl.querySelector('.passenger-nationality').value = String(client.nationality).toUpperCase();
 
@@ -1971,7 +1975,13 @@ function _attachPaxBehaviour(formEl, opts = {}) {
                 new window.Datepicker(expiryInput, { format: 'mm/dd/yyyy', autohide: true });
             }
         } catch (_) {}
-        expiryInput.addEventListener('change', () => updatePaxStatus(formEl));
+        expiryInput.addEventListener('change', () => {
+            updatePaxStatus(formEl);
+            checkPassportExpiryWarning(formEl);
+        });
+        expiryInput.addEventListener('input', () => checkPassportExpiryWarning(formEl));
+        // Initial check (in case the form is pre-populated)
+        checkPassportExpiryWarning(formEl);
     }
 
     // ----- Document tab switching -----
@@ -2244,6 +2254,7 @@ function _attachPhotoUpload(formEl) {
         if (ocrExpiry && expiryInput) {
             const expResult = setDateInputFromOcr(expiryInput, ocrExpiry, { isBirth: false });
             console.log('[applyOcrResults] Expiry set result:', expResult, '| input.value:', expiryInput.value);
+            checkPassportExpiryWarning(formEl);
         }
 
         // Title / Sex (support both old and new field names)
@@ -2516,6 +2527,59 @@ function updatePaxStatus(formEl) {
         formEl.classList.remove('is-complete');
     }
     updatePaxSummary(formEl);
+}
+
+/**
+ * Checks the passenger's passport expiry date and shows a warning banner
+ * if it is expired or within 6 months of expiry.
+ */
+function checkPassportExpiryWarning(formEl) {
+    if (!formEl) return;
+    const banner = formEl.querySelector('[data-role="expiry-warning"]');
+    const expiryInput = formEl.querySelector('.passenger-passport-expiry');
+    if (!banner || !expiryInput) return;
+
+    const raw = (expiryInput.value || '').trim();
+    const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) {
+        banner.hidden = true;
+        banner.textContent = '';
+        banner.className = 'passport-expiry-warning';
+        return;
+    }
+
+    const mm = Number(match[1]);
+    const dd = Number(match[2]);
+    const yyyy = Number(match[3]);
+    const expiry = new Date(yyyy, mm - 1, dd);
+    if (isNaN(expiry.getTime())) {
+        banner.hidden = true;
+        return;
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sixMonthsFromNow = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
+    const daysUntilExpiry = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
+
+    const formatted = expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    if (expiry < today) {
+        // Expired
+        banner.hidden = false;
+        banner.className = 'passport-expiry-warning is-expired';
+        banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>Passport EXPIRED</strong> on ${formatted} (${Math.abs(daysUntilExpiry)} days ago). A new passport is required before travel.`;
+    } else if (expiry < sixMonthsFromNow) {
+        // Expiring within 6 months
+        banner.hidden = false;
+        banner.className = 'passport-expiry-warning is-soon';
+        banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Passport expires soon</strong> on ${formatted} (in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}). Many airlines require at least 6 months validity \u2014 request a new passport before booking.`;
+    } else {
+        // Plenty of validity left
+        banner.hidden = true;
+        banner.textContent = '';
+        banner.className = 'passport-expiry-warning';
+    }
 }
 
 function isPassengerComplete(formEl) {

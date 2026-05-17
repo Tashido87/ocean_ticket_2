@@ -286,6 +286,33 @@ export function renderClientsView(page) {
 }
 
 /**
+ * Computes the status of a passport expiry date string (MM/DD/YYYY).
+ * Returns { level: 'expired' | 'soon' | 'ok', formatted, daysAbs?, daysUntil? }
+ * 'soon' = expires within 6 months from today.
+ */
+function computePassportExpiryStatus(expiryStr) {
+    const raw = String(expiryStr || '').trim();
+    const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return { level: 'ok' };
+
+    const mm = Number(match[1]);
+    const dd = Number(match[2]);
+    const yyyy = Number(match[3]);
+    const expiry = new Date(yyyy, mm - 1, dd);
+    if (isNaN(expiry.getTime())) return { level: 'ok' };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sixMonthsFromNow = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
+    const daysDiff = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
+    const formatted = expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    if (expiry < today) return { level: 'expired', formatted, daysAbs: Math.abs(daysDiff) };
+    if (expiry < sixMonthsFromNow) return { level: 'soon', formatted, daysUntil: daysDiff };
+    return { level: 'ok', formatted };
+}
+
+/**
  * Copies a client's information to the clipboard.
  * @param {string} name The client's name.
  * @param {string} id The client's ID number.
@@ -348,6 +375,13 @@ function viewClientHistory(clientKey) {
         `;
     });
     historyHtml += '</tbody></table></div>';
+    const expiryStatus = computePassportExpiryStatus(passportExpiry);
+    const expiryWarningHtml = expiryStatus.level === 'expired'
+        ? `<div class="passport-expiry-warning is-expired"><i class="fa-solid fa-circle-xmark"></i> <strong>Passport EXPIRED</strong> on ${expiryStatus.formatted} (${expiryStatus.daysAbs} days ago). A new passport is required before travel.</div>`
+        : expiryStatus.level === 'soon'
+        ? `<div class="passport-expiry-warning is-soon"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Passport expires soon</strong> on ${expiryStatus.formatted} (in ${expiryStatus.daysUntil} day${expiryStatus.daysUntil === 1 ? '' : 's'}). Many airlines require at least 6 months validity — request a new passport before booking.</div>`
+        : '';
+
     const documentsHtml = `
         <div class="client-documents">
             <h3><i class="fa-solid fa-passport"></i> Travel Documents</h3>
@@ -368,6 +402,7 @@ function viewClientHistory(clientKey) {
                     </button>
                 ` : ''}
             </div>
+            ${expiryWarningHtml}
         </div>
     `;
 

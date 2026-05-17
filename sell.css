@@ -262,6 +262,53 @@
     display: none;
 }
 
+/* ---------- Passport expiry warning banner ---------- */
+.passport-expiry-warning {
+    margin-top: 0.85rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.passport-expiry-warning[hidden] {
+    display: none;
+}
+
+.passport-expiry-warning.is-soon {
+    background: rgba(234, 162, 33, 0.10);
+    border: 1px solid rgba(234, 162, 33, 0.32);
+    color: #b46a00;
+}
+
+.passport-expiry-warning.is-expired {
+    background: rgba(207, 45, 86, 0.10);
+    border: 1px solid rgba(207, 45, 86, 0.32);
+    color: #b1264a;
+}
+
+.passport-expiry-warning i {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+body.dark-theme .passport-expiry-warning.is-soon,
+body.material-theme.dark-theme .passport-expiry-warning.is-soon {
+    background: rgba(234, 162, 33, 0.16);
+    border-color: rgba(234, 162, 33, 0.45);
+    color: #ffb750;
+}
+
+body.dark-theme .passport-expiry-warning.is-expired,
+body.material-theme.dark-theme .passport-expiry-warning.is-expired {
+    background: rgba(207, 45, 86, 0.18);
+    border-color: rgba(207, 45, 86, 0.45);
+    color: #ff7a9a;
+}
+
 /* Card body (panels) */
 .pax-card-body {
     padding: 1.25rem 1.25rem 1.5rem;
