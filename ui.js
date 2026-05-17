@@ -2072,9 +2072,23 @@ function _attachPhotoUpload(formEl) {
         const ocrExpiry = ocr.expiry || ocr.expiryDate || ocr.expirationDate || ocr.dateOfExpiry || ocr.date_of_expiry;
         setDateInputFromOcr(expiryInput, ocrExpiry, { isBirth: false });
 
-        // Gender
+        // Title: derive from sex (M/F) + age (adult→MR/MS, child/infant→MSTR/MISS)
         if (ocr.gender) {
-            const genderRadio = formEl.querySelector(`.passenger-gender[value="${ocr.gender}"]`);
+            // Calculate age from OCR DOB if available, otherwise from the field
+            const dobVal = ocr.dob || formEl.querySelector('.passenger-dob')?.value || '';
+            const age = ageFromDob(dobVal);
+            const isAdult = age === null || age >= 12; // unknown age → treat as adult
+
+            // Map sex to title
+            const isFemale = ocr.gender === 'MS'; // OCR returns 'MS' for F, 'MR' for M
+            let title;
+            if (isFemale) {
+                title = isAdult ? 'MS' : 'MISS';
+            } else {
+                title = isAdult ? 'MR' : 'MSTR';
+            }
+
+            const genderRadio = formEl.querySelector(`.passenger-gender[value="${title}"]`);
             if (genderRadio) {
                 genderRadio.checked = true;
                 genderRadio.dispatchEvent(new Event('change', { bubbles: true }));
