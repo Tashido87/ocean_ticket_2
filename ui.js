@@ -1659,7 +1659,32 @@ function _buildPassengerCardHtml(idx, opts) {
                 </div>
             </div>
 
-            <!-- ===== PANEL 3: PRICING ===== -->
+            <!-- ===== PANEL 2.5: MEMBER ID (optional) ===== -->
+            <div class="pax-panel pax-panel-member">
+                <div class="member-id-header" data-role="member-id-toggle">
+                    <h5 class="pax-panel-title" style="margin:0;">
+                        <i class="fa-solid fa-star"></i> Frequent Flyer / Member ID
+                        <span class="member-id-optional">(optional)</span>
+                    </h5>
+                    <button type="button" class="member-id-toggle-btn" data-role="member-id-btn" aria-expanded="false">
+                        <i class="fa-solid fa-plus"></i> Add
+                    </button>
+                </div>
+                <div class="member-id-body" data-role="member-id-body" style="display:none;">
+                    <div class="form-grid" style="margin-top:0.75rem;">
+                        <div class="form-group">
+                            <label>Airline / Programme</label>
+                            <input type="text" class="passenger-member-airline" placeholder="e.g. Myanmar Airways, KLM, Thai Airways" value="${opts.memberAirline || ''}" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label>Member ID</label>
+                            <input type="text" class="passenger-member-id" placeholder="e.g. KL1234567" value="${opts.memberId || ''}" autocomplete="off" style="text-transform:uppercase;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <div class="pax-panel">
                 <h5 class="pax-panel-title"><i class="fa-solid fa-coins"></i> Pricing</h5>
 
@@ -1916,7 +1941,42 @@ function _attachPaxBehaviour(formEl, opts = {}) {
     // ----- Passport photo upload -----
     _attachPhotoUpload(formEl);
 
-    // ----- Pricing live total (both legs) -----
+    // ----- Member ID toggle -----
+    const memberBtn = formEl.querySelector('[data-role="member-id-btn"]');
+    const memberBody = formEl.querySelector('[data-role="member-id-body"]');
+    if (memberBtn && memberBody) {
+        // Auto-expand if pre-filled
+        const memberIdVal = formEl.querySelector('.passenger-member-id')?.value;
+        if (memberIdVal) {
+            memberBody.style.display = '';
+            memberBtn.setAttribute('aria-expanded', 'true');
+            memberBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Remove';
+        }
+        memberBtn.addEventListener('click', () => {
+            const isOpen = memberBody.style.display !== 'none';
+            memberBody.style.display = isOpen ? 'none' : '';
+            memberBtn.setAttribute('aria-expanded', String(!isOpen));
+            memberBtn.innerHTML = isOpen
+                ? '<i class="fa-solid fa-plus"></i> Add'
+                : '<i class="fa-solid fa-xmark"></i> Remove';
+            if (isOpen) {
+                // Clear values when closing
+                if (formEl.querySelector('.passenger-member-airline')) formEl.querySelector('.passenger-member-airline').value = '';
+                if (formEl.querySelector('.passenger-member-id')) formEl.querySelector('.passenger-member-id').value = '';
+            }
+        });
+        // Uppercase member ID
+        const memberIdInput = formEl.querySelector('.passenger-member-id');
+        if (memberIdInput) {
+            memberIdInput.addEventListener('input', () => {
+                const pos = memberIdInput.selectionStart;
+                memberIdInput.value = memberIdInput.value.toUpperCase();
+                memberIdInput.setSelectionRange(pos, pos);
+            });
+        }
+    }
+
+
     [
         'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission',
         'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-commission'

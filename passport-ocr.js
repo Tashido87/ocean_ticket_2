@@ -81,7 +81,9 @@ export async function ocrPassport(imageSource, onStatus) {
             console.log('[Passport OCR] Free-text result:', freeResult);
         }
 
-        // Merge: MRZ as base, free-text fills gaps
+        const fallbackExpiry = extractLooseMrzExpiry(rawText);
+
+        // Merge: MRZ as base, free-text fills gaps, loose MRZ as last-resort expiry.
         if (mrzResult || (freeResult && (freeResult.passportNo || freeResult.name))) {
             const merged = {
                 name:        mrzResult?.name        || freeResult?.name        || '',
@@ -89,7 +91,7 @@ export async function ocrPassport(imageSource, onStatus) {
                 givenNames:  mrzResult?.givenNames   || freeResult?.givenNames  || '',
                 passportNo:  mrzResult?.passportNo   || freeResult?.passportNo  || '',
                 dob:         mrzResult?.dob          || freeResult?.dob         || '',
-                expiry:      mrzResult?.expiry       || freeResult?.expiry      || '',
+                expiry:      mrzResult?.expiry       || freeResult?.expiry      || fallbackExpiry || '',
                 gender:      mrzResult?.gender       || freeResult?.gender      || '',
                 nationality: mrzResult?.nationality  || freeResult?.nationality || '',
                 raw: rawText
@@ -336,6 +338,39 @@ function mrzDateToDisplay(yymmdd, isBirth) {
     return `${mm}/${dd}/${yyyy}`;
 }
 
+/**
+ * Last-resort parser for noisy MRZ line 2. This catches cases where strict MRZ
+ * parsing finds the DOB/passport number but misses expiry because OCR added or
+ * removed filler/check characters.
+ */
+function extractLooseMrzExpiry(text) {
+    const lines = String(text || '')
+        .replace(/«|\u00AB|\u00BB|\u2039|\u203A/g, '<')
+        .split(/\n/)
+        .map(line => sanitiseMrzLine(line.replace(/\s/g, '').toUpperCase()))
+        .filter(line => line.length >= 24);
+
+    const patterns = [
+        // Passport + check + nationality + DOB + check + sex + expiry
+        /[A-Z0-9<]{6,12}[0-9A-Z<][A-Z<]{3}([0-9OIZSBGT]{6})[0-9A-Z<]?[MFX<]([0-9OIZSBGT]{6})/,
+        // More tolerant when check digits are lost around sex.
+        /[A-Z0-9<]{6,12}[0-9A-Z<]{0,2}[A-Z<]{3}([0-9OIZSBGT]{6})[0-9A-Z<]{0,2}[MFX<]([0-9OIZSBGT]{6})/
+    ];
+
+    for (const line of lines) {
+        for (const pattern of patterns) {
+            const match = line.match(pattern);
+            if (!match) continue;
+
+            const expiryRaw = fixOcrDigits(match[2]);
+            const expiry = mrzDateToDisplay(expiryRaw, false);
+            if (expiry) return expiry;
+        }
+    }
+
+    return '';
+}
+
 /* ------------------------------------------------------------------ */
 /*  FALLBACK: FREE-TEXT PARSING                                        */
 /*  Reads the visible printed fields on the passport page              */
@@ -398,8 +433,9 @@ function normalizeYear(yearStr, isBirth = false) {
 function normaliseDateToMMDDYYYY(dateStr, isBirth = false) {
     const raw = String(dateStr || '').trim();
 
-    // DD MMM YYYY / DD MMM YY (e.g. "11 FEB 1997" or "11 FEB 97")
-    const namedMonth = raw.match(/(\d{1,2})\s+([A-Z0-9]{3,9})\.?\s+(\d{2,4})/i);
+    // DD MMM YYYY / DD MMM YY / compact DDMMMYYYY.
+    const namedMonth = raw.match(/(\d{1,2})\s+([A-Z0-9]{3,9})\.?\s+(\d{2,4})/i)
+        || raw.match(/(\d{1,2})([A-Z0-9]{3})(\d{2,4})/i);
     if (namedMonth) {
         const dd = namedMonth[1].padStart(2, '0');
         const mm = MONTH_MAP[normaliseMonthToken(namedMonth[2])];
@@ -453,6 +489,19 @@ function extractDateCandidates(text, isBirth = false) {
         }
     }
 
+    const compactNamedRegex = /(\d{1,2})([A-Z0-9]{3})(\d{2,4})/gi;
+    while ((m = compactNamedRegex.exec(text)) !== null) {
+        const display = normaliseDateToMMDDYYYY(m[0], isBirth);
+        if (display) {
+            dates.push({
+                display,
+                year: displayYear(display),
+                raw: m[0],
+                index: m.index
+            });
+        }
+    }
+
     const numericRegex = /(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/g;
     while ((m = numericRegex.exec(text)) !== null) {
         const display = normaliseDateToMMDDYYYY(m[0], isBirth);
@@ -473,7 +522,8 @@ function findLabeledDate(text, labelPattern, { isBirth = false, preferLatest = f
     const match = labelPattern.exec(text);
     if (!match) return '';
 
-    const slice = text.slice(match.index, match.index + 140);
+    // Search 200 chars after the label to handle large gaps / multi-line layouts
+    const slice = text.slice(match.index, match.index + 200);
     const candidates = extractDateCandidates(slice, isBirth);
     if (!candidates.length) return '';
 
@@ -559,36 +609,42 @@ function parseFreeText(text) {
         { isBirth: true, preferLatest: false }
     );
 
-    // Expiry
+    // Expiry — many OCR variations: "Date of expiry", "Date of Expiry", "Expiry", "Exp date",
+    // "date of exp", OCR artefacts like "expiR", "expiry.", "EXPIR" etc.
     result.expiry = findLabeledDate(
         text,
-        /(?:Date\s*of\s*expir\w*|EXPIR\w*|EXPI[KR]\w*|EXPIRES?|VALID\s*(?:UNTIL|THRU)|EXP[\s.]*DATE?)/i,
+        /(?:Date\s*[oO0]f\s*[eEcC][xX][pP]\w*|[eEcC][xX][pP][iI]\w{0,3}[yY]|[eEcC][xX][pP]\s*[dD][aA][tT]|VALID\s*(?:UNTIL|THRU))/i,
         { isBirth: false, preferLatest: true }
     );
 
-    // Step 3: Smart date assignment if labels didn't work
-    if (allDates.length >= 2 && (!result.dob || !result.expiry)) {
-        const now = new Date().getFullYear();
+    console.log('[Passport OCR] Label-matched DOB:', result.dob, '| Expiry:', result.expiry);
 
-        // Sort by year
-        const sorted = [...allDates].sort((a, b) => a.year - b.year);
+    // Step 3: Positional / year-heuristic assignment for missing fields.
+    // Sort all dates ascending by text position (order they appear on page).
+    const now = new Date().getFullYear();
+    const sortedByPos = [...allDates].sort((a, b) => a.index - b.index);
+    const sortedByYear = [...allDates].sort((a, b) => a.year - b.year);
 
-        // DOB: the earliest date (usually born before 2015)
-        if (!result.dob) {
-            const dobCandidate = sorted.find(d => d.year < 2015);
-            if (dobCandidate) result.dob = dobCandidate.display;
-        }
+    // DOB: earliest year (person was born before 2015)
+    if (!result.dob) {
+        const dobCandidate = sortedByYear.find(d => d.year < 2015);
+        if (dobCandidate) result.dob = dobCandidate.display;
+    }
 
-        // Expiry: the latest date (usually in the future)
-        if (!result.expiry) {
-            const expiryCandidate = sorted.filter(d => d.year >= now).pop()
-                                 || sorted[sorted.length - 1];
-            // Make sure it's not the same as DOB
-            if (expiryCandidate && expiryCandidate.display !== result.dob) {
-                result.expiry = expiryCandidate.display;
-            }
+    // Expiry: latest year AND in the future (2025+)
+    if (!result.expiry) {
+        // First try: any date year >= now that is NOT the DOB
+        const futureDates = sortedByYear.filter(d => d.year >= now && d.display !== result.dob);
+        if (futureDates.length) {
+            result.expiry = futureDates[futureDates.length - 1].display;
+        } else {
+            // Fallback: latest date that isn't DOB
+            const candidate = sortedByYear.filter(d => d.display !== result.dob).pop();
+            if (candidate) result.expiry = candidate.display;
         }
     }
+
+    console.log('[Passport OCR] Final DOB:', result.dob, '| Expiry:', result.expiry);
 
     // ---- Gender ----
     const sexMatch = text.match(/(?:Sex|Gender)\s*\n?\s*([MF])\b/i);

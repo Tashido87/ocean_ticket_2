@@ -256,6 +256,54 @@
     margin-bottom: 0;
 }
 
+/* Member ID optional panel */
+.pax-panel-member {
+    border: 1.5px dashed rgba(13, 148, 136, 0.25);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    background: rgba(13, 148, 136, 0.02);
+}
+
+.member-id-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.member-id-optional {
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--primary-accent, #0d9488);
+    opacity: 0.7;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 0.25rem;
+}
+
+.member-id-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-accent, #0d9488);
+    background: transparent;
+    border: 1.5px solid var(--primary-accent, #0d9488);
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+
+.member-id-toggle-btn:hover {
+    background: var(--primary-accent, #0d9488);
+    color: #fff;
+}
+
+
+
 .pax-panel-title {
     font-size: 0.72rem;
     font-weight: 700;

@@ -522,6 +522,8 @@ function collectFormData(form) {
             passport_expiry: readPassengerInput(pForm, '.passenger-passport-expiry'),
             passport_photo_url: readPassengerInput(pForm, '.passenger-passport-photo-url'),
             passport_photo_path: readPassengerInput(pForm, '.passenger-passport-photo-path'),
+            member_airline: readPassengerInput(pForm, '.passenger-member-airline'),
+            member_id: readPassengerInput(pForm, '.passenger-member-id').toUpperCase(),
             // Outbound pricing
             base_fare: readMoneyInput(pForm, '.passenger-base-fare'),
             net_amount: readMoneyInput(pForm, '.passenger-net-amount'),
@@ -591,7 +593,9 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
             remarks: pricing.remarks || '',
             extra_fare: pricing.extra_fare || 0,
             date_change: 0,
-            gender: p.gender
+            gender: p.gender,
+            member_airline: p.member_airline || '',
+            member_id: p.member_id || ''
         };
 
         // Tag round-trip rows so they can be linked together later
