@@ -91,23 +91,13 @@ export async function ocrPassport(imageSource, onStatus) {
         // Merge: MRZ as base, free-text fills gaps, loose MRZ as last-resort expiry.
         if (mrzResult || (freeResult && (freeResult.passportNo || freeResult.name))) {
 
-            // Name: MRZ gives reliable letters but fuses words (e.g. "HTUAUNG").
-            // Free-text preserves spaces but may have OCR noise prefix (e.g. "GE HTU AUNG").
-            // Strategy: prefer free-text when it's a spaced superset of the MRZ name.
-            let bestName = mrzResult?.name || '';
+            // Name: prefer free-text (printed field, clean spaces) over MRZ
+            // (MRZ filler '<' chars are often OCR'd as garbage letters, corrupting the name).
+            // MRZ name only used if free-text gives nothing.
             const freeName = freeResult?.name || '';
-            if (freeName) {
-                const mrzLetters  = (bestName || '').replace(/\s+/g, '').toUpperCase();
-                const freeLetters = freeName.replace(/\s+/g, '').toUpperCase();
-                const hasMrzSpaces = bestName.includes(' ');
-                const freeIsBetter = (!hasMrzSpaces || !bestName) &&
-                    freeName.length >= 3 &&
-                    (mrzLetters === '' || freeLetters.includes(mrzLetters) || mrzLetters.includes(freeLetters));
-                if (freeIsBetter) bestName = freeName;
-            }
+            let bestName = freeName || mrzResult?.name || '';
 
-            // Last-resort: try to pull name directly from raw MRZ line 1 text
-            // (handles case where parseMRZ failed or gave empty name)
+            // If neither source gave a name, try raw MRZ line recovery
             if (!bestName) {
                 bestName = extractNameFromRawMrz(rawText);
             }
@@ -153,30 +143,32 @@ export async function ocrPassport(imageSource, onStatus) {
 function extractNameFromRawMrz(text) {
     const lines = text.split(/\n/);
     for (const raw of lines) {
-        // Try with original spacing (< read as spaces by OCR)
-        const upper = raw.toUpperCase().trim();
-        // Match a line that starts like a passport MRZ line 1:
-        // "PV MMR NAME..." or "PVMMRNAME<<<<" or "P<MMR NAME..."
-        const m = upper.match(/^P[V<\s][<\s]?([A-Z]{3})[<\s]([A-Z][A-Z<\s]{5,50?)(?:[<\s]{3,}|$)/);
-        if (m) {
-            // m[2] is the raw name section — split on < or runs of spaces
-            const namePart = m[2].replace(/<+/g, ' ').replace(/\s{2,}/g, ' ').trim();
-            // Remove trailing filler
-            const clean = namePart.replace(/[\s<]+$/, '').trim();
-            if (clean.length >= 3) {
-                console.log('[Passport OCR] Raw MRZ name recovery:', clean);
-                return clean;
-            }
-        }
-        // Fallback: look for the pattern without strict structure
-        // "PVMMR" or "P<MMR" followed by uppercase letters/spaces
-        const m2 = upper.match(/P[V<][A-Z]{3}([A-Z][A-Z <]{5,45}?)(?:\s{3,}|<{3,}|$)/);
-        if (m2) {
-            const namePart = m2[1].replace(/<+/g, ' ').replace(/\s{2,}/g, ' ').trim();
-            if (namePart.length >= 3 && !/^\d/.test(namePart)) {
-                console.log('[Passport OCR] Raw MRZ name recovery (fallback):', namePart);
-                return namePart;
-            }
+        // Sanitize: remove spaces, uppercase, fix OCR substitutions → same as MRZ lines
+        let s = raw.replace(/\s/g, '').toUpperCase();
+        s = sanitiseMrzLine(s);
+
+        // Must look like a passport MRZ line 1 (P + type + country + name ≥30 chars)
+        if (s.length < 25 || s.charAt(0) !== 'P') continue;
+
+        // Verify country code at positions 2–4
+        const countryCode = s.substring(2, 5);
+        if (!/^[A-Z]{3}$/.test(countryCode)) continue;
+
+        // Name section is strictly positions 5–43 (39 chars) in a 44-char MRZ line
+        const nameSection = s.substring(5, 44);
+
+        // Split on < (single < = space separator)
+        const parts = nameSection.split('<').filter(Boolean);
+        if (!parts.length) continue;
+
+        // Validate parts — each should be a real word (all letters, length ≥ 1)
+        const validParts = parts.filter(p => /^[A-Z]+$/.test(p));
+        if (!validParts.length) continue;
+
+        const name = validParts.join(' ').trim();
+        if (name.length >= 3) {
+            console.log('[Passport OCR] Raw MRZ name recovery:', name);
+            return name;
         }
     }
     return '';
@@ -812,9 +804,13 @@ function parseFreeText(text) {
     console.log('[Passport OCR] Final DOB:', result.dob, '| Issue:', result.issue, '| Expiry:', result.expiry);
 
     // ---- Gender ----
-    const sexMatch = text.match(/(?:Sex|Gender)\s*\n?\s*([MF])\b/i);
+    // Allow up to 20 chars between 'Sex' label and M/F value (Myanmar passports
+    // often have Burmese-script label that OCR reads as noise between label and value).
+    const sexMatch = text.match(/(?:Sex|Gender)[\s\S]{0,20}?([MF])(?:\s|\n|$|P)/i)
+        || text.match(/\bSex\b[^\n]{0,15}([MF])/i);
     if (sexMatch) {
         result.gender = sexMatch[1].toUpperCase() === 'F' ? 'MS' : 'MR';
+        console.log('[Passport OCR] Gender extracted:', result.gender);
     }
 
     // ---- Nationality ----
