@@ -1606,6 +1606,10 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     gap: 0.85rem;
 }
 
+#sell-view .passenger-form.is-collapsed .pax-card-body {
+    display: none;
+}
+
 #sell-view .pax-panel {
     margin: 0;
     padding: 1rem 1.1rem;

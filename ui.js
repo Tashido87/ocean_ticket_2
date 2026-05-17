@@ -1448,7 +1448,8 @@ export function initializeSellFormEnhancements() {
             const card = btn.closest('.passenger-form');
             if (!card) return;
             e.stopPropagation();
-            card.classList.toggle('is-collapsed');
+            const isCollapsed = card.classList.toggle('is-collapsed');
+            btn.setAttribute('aria-expanded', String(!isCollapsed));
             console.log('[collapse] toggled', card.classList.contains('is-collapsed') ? 'collapsed' : 'expanded');
         });
         paxContainer.dataset.collapseDelegateBound = 'true';
@@ -1612,7 +1613,7 @@ function _buildPassengerCardHtml(idx, opts) {
                 <button type="button" class="icon-btn" title="Duplicate" data-action="duplicate"><i class="fa-solid fa-clone"></i></button>
                 <button type="button" class="icon-btn" title="Remove" data-action="remove"><i class="fa-solid fa-trash"></i></button>
             </div>
-            <button type="button" class="pax-collapse-btn" data-role="collapse-btn" title="Collapse / expand" aria-label="Collapse or expand passenger card">
+            <button type="button" class="pax-collapse-btn" data-role="collapse-btn" title="Collapse / expand" aria-label="Collapse or expand passenger card" aria-expanded="true">
                 <i class="fa-solid fa-chevron-down pax-collapse-chevron"></i>
             </button>
         </div>
@@ -1869,7 +1870,10 @@ function _attachPaxBehaviour(formEl, opts = {}) {
     // ----- Collapse / expand -----
     const header = formEl.querySelector('[data-role="header"]');
     const collapseBtn = formEl.querySelector('[data-role="collapse-btn"]');
-    const toggleCollapse = () => formEl.classList.toggle('is-collapsed');
+    const toggleCollapse = () => {
+        const isCollapsed = formEl.classList.toggle('is-collapsed');
+        collapseBtn?.setAttribute('aria-expanded', String(!isCollapsed));
+    };
     header.addEventListener('click', (e) => {
         // Ignore clicks on the action buttons cluster or the collapse button itself
         if (e.target.closest('.pax-actions')) return;
