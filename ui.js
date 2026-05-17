@@ -1233,6 +1233,15 @@ function normalizePassportDateForInput(value, { isBirth = false } = {}) {
         JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
         JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12'
     };
+
+    const mrzDate = raw.match(/^(\d{2})(\d{2})(\d{2})$/);
+    if (mrzDate) {
+        const yy = parseInt(mrzDate[1], 10);
+        const currentYear = new Date().getFullYear() % 100;
+        const yyyy = isBirth && yy > currentYear ? 1900 + yy : 2000 + yy;
+        return `${mrzDate[2]}/${mrzDate[3]}/${yyyy}`;
+    }
+
     const named = raw.match(/(\d{1,2})\s+([A-Z]{3})[A-Z]*\.?\s+(\d{2,4})/i);
     if (named) {
         const dd = named[1].padStart(2, '0');

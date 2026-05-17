@@ -81,7 +81,12 @@ export async function ocrPassport(imageSource, onStatus) {
             console.log('[Passport OCR] Free-text result:', freeResult);
         }
 
-        const fallbackExpiry = extractLooseMrzExpiry(rawText);
+        const mrzExpiry = getUsableExpiryDate(mrzResult?.expiry, freeResult?.issue);
+        const fallbackExpiry = getUsableExpiryDate(extractLooseMrzExpiry(rawText), freeResult?.issue);
+        if (fallbackExpiry) {
+            console.log('[Passport OCR] Loose MRZ expiry:', fallbackExpiry);
+        }
+        const freeExpiry = getUsableFreeTextExpiry(freeResult);
 
         // Merge: MRZ as base, free-text fills gaps, loose MRZ as last-resort expiry.
         if (mrzResult || (freeResult && (freeResult.passportNo || freeResult.name))) {
@@ -91,7 +96,7 @@ export async function ocrPassport(imageSource, onStatus) {
                 givenNames:  mrzResult?.givenNames   || freeResult?.givenNames  || '',
                 passportNo:  mrzResult?.passportNo   || freeResult?.passportNo  || '',
                 dob:         mrzResult?.dob          || freeResult?.dob         || '',
-                expiry:      mrzResult?.expiry       || freeResult?.expiry      || fallbackExpiry || '',
+                expiry:      mrzExpiry               || fallbackExpiry          || freeExpiry || '',
                 gender:      mrzResult?.gender       || freeResult?.gender      || '',
                 nationality: mrzResult?.nationality  || freeResult?.nationality || '',
                 raw: rawText
@@ -371,6 +376,28 @@ function extractLooseMrzExpiry(text) {
     return '';
 }
 
+function dateYear(displayDate) {
+    const m = String(displayDate || '').match(/^\d{1,2}\/\d{1,2}\/(\d{4})$/);
+    return m ? parseInt(m[1], 10) : 0;
+}
+
+function getUsableFreeTextExpiry(freeResult) {
+    return getUsableExpiryDate(freeResult?.expiry, freeResult?.issue);
+}
+
+function getUsableExpiryDate(expiry, issue = '') {
+    if (!expiry) return '';
+    if (issue && expiry === issue) return '';
+
+    const year = dateYear(expiry);
+    const currentYear = new Date().getFullYear();
+
+    // Do not let "Date of issue" become "expiry". If OCR cannot read a future
+    // expiry date, leave it blank rather than saving an already-past issue date.
+    if (year && year < currentYear) return '';
+    return expiry;
+}
+
 /* ------------------------------------------------------------------ */
 /*  FALLBACK: FREE-TEXT PARSING                                        */
 /*  Reads the visible printed fields on the passport page              */
@@ -543,6 +570,7 @@ function parseFreeText(text) {
         givenNames: '',
         passportNo: '',
         dob: '',
+        issue: '',
         expiry: '',
         gender: '',
         nationality: ''
@@ -609,6 +637,13 @@ function parseFreeText(text) {
         { isBirth: true, preferLatest: false }
     );
 
+    // Issue date. Used only to prevent issue-date values from being stored as expiry.
+    result.issue = findLabeledDate(
+        text,
+        /(?:Date\s*[oO0]f\s*[iI1l][sS5]{1,2}[uU][eE]|ISSUED?|ISSUE\s*DATE)/i,
+        { isBirth: false, preferLatest: true }
+    );
+
     // Expiry — many OCR variations: "Date of expiry", "Date of Expiry", "Expiry", "Exp date",
     // "date of exp", OCR artefacts like "expiR", "expiry.", "EXPIR" etc.
     result.expiry = findLabeledDate(
@@ -617,7 +652,11 @@ function parseFreeText(text) {
         { isBirth: false, preferLatest: true }
     );
 
-    console.log('[Passport OCR] Label-matched DOB:', result.dob, '| Expiry:', result.expiry);
+    if (result.issue && result.expiry === result.issue) {
+        result.expiry = '';
+    }
+
+    console.log('[Passport OCR] Label-matched DOB:', result.dob, '| Issue:', result.issue, '| Expiry:', result.expiry);
 
     // Step 3: Positional / year-heuristic assignment for missing fields.
     // Sort all dates ascending by text position (order they appear on page).
@@ -631,20 +670,41 @@ function parseFreeText(text) {
         if (dobCandidate) result.dob = dobCandidate.display;
     }
 
-    // Expiry: latest year AND in the future (2025+)
+    // Expiry: prefer the next date after issue, or otherwise latest future date.
     if (!result.expiry) {
-        // First try: any date year >= now that is NOT the DOB
-        const futureDates = sortedByYear.filter(d => d.year >= now && d.display !== result.dob);
-        if (futureDates.length) {
-            result.expiry = futureDates[futureDates.length - 1].display;
-        } else {
-            // Fallback: latest date that isn't DOB
-            const candidate = sortedByYear.filter(d => d.display !== result.dob).pop();
-            if (candidate) result.expiry = candidate.display;
+        const issueCandidate = result.issue
+            ? sortedByPos.find(d => d.display === result.issue)
+            : null;
+        const afterIssue = issueCandidate
+            ? sortedByPos.find(d =>
+                d.index > issueCandidate.index &&
+                d.display !== result.dob &&
+                d.display !== result.issue &&
+                d.year >= issueCandidate.year
+            )
+            : null;
+
+        if (afterIssue) {
+            result.expiry = afterIssue.display;
         }
     }
 
-    console.log('[Passport OCR] Final DOB:', result.dob, '| Expiry:', result.expiry);
+    if (!result.expiry) {
+        const futureDates = sortedByYear.filter(d =>
+            d.year >= now &&
+            d.display !== result.dob &&
+            d.display !== result.issue
+        );
+        if (futureDates.length) {
+            result.expiry = futureDates[futureDates.length - 1].display;
+        }
+    }
+
+    if (result.issue && result.expiry === result.issue) {
+        result.expiry = '';
+    }
+
+    console.log('[Passport OCR] Final DOB:', result.dob, '| Issue:', result.issue, '| Expiry:', result.expiry);
 
     // ---- Gender ----
     const sexMatch = text.match(/(?:Sex|Gender)\s*\n?\s*([MF])\b/i);
