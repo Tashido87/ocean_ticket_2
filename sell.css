@@ -40,7 +40,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    background: rgba(245, 78, 0, 0.10);
+    background: rgba(30, 58, 138, 0.10);
     color: var(--primary-accent);
     font-size: 1rem;
 }
@@ -162,7 +162,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f54e00, #d94400);
+    background: linear-gradient(135deg, #1e3a8a, #172554);
     color: white;
     display: inline-flex;
     align-items: center;
@@ -306,7 +306,7 @@
 .gender-segment input:checked + label {
     background: var(--primary-accent);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(245, 78, 0, 0.3);
+    box-shadow: 0 1px 2px rgba(30, 58, 138, 0.3);
 }
 
 .gender-segment label:hover {
@@ -410,7 +410,7 @@
 
 .nrc-input:focus-within {
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(245, 78, 0, 0.12);
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
 }
 
 .nrc-input input {
@@ -479,7 +479,7 @@
 .passport-photo-zone:hover,
 .passport-photo-zone.is-dragover {
     border-color: var(--primary-accent);
-    background: rgba(245, 78, 0, 0.03);
+    background: rgba(30, 58, 138, 0.03);
 }
 
 .passport-photo-zone .pz-icon {
@@ -896,6 +896,197 @@
     background: #fafaf8;
 }
 
+/* ============================================================
+   ROUND-TRIP SUPPORT
+   ============================================================ */
+
+/* Trip type segmented control (in Booking Context header) */
+.trip-type-segment {
+    display: inline-flex;
+    background: #ffffff;
+    border: 1px solid rgba(38, 37, 30, 0.12);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.trip-type-segment input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.trip-type-segment label {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.trip-type-segment input:checked + label {
+    background: var(--primary-accent);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(30, 58, 138, 0.3);
+}
+
+.trip-type-segment label:hover {
+    color: var(--text-primary);
+}
+
+.trip-type-segment input:checked + label:hover {
+    color: #fff;
+}
+
+/* Return flight subsection (nested inside Booking Context) */
+.return-flight-block {
+    margin-top: 1.25rem;
+    padding: 1.25rem;
+    background: rgba(30, 58, 138, 0.04);
+    border: 1px solid rgba(30, 58, 138, 0.14);
+    border-radius: 10px;
+    animation: returnSlideDown 0.3s ease;
+}
+
+@keyframes returnSlideDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.return-flight-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.return-flight-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(30, 58, 138, 0.12);
+    color: var(--primary-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.return-flight-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.return-flight-subtitle {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 0.1rem;
+}
+
+.return-customize-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+
+.return-customize-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-accent);
+    cursor: pointer;
+    margin: 0;
+}
+
+/* When advanced customization is on, the custom fields become visible */
+.return-flight-block.is-customized .return-custom-field {
+    display: flex !important;
+}
+
+.return-custom-field[hidden] {
+    display: none;
+}
+
+/* ----- Per-passenger pricing leg tabs ----- */
+.leg-tabs {
+    display: none;
+    gap: 0.25rem;
+    border-bottom: 1px solid rgba(38, 37, 30, 0.08);
+    margin-bottom: 1rem;
+}
+
+.passenger-form.is-roundtrip .leg-tabs {
+    display: flex;
+}
+
+.leg-tab {
+    background: transparent;
+    border: none;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: inherit;
+}
+
+.leg-tab:hover { color: var(--text-primary); }
+
+.leg-tab.is-active {
+    color: var(--primary-accent);
+    border-bottom-color: var(--primary-accent);
+}
+
+.leg-tab .leg-total {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: inherit;
+    background: rgba(30, 58, 138, 0.08);
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.leg-panel { display: none; }
+.leg-panel.is-active { display: block; animation: fadeInPanel 0.2s ease; }
+
+/* When one-way, only the outbound leg panel is visible and tabs are hidden */
+.passenger-form:not(.is-roundtrip) .leg-panel[data-leg="outbound"] {
+    display: block;
+}
+.passenger-form:not(.is-roundtrip) .leg-panel[data-leg="return"] {
+    display: none;
+}
+
+/* Subtotal lines (per leg) */
+.pricing-totals.is-grand {
+    margin-top: 0.5rem;
+    background: rgba(30, 58, 138, 0.06);
+}
+
+.pricing-totals.is-grand .value {
+    color: var(--primary-accent);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .sell-section {
@@ -917,4 +1108,6 @@
     }
     .nrc-input .nrc-township { width: 70px; }
     .nrc-input .nrc-serial { width: 80px; }
+    .return-flight-header { flex-wrap: wrap; }
+    .return-customize-toggle { margin-left: 0; width: 100%; }
 }

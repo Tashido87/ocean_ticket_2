@@ -269,7 +269,8 @@ export async function handleSellTicket(e) {
     const form = e.target;
     const {
         sharedData,
-        passengerData
+        passengerData,
+        returnSharedData
     } = collectFormData(form);
 
     if (passengerData.length === 0) {
@@ -287,6 +288,27 @@ export async function handleSellTicket(e) {
     if (!sharedData.airline) {
         showToast('Airline is required.', 'error');
         return;
+    }
+
+    // Round-trip specific validations
+    if (sharedData.is_round_trip) {
+        if (!returnSharedData?.departing_on) {
+            showToast('Return date is required for round-trip tickets.', 'error');
+            return;
+        }
+        if (!returnSharedData?.departure || !returnSharedData?.destination) {
+            showToast('Return departure and destination are required.', 'error');
+            return;
+        }
+        if (!returnSharedData?.airline) {
+            showToast('Return airline is required.', 'error');
+            return;
+        }
+        const missingReturnPrice = passengerData.findIndex(p => !p.return_net_amount);
+        if (missingReturnPrice !== -1) {
+            showToast(`Return Net Amount is required for Passenger ${missingReturnPrice + 1}.`, 'error');
+            return;
+        }
     }
 
     const validationError = passengerData
@@ -311,21 +333,34 @@ export async function handleSellTicket(e) {
         return;
     }
 
-    const totalAmount = passengerData.reduce((sum, p) => sum + p.net_amount + p.extra_fare, 0);
+    const outboundTotal = passengerData.reduce((sum, p) => sum + p.net_amount + p.extra_fare, 0);
+    const returnTotal = sharedData.is_round_trip
+        ? passengerData.reduce((sum, p) => sum + (p.return_net_amount || 0) + (p.return_extra_fare || 0), 0)
+        : 0;
+    const totalAmount = outboundTotal + returnTotal;
+    const totalRowCount = passengerData.length * (sharedData.is_round_trip ? 2 : 1);
+
+    const returnLine = sharedData.is_round_trip
+        ? `<li><strong>Return Flight:</strong> ${returnSharedData.departure} → ${returnSharedData.destination} on ${returnSharedData.departing_on}</li>
+           <li><strong>Return Subtotal:</strong> ${returnTotal.toLocaleString()} MMK</li>`
+        : '';
+
     const confirmationMessage = `
         <h3>Confirm Submission</h3>
         <p>Please review the details before submitting:</p>
         <ul style="list-style: none; padding-left: 0; margin: 1rem 0;">
+            <li><strong>Trip Type:</strong> ${sharedData.trip_type}</li>
             <li><strong>PNR Code:</strong> ${sharedData.booking_reference}</li>
             <li><strong>Flight Type:</strong> ${sharedData.flight_type}</li>
-            <li><strong>Total Passengers:</strong> ${passengerData.length}</li>
-            <li><strong>Total Amount:</strong> ${totalAmount.toLocaleString()} MMK</li>
+            <li><strong>Total Passengers:</strong> ${passengerData.length}${sharedData.is_round_trip ? ` (${totalRowCount} tickets)` : ''}</li>
+            ${returnLine}
+            <li><strong>Grand Total:</strong> ${totalAmount.toLocaleString()} MMK</li>
             <li><strong>Payment Status:</strong> ${sharedData.paid ? `Paid via ${sharedData.payment_method}` : 'Not Paid'}</li>
         </ul>
     `;
 
     showConfirmModal(confirmationMessage, () => {
-        confirmAndSaveTicket(form, sharedData, passengerData);
+        confirmAndSaveTicket(form, sharedData, passengerData, returnSharedData);
     });
 }
 
@@ -335,14 +370,14 @@ export async function handleSellTicket(e) {
  * @param {Object} sharedData The shared data for all tickets.
  * @param {Array<Object>} passengerData The data for each passenger.
  */
-async function confirmAndSaveTicket(form, sharedData, passengerData) {
+async function confirmAndSaveTicket(form, sharedData, passengerData, returnSharedData = null) {
     state.isSubmitting = true;
     const submitButton = form.querySelector('button[type="submit"]');
     if (submitButton) submitButton.disabled = true;
     closeModal();
 
     try {
-        await saveTicket(sharedData, passengerData);
+        await saveTicket(sharedData, passengerData, returnSharedData);
 
         if (state.bookingToUpdate) {
             await updateBookingStatus(state.bookingToUpdate, 'complete');
@@ -391,7 +426,14 @@ function collectFormData(form) {
         destinationVal = form.querySelector('#custom_destination').value;
     }
 
+    const outboundAirline = form.querySelector('#airline').value === 'CUSTOM'
+        ? form.querySelector('#custom_airline').value
+        : form.querySelector('#airline').value;
+    const outboundPnr = form.querySelector('#booking_reference').value.toUpperCase();
+
     const isInternational = !!document.getElementById('flightTypeToggle')?.checked;
+    const isRound = !!document.getElementById('trip_type_round')?.checked;
+
     const sharedData = {
         issued_date: form.querySelector('#issued_date').value,
         phone: form.querySelector('#phone').value,
@@ -401,14 +443,65 @@ function collectFormData(form) {
         departure: departureVal,
         destination: destinationVal,
         departing_on: form.querySelector('#departing_on').value,
-        airline: form.querySelector('#airline').value === 'CUSTOM' ? form.querySelector('#custom_airline').value : form.querySelector('#airline').value,
-        booking_reference: form.querySelector('#booking_reference').value.toUpperCase(),
+        airline: outboundAirline,
+        booking_reference: outboundPnr,
         flight_type: isInternational ? 'International' : 'Domestic',
         is_international: isInternational,
+        trip_type: isRound ? 'Round-Trip' : 'One-Way',
+        is_round_trip: isRound,
         paid: form.querySelector('#paid').checked,
         payment_method: finalPaymentMethod,
         paid_date: form.querySelector('#paid_date').value
     };
+
+    // --- Build return-leg shared data when round-trip is enabled ---
+    let returnSharedData = null;
+    if (isRound) {
+        const customizeOn = !!document.getElementById('returnCustomizeToggle')?.checked;
+        const retDateInput = form.querySelector('#return_date');
+        const retDate = retDateInput ? retDateInput.value : '';
+
+        // Default the return route = inverted outbound; allow custom override
+        let retDeparture = destinationVal;
+        let retDestination = departureVal;
+        let retAirline = outboundAirline;
+        let retPnr = outboundPnr;
+
+        if (customizeOn) {
+            const retDepSel = form.querySelector('#return_departure');
+            const retDestSel = form.querySelector('#return_destination');
+            const retAirlineSel = form.querySelector('#return_airline');
+            const retPnrInput = form.querySelector('#return_booking_reference');
+
+            if (retDepSel && retDepSel.value) {
+                retDeparture = retDepSel.value === 'CUSTOM'
+                    ? (form.querySelector('#return_custom_departure')?.value || retDeparture)
+                    : retDepSel.value;
+            }
+            if (retDestSel && retDestSel.value) {
+                retDestination = retDestSel.value === 'CUSTOM'
+                    ? (form.querySelector('#return_custom_destination')?.value || retDestination)
+                    : retDestSel.value;
+            }
+            if (retAirlineSel && retAirlineSel.value) {
+                retAirline = retAirlineSel.value === 'CUSTOM'
+                    ? (form.querySelector('#return_custom_airline')?.value || retAirline)
+                    : retAirlineSel.value;
+            }
+            if (retPnrInput && retPnrInput.value.trim()) {
+                retPnr = retPnrInput.value.toUpperCase().trim();
+            }
+        }
+
+        returnSharedData = {
+            ...sharedData,
+            departure: retDeparture,
+            destination: retDestination,
+            departing_on: retDate,
+            airline: retAirline,
+            booking_reference: retPnr
+        };
+    }
 
     const passengerData = [];
     const passengerForms = form.querySelectorAll('.passenger-form');
@@ -429,11 +522,18 @@ function collectFormData(form) {
             passport_expiry: readPassengerInput(pForm, '.passenger-passport-expiry'),
             passport_photo_url: readPassengerInput(pForm, '.passenger-passport-photo-url'),
             passport_photo_path: readPassengerInput(pForm, '.passenger-passport-photo-path'),
+            // Outbound pricing
             base_fare: readMoneyInput(pForm, '.passenger-base-fare'),
             net_amount: readMoneyInput(pForm, '.passenger-net-amount'),
             extra_fare: readMoneyInput(pForm, '.passenger-extra-fare'),
             commission: readMoneyInput(pForm, '.passenger-commission'),
-            remarks: readPassengerInput(pForm, '.passenger-remarks')
+            remarks: readPassengerInput(pForm, '.passenger-remarks'),
+            // Return-leg pricing (zero when one-way)
+            return_base_fare: isRound ? readMoneyInput(pForm, '.passenger-return-base-fare') : 0,
+            return_net_amount: isRound ? readMoneyInput(pForm, '.passenger-return-net-amount') : 0,
+            return_extra_fare: isRound ? readMoneyInput(pForm, '.passenger-return-extra-fare') : 0,
+            return_commission: isRound ? readMoneyInput(pForm, '.passenger-return-commission') : 0,
+            return_remarks: isRound ? readPassengerInput(pForm, '.passenger-return-remarks') : ''
         };
         if (passenger.name) {
             passengerData.push(passenger);
@@ -442,7 +542,8 @@ function collectFormData(form) {
 
     return {
         sharedData,
-        passengerData
+        passengerData,
+        returnSharedData
     };
 }
 
@@ -451,10 +552,13 @@ function collectFormData(form) {
  * @param {Object} sharedData The shared data for all tickets.
  * @param {Array<Object>} passengerData The data for each passenger.
  */
-async function saveTicket(sharedData, passengerData) {
-    const ticketObjects = passengerData.map(p => {
-        const agentCommission = calculateAgentCut(p.commission);
-        return {
+async function saveTicket(sharedData, passengerData, returnSharedData = null) {
+    const isRound = !!sharedData.is_round_trip && !!returnSharedData;
+
+    // Helper that builds a single ticket row for a given leg.
+    const buildRow = (p, legShared, leg, pricing) => {
+        const agentCommission = calculateAgentCut(pricing.commission);
+        const row = {
             issued_date: formatDateForSheet(sharedData.issued_date),
             name: p.name,
             id_no: p.id_no,
@@ -471,24 +575,55 @@ async function saveTicket(sharedData, passengerData) {
             account_name: sharedData.account_name,
             account_type: sharedData.account_type,
             account_link: sharedData.account_link,
-            departure: sharedData.departure,
-            destination: sharedData.destination,
-            departing_on: formatDateForSheet(sharedData.departing_on),
-            airline: sharedData.airline,
+            departure: legShared.departure,
+            destination: legShared.destination,
+            departing_on: formatDateForSheet(legShared.departing_on),
+            airline: legShared.airline,
             flight_type: sharedData.flight_type,
             is_international: sharedData.is_international,
-            base_fare: p.base_fare || 0,
-            booking_reference: sharedData.booking_reference,
-            net_amount: p.net_amount || 0,
+            base_fare: pricing.base_fare || 0,
+            booking_reference: legShared.booking_reference,
+            net_amount: pricing.net_amount || 0,
             paid: sharedData.paid,
             payment_method: sharedData.payment_method,
             paid_date: sharedData.paid ? formatDateForSheet(sharedData.paid_date) : '',
             commission: agentCommission,
-            remarks: p.remarks || '',
-            extra_fare: p.extra_fare || 0,
+            remarks: pricing.remarks || '',
+            extra_fare: pricing.extra_fare || 0,
             date_change: 0,
             gender: p.gender
         };
+
+        // Tag round-trip rows so they can be linked together later
+        if (isRound) {
+            row.trip_type = 'Round-Trip';
+            row.leg = leg; // 'outbound' or 'return'
+        }
+
+        return row;
+    };
+
+    const ticketObjects = [];
+    passengerData.forEach(p => {
+        // Outbound leg (always present)
+        ticketObjects.push(buildRow(p, sharedData, 'outbound', {
+            base_fare: p.base_fare,
+            net_amount: p.net_amount,
+            extra_fare: p.extra_fare,
+            commission: p.commission,
+            remarks: p.remarks
+        }));
+
+        // Return leg (only when round-trip)
+        if (isRound) {
+            ticketObjects.push(buildRow(p, returnSharedData, 'return', {
+                base_fare: p.return_base_fare,
+                net_amount: p.return_net_amount,
+                extra_fare: p.return_extra_fare,
+                commission: p.return_commission,
+                remarks: p.return_remarks
+            }));
+        }
     });
 
     await addTickets(ticketObjects);

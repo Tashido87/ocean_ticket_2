@@ -344,6 +344,12 @@
                                 <i class="fa-solid fa-plane"></i>
                                 <span id="route-preview-text"></span>
                             </span>
+                            <div class="trip-type-segment" role="radiogroup" aria-label="Trip type">
+                                <input type="radio" name="trip_type" id="trip_type_oneway" value="oneway" checked>
+                                <label for="trip_type_oneway"><i class="fa-solid fa-arrow-right"></i> One-Way</label>
+                                <input type="radio" name="trip_type" id="trip_type_round" value="round">
+                                <label for="trip_type_round"><i class="fa-solid fa-arrow-right-arrow-left"></i> Round-Trip</label>
+                            </div>
                             <div class="flight-type-toggle">
                                 <span id="domestic-label">Domestic</span>
                                 <label class="switch">
@@ -396,6 +402,66 @@
                             <div class="form-group" id="custom_destination_group" style="display: none;">
                                 <label for="custom_destination">Custom Destination</label>
                                 <input type="text" id="custom_destination">
+                            </div>
+                        </div>
+
+                        <!-- Return flight (visible only when Round-Trip is selected) -->
+                        <div class="return-flight-block" id="returnFlightBlock" hidden>
+                            <div class="return-flight-header">
+                                <span class="return-flight-icon"><i class="fa-solid fa-plane-arrival"></i></span>
+                                <div>
+                                    <div class="return-flight-title">Return Flight</div>
+                                    <div class="return-flight-subtitle" id="returnRoutePreview">Defaults to reverse of the outbound route</div>
+                                </div>
+                                <label class="return-customize-toggle">
+                                    <input type="checkbox" id="returnCustomizeToggle">
+                                    <span>Customize route &amp; airline</span>
+                                </label>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="return_date">Return Date <span class="req">*</span></label>
+                                    <input type="text" id="return_date" placeholder="MM/DD/YYYY" autocomplete="off">
+                                </div>
+                                <div class="form-group return-custom-field" hidden>
+                                    <label for="return_airline">Return Airline</label>
+                                    <select id="return_airline">
+                                        <option value="">Same as outbound</option>
+                                        <option value="MNA">MNA</option>
+                                        <option value="MAI">MAI</option>
+                                        <option value="ManYadanarpon">ManYadanarpon</option>
+                                        <option value="AirThanLwin">AirThanLwin</option>
+                                        <option value="CUSTOM">CUSTOM</option>
+                                    </select>
+                                </div>
+                                <div class="form-group return-custom-field" id="return_custom_airline_group" hidden>
+                                    <label for="return_custom_airline">Custom Return Airline</label>
+                                    <input type="text" id="return_custom_airline">
+                                </div>
+                                <div class="form-group return-custom-field" hidden>
+                                    <label for="return_departure">Return Departure</label>
+                                    <select id="return_departure">
+                                        <option value="">Same as outbound destination</option>
+                                    </select>
+                                </div>
+                                <div class="form-group return-custom-field" hidden>
+                                    <label for="return_destination">Return Destination</label>
+                                    <select id="return_destination">
+                                        <option value="">Same as outbound departure</option>
+                                    </select>
+                                </div>
+                                <div class="form-group return-custom-field" id="return_custom_departure_group" hidden>
+                                    <label for="return_custom_departure">Custom Return Departure</label>
+                                    <input type="text" id="return_custom_departure">
+                                </div>
+                                <div class="form-group return-custom-field" id="return_custom_destination_group" hidden>
+                                    <label for="return_custom_destination">Custom Return Destination</label>
+                                    <input type="text" id="return_custom_destination">
+                                </div>
+                                <div class="form-group return-custom-field" hidden>
+                                    <label for="return_booking_reference">Return PNR (if different)</label>
+                                    <input type="text" id="return_booking_reference" placeholder="Same as outbound" autocomplete="off">
+                                </div>
                             </div>
                         </div>
                     </div>

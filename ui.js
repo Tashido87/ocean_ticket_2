@@ -117,10 +117,19 @@ export function showView(viewName) {
     if (viewName === 'sell') {
         document.getElementById('sellForm')?.reset();
         setSellFormDefaultDates();
+        // Default trip type to One-Way after reset
+        const onewayRadio = document.getElementById('trip_type_oneway');
+        if (onewayRadio) onewayRadio.checked = true;
+        const customizeToggle = document.getElementById('returnCustomizeToggle');
+        if (customizeToggle) customizeToggle.checked = false;
+        const returnBlock = document.getElementById('returnFlightBlock');
+        if (returnBlock) returnBlock.classList.remove('is-customized');
+
         populateFlightLocations();
         updateToggleLabels();
         resetPassengerForms();
         updateSellRoutePreview();
+        applyTripTypeToUI();
         setupSellClientAutoSuggest();
     } else {
         state.bookingToUpdate = null;
@@ -252,7 +261,7 @@ export function initializeDatepickers() {
         todayHighlight: true
     };
     // Added 'hotel-arrival' and 'hotel-departure' to the list below
-    const allDatePickers = ['searchStartDate', 'searchEndDate', 'searchTravelDate', 'booking_departing_on', 'exportStartDate', 'exportEndDate', 'issued_date', 'departing_on', 'paid_date', 'booking_end_date', 'update_departing_on', 'update_paid_date', 'invoice_date', 'hotel-arrival', 'hotel-departure'];
+    const allDatePickers = ['searchStartDate', 'searchEndDate', 'searchTravelDate', 'booking_departing_on', 'exportStartDate', 'exportEndDate', 'issued_date', 'departing_on', 'return_date', 'paid_date', 'booking_end_date', 'update_departing_on', 'update_paid_date', 'invoice_date', 'hotel-arrival', 'hotel-departure'];
     
     allDatePickers.forEach(id => {
         const el = document.getElementById(id);
@@ -392,6 +401,10 @@ function handleCustomLocationVisibility() {
     if(depInputGroup) depInputGroup.style.display = newDepSelect.value === 'CUSTOM' ? 'block' : 'none';
     if(destInputGroup) destInputGroup.style.display = newDestSelect.value === 'CUSTOM' ? 'block' : 'none';
     updateSellRoutePreview();
+
+    // Keep return-leg location dropdowns in sync with the active flight type
+    try { populateReturnFlightLocations(); } catch (_) {}
+    updateReturnRoutePreview();
 }
 
 /**
@@ -1157,6 +1170,13 @@ function isInternationalFlight() {
 }
 
 /**
+ * Returns true when Round-Trip is currently selected in the Trip Type segment.
+ */
+function isRoundTrip() {
+    return !!document.getElementById('trip_type_round')?.checked;
+}
+
+/**
  * Parses a legacy `id_no` string into structured NRC parts when possible.
  * Returns { region, township, type, serial } with empty defaults.
  * Matches "12/ABCDEF(N)123456" or "12/ABCDEF(N) 123456".
@@ -1323,7 +1343,10 @@ export function setupSellClientAutoSuggest() {
 
 export function initializeSellFormEnhancements() {
     setupSellClientAutoSuggest();
-    ['booking_reference', 'custom_airline', 'custom_departure', 'custom_destination'].forEach(id => {
+    [
+        'booking_reference', 'custom_airline', 'custom_departure', 'custom_destination',
+        'return_booking_reference', 'return_custom_airline', 'return_custom_departure', 'return_custom_destination'
+    ].forEach(id => {
         const input = document.getElementById(id);
         if (!input || input.dataset.uppercaseBound === 'true') return;
         input.addEventListener('input', () => {
@@ -1331,9 +1354,105 @@ export function initializeSellFormEnhancements() {
             input.value = input.value.toUpperCase();
             input.setSelectionRange(pos, pos);
             if (id.startsWith('custom_')) updateSellRoutePreview();
+            if (id.startsWith('return_')) updateReturnRoutePreview();
         });
         input.dataset.uppercaseBound = 'true';
     });
+
+    // --- Trip Type segmented control ---
+    ['trip_type_oneway', 'trip_type_round'].forEach(id => {
+        const radio = document.getElementById(id);
+        if (!radio || radio.dataset.tripTypeBound === 'true') return;
+        radio.addEventListener('change', () => applyTripTypeToUI());
+        radio.dataset.tripTypeBound = 'true';
+    });
+
+    // --- Return-flight "Customize" toggle ---
+    const customizeToggle = document.getElementById('returnCustomizeToggle');
+    const returnBlock = document.getElementById('returnFlightBlock');
+    if (customizeToggle && returnBlock && customizeToggle.dataset.bound !== 'true') {
+        customizeToggle.addEventListener('change', () => {
+            returnBlock.classList.toggle('is-customized', customizeToggle.checked);
+            // Reveal custom airline/route inputs only when select is CUSTOM
+            applyReturnCustomVisibility();
+        });
+        customizeToggle.dataset.bound = 'true';
+    }
+
+    // --- Return airline custom handling ---
+    const returnAirline = document.getElementById('return_airline');
+    if (returnAirline && returnAirline.dataset.bound !== 'true') {
+        returnAirline.addEventListener('change', applyReturnCustomVisibility);
+        returnAirline.dataset.bound = 'true';
+    }
+    const returnDep = document.getElementById('return_departure');
+    const returnDest = document.getElementById('return_destination');
+    if (returnDep && returnDep.dataset.bound !== 'true') {
+        returnDep.addEventListener('change', () => { applyReturnCustomVisibility(); updateReturnRoutePreview(); });
+        returnDep.dataset.bound = 'true';
+    }
+    if (returnDest && returnDest.dataset.bound !== 'true') {
+        returnDest.addEventListener('change', () => { applyReturnCustomVisibility(); updateReturnRoutePreview(); });
+        returnDest.dataset.bound = 'true';
+    }
+    const returnCustomDep = document.getElementById('return_custom_departure');
+    const returnCustomDest = document.getElementById('return_custom_destination');
+    if (returnCustomDep) returnCustomDep.addEventListener('input', updateReturnRoutePreview);
+    if (returnCustomDest) returnCustomDest.addEventListener('input', updateReturnRoutePreview);
+
+    // Populate the return departure/destination dropdowns from current city list
+    populateReturnFlightLocations();
+}
+
+/**
+ * Shows/hides the "Custom Return Airline / Departure / Destination" inputs
+ * based on whether the corresponding select is set to CUSTOM.
+ */
+function applyReturnCustomVisibility() {
+    const customizeOn = !!document.getElementById('returnCustomizeToggle')?.checked;
+    const airlineSel = document.getElementById('return_airline');
+    const depSel = document.getElementById('return_departure');
+    const destSel = document.getElementById('return_destination');
+    const customAirlineGroup = document.getElementById('return_custom_airline_group');
+    const customDepGroup = document.getElementById('return_custom_departure_group');
+    const customDestGroup = document.getElementById('return_custom_destination_group');
+
+    if (customAirlineGroup) customAirlineGroup.hidden = !(customizeOn && airlineSel?.value === 'CUSTOM');
+    if (customDepGroup) customDepGroup.hidden = !(customizeOn && depSel?.value === 'CUSTOM');
+    if (customDestGroup) customDestGroup.hidden = !(customizeOn && destSel?.value === 'CUSTOM');
+}
+
+/**
+ * Populates the Return Departure / Return Destination dropdowns from the
+ * current CITIES list (mirrors the outbound location selects).
+ */
+export function populateReturnFlightLocations() {
+    const flightTypeToggle = document.getElementById('flightTypeToggle');
+    const isDomestic = !flightTypeToggle?.checked;
+    const locations = isDomestic ? CITIES.DOMESTIC : CITIES.INTERNATIONAL;
+
+    const returnDep = document.getElementById('return_departure');
+    const returnDest = document.getElementById('return_destination');
+    if (!returnDep || !returnDest) return;
+
+    const buildOptions = (placeholder) => {
+        return [`<option value="">${placeholder}</option>`]
+            .concat(locations.map(loc => {
+                const m = loc.match(/(.+) \((.+)\)/);
+                const text = m ? `${m[2]} - ${m[1]}` : loc;
+                return `<option value="${loc}">${text}</option>`;
+            }))
+            .concat(['<option value="CUSTOM">CUSTOM</option>'])
+            .join('');
+    };
+
+    const depVal = returnDep.value;
+    const destVal = returnDest.value;
+    returnDep.innerHTML = buildOptions('Same as outbound destination');
+    returnDest.innerHTML = buildOptions('Same as outbound departure');
+    // Preserve user-selected values
+    if (depVal) returnDep.value = depVal;
+    if (destVal) returnDest.value = destVal;
 }
 
 /**
@@ -1463,30 +1582,82 @@ function _buildPassengerCardHtml(idx, opts) {
             <!-- ===== PANEL 3: PRICING ===== -->
             <div class="pax-panel">
                 <h5 class="pax-panel-title"><i class="fa-solid fa-coins"></i> Pricing</h5>
-                <div class="pricing-grid">
-                    <div class="form-group">
-                        <label>Base Fare</label>
-                        <input type="number" class="passenger-base-fare" placeholder="0" min="0" step="1" inputmode="numeric">
+
+                <!-- Leg tabs (visible only when round-trip is active) -->
+                <div class="leg-tabs" role="tablist">
+                    <button type="button" class="leg-tab is-active" data-leg="outbound" role="tab">
+                        <i class="fa-solid fa-plane-departure"></i> Outbound
+                        <span class="leg-total" data-role="outbound-leg-total">0</span>
+                    </button>
+                    <button type="button" class="leg-tab" data-leg="return" role="tab">
+                        <i class="fa-solid fa-plane-arrival"></i> Return
+                        <span class="leg-total" data-role="return-leg-total">0</span>
+                    </button>
+                </div>
+
+                <!-- OUTBOUND leg -->
+                <div class="leg-panel is-active" data-leg="outbound">
+                    <div class="pricing-grid">
+                        <div class="form-group">
+                            <label>Base Fare</label>
+                            <input type="number" class="passenger-base-fare" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label>Net Amount <span class="req">*</span></label>
+                            <input type="number" class="passenger-net-amount" placeholder="0" min="0" step="1" inputmode="numeric" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Extra Fare</label>
+                            <input type="number" class="passenger-extra-fare" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label>Commission</label>
+                            <input type="number" class="passenger-commission" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Net Amount <span class="req">*</span></label>
-                        <input type="number" class="passenger-net-amount" placeholder="0" min="0" step="1" inputmode="numeric" required>
+                    <div class="form-group" style="margin-top:1rem;">
+                        <label>Remarks</label>
+                        <input type="text" class="passenger-remarks" placeholder="Optional notes">
                     </div>
-                    <div class="form-group">
-                        <label>Extra Fare</label>
-                        <input type="number" class="passenger-extra-fare" placeholder="0" min="0" step="1" inputmode="numeric">
-                    </div>
-                    <div class="form-group">
-                        <label>Commission</label>
-                        <input type="number" class="passenger-commission" placeholder="0" min="0" step="1" inputmode="numeric">
+                    <div class="pricing-totals">
+                        <span class="label">Outbound subtotal (net + extra)</span>
+                        <span class="value" data-role="outbound-subtotal">0 MMK</span>
                     </div>
                 </div>
-                <div class="form-group" style="margin-top:1rem;">
-                    <label>Remarks</label>
-                    <input type="text" class="passenger-remarks" placeholder="Optional notes">
+
+                <!-- RETURN leg (data submitted only when round-trip) -->
+                <div class="leg-panel" data-leg="return">
+                    <div class="pricing-grid">
+                        <div class="form-group">
+                            <label>Base Fare</label>
+                            <input type="number" class="passenger-return-base-fare" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label>Net Amount <span class="req return-req">*</span></label>
+                            <input type="number" class="passenger-return-net-amount" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label>Extra Fare</label>
+                            <input type="number" class="passenger-return-extra-fare" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label>Commission</label>
+                            <input type="number" class="passenger-return-commission" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top:1rem;">
+                        <label>Remarks</label>
+                        <input type="text" class="passenger-return-remarks" placeholder="Optional notes">
+                    </div>
+                    <div class="pricing-totals">
+                        <span class="label">Return subtotal (net + extra)</span>
+                        <span class="value" data-role="return-subtotal">0 MMK</span>
+                    </div>
                 </div>
-                <div class="pricing-totals">
-                    <span class="label">Passenger total (net + extra)</span>
+
+                <!-- Combined total (always visible) -->
+                <div class="pricing-totals is-grand">
+                    <span class="label">Passenger total</span>
                     <span class="value" data-role="pax-total">0 MMK</span>
                 </div>
             </div>
@@ -1665,12 +1836,26 @@ function _attachPaxBehaviour(formEl, opts = {}) {
     // ----- Passport photo upload -----
     _attachPhotoUpload(formEl);
 
-    // ----- Pricing live total -----
-    ['passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission'].forEach(cls => {
-        formEl.querySelector('.' + cls).addEventListener('input', () => {
+    // ----- Pricing live total (both legs) -----
+    [
+        'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission',
+        'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-commission'
+    ].forEach(cls => {
+        const el = formEl.querySelector('.' + cls);
+        if (!el) return;
+        el.addEventListener('input', () => {
             updatePaxTotal(formEl);
             updatePaxStatus(formEl);
             updateSummaryBar();
+        });
+    });
+
+    // ----- Leg tab switching (Outbound / Return) -----
+    formEl.querySelectorAll('.leg-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.dataset.leg;
+            formEl.querySelectorAll('.leg-tab').forEach(t => t.classList.toggle('is-active', t.dataset.leg === target));
+            formEl.querySelectorAll('.leg-panel').forEach(p => p.classList.toggle('is-active', p.dataset.leg === target));
         });
     });
 
@@ -1689,6 +1874,7 @@ function _attachPaxBehaviour(formEl, opts = {}) {
     updatePaxStatus(formEl);
     updatePaxTotal(formEl);
     applyFlightTypeToCard(formEl);
+    applyTripTypeToCard(formEl);
 }
 
 /**
@@ -1862,6 +2048,12 @@ function isPassengerComplete(formEl) {
     const net = parseFloat(formEl.querySelector('.passenger-net-amount').value) || 0;
     if (!name || !net) return false;
 
+    // Round-trip: return leg must also have net amount
+    if (isRoundTrip()) {
+        const retNet = parseFloat(formEl.querySelector('.passenger-return-net-amount')?.value) || 0;
+        if (!retNet) return false;
+    }
+
     const intl = isInternationalFlight();
     if (intl) {
         // International requires NRC (full) AND passport number
@@ -1875,10 +2067,28 @@ function isPassengerComplete(formEl) {
 }
 
 function updatePaxTotal(formEl) {
-    const net = parseFloat(formEl.querySelector('.passenger-net-amount').value) || 0;
-    const extra = parseFloat(formEl.querySelector('.passenger-extra-fare').value) || 0;
+    const obNet = parseFloat(formEl.querySelector('.passenger-net-amount').value) || 0;
+    const obExtra = parseFloat(formEl.querySelector('.passenger-extra-fare').value) || 0;
+    const obSubtotal = obNet + obExtra;
+
+    let retSubtotal = 0;
+    if (isRoundTrip()) {
+        const retNet = parseFloat(formEl.querySelector('.passenger-return-net-amount')?.value) || 0;
+        const retExtra = parseFloat(formEl.querySelector('.passenger-return-extra-fare')?.value) || 0;
+        retSubtotal = retNet + retExtra;
+    }
+
+    const obSubEl = formEl.querySelector('[data-role="outbound-subtotal"]');
+    const retSubEl = formEl.querySelector('[data-role="return-subtotal"]');
+    const obLegEl = formEl.querySelector('[data-role="outbound-leg-total"]');
+    const retLegEl = formEl.querySelector('[data-role="return-leg-total"]');
     const totalEl = formEl.querySelector('[data-role="pax-total"]');
-    totalEl.textContent = `${(net + extra).toLocaleString()} MMK`;
+
+    if (obSubEl) obSubEl.textContent = `${obSubtotal.toLocaleString()} MMK`;
+    if (retSubEl) retSubEl.textContent = `${retSubtotal.toLocaleString()} MMK`;
+    if (obLegEl) obLegEl.textContent = obSubtotal.toLocaleString();
+    if (retLegEl) retLegEl.textContent = retSubtotal.toLocaleString();
+    if (totalEl) totalEl.textContent = `${(obSubtotal + retSubtotal).toLocaleString()} MMK`;
 }
 
 /**
@@ -1929,6 +2139,69 @@ export function applyFlightTypeToAllPaxForms() {
 }
 
 /**
+ * Applies the current Trip Type (one-way / round-trip) to a single passenger card.
+ * Adds/removes the `is-roundtrip` class which CSS uses to show/hide leg tabs &
+ * the return leg panel. Also recalculates totals.
+ */
+export function applyTripTypeToCard(formEl) {
+    const round = isRoundTrip();
+    formEl.classList.toggle('is-roundtrip', round);
+
+    // Ensure outbound tab is active when toggling
+    const outboundTab = formEl.querySelector('.leg-tab[data-leg="outbound"]');
+    const returnTab = formEl.querySelector('.leg-tab[data-leg="return"]');
+    const outboundPanel = formEl.querySelector('.leg-panel[data-leg="outbound"]');
+    const returnPanel = formEl.querySelector('.leg-panel[data-leg="return"]');
+    if (outboundTab && returnTab && outboundPanel && returnPanel) {
+        if (!round) {
+            outboundTab.classList.add('is-active');
+            returnTab.classList.remove('is-active');
+            outboundPanel.classList.add('is-active');
+            returnPanel.classList.remove('is-active');
+        }
+    }
+
+    updatePaxTotal(formEl);
+    updatePaxStatus(formEl);
+}
+
+/**
+ * Re-applies trip type to every passenger card AND syncs the Booking Context
+ * Return Flight section visibility. Called when the Trip Type segment changes.
+ */
+export function applyTripTypeToUI() {
+    const round = isRoundTrip();
+    const returnBlock = document.getElementById('returnFlightBlock');
+    if (returnBlock) returnBlock.hidden = !round;
+
+    document.querySelectorAll('#passenger-forms-container .passenger-form').forEach(applyTripTypeToCard);
+    updateSummaryBar();
+    updateReturnRoutePreview();
+}
+
+/**
+ * Updates the small subtitle inside the Return Flight block to show the
+ * inverted route (or the custom override when set).
+ */
+export function updateReturnRoutePreview() {
+    const preview = document.getElementById('returnRoutePreview');
+    if (!preview) return;
+    const out = {
+        from: getSelectedOrCustomValue('departure', 'custom_departure'),
+        to: getSelectedOrCustomValue('destination', 'custom_destination')
+    };
+    const ret = {
+        from: getSelectedOrCustomValue('return_departure', 'return_custom_departure') || out.to,
+        to: getSelectedOrCustomValue('return_destination', 'return_custom_destination') || out.from
+    };
+    if (ret.from && ret.to) {
+        preview.textContent = `${ret.from.split(' ')[0]} → ${ret.to.split(' ')[0]}`;
+    } else {
+        preview.textContent = 'Defaults to reverse of the outbound route';
+    }
+}
+
+/**
  * Re-numbers passenger cards (so "Passenger 1, 2, 3..." stays correct after remove).
  */
 function renumberPassengerForms() {
@@ -1949,6 +2222,7 @@ function renumberPassengerForms() {
  */
 export function updateSummaryBar() {
     const cards = document.querySelectorAll('#passenger-forms-container .passenger-form');
+    const round = isRoundTrip();
     let totalNet = 0;
     let totalCommission = 0;
     cards.forEach(card => {
@@ -1957,12 +2231,19 @@ export function updateSummaryBar() {
         const commission = parseFloat(card.querySelector('.passenger-commission').value) || 0;
         totalNet += net + extra;
         totalCommission += calculateAgentCut(commission);
+        if (round) {
+            const retNet = parseFloat(card.querySelector('.passenger-return-net-amount')?.value) || 0;
+            const retExtra = parseFloat(card.querySelector('.passenger-return-extra-fare')?.value) || 0;
+            const retCommission = parseFloat(card.querySelector('.passenger-return-commission')?.value) || 0;
+            totalNet += retNet + retExtra;
+            totalCommission += calculateAgentCut(retCommission);
+        }
     });
     const paxCountEl = document.getElementById('summaryPaxCount');
     const totalEl = document.getElementById('summaryTotal');
     const commissionEl = document.getElementById('summaryCommission');
     const bar = document.getElementById('stickySummaryBar');
-    if (paxCountEl) paxCountEl.textContent = cards.length;
+    if (paxCountEl) paxCountEl.textContent = `${cards.length}${round ? ` × 2` : ''}`;
     if (totalEl) totalEl.textContent = `${totalNet.toLocaleString()} MMK`;
     if (commissionEl) commissionEl.textContent = `${totalCommission.toLocaleString()} MMK`;
     if (bar) bar.classList.toggle('is-visible', cards.length > 0);
@@ -1973,18 +2254,19 @@ export function updateSummaryBar() {
  */
 function duplicatePassengerForm(srcEl) {
     const gender = srcEl.querySelector('.passenger-gender:checked')?.value || 'MR';
-    const baseFare = srcEl.querySelector('.passenger-base-fare').value;
-    const net = srcEl.querySelector('.passenger-net-amount').value;
-    const extra = srcEl.querySelector('.passenger-extra-fare').value;
-    const commission = srcEl.querySelector('.passenger-commission').value;
+    const fields = [
+        'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission',
+        'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-commission'
+    ];
+    const values = Object.fromEntries(fields.map(c => [c, srcEl.querySelector('.' + c)?.value || '']));
 
     addPassengerForm('', '', gender);
     const lastCard = document.getElementById('passenger-forms-container').lastElementChild;
     if (lastCard) {
-        lastCard.querySelector('.passenger-base-fare').value = baseFare;
-        lastCard.querySelector('.passenger-net-amount').value = net;
-        lastCard.querySelector('.passenger-extra-fare').value = extra;
-        lastCard.querySelector('.passenger-commission').value = commission;
+        fields.forEach(c => {
+            const el = lastCard.querySelector('.' + c);
+            if (el) el.value = values[c];
+        });
         updatePaxTotal(lastCard);
         updatePaxStatus(lastCard);
         updateSummaryBar();
