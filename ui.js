@@ -2225,7 +2225,8 @@ function _attachPhotoUpload(formEl) {
         }
 
         // Expiry date (support both old and new field names)
-        const ocrExpiry = ocr.expiry || ocr.expiryDate || ocr.expirationDate || ocr.dateOfExpiry || ocr.date_of_expiry || ocr.expiryDate || '';
+        const ocrExpiry = ocr.expiry || ocr.expiryDate || ocr.expirationDate || ocr.dateOfExpiry || ocr.date_of_expiry || '';
+        const expiryInput = formEl.querySelector('.passenger-passport-expiry');
         console.log('[applyOcrResults] Expiry from OCR:', ocrExpiry, '| expiryInput exists:', !!expiryInput);
         if (ocrExpiry && expiryInput) {
             const expResult = setDateInputFromOcr(expiryInput, ocrExpiry, { isBirth: false });
