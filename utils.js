@@ -201,15 +201,18 @@ export function renderEmptyState(containerId, iconClass, title, message, buttonT
 
 /**
  * Debounces a function to limit the rate at which it gets called.
+ * Returns a new function that, when called, delays invocation of `func`
+ * until `delay` ms have elapsed since the last call.
  * @param {Function} func The function to debounce.
  * @param {number} [delay=300] The debounce delay in milliseconds.
  * @returns {Function} The debounced function.
  */
 export function debounce(func, delay = 300) {
-    clearTimeout(state.searchTimeout);
-    state.searchTimeout = setTimeout(() => {
-        func.apply(this, arguments);
-    }, delay);
+    let timeoutId;
+    return function debounced(...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
 }
 
 /**

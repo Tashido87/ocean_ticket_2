@@ -108,8 +108,9 @@ function setupEventListeners() {
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     if (settingsCloseBtn) settingsCloseBtn.addEventListener('click', () => document.getElementById('settings-panel').classList.remove('show'));
     // Dashboard Search
-    document.getElementById('searchName').addEventListener('input', () => debounce(performSearch, 300));
-    document.getElementById('searchBooking').addEventListener('input', () => debounce(performSearch, 300));
+    const debouncedSearch = debounce(performSearch, 300);
+    document.getElementById('searchName').addEventListener('input', debouncedSearch);
+    document.getElementById('searchBooking').addEventListener('input', debouncedSearch);
     ['searchTravelDate', 'searchStartDate', 'searchEndDate', 'searchDeparture', 'searchDestination', 'searchAirline', 'searchNotPaidToggle'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', performSearch);
