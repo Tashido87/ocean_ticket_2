@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { showToast, formatDateToDMMMY } from './utils.js';
+import { showToast, formatDateToDMMMY, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity } from './utils.js';
 
 /* =========================================
    HOTEL BOOKING VOUCHER MODULE
@@ -15,13 +15,28 @@ import { showToast, formatDateToDMMMY } from './utils.js';
  * Initializes the hotel service event listeners.
  */
 export function initHotelService() {
-    const pdfBtn = document.getElementById('hotel-pdf-btn');
-    const pngBtn = document.getElementById('hotel-png-btn');
-    const clearBtn = document.getElementById('clear-hotel-btn');
+    const generateBtn = document.getElementById('hotelGenerateBtn');
+    const clearBtn = document.getElementById('clearHotelBtn');
 
-    if (pdfBtn) pdfBtn.addEventListener('click', () => generateVoucher('pdf'));
-    if (pngBtn) pngBtn.addEventListener('click', () => generateVoucher('png'));
+    if (generateBtn) generateBtn.addEventListener('click', () => runHotelGeneration(generateBtn));
     if (clearBtn) clearBtn.addEventListener('click', clearHotelInputs);
+}
+
+async function runHotelGeneration(btn) {
+    const format = document.querySelector('input[name="hotel_format"]:checked')?.value || 'pdf';
+
+    setButtonLoading(btn, true);
+    try {
+        await generateVoucher(format);
+        showServiceToast('hotelToast', 'Voucher generated successfully!', 'success');
+        const city = document.getElementById('hotel-city').value;
+        addRecentActivity('hotel', `Hotel Voucher — ${city}`, format.toUpperCase());
+    } catch (err) {
+        console.error(err);
+        showServiceToast('hotelToast', 'Failed to generate voucher.', 'error');
+    } finally {
+        setButtonLoading(btn, false);
+    }
 }
 
 /**
@@ -35,6 +50,7 @@ function clearHotelInputs() {
     document.getElementById('hotel-bed-qty').value = '1';
     document.getElementById('hotel-bed-type').value = 'Double';
     document.getElementById('hotel-extra-bed').checked = false;
+    hideServiceToast('hotelToast');
 }
 
 /**

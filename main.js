@@ -8,7 +8,7 @@
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
 import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange } from './db.js';
-import { showToast, parseSheetDate, debounce } from './utils.js';
+import { showToast, parseSheetDate, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity } from './utils.js';
 
 // Feature Modules
 import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
@@ -182,112 +182,95 @@ function setupEventListeners() {
     // Hotel Service Initialization
     initHotelService();
 
-    // Invoice Generation Logic (Updated with Scenario Analysis)
+    // Invoice Generation Logic — unified Generate button with format selector
+    const invoiceGenerateBtn = document.getElementById('invoiceGenerateBtn');
+    const invoiceClearBtn = document.getElementById('invoiceClearBtn');
     const invoiceForm = document.getElementById('invoiceForm');
-    if (invoiceForm) {
-        // Handle PDF Generation (Form Submit)
-        invoiceForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const pnrInput = document.getElementById('invoice_pnr_list').value;
-            const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim()).filter(p => p);
-            
-            const type = document.getElementById('document_type').value;
-            const brand = document.getElementById('invoice_brand').value;
-            const date = document.getElementById('invoice_date').value;
 
-            if (pnrList.length === 0) {
-                showToast('Please enter at least one PNR.', 'error');
-                return;
-            }
+    async function runInvoiceGeneration() {
+        const pnrInput = document.getElementById('invoice_pnr_list').value;
+        const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim()).filter(p => p);
+        const type = document.getElementById('document_type').value;
+        const brand = document.getElementById('invoice_brand').value;
+        const date = document.getElementById('invoice_date').value;
+        const format = document.querySelector('input[name="invoice_format"]:checked')?.value || 'pdf';
 
-            // 1. Analyze the Scenario
-            const scenario = analyzeInvoiceScenario(pnrList);
+        if (pnrList.length === 0) {
+            showServiceToast('invoiceToast', 'Please enter at least one PNR.', 'error');
+            return;
+        }
 
-            if (scenario.type === 'ERROR') {
-                showToast(scenario.message, 'error');
-                return;
-            }
+        const scenario = analyzeInvoiceScenario(pnrList);
+        if (scenario.type === 'ERROR') {
+            showServiceToast('invoiceToast', scenario.message, 'error');
+            return;
+        }
 
-            // 2. Handle Choice (Scenario 1) or Auto
+        setButtonLoading(invoiceGenerateBtn, true);
+
+        const onDone = (ok, msg) => {
+            setButtonLoading(invoiceGenerateBtn, false);
+            showServiceToast('invoiceToast', msg, ok ? 'success' : 'error');
+            if (ok) addRecentActivity('invoice', `${type} — ${pnrList.join(', ')}`, format.toUpperCase());
+        };
+
+        try {
             if (scenario.canChoose) {
                 showInvoiceOptionModal(async (selectedMode) => {
                     try {
-                        showToast(`Generating ${type} PDF (${selectedMode})...`, 'info');
-                        await generateInvoice(pnrList, type, date, selectedMode, brand);
-                    } catch (error) {
-                        console.error(error);
-                        showToast('Failed to generate document.', 'error');
+                        if (format === 'photo') {
+                            await generateInvoiceImage(pnrList, type, date, selectedMode, brand);
+                        } else {
+                            await generateInvoice(pnrList, type, date, selectedMode, brand);
+                        }
+                        onDone(true, `${type} generated successfully!`);
+                    } catch (err) {
+                        console.error(err);
+                        onDone(false, 'Failed to generate document.');
                     }
                 });
             } else {
-                try {
-                    showToast(`Generating ${type} PDF...`, 'info');
-                    await generateInvoice(pnrList, type, date, 'auto', brand);
-                } catch (error) {
-                    console.error(error);
-                    showToast('Failed to generate document.', 'error');
-                }
-            }
-        });
-
-        // Handle Photo Generation (Button Click)
-        const photoBtn = document.getElementById('invoiceGenPhotoBtn');
-        if (photoBtn) {
-            photoBtn.addEventListener('click', async () => {
-                const pnrInput = document.getElementById('invoice_pnr_list').value;
-                const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim()).filter(p => p);
-                
-                const type = document.getElementById('document_type').value;
-                const brand = document.getElementById('invoice_brand').value;
-                const date = document.getElementById('invoice_date').value;
-
-                if (pnrList.length === 0) {
-                    showToast('Please enter at least one PNR.', 'error');
-                    return;
-                }
-
-                // 1. Analyze
-                const scenario = analyzeInvoiceScenario(pnrList);
-
-                if (scenario.type === 'ERROR') {
-                    showToast(scenario.message, 'error');
-                    return;
-                }
-
-                // 2. Handle Choice or Auto
-                if (scenario.canChoose) {
-                    showInvoiceOptionModal(async (selectedMode) => {
-                        try {
-                            showToast(`Generating ${type} Image (${selectedMode})...`, 'info');
-                            await generateInvoiceImage(pnrList, type, date, selectedMode, brand);
-                        } catch (error) {
-                            console.error(error);
-                            showToast('Failed to generate image.', 'error');
-                        }
-                    });
+                if (format === 'photo') {
+                    await generateInvoiceImage(pnrList, type, date, 'auto', brand);
                 } else {
-                    try {
-                        showToast(`Generating ${type} Image...`, 'info');
-                        await generateInvoiceImage(pnrList, type, date, 'auto', brand);
-                    } catch (error) {
-                        console.error(error);
-                        showToast('Failed to generate image.', 'error');
-                    }
+                    await generateInvoice(pnrList, type, date, 'auto', brand);
                 }
-            });
-        }
-
-        // Handle Clear Button
-        const invoiceClearBtn = document.getElementById('invoiceClearBtn');
-        if (invoiceClearBtn) {
-            invoiceClearBtn.addEventListener('click', () => {
-                document.getElementById('invoice_pnr_list').value = '';
-                document.getElementById('invoice_date').value = '';
-                document.getElementById('document_type').value = 'Invoice';
-                document.getElementById('invoice_brand').value = 'ocean';
-            });
+                onDone(true, `${type} generated successfully!`);
+            }
+        } catch (err) {
+            console.error(err);
+            onDone(false, 'Failed to generate document.');
         }
     }
+
+    if (invoiceGenerateBtn) invoiceGenerateBtn.addEventListener('click', runInvoiceGeneration);
+    if (invoiceForm) invoiceForm.addEventListener('submit', (e) => { e.preventDefault(); runInvoiceGeneration(); });
+
+    if (invoiceClearBtn) {
+        invoiceClearBtn.addEventListener('click', () => {
+            document.getElementById('invoice_pnr_list').value = '';
+            document.getElementById('invoice_date').value = '';
+            document.getElementById('document_type').value = 'Invoice';
+            document.getElementById('invoice_brand').value = 'ocean';
+            hideServiceToast('invoiceToast');
+        });
+    }
+
+    // Document search
+    const docSearch = document.getElementById('docSearch');
+    if (docSearch) {
+        docSearch.addEventListener('input', debounce((e) => {
+            const q = e.target.value.toLowerCase().trim();
+            document.querySelectorAll('.document-card').forEach(card => {
+                const title = (card.dataset.title || '').toLowerCase();
+                const type = (card.dataset.type || '').toLowerCase();
+                card.classList.toggle('hidden', q && !title.includes(q) && !type.includes(q));
+            });
+        }, 150));
+    }
+
+    // Render recent activity on init
+    renderRecentActivity();
 
     // Global listeners
     window.addEventListener('click', (event) => {

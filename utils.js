@@ -246,3 +246,85 @@ export function formatPaymentMethod(method = '', bank = '') {
     if (m === 'Mobile Banking' && b) return `Mobile Banking (${b})`;
     return m;
 }
+
+/* =========================================
+   SERVICES PAGE HELPERS
+   ========================================= */
+
+const ACTIVITY_KEY = 'ocean_services_activity';
+const MAX_ACTIVITY = 10;
+
+export function setButtonLoading(btn, loading) {
+    if (!btn) return;
+    btn.classList.toggle('is-loading', loading);
+    const text = btn.querySelector('.btn-text');
+    if (text) text.style.opacity = loading ? '0.85' : '';
+}
+
+export function showServiceToast(id, message, type = 'info') {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message;
+    el.className = `service-toast ${type} is-visible`;
+    setTimeout(() => hideServiceToast(id), 5000);
+}
+
+export function hideServiceToast(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('is-visible');
+}
+
+export function addRecentActivity(kind, title, format) {
+    try {
+        const raw = localStorage.getItem(ACTIVITY_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        list.unshift({
+            kind,
+            title,
+            format,
+            time: Date.now()
+        });
+        while (list.length > MAX_ACTIVITY) list.pop();
+        localStorage.setItem(ACTIVITY_KEY, JSON.stringify(list));
+        renderRecentActivity();
+    } catch (e) {
+        console.warn('Recent activity save failed', e);
+    }
+}
+
+export function renderRecentActivity() {
+    const container = document.getElementById('recentActivityList');
+    if (!container) return;
+    try {
+        const raw = localStorage.getItem(ACTIVITY_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        if (list.length === 0) {
+            container.innerHTML = '<div class="activity-empty">No recent activity yet</div>';
+            return;
+        }
+        container.innerHTML = list.map(item => {
+            const date = new Date(item.time);
+            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const iconClass = item.kind === 'hotel' ? 'hotel' : 'invoice';
+            const icon = item.kind === 'hotel' ? 'fa-hotel' : 'fa-file-invoice-dollar';
+            return `
+                <div class="activity-item">
+                    <span class="activity-icon ${iconClass}"><i class="fa-solid ${icon}"></i></span>
+                    <div class="activity-body">
+                        <span class="activity-title">${escapeHtml(item.title)}</span>
+                        <span class="activity-meta">${escapeHtml(item.format)} &middot; ${timeStr}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        container.innerHTML = '<div class="activity-empty">No recent activity yet</div>';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
