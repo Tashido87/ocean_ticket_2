@@ -1282,17 +1282,33 @@ function setDateInputFromOcr(input, rawValue, { isBirth = false } = {}) {
     const value = normalizePassportDateForInput(rawValue, { isBirth });
     if (!value) return false;
 
+    // Set the raw text value FIRST — this is the ground truth.
+    // The Datepicker may internally clamp or misparse years (e.g. 1997 → 2017),
+    // so we do NOT rely on setDate() for correctness. We set value directly and
+    // call setDate() only so the picker's UI syncs its internal highlight/calendar,
+    // then immediately restore the correct value if it was overwritten.
+    input.value = value;
+
     try {
-        if (input.datepicker) input.datepicker.setDate(value);
+        if (input.datepicker) {
+            // Parse the date ourselves to avoid datepicker year-range clamping
+            const parts = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (parts) {
+                const d = new Date(parseInt(parts[3]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                input.datepicker.setDate(d);
+            }
+            // Restore correct value in case datepicker clamped it
+            if (input.value !== value) input.value = value;
+        }
     } catch (_) {
-        // The direct value assignment below is the reliable fallback.
+        // Silent fail — input.value is already set correctly above
     }
 
-    input.value = value;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
 }
+
 
 function getSelectedOrCustomValue(selectId, customId) {
     const select = document.getElementById(selectId);
@@ -1880,12 +1896,18 @@ function _attachPaxBehaviour(formEl, opts = {}) {
         // Date picker (vanillajs-datepicker is loaded globally)
         try {
             if (window.Datepicker) {
-                new window.Datepicker(dobInput, { format: 'mm/dd/yyyy', autohide: true });
+                new window.Datepicker(dobInput, {
+                    format: 'mm/dd/yyyy',
+                    autohide: true,
+                    minDate: new Date(1900, 0, 1),   // Allow DOB as far back as 1900
+                    maxDate: new Date(),               // Can't be born in the future
+                });
             }
         } catch (_) {}
         dobInput.addEventListener('change', () => updateAgeBadge(formEl));
         dobInput.addEventListener('input', () => updateAgeBadge(formEl));
     }
+
 
     // ----- NRC structured input: auto-advance & uppercase -----
     const nrcInputs = formEl.querySelectorAll('.nrc-input input');

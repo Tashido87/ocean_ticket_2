@@ -1,17 +1,19 @@
 /**
  * @fileoverview Passport OCR — extract MRZ data from passport photos.
- * Uses Tesseract.js (loaded globally via CDN) to perform client-side OCR,
- * then parses the Machine Readable Zone (ICAO 9303 TD3 format) to extract:
- *   - Full name (surname + given names)
- *   - Date of birth
- *   - Passport number
- *   - Expiry date
- *   - Gender
- *   - Nationality
  *
- * Handles Myanmar passports (PV type code, MG/MA/MC prefix numbers)
- * and common OCR misreads in the MRZ font (OCR-B).
+ * Two-tier OCR strategy:
+ *   1. PRIMARY: Google Cloud Document AI via the `ocrPassport` Firebase
+ *      Cloud Function. ~99.9% accurate, ~1-2s typical. Requires the user
+ *      to be signed in (Firebase Auth).
+ *   2. FALLBACK: Tesseract.js client-side OCR. Used only when the cloud
+ *      call fails (offline, function not deployed, quota exceeded, etc.).
+ *
+ * Both paths feed into the same MRZ + free-text parser, so downstream
+ * code does not have to know which engine produced the text.
  */
+
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+import { functions } from './firebase-config.js';
 
 /* ------------------------------------------------------------------ */
 /*  PUBLIC API                                                         */
@@ -169,8 +171,195 @@ function cropImage(img, crop, scale = 2, strongContrast = false) {
     return canvas.toDataURL('image/png');
 }
 
+/* ------------------------------------------------------------------ */
+/*  CLOUD OCR (Google Cloud Document AI via Firebase Cloud Function)   */
+/* ------------------------------------------------------------------ */
+
+const CLOUD_OCR_MAX_BYTES = 4 * 1024 * 1024; // 4 MB — comfortable margin under callable's 10 MB cap
+const CLOUD_OCR_MAX_DIM = 2000;              // longest edge in pixels
+
+/**
+ * Compress + downscale a File/Blob/data-URL to a base64 JPEG suitable
+ * for sending to Cloud Functions. Big phone photos (10-20 MB HEIC) are
+ * shrunk to ~1-2 MB without measurable OCR-accuracy loss.
+ */
+async function imageToCompressedBase64(source) {
+    const img = await loadImageFromSource(source);
+
+    // Determine target dimensions while keeping aspect ratio.
+    const maxDim = Math.max(img.naturalWidth, img.naturalHeight);
+    const scale = maxDim > CLOUD_OCR_MAX_DIM ? CLOUD_OCR_MAX_DIM / maxDim : 1;
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    // Iteratively reduce JPEG quality until under the size cap.
+    let quality = 0.92;
+    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+    while (estimateBase64Bytes(dataUrl) > CLOUD_OCR_MAX_BYTES && quality > 0.5) {
+        quality -= 0.1;
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+    }
+
+    return {
+        base64: dataUrl.replace(/^data:[^;]+;base64,/, ''),
+        mimeType: 'image/jpeg'
+    };
+}
+
+function loadImageFromSource(source) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        if (source instanceof Blob) {
+            const url = URL.createObjectURL(source);
+            img.src = url;
+            // We do NOT revokeObjectURL here because <img> might still need it; let GC handle it.
+        } else {
+            img.src = source;
+        }
+    });
+}
+
+function estimateBase64Bytes(dataUrl) {
+    const idx = dataUrl.indexOf(',');
+    const len = idx >= 0 ? dataUrl.length - idx - 1 : dataUrl.length;
+    return Math.floor((len * 3) / 4);
+}
+
+/**
+ * Map Document AI Identity-Document entities to our standard result shape.
+ * Returns null if the response had no entities (i.e., it was a plain OCR
+ * processor) so the caller can fall through to the MRZ/text parser.
+ */
+function resultFromDocaiEntities(entities, rawText) {
+    if (!entities || !entities.length) return null;
+
+    const byType = Object.create(null);
+    for (const e of entities) {
+        const key = String(e.type || '').toLowerCase();
+        if (!key) continue;
+        // Keep the highest-confidence value for each type.
+        if (!byType[key] || (e.confidence || 0) > (byType[key].confidence || 0)) {
+            byType[key] = e;
+        }
+    }
+
+    const entityText = (entity) => {
+        if (!entity) return '';
+        return String(entity.value || entity.text || '').trim();
+    };
+
+    const pick = (...keys) => {
+        for (const k of keys) {
+            const value = entityText(byType[k]);
+            if (value) return value;
+        }
+        return '';
+    };
+
+    const surname = pick('family_name', 'surname', 'last_name');
+    const givenNames = pick('given_names', 'given_name', 'first_name');
+    const fullName = pick('full_name', 'name')
+        || [surname, givenNames].filter(Boolean).join(' ');
+
+    const sex = (pick('sex', 'gender') || '').toUpperCase().slice(0, 1).replace(/[^MF]/, '');
+
+    return {
+        name: cleanPassportName(fullName),
+        surname: cleanPassportName(surname),
+        givenNames: cleanPassportName(givenNames),
+        passportNo: normalizePassportNumber(pick('document_id', 'passport_number', 'document_number')),
+        dob: normaliseDateToMMDDYYYY(pick('date_of_birth', 'birth_date'), true) || pick('date_of_birth'),
+        expiry: normaliseDateToMMDDYYYY(pick('expiration_date', 'date_of_expiry'), false) || pick('expiration_date'),
+        sex,
+        gender: sex === 'F' ? 'MS' : (sex === 'M' ? 'MR' : ''),
+        nationality: normalizeNationality(pick('nationality', 'issuing_country')),
+        raw: rawText || ''
+    };
+}
+
+/**
+ * Call the deployed Cloud Function and return either:
+ *   - a fully-parsed result (from an Identity processor), or
+ *   - a structured object with `text` only (so the caller can run the
+ *     existing MRZ/free-text parser on it).
+ *
+ * Returns null if the cloud path is unavailable for any reason.
+ */
+async function ocrViaCloud(imageSource, onStatus) {
+    console.log('[Passport OCR] 🚀 ocrViaCloud() entered');
+    try {
+        onStatus?.('Compressing image…');
+        const { base64, mimeType } = await imageToCompressedBase64(imageSource);
+        console.log('[Passport OCR] ✓ Image compressed, base64 bytes:', base64.length);
+
+        onStatus?.('Sending to Document AI…');
+        const callable = httpsCallable(functions, 'ocrPassport');
+        console.log('[Passport OCR] ✓ Calling Cloud Function...');
+        const { data } = await callable({ imageBase64: base64, mimeType });
+        console.log('[Passport OCR] ✓ Cloud Function returned. Keys:', Object.keys(data || {}), 'text length:', data?.text?.length);
+
+        if (!data || typeof data.text !== 'string') {
+            console.warn('[Passport OCR] ⚠️ Cloud returned no text — falling back. data =', data);
+            return null;
+        }
+
+        const cloudResult = {
+            text: data.text,
+            entities: data.entities || [],
+            processorType: data.processorType || 'OCR'
+        };
+
+        // Fast path: ID processor returned structured fields → use them directly.
+        if (cloudResult.processorType === 'ID_DOCUMENT' && cloudResult.entities.length) {
+            const direct = resultFromDocaiEntities(cloudResult.entities, cloudResult.text);
+            if (direct && (direct.name || direct.passportNo)) {
+                onStatus?.('Passport data extracted ✓');
+                return { ...direct, _source: 'docai-entities' };
+            }
+        }
+
+        // OCR processor (or ID processor that didn't match) → run our parser on the text.
+        const parsed = parsePassportOcrTexts({ full: cloudResult.text }, onStatus);
+        if (parsed) return { ...parsed, _source: 'docai-ocr' };
+        return null;
+    } catch (err) {
+        const code = err?.code || '';
+        const msg = err?.message || String(err);
+        // Treat "function not deployed" / network problems as a soft failure → fall back.
+        if (
+            code === 'functions/not-found' ||
+            code === 'functions/unavailable' ||
+            code === 'functions/failed-precondition' ||
+            code === 'functions/permission-denied' ||
+            code === 'functions/unauthenticated' ||
+            /not[- ]?found/i.test(msg) ||
+            /permission/i.test(msg) ||
+            /unauth/i.test(msg) ||
+            /network/i.test(msg)
+        ) {
+            onStatus?.('Document AI unavailable — using local OCR…');
+            console.warn('[Passport OCR] Cloud OCR unavailable, falling back:', msg);
+            return null;
+        }
+        onStatus?.('Document AI failed — using local OCR…');
+        console.warn('[Passport OCR] Cloud OCR error, falling back:', err);
+        return null;
+    }
+}
+
 /**
  * Run OCR on a passport image and return structured data.
+ *
+ * Tries Google Cloud Document AI first (~99.9% accurate, ~1-2 s); falls back
+ * to client-side Tesseract.js if the cloud call is unavailable.
  *
  * @param {File|Blob|string} imageSource - File, Blob, or data-URL / object-URL.
  * @param {(msg: string) => void} [onStatus] - Optional status callback.
@@ -188,21 +377,29 @@ function cropImage(img, crop, scale = 2, strongContrast = false) {
  * } | null>}
  */
 export async function ocrPassport(imageSource, onStatus) {
+    onStatus?.('Initialising OCR…');
+
+    // 1) Try the cloud path first.
+    const cloudResult = await ocrViaCloud(imageSource, onStatus);
+    if (cloudResult) {
+        console.log('[Passport OCR] Cloud result:', cloudResult);
+        return cloudResult;
+    }
+
+    // 2) Fall back to Tesseract.js if available.
     if (!window.Tesseract) {
-        console.warn('Tesseract.js is not loaded.');
+        console.warn('Tesseract.js is not loaded; cannot run client-side fallback.');
+        onStatus?.('OCR unavailable');
         return null;
     }
 
-    onStatus?.('Initialising OCR…');
+    onStatus?.('Falling back to local OCR…');
 
     try {
-        // Convert File/Blob → object URL if needed
         let src = imageSource;
         if (imageSource instanceof Blob) {
             src = URL.createObjectURL(imageSource);
         }
-
-        onStatus?.('Reading passport…');
 
         let ocrTexts = await runPassportOcrPasses(src, onStatus);
 
@@ -214,12 +411,11 @@ export async function ocrPassport(imageSource, onStatus) {
             result = parsePassportOcrTexts(ocrTexts, onStatus);
         }
 
-        // Clean up object URL if we created one
         if (imageSource instanceof Blob) {
             URL.revokeObjectURL(src);
         }
 
-        if (result) return result;
+        if (result) return { ...result, _source: 'tesseract' };
 
         onStatus?.('Could not parse passport data');
         return null;

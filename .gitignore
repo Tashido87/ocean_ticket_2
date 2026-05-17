@@ -4,6 +4,12 @@ scripts/service-account-key.json
 .env
 .env.local
 
+# Google Cloud service-account JSON keys (NEVER commit these)
+ocean-ticket-*.json
+google-cloud-key.json
+**/keys/
+functions/.env*
+
 # Node
 node_modules/
 scripts/node_modules/

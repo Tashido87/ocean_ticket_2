@@ -1,0 +1,8 @@
+node_modules/
+*.log
+.env
+.env.*
+keys/
+*.json.local
+google-cloud-key.json
+ocean-ticket-*.json
