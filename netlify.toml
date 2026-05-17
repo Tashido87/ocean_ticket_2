@@ -1,0 +1,27 @@
+# Netlify configuration
+
+[build]
+  # No build command needed — static site with serverless functions
+  publish = "."
+  functions = "netlify/functions"
+
+# Prevent browser caching of JS/CSS so code changes take effect immediately
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/*.mjs"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
