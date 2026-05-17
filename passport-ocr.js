@@ -69,20 +69,34 @@ export async function ocrPassport(imageSource, onStatus) {
         console.log('[Passport OCR] Raw text:\n', rawText);
         onStatus?.('Parsing results…');
 
-        // Try MRZ first (most reliable)
+        // Try MRZ first (most reliable for name + passport number)
         const mrzResult = parseMRZ(rawText);
         if (mrzResult) {
             console.log('[Passport OCR] MRZ result:', mrzResult);
-            onStatus?.('Passport data extracted ✓');
-            return { ...mrzResult, raw: rawText };
         }
 
-        // Fallback: try to find data in raw text (visible fields on passport)
-        const fallbackResult = parseFreeText(rawText);
-        if (fallbackResult && (fallbackResult.passportNo || fallbackResult.name)) {
-            console.log('[Passport OCR] Free-text result:', fallbackResult);
+        // Always try free-text too (best for dates from printed fields)
+        const freeResult = parseFreeText(rawText);
+        if (freeResult) {
+            console.log('[Passport OCR] Free-text result:', freeResult);
+        }
+
+        // Merge: MRZ as base, free-text fills gaps
+        if (mrzResult || (freeResult && (freeResult.passportNo || freeResult.name))) {
+            const merged = {
+                name:        mrzResult?.name        || freeResult?.name        || '',
+                surname:     mrzResult?.surname      || freeResult?.surname     || '',
+                givenNames:  mrzResult?.givenNames   || freeResult?.givenNames  || '',
+                passportNo:  mrzResult?.passportNo   || freeResult?.passportNo  || '',
+                dob:         mrzResult?.dob          || freeResult?.dob         || '',
+                expiry:      mrzResult?.expiry       || freeResult?.expiry      || '',
+                gender:      mrzResult?.gender       || freeResult?.gender      || '',
+                nationality: mrzResult?.nationality  || freeResult?.nationality || '',
+                raw: rawText
+            };
+            console.log('[Passport OCR] Merged result:', merged);
             onStatus?.('Passport data extracted ✓');
-            return { ...fallbackResult, raw: rawText };
+            return merged;
         }
 
         onStatus?.('Could not parse passport data');
@@ -201,16 +215,14 @@ function parseMRZ(text) {
     // 27:    Check digit
     const passportNo = line2.substring(0, 9).replace(/</g, '').trim();
     const nationality2 = line2.substring(10, 13).replace(/</g, '');
-    const dobRaw = line2.substring(13, 19);
+    const dobRaw = fixOcrDigits(line2.substring(13, 19));
     const genderChar = line2.charAt(20);
-    const expiryRaw = line2.substring(21, 27);
+    const expiryRaw = fixOcrDigits(line2.substring(21, 27));
 
     // Validate: passport number should have at least 5 alphanumeric chars
     if (passportNo.length < 5) return null;
-    // DOB should be 6 digits
-    if (!/^\d{6}$/.test(dobRaw)) return null;
 
-    // Convert YYMMDD → MM/DD/YYYY
+    // Convert YYMMDD → MM/DD/YYYY (don't hard-fail if dates are unreadable)
     const dob = mrzDateToDisplay(dobRaw, true);
     const expiry = mrzDateToDisplay(expiryRaw, false);
 
@@ -254,15 +266,32 @@ function countChar(str, ch) {
  * Also fixes common OCR substitutions in OCR-B font.
  */
 function sanitiseMrzLine(line) {
-    // Common OCR misreads in MRZ:
     let fixed = line
-        .replace(/\|/g, '<')   // pipe → chevron
-        .replace(/\\/g, '<')   // backslash → chevron
-        .replace(/\{/g, '<')   // brace → chevron
-        .replace(/\[/g, '<')   // bracket → chevron
-        .replace(/~/g, '<');   // tilde → chevron
+        .replace(/\|/g, '<')
+        .replace(/\\/g, '<')
+        .replace(/\{/g, '<')
+        .replace(/\[/g, '<')
+        .replace(/~/g, '<');
 
     return fixed.replace(/[^A-Z0-9<]/g, '');
+}
+
+/**
+ * Fix common OCR letter↔digit misreads for positions that should be digits.
+ * OCR-B font causes: O↔0, I↔1, Z↔2, S↔5, B↔8, G↔6, T↔7
+ */
+function fixOcrDigits(str) {
+    return str
+        .replace(/O/g, '0')
+        .replace(/o/g, '0')
+        .replace(/I/g, '1')
+        .replace(/l/g, '1')
+        .replace(/Z/g, '2')
+        .replace(/S/g, '5')
+        .replace(/B/g, '8')
+        .replace(/G/g, '6')
+        .replace(/T/g, '7')
+        .replace(/[^0-9]/g, '');  // strip anything that's still not a digit
 }
 
 /**
@@ -279,11 +308,15 @@ function padOrTrim(line, len) {
  * @param {boolean} isBirth - If true, dates in the future are assumed to be in the 1900s.
  */
 function mrzDateToDisplay(yymmdd, isBirth) {
-    if (!yymmdd || yymmdd.length < 6 || !/^\d{6}$/.test(yymmdd)) return '';
+    if (!yymmdd || yymmdd.length < 6) return '';
+    
+    // Apply digit correction one more time
+    const digits = fixOcrDigits(yymmdd);
+    if (digits.length < 6 || !/^\d{6}$/.test(digits)) return '';
 
-    const yy = parseInt(yymmdd.substring(0, 2), 10);
-    const mm = yymmdd.substring(2, 4);
-    const dd = yymmdd.substring(4, 6);
+    const yy = parseInt(digits.substring(0, 2), 10);
+    const mm = digits.substring(2, 4);
+    const dd = digits.substring(4, 6);
 
     // Validate month/day
     const monthNum = parseInt(mm, 10);
@@ -403,10 +436,10 @@ function parseFreeText(text) {
     }
 
     // ---- Date of Birth ----
-    // Look for "Date of birth" followed by a date
     const dobPatterns = [
-        /(?:Date\s*of\s*birth|DOB|BORN)\s*\n?\s*(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{4})/i,
-        /(?:Date\s*of\s*birth|DOB|BORN)\s*\n?\s*(\d{2}[\/\-.]\d{2}[\/\-.]\d{4})/i
+        /(?:Date\s*of\s*birth|DOB|BORN|D\.?O\.?B)[:\s]*\n?\s*(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i,
+        /(?:Date\s*of\s*birth|DOB|BORN)[:\s]*\n?\s*(\d{2}[\/.\-]\d{2}[\/.\-]\d{4})/i,
+        /(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i  // Any date as last resort for DOB
     ];
 
     for (const pat of dobPatterns) {
@@ -419,8 +452,8 @@ function parseFreeText(text) {
 
     // ---- Expiry Date ----
     const expiryPatterns = [
-        /(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*UNTIL)\s*\n?\s*(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{4})/i,
-        /(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*UNTIL)\s*\n?\s*(\d{2}[\/\-.]\d{2}[\/\-.]\d{4})/i
+        /(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*UNTIL|EXP\.?\s*DATE)[:\s]*\n?\s*(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i,
+        /(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*UNTIL)[:\s]*\n?\s*(\d{2}[\/.\-]\d{2}[\/.\-]\d{4})/i
     ];
 
     for (const pat of expiryPatterns) {
