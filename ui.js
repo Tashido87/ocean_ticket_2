@@ -2140,6 +2140,8 @@ async function scanPassportWithGemini(file, onStatus) {
 
         onStatus?.('Scanning passport...');
 
+        console.log('[Gemini request] sending to /.netlify/functions/gemini-passport-ocr');
+
         const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2150,7 +2152,7 @@ async function scanPassportWithGemini(file, onStatus) {
         });
 
         const data = await response.json();
-        console.log('[Gemini OCR] Response:', data);
+        console.log('[Gemini passport OCR]', data);
 
         if (!data.ok) {
             console.warn('[Gemini OCR] Server returned not-ok:', data.error);
@@ -2262,6 +2264,17 @@ function _attachPhotoUpload(formEl) {
 
         // Re-enable autosuggest now that OCR fill is complete
         formEl._ocrFilling = false;
+
+        // Final debug log with all applied fields
+        const finalFields = {
+            name: formEl.querySelector('.passenger-name')?.value || '',
+            passportNo: passportNoInput?.value || '',
+            dob: formEl.querySelector('.passenger-dob')?.value || '',
+            expiry: formEl.querySelector('.passenger-passport-expiry')?.value || '',
+            nationality: formEl.querySelector('.passenger-nationality')?.value || '',
+            title: formEl.querySelector('.passenger-gender:checked')?.value || '',
+        };
+        console.log('[Final applied passenger fields]', finalFields);
     }
 
     const handleFile = async (file) => {
