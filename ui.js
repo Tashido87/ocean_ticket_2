@@ -1282,13 +1282,36 @@ function setDateInputFromOcr(input, rawValue, { isBirth = false } = {}) {
     const value = normalizePassportDateForInput(rawValue, { isBirth });
     if (!value) return false;
 
-    // Do NOT use datepicker.setDate() — it fires its own internal change event
-    // that re-parses and clamps the year (e.g. 1997 becomes 2017).
-    // Directly writing input.value is always correct and the datepicker text
-    // box displays whatever is in input.value.
+    // CRITICAL: The Vanilla Datepicker intercepts 'change' events on the input
+    // and re-parses the value using its own year-range logic, which clamps
+    // historical years (e.g. 1997 → 2017). To prevent this:
+    // 1. Destroy the datepicker instance
+    // 2. Set the value directly
+    // 3. Recreate the datepicker
+    try {
+        if (input.datepicker) {
+            input.datepicker.destroy();
+        }
+    } catch (_) {}
+
     input.value = value;
+
+    // Only dispatch 'input' event — our own updateAgeBadge listens to this.
+    // Do NOT dispatch 'change' — datepicker would intercept and clamp the year.
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+
+    // Recreate the datepicker so the calendar UI still works for manual edits
+    try {
+        if (window.Datepicker) {
+            const opts = { format: 'mm/dd/yyyy', autohide: true };
+            if (isBirth) {
+                opts.minDate = new Date(1900, 0, 1);
+                opts.maxDate = new Date();
+            }
+            new window.Datepicker(input, opts);
+        }
+    } catch (_) {}
+
     return true;
 }
 
@@ -2691,7 +2714,15 @@ export function addExistingPassengerForm() {
  */
 function setupPassengerAutoSuggest(input, box, onSelect) {
     input.addEventListener('input', () => {
+        // Do not show autosuggest while OCR is filling fields
+        const formEl = input.closest('.pax-card');
+        if (formEl?._ocrFilling) {
+            box.style.display = 'none';
+            return;
+        }
+
         const val = input.value.trim().toLowerCase();
+
         if (!val) {
             box.style.display = 'none';
             return;
