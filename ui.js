@@ -1437,6 +1437,23 @@ export function setupSellClientAutoSuggest() {
 
 export function initializeSellFormEnhancements() {
     setupSellClientAutoSuggest();
+
+    // --- Bulletproof: delegated handler for passenger card collapse/expand ---
+    // Survives any re-render and works for cards added later.
+    const paxContainer = document.getElementById('passenger-forms-container');
+    if (paxContainer && paxContainer.dataset.collapseDelegateBound !== 'true') {
+        paxContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-role="collapse-btn"]');
+            if (!btn) return;
+            const card = btn.closest('.passenger-form');
+            if (!card) return;
+            e.stopPropagation();
+            card.classList.toggle('is-collapsed');
+            console.log('[collapse] toggled', card.classList.contains('is-collapsed') ? 'collapsed' : 'expanded');
+        });
+        paxContainer.dataset.collapseDelegateBound = 'true';
+    }
+
     [
         'booking_reference', 'custom_airline', 'custom_departure', 'custom_destination',
         'return_booking_reference', 'return_custom_airline', 'return_custom_departure', 'return_custom_destination'
