@@ -5,7 +5,7 @@
  * - Delete by storage path.
  */
 
-import { storage } from './firebase-config.js';
+import { storage, auth } from './firebase-config.js';
 import {
     ref as storageRef,
     uploadBytesResumable,
@@ -88,11 +88,12 @@ export async function uploadPassportPhoto(file, opts = {}) {
         blob = file;
     }
 
+    const uid = auth.currentUser?.uid || 'anonymous';
     const safePassport = String(passportNo || 'unknown')
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, '') || 'unknown';
     const stamp = Date.now();
-    const path = `passports/${safePassport}/${stamp}.jpg`;
+    const path = `passports/${uid}/${stamp}.jpg`;
     const ref = storageRef(storage, path);
 
     const task = uploadBytesResumable(ref, blob, { contentType: 'image/jpeg' });

@@ -543,6 +543,44 @@
     transition: width 0.2s ease;
 }
 
+/* OCR status indicator */
+.pz-ocr-status {
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0 0.25rem;
+    min-height: 1.2rem;
+    text-align: center;
+    transition: opacity 0.5s ease, color 0.3s ease;
+    opacity: 0;
+}
+
+.pz-ocr-status.is-scanning {
+    opacity: 1;
+    color: var(--primary-accent, #0d9488);
+    animation: ocrPulse 1.5s ease-in-out infinite;
+}
+
+.pz-ocr-status.is-success {
+    opacity: 1;
+    color: var(--success-accent, #1f8a65);
+    animation: none;
+}
+
+.pz-ocr-status.is-warn {
+    opacity: 1;
+    color: var(--warning-accent, #c08532);
+    animation: none;
+}
+
+.pz-ocr-status.is-fading {
+    opacity: 0;
+}
+
+@keyframes ocrPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
 /* Uploaded state */
 .passport-photo-preview {
     display: none;
@@ -1164,24 +1202,9 @@
     border-color: var(--sell-border-strong);
 }
 
-/* ---------- Frozen Booking Context section (sticky to top) ---------- */
+/* ---------- Booking Context section ---------- */
 #sell-view #section-booking {
-    position: sticky;
-    top: calc(80px + 0.75rem);
-    z-index: 20;
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(14px) saturate(160%);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 32px rgba(15, 23, 42, 0.10);
-}
-
-#sell-view #section-booking::after {
-    content: '';
-    position: absolute;
-    inset: auto 0 -10px 0;
-    height: 10px;
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.05), transparent);
-    pointer-events: none;
+    z-index: 1;
 }
 
 /* The other sections sit above the page background gradient */

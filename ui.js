@@ -14,6 +14,7 @@ import { showToast } from './utils.js';
 import { displayTickets } from './tickets.js';
 import { renderBookingPage } from './booking.js';
 import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox } from './passport.js';
+import { ocrPassport } from './passport-ocr.js';
 
 /**
  * Normalizes passenger names for grouped dashboard widgets.
@@ -1576,9 +1577,10 @@ function _buildPassengerCardHtml(idx, opts) {
                             <div class="pz-content">
                                 <i class="fa-solid fa-cloud-arrow-up pz-icon"></i>
                                 <div class="pz-text">Drop photo or <strong>click to upload</strong></div>
-                                <div class="pz-hint">JPG, PNG up to 5 MB · automatically compressed</div>
+                                <div class="pz-hint">JPG, PNG up to 5 MB · auto-OCR + compressed</div>
                             </div>
                             <div class="pz-progress"><div class="pz-progress-bar" data-role="progress"></div></div>
+                            <div class="pz-ocr-status" data-role="ocr-status"></div>
                             <input type="file" accept="image/*" class="passenger-passport-file">
                         </div>
                         <div class="passport-photo-preview ${passport?.photoUrl ? 'is-visible' : ''}" data-role="photo-preview">
@@ -1907,7 +1909,63 @@ function _attachPhotoUpload(formEl) {
     const urlHidden = formEl.querySelector('.passenger-passport-photo-url');
     const pathHidden = formEl.querySelector('.passenger-passport-photo-path');
     const progressBar = zone.querySelector('[data-role="progress"]');
+    const ocrStatusEl = zone.querySelector('[data-role="ocr-status"]');
     const passportNoInput = formEl.querySelector('.passenger-passport-no');
+
+    /**
+     * Applies OCR results to the passenger form fields.
+     * Only fills empty fields — never overwrites user-entered data.
+     */
+    function applyOcrResults(ocr) {
+        if (!ocr) return;
+
+        // Passport number
+        if (ocr.passportNo && !passportNoInput.value.trim()) {
+            passportNoInput.value = ocr.passportNo;
+            passportNoInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // Full name
+        const nameInput = formEl.querySelector('.passenger-name');
+        if (ocr.name && nameInput && !nameInput.value.trim()) {
+            nameInput.value = ocr.name.toUpperCase();
+            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // Date of birth
+        const dobInput = formEl.querySelector('.passenger-dob');
+        if (ocr.dob && dobInput && !dobInput.value.trim()) {
+            dobInput.value = ocr.dob;
+            dobInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // Expiry date
+        const expiryInput = formEl.querySelector('.passenger-passport-expiry');
+        if (ocr.expiry && expiryInput && !expiryInput.value.trim()) {
+            expiryInput.value = ocr.expiry;
+            expiryInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // Gender
+        if (ocr.gender) {
+            const genderRadio = formEl.querySelector(`.passenger-gender[value="${ocr.gender}"]`);
+            if (genderRadio && !formEl.querySelector('.passenger-gender:checked')?.value) {
+                genderRadio.checked = true;
+                genderRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        // Nationality
+        const natInput = formEl.querySelector('.passenger-nationality');
+        if (ocr.nationality && natInput && (!natInput.value.trim() || natInput.value.trim() === 'MM')) {
+            natInput.value = ocr.nationality.toUpperCase();
+        }
+
+        // Refresh UI helpers
+        updatePaxAvatar(formEl);
+        updatePaxSummary(formEl);
+        updatePaxStatus(formEl);
+    }
 
     const handleFile = async (file) => {
         if (!file) return;
@@ -1917,23 +1975,62 @@ function _attachPhotoUpload(formEl) {
         }
         zone.classList.add('is-uploading');
         progressBar.style.width = '0%';
+
+        // Show OCR status
+        ocrStatusEl.textContent = '';
+        ocrStatusEl.className = 'pz-ocr-status';
+
+        // Run upload and OCR in parallel
+        const uploadPromise = uploadPassportPhoto(file, {
+            passportNo: passportNoInput.value || 'unknown',
+            onProgress: (pct) => { progressBar.style.width = `${pct}%`; }
+        });
+
+        const ocrPromise = ocrPassport(file, (msg) => {
+            ocrStatusEl.textContent = msg;
+            ocrStatusEl.className = 'pz-ocr-status is-scanning';
+        }).catch(err => {
+            console.warn('OCR error:', err);
+            return null;
+        });
+
         try {
-            const { url, path } = await uploadPassportPhoto(file, {
-                passportNo: passportNoInput.value || 'unknown',
-                onProgress: (pct) => { progressBar.style.width = `${pct}%`; }
-            });
-            urlHidden.value = url;
-            pathHidden.value = path;
-            previewImg.src = url;
+            const [uploadResult, ocrResult] = await Promise.all([uploadPromise, ocrPromise]);
+
+            // Handle upload result
+            urlHidden.value = uploadResult.url;
+            pathHidden.value = uploadResult.path;
+            previewImg.src = uploadResult.url;
             previewName.textContent = file.name;
             preview.classList.add('is-visible');
-            showToast('Passport photo uploaded.', 'success');
+
+            // Handle OCR result
+            if (ocrResult) {
+                applyOcrResults(ocrResult);
+                ocrStatusEl.textContent = '✓ Passport data extracted';
+                ocrStatusEl.className = 'pz-ocr-status is-success';
+                showToast('Passport uploaded & data extracted!', 'success');
+            } else {
+                ocrStatusEl.textContent = 'Could not read passport data';
+                ocrStatusEl.className = 'pz-ocr-status is-warn';
+                showToast('Passport uploaded. OCR could not extract data.', 'info');
+            }
         } catch (err) {
             console.error(err);
             showToast(err.message || 'Upload failed.', 'error');
+            ocrStatusEl.textContent = '';
+            ocrStatusEl.className = 'pz-ocr-status';
         } finally {
             zone.classList.remove('is-uploading');
             fileInput.value = '';
+            // Fade out OCR status after a few seconds
+            setTimeout(() => {
+                ocrStatusEl.classList.add('is-fading');
+                setTimeout(() => {
+                    ocrStatusEl.textContent = '';
+                    ocrStatusEl.className = 'pz-ocr-status';
+                }, 600);
+            }, 4000);
         }
     };
 
