@@ -151,7 +151,7 @@
     user-select: none;
     background: #ffffff;
     border-bottom: 1px solid rgba(38, 37, 30, 0.06);
-    transition: background 0.15s ease;
+    transition: background 0.15s ease, border-color 0.22s ease;
 }
 
 .pax-card-header:hover {
@@ -258,8 +258,17 @@
     transform: rotate(-90deg);
 }
 
+.passenger-form.is-collapsed .pax-card-header {
+    border-bottom-color: transparent;
+}
+
 .passenger-form.is-collapsed .pax-card-body {
-    display: none;
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
 }
 
 /* ---------- Passport expiry warning banner ---------- */
@@ -313,6 +322,16 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .pax-card-body {
     padding: 1.25rem 1.25rem 1.5rem;
     background: #fafaf8;
+    max-height: var(--pax-body-max-height, none);
+    opacity: 1;
+    overflow: hidden;
+    transform: translateY(0);
+    transition:
+        max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.2s ease,
+        padding-top 0.28s ease,
+        padding-bottom 0.28s ease,
+        transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .pax-panel {
@@ -1607,7 +1626,12 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 #sell-view .passenger-form.is-collapsed .pax-card-body {
-    display: none;
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
 }
 
 #sell-view .pax-panel {

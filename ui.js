@@ -1435,6 +1435,18 @@ export function setupSellClientAutoSuggest() {
     }
 }
 
+function togglePassengerCardCollapse(card, button = null) {
+    const body = card?.querySelector('.pax-card-body');
+    if (!card || !body) return;
+
+    const isCollapsed = card.classList.contains('is-collapsed');
+    body.style.setProperty('--pax-body-max-height', `${body.scrollHeight}px`);
+    body.offsetHeight;
+
+    card.classList.toggle('is-collapsed', !isCollapsed);
+    button?.setAttribute('aria-expanded', String(isCollapsed));
+}
+
 export function initializeSellFormEnhancements() {
     setupSellClientAutoSuggest();
 
@@ -1448,8 +1460,7 @@ export function initializeSellFormEnhancements() {
             const card = btn.closest('.passenger-form');
             if (!card) return;
             e.stopPropagation();
-            const isCollapsed = card.classList.toggle('is-collapsed');
-            btn.setAttribute('aria-expanded', String(!isCollapsed));
+            togglePassengerCardCollapse(card, btn);
             console.log('[collapse] toggled', card.classList.contains('is-collapsed') ? 'collapsed' : 'expanded');
         });
         paxContainer.dataset.collapseDelegateBound = 'true';
@@ -1870,10 +1881,12 @@ function _attachPaxBehaviour(formEl, opts = {}) {
     // ----- Collapse / expand -----
     const header = formEl.querySelector('[data-role="header"]');
     const collapseBtn = formEl.querySelector('[data-role="collapse-btn"]');
-    const toggleCollapse = () => {
-        const isCollapsed = formEl.classList.toggle('is-collapsed');
-        collapseBtn?.setAttribute('aria-expanded', String(!isCollapsed));
-    };
+    const body = formEl.querySelector('.pax-card-body');
+    const toggleCollapse = () => togglePassengerCardCollapse(formEl, collapseBtn);
+    body?.addEventListener('transitionend', (e) => {
+        if (e.propertyName !== 'max-height' || formEl.classList.contains('is-collapsed')) return;
+        body.style.setProperty('--pax-body-max-height', 'none');
+    });
     header.addEventListener('click', (e) => {
         // Ignore clicks on the action buttons cluster or the collapse button itself
         if (e.target.closest('.pax-actions')) return;
