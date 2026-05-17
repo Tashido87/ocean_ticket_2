@@ -2235,11 +2235,14 @@ function _attachPhotoUpload(formEl) {
 
         // Title / Sex (support both old and new field names)
         const title = ocr.title || (ocr.sex === 'F' ? 'MS' : ocr.sex === 'M' ? 'MR' : '');
+        console.log('[applyOcrResults] Title from OCR:', title);
         if (title) {
             const genderRadio = formEl.querySelector(`.passenger-gender[value="${title}"]`);
+            console.log('[applyOcrResults] genderRadio found:', !!genderRadio);
             if (genderRadio) {
                 genderRadio.checked = true;
                 genderRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                genderRadio.dispatchEvent(new Event('click', { bubbles: true }));
             }
         }
 
