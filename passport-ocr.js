@@ -141,34 +141,38 @@ export async function ocrPassport(imageSource, onStatus) {
  * @returns {string} Extracted name or ''
  */
 function extractNameFromRawMrz(text) {
+    const vowels = /[AEIOU]/i;
     const lines = text.split(/\n/);
     for (const raw of lines) {
-        // Sanitize: remove spaces, uppercase, fix OCR substitutions → same as MRZ lines
-        let s = raw.replace(/\s/g, '').toUpperCase();
-        s = sanitiseMrzLine(s);
+        const upper = raw.toUpperCase().trim();
 
-        // Must look like a passport MRZ line 1 (P + type + country + name ≥30 chars)
-        if (s.length < 25 || s.charAt(0) !== 'P') continue;
+        // Must start with P (passport type) and contain a 3-letter country code
+        if (!upper.startsWith('P')) continue;
+        const prefixM = upper.match(/^P[V<]\s*([A-Z]{3})\s*/);
+        if (!prefixM) continue;
 
-        // Verify country code at positions 2–4
-        const countryCode = s.substring(2, 5);
-        if (!/^[A-Z]{3}$/.test(countryCode)) continue;
+        // Extract everything after the country code prefix
+        const afterCountry = upper.substring(prefixM[0].length);
 
-        // Name section is strictly positions 5–43 (39 chars) in a 44-char MRZ line
-        const nameSection = s.substring(5, 44);
+        // Split on both spaces AND < chars (OCR reads < as spaces or sometimes as letters)
+        const tokens = afterCountry.split(/[\s<]+/).map(t => t.replace(/[^A-Z]/g, '')).filter(Boolean);
+        if (!tokens.length) continue;
 
-        // Split on < (single < = space separator)
-        const parts = nameSection.split('<').filter(Boolean);
-        if (!parts.length) continue;
+        const nameParts = [];
+        for (const tok of tokens) {
+            // Stop at first 4+-char all-consonant token = OCR filler garbage
+            if (tok.length >= 4 && !vowels.test(tok)) break;
+            // Skip digits or mixed tokens
+            if (!/^[A-Z]+$/.test(tok)) break;
+            nameParts.push(tok);
+        }
 
-        // Validate parts — each should be a real word (all letters, length ≥ 1)
-        const validParts = parts.filter(p => /^[A-Z]+$/.test(p));
-        if (!validParts.length) continue;
-
-        const name = validParts.join(' ').trim();
-        if (name.length >= 3) {
-            console.log('[Passport OCR] Raw MRZ name recovery:', name);
-            return name;
+        if (nameParts.length >= 1) {
+            const name = nameParts.join(' ');
+            if (name.length >= 3) {
+                console.log('[Passport OCR] Raw MRZ name recovery:', name);
+                return name;
+            }
         }
     }
     return '';
@@ -665,24 +669,18 @@ function parseFreeText(text) {
      */
     function cleanOcrName(raw) {
         if (!raw) return '';
-        let words = raw.trim().split(/\s+/).filter(Boolean);
-        // Strip leading short tokens that look like noise, not name parts
-        // Known artifacts: GE, QE, CE, AG, LA, GS, GA, etc. (all ≤2 chars from Burmese OCR)
-        // Also strip single non-alpha chars
-        while (words.length > 1) {
-            const first = words[0];
-            const isNoise = first.length <= 2 && !/^(AL|AK|EL|ED|LI|LU|MO|BO|ZA|SI|SU|TI|TU|PO|PU|KO|MA|BA|NU|AI)$/i.test(first);
-            if (isNoise) {
-                words.shift();
-            } else {
-                break;
-            }
+        const words = raw.trim().split(/\s+/).filter(Boolean);
+        const vowels = /[AEIOU]/i;
+        const kept = [];
+        for (const w of words) {
+            // Stop at any word that is 4+ chars with NO vowel
+            // These are OCR filler artifacts: SCCLCCLLS, CCLLS, NGSC, etc.
+            if (w.length >= 4 && !vowels.test(w)) break;
+            kept.push(w);
         }
-        // Also strip trailing single chars (OCR noise at end)
-        while (words.length > 1 && words[words.length - 1].length <= 1) {
-            words.pop();
-        }
-        return words.join(' ');
+        // Strip lone non-alpha trailing chars
+        while (kept.length > 1 && !/[A-Z]/i.test(kept[kept.length - 1])) kept.pop();
+        return kept.join(' ');
     }
 
     // Pattern 1: "Name\n<value>" — strict newline anchor (best for Myanmar passports)
@@ -804,10 +802,11 @@ function parseFreeText(text) {
     console.log('[Passport OCR] Final DOB:', result.dob, '| Issue:', result.issue, '| Expiry:', result.expiry);
 
     // ---- Gender ----
-    // Allow up to 20 chars between 'Sex' label and M/F value (Myanmar passports
-    // often have Burmese-script label that OCR reads as noise between label and value).
-    const sexMatch = text.match(/(?:Sex|Gender)[\s\S]{0,20}?([MF])(?:\s|\n|$|P)/i)
-        || text.match(/\bSex\b[^\n]{0,15}([MF])/i);
+    // Myanmar passports print Sex field clearly. Use tight pattern: label then
+    // optional whitespace then the single-char value M or F.
+    const sexMatch = text.match(/\bSex\s*\n\s*([MF])\b/i)
+        || text.match(/\bSex\s+([MF])\b/i)
+        || text.match(/\bGender\s*[:\s]\s*([MF])\b/i);
     if (sexMatch) {
         result.gender = sexMatch[1].toUpperCase() === 'F' ? 'MS' : 'MR';
         console.log('[Passport OCR] Gender extracted:', result.gender);
