@@ -1570,7 +1570,7 @@ export function populateReturnFlightLocations() {
  * Builds the inner HTML for a single passenger card with three panels.
  */
 function _buildPassengerCardHtml(idx, opts) {
-    const { name = '', gender = 'MR', nrc, passport, uid = idx } = opts;
+    const { name = '', gender = '', nrc, passport, uid = idx } = opts;
     const intl = isInternationalFlight();
     const initials = (name || '?').trim().split(/\s+/).slice(0, 2).map(s => s[0] || '').join('').toUpperCase() || '?';
     const genderGroup = `pax-gender-${uid}`;
@@ -2157,28 +2157,9 @@ function _attachPhotoUpload(formEl) {
             console.log('[applyOcrResults] Expiry set result:', expResult, '| input.value:', expiryInput.value);
         }
 
-        // Title: derive from passport sex (M/F) + age (adult→MR/MS, child/infant→MSTR/MISS).
-        const ocrSex = ocr.sex
-            || (ocr.gender === 'MS' || ocr.gender === 'MISS' ? 'F' : '')
-            || (ocr.gender === 'MR' || ocr.gender === 'MSTR' ? 'M' : '');
-        if (ocrSex) {
-            // Calculate age from OCR DOB if available, otherwise from the field
-            const dobVal = normalizePassportDateForInput(ocr.dob, { isBirth: true })
-                || formEl.querySelector('.passenger-dob')?.value
-                || '';
-            const age = ageFromDob(dobVal);
-            const isAdult = age === null || age >= 12; // unknown age → treat as adult
-
-            // Map sex to title
-            const isFemale = ocrSex === 'F';
-            let title;
-            if (isFemale) {
-                title = isAdult ? 'MS' : 'MISS';
-            } else {
-                title = isAdult ? 'MR' : 'MSTR';
-            }
-
-            const genderRadio = formEl.querySelector(`.passenger-gender[value="${title}"]`);
+        // Title
+        if (ocr.title) {
+            const genderRadio = formEl.querySelector(`.passenger-gender[value="${ocr.title}"]`);
             if (genderRadio) {
                 genderRadio.checked = true;
                 genderRadio.dispatchEvent(new Event('change', { bubbles: true }));
@@ -2315,10 +2296,6 @@ function _attachPhotoUpload(formEl) {
             expiryInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
         if (natInput)    { natInput.value = 'MMR'; }
-
-        // Reset gender to default MR
-        const defaultGender = formEl.querySelector('.passenger-gender[value="MR"]');
-        if (defaultGender) { defaultGender.checked = true; defaultGender.dispatchEvent(new Event('change', { bubbles: true })); }
 
         // Refresh UI
         updateAgeBadge(formEl);
@@ -2634,7 +2611,7 @@ export function updateSummaryBar() {
  * Duplicates a passenger card (keeps fare/commission, clears identity & docs).
  */
 function duplicatePassengerForm(srcEl) {
-    const gender = srcEl.querySelector('.passenger-gender:checked')?.value || 'MR';
+    const gender = srcEl.querySelector('.passenger-gender:checked')?.value || '';
     const fields = [
         'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission',
         'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-commission'
@@ -2668,7 +2645,7 @@ export function resetPassengerForms() {
     updateSummaryBar();
 }
 
-export function addPassengerForm(name = '', idNo = '', gender = 'MR') {
+export function addPassengerForm(name = '', idNo = '', gender = '') {
     const container = document.getElementById('passenger-forms-container');
     if (!container) return;
 
@@ -2697,7 +2674,7 @@ export function addExistingPassengerForm() {
 
     const newForm = document.createElement('div');
     newForm.className = 'passenger-form';
-    newForm.innerHTML = _buildPassengerCardHtml(idx, { name: '', gender: 'MR', uid: ++passengerFormSeq });
+    newForm.innerHTML = _buildPassengerCardHtml(idx, { name: '', gender: '', uid: ++passengerFormSeq });
     container.appendChild(newForm);
 
     _attachPaxBehaviour(newForm, { withAutoSuggest: true });
