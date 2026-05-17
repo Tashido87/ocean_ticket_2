@@ -616,132 +616,201 @@
             </section>
             
             <section id="services-view" class="view">
-                <div id="services-container">
-                    
-                    <div class="service-panel">
-                        <h2>Generate Invoice/Receipt</h2>
-                        <form id="invoiceForm" class="invoice-horizontal-form" onsubmit="return false;">
-                            <div class="form-group">
-                                <label for="invoice_pnr_list">PNR Code(s)</label>
-                                <input type="text" id="invoice_pnr_list" placeholder="PNR, PNR, ..." required>
-                            </div>
-                            
-                            <div class="form-group short-input">
-                                <label for="document_type">Type</label>
-                                <select id="document_type" required>
-                                    <option value="Invoice" selected>Invoice</option>
-                                    <option value="Receipt">Receipt</option>
-                                </select>
-                            </div>
+                <div id="services-container" class="services-dashboard">
 
-                            <div class="form-group short-input">
-                                <label for="invoice_brand">Brand</label>
-                                <select id="invoice_brand" required>
-                                    <option value="ocean" selected>Ocean</option>
-                                    <option value="magical_land">Magical Land</option>
-                                </select>
-                            </div>
+                    <!-- LEFT COLUMN: Tools -->
+                    <div class="services-main">
 
-                            <div class="form-group">
-                                <label for="invoice_date">Date</label>
-                                <input type="text" id="invoice_date" placeholder="MM/DD/YYYY" required autocomplete="off">
-                            </div>
-
-                            <div class="invoice-actions">
-                                <button type="submit" class="btn-service btn-pdf"><i class="fa-solid fa-print"></i> PDF</button>
-                                <button type="button" id="invoiceGenPhotoBtn" class="btn-service btn-png"><i class="fa-solid fa-image"></i> Photo</button>
-                                <button type="button" id="invoiceClearBtn" class="btn-service btn-clear"><i class="fa-solid fa-eraser"></i> Clear</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="service-panel">
-                        <h2>Hotel Booking Voucher</h2>
-                        <form id="hotelBookingForm" class="hotel-booking-form" onsubmit="return false;">
-                            <div class="hotel-input-grid">
-                                <div class="form-group">
-                                    <label for="hotel-city">City</label>
-                                    <select id="hotel-city">
-                                        <option value="BKK">Bangkok (BKK)</option>
-                                        <option value="KUL">Kuala Lumpur (KUL)</option>
-                                    </select>
+                        <!-- INVOICE / RECEIPT -->
+                        <div class="service-panel service-panel-primary" id="invoicePanel">
+                            <div class="service-panel-header">
+                                <span class="service-panel-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+                                <div>
+                                    <h2>Generate Invoice / Receipt</h2>
+                                    <p class="service-panel-desc">Create branded invoices and receipts from PNR codes</p>
                                 </div>
+                            </div>
 
+                            <form id="invoiceForm" class="invoice-horizontal-form" onsubmit="return false;">
                                 <div class="form-group">
-                                    <label for="hotel-pnr">PNR Code(s)</label>
-                                    <input type="text" id="hotel-pnr" placeholder="PNR for Names" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="hotel-arrival">Arrival Date</label>
-                                    <input type="text" id="hotel-arrival" placeholder="Date" required autocomplete="off">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="hotel-departure">Departure Date</label>
-                                    <input type="text" id="hotel-departure" placeholder="Date" required autocomplete="off">
+                                    <label for="invoice_pnr_list">PNR Code(s)</label>
+                                    <input type="text" id="invoice_pnr_list" placeholder="ABC123, DEF456 …" required autocomplete="off">
                                 </div>
 
                                 <div class="form-group short-input">
-                                    <label for="hotel-bed-qty">Bed Qty</label>
-                                    <input type="number" id="hotel-bed-qty" value="1" min="1">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="hotel-bed-type">Bed Type</label>
-                                    <select id="hotel-bed-type">
-                                        <option value="Double">Double</option>
-                                        <option value="Twin">Twin</option>
+                                    <label for="document_type">Type</label>
+                                    <select id="document_type" required>
+                                        <option value="Invoice" selected>Invoice</option>
+                                        <option value="Receipt">Receipt</option>
                                     </select>
                                 </div>
 
-                                <div class="hotel-checkbox-group">
-                                    <input type="checkbox" id="hotel-extra-bed">
-                                    <label for="hotel-extra-bed">Extra Bed</label>
+                                <div class="form-group short-input">
+                                    <label for="invoice_brand">Brand</label>
+                                    <select id="invoice_brand" required>
+                                        <option value="ocean" selected>Ocean</option>
+                                        <option value="magical_land">Magical Land</option>
+                                    </select>
                                 </div>
+
+                                <div class="form-group">
+                                    <label for="invoice_date">Date</label>
+                                    <input type="text" id="invoice_date" placeholder="MM/DD/YYYY" required autocomplete="off">
+                                </div>
+                            </form>
+
+                            <div class="service-actions">
+                                <div class="format-segment" id="invoiceFormatSegment">
+                                    <input type="radio" name="invoice_format" id="invoice_fmt_pdf" value="pdf" checked>
+                                    <label for="invoice_fmt_pdf"><i class="fa-solid fa-print"></i> PDF</label>
+                                    <input type="radio" name="invoice_format" id="invoice_fmt_photo" value="photo">
+                                    <label for="invoice_fmt_photo"><i class="fa-solid fa-image"></i> Photo</label>
+                                </div>
+                                <button type="button" class="btn-service btn-generate" id="invoiceGenerateBtn">
+                                    <span class="btn-text"><i class="fa-solid fa-bolt"></i> Generate</span>
+                                </button>
+                                <button type="button" class="btn-service btn-clear" id="invoiceClearBtn">
+                                    <i class="fa-solid fa-eraser"></i> Clear
+                                </button>
                             </div>
 
-                            <div class="invoice-actions">
-                                <button type="button" id="hotel-pdf-btn" class="btn-service btn-pdf"><i class="fa-solid fa-print"></i> PDF</button>
-                                <button type="button" id="hotel-png-btn" class="btn-service btn-png"><i class="fa-solid fa-image"></i> Photo</button>
-                                <button type="button" id="clear-hotel-btn" class="btn-service btn-clear"><i class="fa-solid fa-eraser"></i> Clear</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="service-panel">
-                        <h2><i class="fa-solid fa-cloud-arrow-down" style="margin-right: 10px; color: var(--primary-accent);"></i> Download Documents</h2>
-                        <div class="documents-grid">
-                            
-                            <a href="assets/singapore_hotel_booking.pdf" download="Singapore_Hotel_Booking_Agoda.pdf" class="document-card">
-                                <div class="doc-icon-box pdf">
-                                    <i class="fa-solid fa-file-pdf"></i>
-                                </div>
-                                <div class="doc-info">
-                                    <span class="doc-title">Singapore Hotel Booking (Agoda)</span>
-                                    <span class="doc-type">PDF Document</span>
-                                </div>
-                                <div class="doc-action">
-                                    <i class="fa-solid fa-download"></i>
-                                </div>
-                            </a>
-
-                            <a href="assets/WC_EO_form.pages" download="SSR_Date_Change_Form.pages" class="document-card">
-                                <div class="doc-icon-box generic">
-                                    <i class="fa-solid fa-file-lines"></i>
-                                </div>
-                                <div class="doc-info">
-                                    <span class="doc-title">SSR Date Change Form</span>
-                                    <span class="doc-type">PAGES Document</span>
-                                </div>
-                                <div class="doc-action">
-                                    <i class="fa-solid fa-download"></i>
-                                </div>
-                            </a>
-
+                            <div class="service-toast" id="invoiceToast"></div>
                         </div>
+
+                        <!-- HOTEL BOOKING VOUCHER -->
+                        <div class="service-panel" id="hotelPanel">
+                            <div class="service-panel-header">
+                                <span class="service-panel-icon"><i class="fa-solid fa-hotel"></i></span>
+                                <div>
+                                    <h2>Hotel Booking Voucher</h2>
+                                    <p class="service-panel-desc">Generate hotel vouchers with guest names from PNRs</p>
+                                </div>
+                            </div>
+
+                            <form id="hotelBookingForm" class="hotel-booking-form" onsubmit="return false;">
+                                <div class="hotel-input-grid">
+                                    <div class="form-group">
+                                        <label for="hotel-city">City</label>
+                                        <select id="hotel-city">
+                                            <option value="BKK">Bangkok (BKK)</option>
+                                            <option value="KUL">Kuala Lumpur (KUL)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="hotel-pnr">PNR Code(s)</label>
+                                        <input type="text" id="hotel-pnr" placeholder="PNR for Names" required autocomplete="off">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="hotel-arrival">Arrival Date</label>
+                                        <input type="text" id="hotel-arrival" placeholder="Date" required autocomplete="off">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="hotel-departure">Departure Date</label>
+                                        <input type="text" id="hotel-departure" placeholder="Date" required autocomplete="off">
+                                    </div>
+
+                                    <div class="form-group short-input">
+                                        <label for="hotel-bed-qty">Bed Qty</label>
+                                        <input type="number" id="hotel-bed-qty" value="1" min="1">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="hotel-bed-type">Bed Type</label>
+                                        <select id="hotel-bed-type">
+                                            <option value="Double">Double</option>
+                                            <option value="Twin">Twin</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="hotel-checkbox-group">
+                                        <input type="checkbox" id="hotel-extra-bed">
+                                        <label for="hotel-extra-bed">Extra Bed</label>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div class="service-actions">
+                                <div class="format-segment" id="hotelFormatSegment">
+                                    <input type="radio" name="hotel_format" id="hotel_fmt_pdf" value="pdf" checked>
+                                    <label for="hotel_fmt_pdf"><i class="fa-solid fa-print"></i> PDF</label>
+                                    <input type="radio" name="hotel_format" id="hotel_fmt_photo" value="photo">
+                                    <label for="hotel_fmt_photo"><i class="fa-solid fa-image"></i> Photo</label>
+                                </div>
+                                <button type="button" class="btn-service btn-generate" id="hotelGenerateBtn">
+                                    <span class="btn-text"><i class="fa-solid fa-bolt"></i> Generate</span>
+                                </button>
+                                <button type="button" class="btn-service btn-clear" id="clearHotelBtn">
+                                    <i class="fa-solid fa-eraser"></i> Clear
+                                </button>
+                            </div>
+
+                            <div class="service-toast" id="hotelToast"></div>
+                        </div>
+
+                        <!-- DOWNLOAD DOCUMENTS -->
+                        <div class="service-panel service-panel-wide" id="documentsPanel">
+                            <div class="service-panel-header">
+                                <span class="service-panel-icon"><i class="fa-solid fa-folder-open"></i></span>
+                                <div>
+                                    <h2>Download Documents</h2>
+                                    <p class="service-panel-desc">Templates, forms and reference files</p>
+                                </div>
+                            </div>
+
+                            <div class="documents-search">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="docSearch" placeholder="Search documents…" autocomplete="off">
+                            </div>
+
+                            <div class="documents-grid" id="documentsGrid">
+                                <a href="assets/singapore_hotel_booking.pdf" download="Singapore_Hotel_Booking_Agoda.pdf" class="document-card" data-title="Singapore Hotel Booking (Agoda)" data-type="Hotel" data-ext="pdf">
+                                    <div class="doc-icon-box pdf"><i class="fa-solid fa-file-pdf"></i></div>
+                                    <div class="doc-info">
+                                        <span class="doc-title">Singapore Hotel Booking (Agoda)</span>
+                                        <span class="doc-meta">
+                                            <span class="doc-tag hotel">Hotel</span>
+                                            <span class="doc-type">PDF</span>
+                                        </span>
+                                    </div>
+                                    <div class="doc-action"><i class="fa-solid fa-download"></i></div>
+                                </a>
+
+                                <a href="assets/WC_EO_form.pages" download="SSR_Date_Change_Form.pages" class="document-card" data-title="SSR Date Change Form" data-type="Airline" data-ext="pages">
+                                    <div class="doc-icon-box generic"><i class="fa-solid fa-file-lines"></i></div>
+                                    <div class="doc-info">
+                                        <span class="doc-title">SSR Date Change Form</span>
+                                        <span class="doc-meta">
+                                            <span class="doc-tag airline">Airline</span>
+                                            <span class="doc-type">PAGES</span>
+                                        </span>
+                                    </div>
+                                    <div class="doc-action"><i class="fa-solid fa-download"></i></div>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div id="voucher-render-container"></div>
                     </div>
-                    <div id="voucher-render-container"></div>
+
+                    <!-- RIGHT COLUMN: Recent Activity -->
+                    <aside class="services-sidebar">
+                        <div class="service-panel sidebar-panel">
+                            <div class="service-panel-header">
+                                <span class="service-panel-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                                <div>
+                                    <h2>Recent Activity</h2>
+                                    <p class="service-panel-desc">Last 10 generated items</p>
+                                </div>
+                            </div>
+                            <div id="recentActivityList" class="recent-activity-list">
+                                <div class="activity-empty">No recent activity yet</div>
+                            </div>
+                        </div>
+                    </aside>
+
                 </div>
             </section>
 

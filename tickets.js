@@ -522,8 +522,17 @@ function collectFormData(form) {
             passport_expiry: readPassengerInput(pForm, '.passenger-passport-expiry'),
             passport_photo_url: readPassengerInput(pForm, '.passenger-passport-photo-url'),
             passport_photo_path: readPassengerInput(pForm, '.passenger-passport-photo-path'),
-            member_airline: readPassengerInput(pForm, '.passenger-member-airline'),
-            member_id: readPassengerInput(pForm, '.passenger-member-id').toUpperCase(),
+            // Collect all frequent flyer rows
+            frequent_flyer_ids: (() => {
+                const rows = pForm.querySelectorAll('.member-id-row');
+                const entries = [];
+                rows.forEach(row => {
+                    const airline = (row.querySelector('.member-row-airline')?.value || '').trim();
+                    const id = (row.querySelector('.member-row-id')?.value || '').trim().toUpperCase();
+                    if (airline || id) entries.push({ airline, id });
+                });
+                return entries;
+            })(),
             // Outbound pricing
             base_fare: readMoneyInput(pForm, '.passenger-base-fare'),
             net_amount: readMoneyInput(pForm, '.passenger-net-amount'),
@@ -594,8 +603,9 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
             extra_fare: pricing.extra_fare || 0,
             date_change: 0,
             gender: p.gender,
-            member_airline: p.member_airline || '',
-            member_id: p.member_id || ''
+            member_airline: p.frequent_flyer_ids?.[0]?.airline || '',
+            member_id:      p.frequent_flyer_ids?.[0]?.id || '',
+            frequent_flyer_ids: JSON.stringify(p.frequent_flyer_ids || [])
         };
 
         // Tag round-trip rows so they can be linked together later

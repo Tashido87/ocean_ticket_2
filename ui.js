@@ -1680,16 +1680,11 @@ function _buildPassengerCardHtml(idx, opts) {
                     </button>
                 </div>
                 <div class="member-id-body" data-role="member-id-body" style="display:none;">
-                    <div class="form-grid" style="margin-top:0.75rem;">
-                        <div class="form-group">
-                            <label>Airline / Programme</label>
-                            <input type="text" class="passenger-member-airline" placeholder="e.g. Myanmar Airways, KLM, Thai Airways" value="${opts.memberAirline || ''}" autocomplete="off">
-                        </div>
-                        <div class="form-group">
-                            <label>Member ID</label>
-                            <input type="text" class="passenger-member-id" placeholder="e.g. KL1234567" value="${opts.memberId || ''}" autocomplete="off" style="text-transform:uppercase;">
-                        </div>
-                    </div>
+                    <!-- Rows injected by JS -->
+                    <div class="member-id-list" data-role="member-id-list"></div>
+                    <button type="button" class="member-id-add-more" data-role="member-id-add-more">
+                        <i class="fa-solid fa-circle-plus"></i> Add another airline
+                    </button>
                 </div>
             </div>
 
@@ -1950,37 +1945,84 @@ function _attachPaxBehaviour(formEl, opts = {}) {
     // ----- Passport photo upload -----
     _attachPhotoUpload(formEl);
 
-    // ----- Member ID toggle -----
-    const memberBtn = formEl.querySelector('[data-role="member-id-btn"]');
+    // ----- Member ID multi-row -----
+    const memberBtn  = formEl.querySelector('[data-role="member-id-btn"]');
     const memberBody = formEl.querySelector('[data-role="member-id-body"]');
-    if (memberBtn && memberBody) {
-        // Auto-expand if pre-filled
-        const memberIdVal = formEl.querySelector('.passenger-member-id')?.value;
-        if (memberIdVal) {
-            memberBody.style.display = '';
-            memberBtn.setAttribute('aria-expanded', 'true');
-            memberBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Remove';
-        }
-        memberBtn.addEventListener('click', () => {
-            const isOpen = memberBody.style.display !== 'none';
-            memberBody.style.display = isOpen ? 'none' : '';
-            memberBtn.setAttribute('aria-expanded', String(!isOpen));
-            memberBtn.innerHTML = isOpen
-                ? '<i class="fa-solid fa-plus"></i> Add'
-                : '<i class="fa-solid fa-xmark"></i> Remove';
-            if (isOpen) {
-                // Clear values when closing
-                if (formEl.querySelector('.passenger-member-airline')) formEl.querySelector('.passenger-member-airline').value = '';
-                if (formEl.querySelector('.passenger-member-id')) formEl.querySelector('.passenger-member-id').value = '';
+    const memberList = formEl.querySelector('[data-role="member-id-list"]');
+    const memberAddMore = formEl.querySelector('[data-role="member-id-add-more"]');
+
+    /** Creates one airline + member-ID row and appends it to memberList */
+    function createMemberRow(airline = '', id = '') {
+        const row = document.createElement('div');
+        row.className = 'member-id-row';
+        row.innerHTML = `
+            <div class="form-group">
+                <label>Airline / Programme</label>
+                <input type="text" class="member-row-airline" placeholder="e.g. Myanmar Airways, KLM" value="${airline}" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Member ID</label>
+                <input type="text" class="member-row-id" placeholder="e.g. KL1234567" value="${id}" autocomplete="off">
+            </div>
+            <button type="button" class="member-row-remove" title="Remove this entry" aria-label="Remove">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+        // Uppercase on input
+        const idInput = row.querySelector('.member-row-id');
+        idInput.addEventListener('input', () => {
+            const p = idInput.selectionStart;
+            idInput.value = idInput.value.toUpperCase();
+            idInput.setSelectionRange(p, p);
+        });
+        // Remove row button
+        row.querySelector('.member-row-remove').addEventListener('click', () => {
+            row.remove();
+            // If no rows left, collapse the panel
+            if (!memberList.children.length) {
+                memberBody.style.display = 'none';
+                memberBtn.setAttribute('aria-expanded', 'false');
+                memberBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
             }
         });
-        // Uppercase member ID
-        const memberIdInput = formEl.querySelector('.passenger-member-id');
-        if (memberIdInput) {
-            memberIdInput.addEventListener('input', () => {
-                const pos = memberIdInput.selectionStart;
-                memberIdInput.value = memberIdInput.value.toUpperCase();
-                memberIdInput.setSelectionRange(pos, pos);
+        memberList.appendChild(row);
+        return row;
+    }
+
+    if (memberBtn && memberBody && memberList) {
+        // Auto-expand if pre-filled (from saved data)
+        const preAirline = opts.memberAirline || '';
+        const preId = opts.memberId || '';
+        if (preId || preAirline) {
+            createMemberRow(preAirline, preId);
+            memberBody.style.display = '';
+            memberBtn.setAttribute('aria-expanded', 'true');
+            memberBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Remove all';
+        }
+
+        // Toggle panel open/close
+        memberBtn.addEventListener('click', () => {
+            const isOpen = memberBody.style.display !== 'none';
+            if (isOpen) {
+                // Collapse & clear all rows
+                memberList.innerHTML = '';
+                memberBody.style.display = 'none';
+                memberBtn.setAttribute('aria-expanded', 'false');
+                memberBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
+            } else {
+                memberBody.style.display = '';
+                memberBtn.setAttribute('aria-expanded', 'true');
+                memberBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Remove all';
+                // Start with one empty row
+                if (!memberList.children.length) createMemberRow();
+            }
+        });
+
+        // Add another row
+        if (memberAddMore) {
+            memberAddMore.addEventListener('click', () => {
+                const newRow = createMemberRow();
+                newRow.querySelector('.member-row-airline').focus();
             });
         }
     }
