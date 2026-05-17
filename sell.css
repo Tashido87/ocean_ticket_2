@@ -228,10 +228,30 @@
     font-size: 0.85rem;
 }
 
-.pax-card-header .pax-collapse-chevron {
-    transition: transform 0.25s ease;
+.pax-card-header .pax-collapse-btn {
+    background: transparent;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     color: var(--text-secondary);
     margin-left: 0.25rem;
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pax-card-header .pax-collapse-btn:hover {
+    background: rgba(38, 37, 30, 0.06);
+    color: var(--text-primary);
+}
+
+.pax-card-header .pax-collapse-chevron {
+    transition: transform 0.25s ease;
+    pointer-events: none;
 }
 
 .passenger-form.is-collapsed .pax-collapse-chevron {
