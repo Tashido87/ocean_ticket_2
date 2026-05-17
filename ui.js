@@ -2121,6 +2121,7 @@ function _attachPhotoUpload(formEl) {
      */
     function applyOcrResults(ocr) {
         if (!ocr) return;
+        console.log('[applyOcrResults] OCR data:', JSON.stringify(ocr));
 
         // Passport number
         if (ocr.passportNo) {
@@ -2141,14 +2142,20 @@ function _attachPhotoUpload(formEl) {
 
         // Date of birth
         const dobInput = formEl.querySelector('.passenger-dob');
+        console.log('[applyOcrResults] DOB from OCR:', ocr.dob, '| dobInput exists:', !!dobInput);
         if (ocr.dob && dobInput) {
-            setDateInputFromOcr(dobInput, ocr.dob, { isBirth: true });
+            const dobResult = setDateInputFromOcr(dobInput, ocr.dob, { isBirth: true });
+            console.log('[applyOcrResults] DOB set result:', dobResult, '| input.value:', dobInput.value);
         }
 
         // Expiry date
         const expiryInput = formEl.querySelector('.passenger-passport-expiry');
         const ocrExpiry = ocr.expiry || ocr.expiryDate || ocr.expirationDate || ocr.dateOfExpiry || ocr.date_of_expiry;
-        setDateInputFromOcr(expiryInput, ocrExpiry, { isBirth: false });
+        console.log('[applyOcrResults] Expiry from OCR:', ocrExpiry, '| expiryInput exists:', !!expiryInput);
+        if (ocrExpiry && expiryInput) {
+            const expResult = setDateInputFromOcr(expiryInput, ocrExpiry, { isBirth: false });
+            console.log('[applyOcrResults] Expiry set result:', expResult, '| input.value:', expiryInput.value);
+        }
 
         // Title: derive from passport sex (M/F) + age (adult→MR/MS, child/infant→MSTR/MISS).
         const ocrSex = ocr.sex

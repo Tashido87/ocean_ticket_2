@@ -259,6 +259,25 @@ function fixOcrDigits(str) {
 }
 
 /**
+ * Reverse of fixOcrDigits: fix digit→letter misreads for positions that should be letters.
+ * In MRZ line 1, the name section (positions 5–43) should ONLY contain A-Z and <.
+ * Any digits there are OCR misreads.
+ */
+function fixOcrLetters(str) {
+    return str
+        .replace(/0/g, 'O')
+        .replace(/1/g, 'I')
+        .replace(/2/g, 'Z')
+        .replace(/5/g, 'S')
+        .replace(/8/g, 'B')
+        .replace(/6/g, 'G')
+        .replace(/7/g, 'T')
+        .replace(/4/g, 'A')
+        .replace(/3/g, 'E')
+        .replace(/9/g, 'P');
+}
+
+/**
  * Pad or trim a line to exactly `len` characters.
  */
 function padOrTrim(line, len) {
@@ -334,6 +353,8 @@ function normalizeNationality(value = '') {
     if (raw === 'MYANMAR' || raw === 'MMR') return 'MMR';
     // Fix common OCR misreads of MMR
     if (/^[MN][MN][RPN]$/.test(raw)) return 'MMR';
+    // Fix check-digit bleeding into nationality (e.g., '4MM' or '0MM')
+    if (/^\d[MN]{2}$/.test(raw) || /^[MN]{2}\d$/.test(raw)) return 'MMR';
     return raw.length <= 3 ? raw : 'MMR';
 }
 
@@ -475,6 +496,9 @@ function parseMRZ(text) {
         const nameStart = 5; // After P + type + 3-char country code
         let namePart = line1.substring(nameStart);
 
+        // Fix digits → letters in name section (name should ONLY have A-Z and <)
+        namePart = namePart.replace(/[^<]/g, ch => /\d/.test(ch) ? fixOcrLetters(ch) : ch);
+
         // CRITICAL: Tesseract often misreads MRZ filler '<' as L, K, I, C.
         // Before parsing, normalize these back to '<' when they appear in filler zones.
         namePart = normalizeMrzFiller(namePart);
@@ -519,7 +543,7 @@ function parseMRZ(text) {
         raw: text
     };
 
-    console.log('[Passport OCR] MRZ parsed result:', result);
+    console.log('[Passport OCR] MRZ parsed result:', JSON.stringify(result));
     return result;
 }
 
