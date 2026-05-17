@@ -549,10 +549,13 @@
                                 </div>
                             </div>
                             <div class="summary-payment-controls">
-                                <label class="paid-toggle">
-                                    <input type="checkbox" id="paid">
-                                    <span>Paid</span>
-                                </label>
+                                <div class="paid-toggle">
+                                    <label class="paid-switch" for="paid">
+                                        <input type="checkbox" id="paid">
+                                        <span class="paid-slider"></span>
+                                    </label>
+                                    <span class="paid-label">Paid</span>
+                                </div>
                                 <div class="form-group" style="margin:0; min-width:160px;">
                                     <select id="payment_method" aria-label="Payment Method">
                                         <option value="">Payment Method</option>

@@ -768,9 +768,7 @@
 .summary-payment-controls .paid-toggle {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    font-weight: 500;
+    gap: 0.65rem;
 }
 
 .summary-actions {
@@ -1169,7 +1167,7 @@
 /* ---------- Frozen Booking Context section (sticky to top) ---------- */
 #sell-view #section-booking {
     position: sticky;
-    top: 0.75rem;
+    top: calc(80px + 0.75rem);
     z-index: 20;
     background: rgba(255, 255, 255, 0.97);
     backdrop-filter: blur(14px) saturate(160%);
@@ -1553,6 +1551,109 @@
     align-self: flex-start;
 }
 
+/* ========== Beautiful Paid Toggle Switch ========== */
+.paid-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.paid-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.paid-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(38, 37, 30, 0.12);
+    border-radius: 999px;
+    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.paid-slider::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease;
+}
+
+/* Checkmark icon inside the knob */
+.paid-slider::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    color: transparent;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                color 0.2s ease;
+    pointer-events: none;
+}
+
+/* Active / checked state */
+.paid-switch input:checked + .paid-slider {
+    background: linear-gradient(135deg, var(--primary-accent, #0d9488), var(--secondary-accent, #1f8a65));
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.paid-switch input:checked + .paid-slider::before {
+    transform: translateX(20px);
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35);
+}
+
+.paid-switch input:checked + .paid-slider::after {
+    transform: translateX(20px);
+    color: var(--primary-accent, #0d9488);
+}
+
+/* Hover effect */
+.paid-switch:hover .paid-slider::before {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.paid-switch input:checked + .paid-slider:hover {
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.12);
+}
+
+/* Focus ring for accessibility */
+.paid-switch input:focus-visible + .paid-slider {
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3);
+}
+
+/* Label text */
+.paid-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary, rgba(38, 37, 30, 0.55));
+    user-select: none;
+    transition: color 0.25s ease;
+}
+
+.paid-toggle:has(input:checked) .paid-label {
+    color: var(--primary-accent, #0d9488);
+}
+
 .sticky-summary-bar .summary-payment-controls .form-group {
     width: 100%;
     min-width: 0 !important;
@@ -1762,22 +1863,19 @@
     box-shadow: var(--sell-shadow-pill);
 }
 
-/* Paid toggle — modern switch look */
-.summary-payment-controls .paid-toggle {
-    padding: 0.4rem 0.7rem;
-    background: var(--sell-surface);
-    border: 1px solid var(--sell-border);
+/* Paid toggle — premium pill container in sidebar */
+.sticky-summary-bar .paid-toggle {
+    padding: 0.45rem 0.75rem;
+    background: var(--sell-surface-soft, #fbfaf6);
+    border: 1px solid var(--sell-border, rgba(38, 37, 30, 0.08));
     border-radius: 999px;
-    box-shadow: var(--sell-shadow-pill);
-    font-size: 0.82rem;
-    font-weight: 600;
+    box-shadow: var(--sell-shadow-pill, 0 1px 2px rgba(15, 23, 42, 0.04));
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.summary-payment-controls .paid-toggle input[type="checkbox"] {
-    accent-color: var(--sell-coral, #f97316);
-    width: 16px;
-    height: 16px;
-    margin: 0;
+.sticky-summary-bar .paid-toggle:has(input:checked) {
+    border-color: rgba(13, 148, 136, 0.25);
+    box-shadow: 0 1px 2px rgba(13, 148, 136, 0.08), 0 0 0 2px rgba(13, 148, 136, 0.06);
 }
 
 /* "Add Passenger / Existing" buttons — softer */
@@ -1812,6 +1910,49 @@
 .summary-payment-controls .form-group select {
     padding: 0.5rem 0.85rem !important;
     font-size: 0.85rem !important;
+}
+
+/* Keep payment controls compact inside the right order-summary card. */
+#stickySummaryBar .summary-payment-controls,
+#stickySummaryBar .summary-payment-controls .form-group,
+#stickySummaryBar .payment-method-row {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+}
+
+#stickySummaryBar .summary-payment-controls .form-group {
+    margin: 0 !important;
+}
+
+#stickySummaryBar .payment-method-row {
+    align-items: stretch !important;
+}
+
+#stickySummaryBar #payment_method,
+#stickySummaryBar #paid_date,
+#stickySummaryBar .bank-select.show {
+    box-sizing: border-box;
+    display: block;
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 0 0.85rem !important;
+    line-height: 42px !important;
+}
+
+#stickySummaryBar #payment_method {
+    flex: 0 0 42px !important;
+}
+
+#stickySummaryBar .bank-select {
+    height: 0 !important;
+    min-height: 0 !important;
+}
+
+#stickySummaryBar .bank-select.show {
+    margin-top: 0.5rem;
+    flex: 0 0 42px !important;
 }
 
 /* ---------- Dark theme adjustments ---------- */
