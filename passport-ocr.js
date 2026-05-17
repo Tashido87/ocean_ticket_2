@@ -17,6 +17,159 @@
 /*  PUBLIC API                                                         */
 /* ------------------------------------------------------------------ */
 
+const OCR_COMMON_PARAMS = {
+    tessedit_pageseg_mode: '3',
+    tessedit_char_whitelist: '',
+    preserve_interword_spaces: '1',
+    user_defined_dpi: '300'
+};
+
+const OCR_MRZ_PARAMS = {
+    ...OCR_COMMON_PARAMS,
+    tessedit_pageseg_mode: '6',
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'
+};
+
+const OCR_FIELD_PARAMS = {
+    ...OCR_COMMON_PARAMS,
+    tessedit_pageseg_mode: '6'
+};
+
+/**
+ * Run several targeted OCR passes. Whole-page OCR is convenient, but Myanmar
+ * passports are much more reliable when the printed field area and MRZ are
+ * read separately with different Tesseract settings.
+ */
+async function runPassportOcrPasses(src, onStatus) {
+    const sources = await buildPassportOcrSources(src);
+    const out = {};
+    let currentStatus = 'Scanning passport…';
+
+    if (typeof Tesseract.createWorker === 'function') {
+        const worker = await Tesseract.createWorker('eng', 1, {
+            logger: (info) => {
+                if (info.status === 'recognizing text') {
+                    const pct = Math.round((info.progress || 0) * 100);
+                    onStatus?.(`${currentStatus} ${pct}%`);
+                }
+            }
+        });
+
+        try {
+            for (const source of sources) {
+                currentStatus = source.status;
+                onStatus?.(source.status);
+                await worker.setParameters(source.params);
+                const { data } = await worker.recognize(source.src);
+                out[source.key] = data.text || '';
+            }
+        } finally {
+            await worker.terminate();
+        }
+
+        return out;
+    }
+
+    for (const source of sources) {
+        currentStatus = source.status;
+        onStatus?.(source.status);
+        const { data } = await Tesseract.recognize(source.src, 'eng', {
+            ...source.params,
+            logger: (info) => {
+                if (info.status === 'recognizing text') {
+                    const pct = Math.round((info.progress || 0) * 100);
+                    onStatus?.(`${currentStatus} ${pct}%`);
+                }
+            }
+        });
+        out[source.key] = data.text || '';
+    }
+
+    return out;
+}
+
+async function buildPassportOcrSources(src) {
+    const fullPass = {
+        key: 'full',
+        src,
+        status: 'Scanning full passport…',
+        params: OCR_COMMON_PARAMS
+    };
+
+    try {
+        const img = await loadImage(src);
+        return [
+            {
+                key: 'name',
+                src: cropImage(img, { left: 0.32, top: 0.24, width: 0.63, height: 0.20 }, 2.6),
+                status: 'Reading printed name…',
+                params: OCR_FIELD_PARAMS
+            },
+            {
+                key: 'visual',
+                src: cropImage(img, { left: 0.26, top: 0.22, width: 0.70, height: 0.48 }, 2.2),
+                status: 'Reading passport fields…',
+                params: OCR_FIELD_PARAMS
+            },
+            {
+                key: 'dates',
+                src: cropImage(img, { left: 0.30, top: 0.38, width: 0.45, height: 0.38 }, 2.6),
+                status: 'Reading dates and sex…',
+                params: OCR_FIELD_PARAMS
+            },
+            {
+                key: 'mrz',
+                src: cropImage(img, { left: 0.02, top: 0.70, width: 0.96, height: 0.27 }, 2.2, true),
+                status: 'Reading passport MRZ…',
+                params: OCR_MRZ_PARAMS
+            },
+            fullPass
+        ];
+    } catch (err) {
+        console.warn('[Passport OCR] Region crop failed; falling back to full image OCR.', err);
+        return [fullPass];
+    }
+}
+
+function loadImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+}
+
+function cropImage(img, crop, scale = 2, strongContrast = false) {
+    const sx = Math.max(0, Math.floor(img.naturalWidth * crop.left));
+    const sy = Math.max(0, Math.floor(img.naturalHeight * crop.top));
+    const sw = Math.min(img.naturalWidth - sx, Math.floor(img.naturalWidth * crop.width));
+    const sh = Math.min(img.naturalHeight - sy, Math.floor(img.naturalHeight * crop.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.floor(sw * scale));
+    canvas.height = Math.max(1, Math.floor(sh * scale));
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        const lum = (data[i] * 0.299) + (data[i + 1] * 0.587) + (data[i + 2] * 0.114);
+        const contrast = strongContrast ? (lum < 178 ? 0 : 255) : Math.max(0, Math.min(255, ((lum - 128) * 1.35) + 128));
+        data[i] = contrast;
+        data[i + 1] = contrast;
+        data[i + 2] = contrast;
+    }
+    ctx.putImageData(imageData, 0, 0);
+
+    return canvas.toDataURL('image/png');
+}
+
 /**
  * Run OCR on a passport image and return structured data.
  *
@@ -29,6 +182,7 @@
  *   passportNo: string,
  *   dob: string,
  *   expiry: string,
+ *   sex: 'M'|'F'|'',
  *   gender: string,
  *   nationality: string,
  *   raw: string
@@ -51,26 +205,27 @@ export async function ocrPassport(imageSource, onStatus) {
 
         onStatus?.('Reading passport…');
 
-        const { data } = await Tesseract.recognize(src, 'eng', {
-            logger: (info) => {
-                if (info.status === 'recognizing text') {
-                    const pct = Math.round((info.progress || 0) * 100);
-                    onStatus?.(`Scanning… ${pct}%`);
-                }
-            }
-        });
+        const ocrTexts = await runPassportOcrPasses(src, onStatus);
 
         // Clean up object URL if we created one
         if (imageSource instanceof Blob) {
             URL.revokeObjectURL(src);
         }
 
-        const rawText = data.text || '';
+        const rawText = [
+            ocrTexts.name,
+            ocrTexts.visual,
+            ocrTexts.dates,
+            ocrTexts.mrz,
+            ocrTexts.full
+        ].filter(Boolean).join('\n\n');
         console.log('[Passport OCR] Raw text:\n', rawText);
         onStatus?.('Parsing results…');
 
-        // Try MRZ first (most reliable for name + passport number)
-        const mrzResult = parseMRZ(rawText);
+        // Try strict MRZ first, then merge in the more tolerant MRZ line-2 parser.
+        const strictMrz = parseMRZ([ocrTexts.mrz, ocrTexts.full, rawText].filter(Boolean).join('\n'));
+        const looseMrz = parseLooseMRZ(rawText);
+        const mrzResult = mergeMrzResults(strictMrz, looseMrz);
         if (mrzResult) {
             console.log('[Passport OCR] MRZ result:', mrzResult);
         }
@@ -91,24 +246,16 @@ export async function ocrPassport(imageSource, onStatus) {
         // Merge: MRZ as base, free-text fills gaps, loose MRZ as last-resort expiry.
         if (mrzResult || (freeResult && (freeResult.passportNo || freeResult.name))) {
 
-            // Name: prefer free-text (printed field, clean spaces) over MRZ
-            // (MRZ filler '<' chars are often OCR'd as garbage letters, corrupting the name).
-            // MRZ name only used if free-text gives nothing.
-            const freeName = freeResult?.name || '';
-            let bestName = freeName || mrzResult?.name || '';
-
-            // If neither source gave a name, try raw MRZ line recovery
-            if (!bestName) {
-                bestName = extractNameFromRawMrz(rawText);
-            }
+            const bestName = chooseBestPassportName(freeResult, mrzResult, rawText);
 
             const merged = {
-                name:        bestName || freeName || '',
+                name:        bestName || '',
                 surname:     mrzResult?.surname      || freeResult?.surname     || '',
                 givenNames:  mrzResult?.givenNames   || freeResult?.givenNames  || '',
-                passportNo:  mrzResult?.passportNo   || freeResult?.passportNo  || '',
+                passportNo:  chooseBestPassportNumber(mrzResult?.passportNo, freeResult?.passportNo),
                 dob:         mrzResult?.dob          || freeResult?.dob         || '',
                 expiry:      mrzExpiry               || fallbackExpiry          || freeExpiry || '',
+                sex:         mrzResult?.sex          || freeResult?.sex         || '',
                 gender:      mrzResult?.gender       || freeResult?.gender      || '',
                 nationality: mrzResult?.nationality  || freeResult?.nationality || '',
                 raw: rawText
@@ -176,6 +323,130 @@ function extractNameFromRawMrz(text) {
         }
     }
     return '';
+}
+
+const NAME_STOP_WORDS = new Set([
+    'PASSPORT', 'REPUBLIC', 'UNION', 'MYANMAR', 'MMR', 'TYPE', 'COUNTRY', 'CODE',
+    'PASSPORTNO', 'PASSPORT', 'NO', 'NAME', 'NATIONALITY', 'DATE', 'BIRTH', 'SEX',
+    'PLACE', 'ISSUE', 'EXPIRY', 'AUTHORITY', 'HOLDER', 'SIGNATURE'
+]);
+
+const SHORT_NAME_WORD_ALLOWLIST = new Set(['U', 'L', 'MA', 'KO', 'SA', 'AI', 'EI', 'OO']);
+
+function cleanPassportName(raw) {
+    if (!raw) return '';
+
+    const words = String(raw)
+        .toUpperCase()
+        .replace(/[^A-Z\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+    const vowels = /[AEIOU]/;
+    const kept = [];
+    for (const word of words) {
+        if (NAME_STOP_WORDS.has(word)) {
+            if (kept.length) break;
+            continue;
+        }
+        if (word.length >= 4 && !vowels.test(word)) break;
+        kept.push(word);
+    }
+
+    while (
+        kept.length >= 3 &&
+        kept[0].length <= 2 &&
+        !SHORT_NAME_WORD_ALLOWLIST.has(kept[0]) &&
+        kept.slice(1, 3).every(word => word.length >= 3)
+    ) {
+        kept.shift();
+    }
+
+    return kept.join(' ').trim();
+}
+
+function tokenizeName(name) {
+    return cleanPassportName(name).split(/\s+/).filter(Boolean);
+}
+
+function scoreNameCandidate(candidate, reference = '') {
+    const cleaned = cleanPassportName(candidate);
+    if (!cleaned) return -Infinity;
+
+    const tokens = tokenizeName(cleaned);
+    if (!tokens.length) return -Infinity;
+
+    let score = tokens.length * 6 + Math.min(cleaned.length, 40);
+    const refTokens = tokenizeName(reference);
+
+    if (tokens.length === 1) score -= 12;
+    if (/\d/.test(candidate)) score -= 30;
+    if (tokens.some(token => token.length >= 4 && !/[AEIOU]/.test(token))) score -= 30;
+    if (tokens.some(token => NAME_STOP_WORDS.has(token))) score -= 30;
+
+    if (refTokens.length) {
+        const refSet = new Set(refTokens);
+        let exactMatches = 0;
+        for (const token of tokens) {
+            if (refSet.has(token)) {
+                exactMatches++;
+                score += 12;
+            } else if (token.length > 1) {
+                score -= 8;
+            }
+        }
+        if (exactMatches === refTokens.length && tokens.length === refTokens.length) score += 30;
+        if (exactMatches <= Math.max(1, Math.floor(refTokens.length / 2))) score -= 20;
+    }
+
+    return score;
+}
+
+function chooseBestPassportName(freeResult, mrzResult, rawText) {
+    const reference = mrzResult?.name || extractNameFromRawMrz(rawText) || '';
+    const candidates = [
+        ...(freeResult?.nameCandidates || []),
+        freeResult?.name,
+        mrzResult?.name,
+        reference
+    ].filter(Boolean);
+
+    let best = '';
+    let bestScore = -Infinity;
+    for (const candidate of candidates) {
+        const cleaned = cleanPassportName(candidate);
+        const score = scoreNameCandidate(cleaned, reference);
+        if (score > bestScore) {
+            best = cleaned;
+            bestScore = score;
+        }
+    }
+
+    return best;
+}
+
+function chooseBestPassportNumber(mrzPassportNo = '', freePassportNo = '') {
+    const mrzNo = normalizePassportNumber(mrzPassportNo);
+    const freeNo = normalizePassportNumber(freePassportNo);
+
+    if (!mrzNo) return freeNo;
+    if (!freeNo) return mrzNo;
+    if (mrzNo === freeNo) return mrzNo;
+
+    // The printed "Passport No" field is often clearer for the letter prefix,
+    // while the MRZ is stronger for dates/check positions. If both sources
+    // agree on the numeric body, trust the printed prefix.
+    if (
+        /^M[A-Z]\d{6}$/.test(freeNo) &&
+        /^M[A-Z]\d{6}$/.test(mrzNo) &&
+        freeNo.slice(2) === mrzNo.slice(2)
+    ) {
+        return freeNo;
+    }
+
+    return mrzNo;
 }
 
 /**
@@ -299,6 +570,7 @@ function parseMRZ(text) {
     let gender = '';
     if (genderChar === 'F') gender = 'MS';
     else if (genderChar === 'M') gender = 'MR';
+    const sex = genderChar === 'F' || genderChar === 'M' ? genderChar : '';
 
     const nationality = nationality2 || countryCode;
 
@@ -314,9 +586,132 @@ function parseMRZ(text) {
         passportNo,
         dob,
         expiry,
+        sex,
         gender,
         nationality: nationality.length <= 3 ? nationality : ''
     };
+}
+
+function mergeMrzResults(strictResult, looseResult) {
+    if (!strictResult && !looseResult) return null;
+    if (!strictResult) return looseResult;
+    if (!looseResult) return strictResult;
+
+    return {
+        name: chooseBestMrzName(strictResult.name, looseResult.name),
+        surname: strictResult.surname || looseResult.surname || '',
+        givenNames: strictResult.givenNames || looseResult.givenNames || '',
+        passportNo: looseResult.passportNo || strictResult.passportNo || '',
+        dob: looseResult.dob || strictResult.dob || '',
+        expiry: looseResult.expiry || strictResult.expiry || '',
+        sex: looseResult.sex || strictResult.sex || '',
+        gender: looseResult.gender || strictResult.gender || '',
+        nationality: looseResult.nationality || strictResult.nationality || ''
+    };
+}
+
+function chooseBestMrzName(a = '', b = '') {
+    const ca = cleanPassportName(a);
+    const cb = cleanPassportName(b);
+    if (!ca) return cb;
+    if (!cb) return ca;
+    return scoreNameCandidate(cb, ca) > scoreNameCandidate(ca, cb) ? cb : ca;
+}
+
+/**
+ * Parses whichever MRZ line is available. This is important because OCR can
+ * read the field line correctly while failing the name line; line 2 still
+ * contains passport number, DOB, sex, and expiry with fixed positions.
+ */
+function parseLooseMRZ(text) {
+    const lines = String(text || '')
+        .replace(/«|\u00AB|\u00BB|\u2039|\u203A/g, '<')
+        .split(/\n/)
+        .map(line => sanitiseMrzLine(line.replace(/\s/g, '').toUpperCase()))
+        .filter(line => line.length >= 20);
+
+    let line1Name = '';
+    let line2Data = null;
+
+    for (const line of lines) {
+        if (!line1Name && line.charAt(0) === 'P') {
+            line1Name = extractNameFromMrzLine(line);
+        }
+
+        if (!line2Data) {
+            line2Data = extractDataFromMrzLine2(line);
+        }
+    }
+
+    if (!line1Name && !line2Data) return null;
+
+    const parts = line1Name.split(/\s+/).filter(Boolean);
+    return {
+        name: line1Name,
+        surname: parts[0] || '',
+        givenNames: parts.slice(1).join(' '),
+        passportNo: line2Data?.passportNo || '',
+        dob: line2Data?.dob || '',
+        expiry: line2Data?.expiry || '',
+        sex: line2Data?.sex || '',
+        gender: line2Data?.gender || '',
+        nationality: line2Data?.nationality || ''
+    };
+}
+
+function extractNameFromMrzLine(line) {
+    const normalized = sanitiseMrzLine(String(line || '').replace(/\s/g, '').toUpperCase());
+    const match = normalized.match(/^P[V<][A-Z<]{3}(.{3,})/);
+    if (!match) return '';
+
+    const namePart = match[1].replace(/<+$/g, '');
+    const doubleChevronIdx = namePart.indexOf('<<');
+    const readable = doubleChevronIdx >= 0
+        ? `${namePart.slice(0, doubleChevronIdx)}<${namePart.slice(doubleChevronIdx + 2)}`
+        : namePart;
+
+    return cleanPassportName(readable.replace(/</g, ' '));
+}
+
+function extractDataFromMrzLine2(line) {
+    const normalized = sanitiseMrzLine(String(line || '').replace(/\s/g, '').toUpperCase());
+    const patterns = [
+        /(M[A-Z][0-9OIZSBGT]{6})[0-9A-Z<]([A-Z<]{3})([0-9OIZSBGT]{6})[0-9A-Z<]([MFX<])([0-9OIZSBGT]{6})/,
+        /^([A-Z0-9<]{6,9})[0-9A-Z<]([A-Z<]{3})([0-9OIZSBGT]{6})[0-9A-Z<]([MFX<])([0-9OIZSBGT]{6})/,
+        /([A-Z]{1,2}[A-Z0-9<]{4,8})[0-9A-Z<]([A-Z<]{3})([0-9OIZSBGT]{6})[0-9A-Z<]([MFX<])([0-9OIZSBGT]{6})/
+    ];
+
+    for (const pattern of patterns) {
+        const match = normalized.match(pattern);
+        if (!match) continue;
+
+        const passportNo = normalizePassportNumber(match[1]);
+        const nationality = match[2].replace(/</g, '');
+        const dob = mrzDateToDisplay(fixOcrDigits(match[3]), true);
+        const sex = match[4] === 'F' || match[4] === 'M' ? match[4] : '';
+        const expiry = mrzDateToDisplay(fixOcrDigits(match[5]), false);
+        if (!passportNo && !dob && !expiry && !sex) continue;
+
+        return {
+            passportNo,
+            nationality: nationality.length <= 3 ? nationality : '',
+            dob,
+            expiry,
+            sex,
+            gender: sex === 'F' ? 'MS' : (sex === 'M' ? 'MR' : '')
+        };
+    }
+
+    return null;
+}
+
+function normalizePassportNumber(value = '') {
+    const raw = String(value || '').replace(/</g, '').toUpperCase();
+    if (raw.length <= 2) return raw;
+
+    const prefix = raw.slice(0, 2).replace(/0/g, 'O').replace(/1/g, 'I').replace(/5/g, 'S').replace(/8/g, 'B');
+    const suffix = fixOcrDigits(raw.slice(2));
+    return `${prefix}${suffix}`.replace(/[^A-Z0-9]/g, '');
 }
 
 /**
@@ -425,6 +820,9 @@ function extractLooseMrzExpiry(text) {
     ];
 
     for (const line of lines) {
+        const line2 = extractDataFromMrzLine2(line);
+        if (line2?.expiry) return line2.expiry;
+
         for (const pattern of patterns) {
             const match = line.match(pattern);
             if (!match) continue;
@@ -620,6 +1018,15 @@ function findLabeledDate(text, labelPattern, { isBirth = false, preferLatest = f
     return preferLatest ? candidates[candidates.length - 1].display : candidates[0].display;
 }
 
+function findLooseSexValue(text) {
+    const match = String(text || '').match(/\bSex\b([\s\S]{0,120})/i);
+    if (!match) return null;
+
+    const block = match[1].split(/Date\s+of\s+issue|Date\s+of\s+expiry|Authority/i)[0] || match[1];
+    const value = block.match(/(?:^|[\s:|"'])+([MF])(?:[\s|.,;:"']|[cClL]\b|$)/i);
+    return value ? [value[0], value[1].toUpperCase()] : null;
+}
+
 /**
  * Attempts to extract passport fields from unstructured OCR text.
  * Reads the visible printed fields on the passport bio page.
@@ -628,12 +1035,14 @@ function parseFreeText(text) {
     const upper = text.toUpperCase();
     const result = {
         name: '',
+        nameCandidates: [],
         surname: '',
         givenNames: '',
         passportNo: '',
         dob: '',
         issue: '',
         expiry: '',
+        sex: '',
         gender: '',
         nationality: ''
     };
@@ -667,20 +1076,12 @@ function parseFreeText(text) {
      *   - OR matches a known OCR noise pattern near the Name label
      * Keeps stripping as long as at least 2 valid words remain.
      */
-    function cleanOcrName(raw) {
-        if (!raw) return '';
-        const words = raw.trim().split(/\s+/).filter(Boolean);
-        const vowels = /[AEIOU]/i;
-        const kept = [];
-        for (const w of words) {
-            // Stop at any word that is 4+ chars with NO vowel
-            // These are OCR filler artifacts: SCCLCCLLS, CCLLS, NGSC, etc.
-            if (w.length >= 4 && !vowels.test(w)) break;
-            kept.push(w);
+    function addNameCandidate(raw) {
+        const cleaned = cleanPassportName(raw);
+        const tokenCount = tokenizeName(cleaned).length;
+        if (cleaned.length >= 3 && tokenCount >= 1 && !result.nameCandidates.includes(cleaned)) {
+            result.nameCandidates.push(cleaned);
         }
-        // Strip lone non-alpha trailing chars
-        while (kept.length > 1 && !/[A-Z]/i.test(kept[kept.length - 1])) kept.pop();
-        return kept.join(' ');
     }
 
     // Pattern 1: "Name\n<value>" — strict newline anchor (best for Myanmar passports)
@@ -700,8 +1101,8 @@ function parseFreeText(text) {
         const rawName = nameMatch[1].trim().replace(/\s{2,}/g, ' ');
         // Filter out things that look like labels, not names
         if (!/PASSPORT|REPUBLIC|MYANMAR|NATIONALITY|DATE|TYPE|CODE|COUNTRY|AUTHORITY/i.test(rawName)) {
-            const cleaned = cleanOcrName(rawName.toUpperCase());
-            if (cleaned.length >= 3) result.name = cleaned;
+            addNameCandidate(rawName);
+            if (result.nameCandidates.length) result.name = result.nameCandidates[0];
         }
     }
 
@@ -709,12 +1110,28 @@ function parseFreeText(text) {
     if (!result.name) {
         const surnameMatch = text.match(namePatterns[2]);
         const givenMatch = text.match(namePatterns[3]);
-        if (surnameMatch) result.surname = cleanOcrName(surnameMatch[1].trim().toUpperCase());
-        if (givenMatch) result.givenNames = cleanOcrName(givenMatch[1].trim().toUpperCase());
+        if (surnameMatch) result.surname = cleanPassportName(surnameMatch[1].trim().toUpperCase());
+        if (givenMatch) result.givenNames = cleanPassportName(givenMatch[1].trim().toUpperCase());
         if (result.surname || result.givenNames) {
             result.name = [result.surname, result.givenNames].filter(Boolean).join(' ');
+            addNameCandidate(result.name);
         }
     }
+
+    // Extra candidates from cropped name/field OCR. These are ranked later
+    // against the MRZ name, so unrelated fields such as authority won't win.
+    text.split(/\n/).forEach(line => {
+        const cleaned = cleanPassportName(line);
+        const tokens = tokenizeName(cleaned);
+        if (
+            tokens.length >= 2 &&
+            tokens.length <= 6 &&
+            !/\d/.test(line) &&
+            !/PASSPORT|REPUBLIC|MYANMAR|NATIONALITY|DATE|TYPE|CODE|COUNTRY|AUTHORITY|SEX|BIRTH|ISSUE|EXPIRY|PLACE|SIGNATURE/i.test(line)
+        ) {
+            addNameCandidate(cleaned);
+        }
+    });
 
 
 
@@ -806,10 +1223,13 @@ function parseFreeText(text) {
     // optional whitespace then the single-char value M or F.
     const sexMatch = text.match(/\bSex\s*\n\s*([MF])\b/i)
         || text.match(/\bSex\s+([MF])\b/i)
-        || text.match(/\bGender\s*[:\s]\s*([MF])\b/i);
+        || text.match(/\bSex\s*[:\-]?\s*([MF])\b/i)
+        || text.match(/\bGender\s*[:\s]\s*([MF])\b/i)
+        || findLooseSexValue(text);
     if (sexMatch) {
-        result.gender = sexMatch[1].toUpperCase() === 'F' ? 'MS' : 'MR';
-        console.log('[Passport OCR] Gender extracted:', result.gender);
+        result.sex = (sexMatch[1] || sexMatch).toUpperCase();
+        result.gender = result.sex === 'F' ? 'MS' : 'MR';
+        console.log('[Passport OCR] Gender extracted:', result.gender, '| Sex:', result.sex);
     }
 
     // ---- Nationality ----

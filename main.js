@@ -20,6 +20,7 @@ import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
 import { initHotelService } from './hotel.js'; 
+import { getAllDocuments, uploadDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -256,26 +257,9 @@ function setupEventListeners() {
         });
     }
 
-    // Document list (update base URL when switching to Firebase Storage)
-    const DOC_BASE_URL = 'https://raw.githubusercontent.com/Tashido87/ocean_ticket/main/assets';
-    const DOCS_LIST = [
-        {
-            title: 'Singapore Hotel Booking (Agoda)',
-            type: 'Hotel',
-            ext: 'pdf',
-            filename: 'singapore_hotel_booking.pdf',
-            iconClass: 'pdf',
-            icon: 'fa-file-pdf'
-        },
-        {
-            title: 'SSR Date Change Form',
-            type: 'Airline',
-            ext: 'pages',
-            iconClass: 'generic',
-            icon: 'fa-file-lines',
-            filename: 'WC_EO_form.pages'
-        }
-    ];
+    // ---------- Documents (Firebase Storage + seed list) ----------
+    let docCache = [];
+    let docView = 'card';
 
     function escapeHtml(text) {
         const div = document.createElement('div');
@@ -283,34 +267,90 @@ function setupEventListeners() {
         return div.innerHTML;
     }
 
-    function renderDocuments(view = 'card') {
-        const grid = document.getElementById('documentsGrid');
-        if (!grid) return;
-        grid.classList.toggle('is-detail', view === 'detail');
-        grid.innerHTML = DOCS_LIST.map(doc => `
-            <a href="${DOC_BASE_URL}/${doc.filename}" download="${doc.filename}" class="document-card" data-title="${escapeHtml(doc.title)}" data-type="${escapeHtml(doc.type)}" data-ext="${escapeHtml(doc.ext)}">
-                <div class="doc-icon-box ${doc.iconClass}"><i class="fa-solid ${doc.icon}"></i></div>
-                <div class="doc-info">
-                    <span class="doc-title">${escapeHtml(doc.title)}</span>
-                    <span class="doc-meta">
-                        <span class="doc-tag ${doc.type.toLowerCase()}">${escapeHtml(doc.type)}</span>
-                        <span class="doc-type">${escapeHtml(doc.ext.toUpperCase())}</span>
-                    </span>
-                </div>
-                <div class="doc-action"><i class="fa-solid fa-download"></i></div>
-            </a>
-        `).join('');
+    function getDocIcon(ext) {
+        const e = (ext || '').toLowerCase();
+        if (e === 'pdf') return { iconClass: 'pdf', icon: 'fa-file-pdf' };
+        if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'].includes(e)) return { iconClass: 'image', icon: 'fa-file-image' };
+        if (['doc', 'docx'].includes(e)) return { iconClass: 'word', icon: 'fa-file-word' };
+        if (['xls', 'xlsx', 'csv'].includes(e)) return { iconClass: 'excel', icon: 'fa-file-excel' };
+        if (['zip', 'rar', '7z'].includes(e)) return { iconClass: 'archive', icon: 'fa-file-zipper' };
+        return { iconClass: 'generic', icon: 'fa-file-lines' };
     }
+
+    function renderDocuments() {
+        const grid = document.getElementById('documentsGrid');
+        const countEl = document.getElementById('docCount');
+        if (!grid) return;
+
+        const isDetail = docView === 'detail';
+        grid.classList.toggle('is-detail', isDetail);
+
+        if (countEl) {
+            countEl.textContent = `${docCache.length} document${docCache.length === 1 ? '' : 's'}`;
+        }
+
+        if (docCache.length === 0) {
+            grid.innerHTML = '<div class="documents-empty"><i class="fa-solid fa-folder-open"></i> No documents yet. Click <strong>Upload</strong> to add one.</div>';
+            return;
+        }
+
+        const headerRow = isDetail
+            ? `<div class="doc-row-head">
+                    <span></span>
+                    <span>Name</span>
+                    <span>Type</span>
+                    <span>Size</span>
+                    <span>Uploaded</span>
+                    <span></span>
+                </div>`
+            : '';
+
+        const rows = docCache.map(doc => {
+            const { iconClass, icon } = getDocIcon(doc.ext);
+            const sizeStr = formatFileSize(doc.size);
+            const dateStr = formatUploadDate(doc.uploadedAt);
+            const tagClass = String(doc.type || 'document').toLowerCase().replace(/\s+/g, '-');
+            return `
+                <a href="${escapeHtml(doc.url)}" download="${escapeHtml(doc.filename || doc.title)}" class="document-card" target="_blank" rel="noopener" data-title="${escapeHtml(doc.title)}" data-type="${escapeHtml(doc.type)}" data-ext="${escapeHtml(doc.ext)}">
+                    <div class="doc-icon-box ${iconClass}"><i class="fa-solid ${icon}"></i></div>
+                    <div class="doc-info">
+                        <span class="doc-title">${escapeHtml(doc.title)}</span>
+                        <span class="doc-subtitle">${escapeHtml((doc.ext || '').toUpperCase())} &middot; ${escapeHtml(sizeStr)}</span>
+                        <span class="doc-meta">
+                            <span class="doc-tag ${tagClass}">${escapeHtml(doc.type)}</span>
+                            <span class="doc-type">${escapeHtml((doc.ext || '').toUpperCase())}</span>
+                        </span>
+                    </div>
+                    <span class="doc-tag-cell"><span class="doc-tag ${tagClass}">${escapeHtml(doc.type)}</span></span>
+                    <span class="doc-size-cell">${escapeHtml(sizeStr)}</span>
+                    <span class="doc-date-cell">${escapeHtml(dateStr)}</span>
+                    <div class="doc-action" title="Download"><i class="fa-solid fa-download"></i></div>
+                </a>
+            `;
+        }).join('');
+
+        grid.innerHTML = headerRow + rows;
+    }
+
+    async function refreshDocuments() {
+        const grid = document.getElementById('documentsGrid');
+        if (grid) grid.innerHTML = '<div class="documents-loading"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading documents…</div>';
+        docCache = await getAllDocuments();
+        renderDocuments();
+    }
+
+    // Initial load
+    refreshDocuments();
 
     // Document view toggle
     document.querySelectorAll('input[name="doc_view"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            renderDocuments(e.target.value);
+            docView = e.target.value;
+            renderDocuments();
         });
     });
-    renderDocuments('card');
 
-    // Document search
+    // Document search filter
     const docSearch = document.getElementById('docSearch');
     if (docSearch) {
         docSearch.addEventListener('input', debounce((e) => {
@@ -321,6 +361,57 @@ function setupEventListeners() {
                 card.classList.toggle('hidden', q && !title.includes(q) && !type.includes(q));
             });
         }, 150));
+    }
+
+    // Upload feature
+    const uploadBtn = document.getElementById('docUploadBtn');
+    const uploadInput = document.getElementById('docUploadInput');
+    const uploadProgress = document.getElementById('docUploadProgress');
+    const uploadName = document.getElementById('docUploadName');
+    const uploadPct = document.getElementById('docUploadPct');
+    const uploadFill = document.getElementById('docUploadFill');
+
+    if (uploadBtn && uploadInput) {
+        uploadBtn.addEventListener('click', () => uploadInput.click());
+
+        uploadInput.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const ext = (file.name.match(/\.([^.]+)$/) || [])[1] || '';
+            const inferType = (n) => {
+                const lower = n.toLowerCase();
+                if (lower.includes('hotel')) return 'Hotel';
+                if (lower.includes('airline') || lower.includes('flight') || lower.includes('ssr')) return 'Airline';
+                return 'Document';
+            };
+
+            uploadProgress.hidden = false;
+            uploadName.textContent = file.name;
+            uploadPct.textContent = '0%';
+            uploadFill.style.width = '0%';
+            setButtonLoading(uploadBtn, true);
+
+            try {
+                await uploadDocument(file, {
+                    title: file.name.replace(/\.[^.]+$/, ''),
+                    type: inferType(file.name),
+                    onProgress: (pct) => {
+                        uploadPct.textContent = `${pct}%`;
+                        uploadFill.style.width = `${pct}%`;
+                    }
+                });
+                showToast(`Uploaded "${file.name}"`, 'success');
+                await refreshDocuments();
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || 'Upload failed.', 'error');
+            } finally {
+                setButtonLoading(uploadBtn, false);
+                uploadInput.value = '';
+                setTimeout(() => { uploadProgress.hidden = true; }, 600);
+            }
+        });
     }
 
     // Render recent activity on init

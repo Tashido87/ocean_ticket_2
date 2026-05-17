@@ -755,24 +755,44 @@
                             <div class="service-panel-header">
                                 <span class="service-panel-icon"><i class="fa-solid fa-folder-open"></i></span>
                                 <div>
-                                    <h2>Download Documents</h2>
+                                    <h2>Documents</h2>
                                     <p class="service-panel-desc">Templates, forms and reference files</p>
                                 </div>
-                                <div class="view-toggle" id="docViewToggle">
-                                    <input type="radio" name="doc_view" id="doc_view_card" value="card" checked>
-                                    <label for="doc_view_card" title="Card view"><i class="fa-solid fa-grid-2"></i></label>
-                                    <input type="radio" name="doc_view" id="doc_view_detail" value="detail">
-                                    <label for="doc_view_detail" title="Detail view"><i class="fa-solid fa-list"></i></label>
+                                <div class="header-actions">
+                                    <div class="view-toggle" id="docViewToggle">
+                                        <input type="radio" name="doc_view" id="doc_view_card" value="card" checked>
+                                        <label for="doc_view_card" title="Card view"><i class="fa-solid fa-table-cells-large"></i><span>Cards</span></label>
+                                        <input type="radio" name="doc_view" id="doc_view_detail" value="detail">
+                                        <label for="doc_view_detail" title="Detail view"><i class="fa-solid fa-list"></i><span>Detail</span></label>
+                                    </div>
+                                    <button type="button" class="btn-service btn-upload" id="docUploadBtn">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+                                    </button>
+                                    <input type="file" id="docUploadInput" hidden>
                                 </div>
                             </div>
 
-                            <div class="documents-search">
-                                <i class="fa-solid fa-magnifying-glass"></i>
-                                <input type="text" id="docSearch" placeholder="Search documents…" autocomplete="off">
+                            <div class="documents-toolbar">
+                                <div class="documents-search">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                    <input type="text" id="docSearch" placeholder="Search documents…" autocomplete="off">
+                                </div>
+                                <div class="documents-meta" id="documentsMeta">
+                                    <span id="docCount">0 documents</span>
+                                </div>
+                            </div>
+
+                            <div class="upload-progress" id="docUploadProgress" hidden>
+                                <div class="upload-progress-row">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <span class="upload-progress-name" id="docUploadName">Uploading…</span>
+                                    <span class="upload-progress-pct" id="docUploadPct">0%</span>
+                                </div>
+                                <div class="upload-progress-bar"><div id="docUploadFill" style="width:0%"></div></div>
                             </div>
 
                             <div class="documents-grid" id="documentsGrid">
-                                <!-- Rendered by JS from DOCS_LIST -->
+                                <div class="documents-loading"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading documents…</div>
                             </div>
                         </div>
 
