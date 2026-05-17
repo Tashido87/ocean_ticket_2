@@ -40,7 +40,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    background: rgba(30, 58, 138, 0.10);
+    background: rgba(13, 148, 136, 0.10);
     color: var(--primary-accent);
     font-size: 1rem;
 }
@@ -162,7 +162,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #1e3a8a, #172554);
+    background: linear-gradient(135deg, #0d9488, #0f766e);
     color: white;
     display: inline-flex;
     align-items: center;
@@ -306,7 +306,7 @@
 .gender-segment input:checked + label {
     background: var(--primary-accent);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(30, 58, 138, 0.3);
+    box-shadow: 0 1px 2px rgba(13, 148, 136, 0.3);
 }
 
 .gender-segment label:hover {
@@ -410,7 +410,7 @@
 
 .nrc-input:focus-within {
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
 }
 
 .nrc-input input {
@@ -479,7 +479,7 @@
 .passport-photo-zone:hover,
 .passport-photo-zone.is-dragover {
     border-color: var(--primary-accent);
-    background: rgba(30, 58, 138, 0.03);
+    background: rgba(13, 148, 136, 0.03);
 }
 
 .passport-photo-zone .pz-icon {
@@ -934,7 +934,7 @@
 .trip-type-segment input:checked + label {
     background: var(--primary-accent);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(30, 58, 138, 0.3);
+    box-shadow: 0 1px 2px rgba(13, 148, 136, 0.3);
 }
 
 .trip-type-segment label:hover {
@@ -949,8 +949,8 @@
 .return-flight-block {
     margin-top: 1.25rem;
     padding: 1.25rem;
-    background: rgba(30, 58, 138, 0.04);
-    border: 1px solid rgba(30, 58, 138, 0.14);
+    background: rgba(13, 148, 136, 0.04);
+    border: 1px solid rgba(13, 148, 136, 0.14);
     border-radius: 10px;
     animation: returnSlideDown 0.3s ease;
 }
@@ -971,7 +971,7 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: rgba(30, 58, 138, 0.12);
+    background: rgba(13, 148, 136, 0.12);
     color: var(--primary-accent);
     display: inline-flex;
     align-items: center;
@@ -1060,7 +1060,7 @@
     font-size: 0.72rem;
     font-weight: 700;
     color: inherit;
-    background: rgba(30, 58, 138, 0.08);
+    background: rgba(13, 148, 136, 0.08);
     padding: 0.1rem 0.5rem;
     border-radius: 999px;
     font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
@@ -1080,7 +1080,7 @@
 /* Subtotal lines (per leg) */
 .pricing-totals.is-grand {
     margin-top: 0.5rem;
-    background: rgba(30, 58, 138, 0.06);
+    background: rgba(13, 148, 136, 0.06);
 }
 
 .pricing-totals.is-grand .value {
@@ -1166,6 +1166,32 @@
     border-color: var(--sell-border-strong);
 }
 
+/* ---------- Frozen Booking Context section (sticky to top) ---------- */
+#sell-view #section-booking {
+    position: sticky;
+    top: 0.75rem;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 32px rgba(15, 23, 42, 0.10);
+}
+
+#sell-view #section-booking::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -10px 0;
+    height: 10px;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.05), transparent);
+    pointer-events: none;
+}
+
+/* The other sections sit above the page background gradient */
+#sell-view #section-client,
+#sell-view #section-passengers {
+    z-index: 1;
+}
+
 #sell-view .sell-section-header {
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
@@ -1187,9 +1213,9 @@
     width: 34px;
     height: 34px;
     border-radius: 9px;
-    background: linear-gradient(135deg, rgba(30, 58, 138, 0.14), rgba(8, 145, 178, 0.10));
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.14), rgba(8, 145, 178, 0.10));
     color: var(--primary-accent);
-    box-shadow: inset 0 0 0 1px rgba(30, 58, 138, 0.10);
+    box-shadow: inset 0 0 0 1px rgba(13, 148, 136, 0.10);
     font-size: 0.95rem;
 }
 
@@ -1239,7 +1265,7 @@
 #sell-view .form-group select:focus,
 #sell-view .form-group textarea:focus {
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
     transform: none;
 }
 
@@ -1255,22 +1281,36 @@
 
 #sell-view .route-preview .fa-plane { color: var(--sell-teal); }
 
-/* ---------- Domestic / International toggle — coral active state ---------- */
+/* ---------- Domestic / International toggle — clean segmented control ---------- */
 #sell-view .flight-type-toggle {
     background: rgba(255, 255, 255, 0.7);
     border: 1px solid var(--sell-border);
     border-radius: 999px;
-    padding: 4px 10px;
+    padding: 3px;
     box-shadow: var(--sell-shadow-pill);
+    gap: 0;
+}
+
+/* Hide the legacy switch entirely — text labels are the only control now */
+#sell-view .flight-type-toggle .switch {
+    display: none !important;
 }
 
 #sell-view .flight-type-toggle #domestic-label,
 #sell-view .flight-type-toggle #international-label {
     font-size: 0.78rem;
     font-weight: 600;
-    padding: 0.25rem 0.6rem;
+    color: var(--text-secondary);
+    padding: 0.4rem 0.95rem;
     border-radius: 999px;
-    transition: color 0.18s ease, background 0.18s ease;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+#sell-view .flight-type-toggle #domestic-label:hover,
+#sell-view .flight-type-toggle #international-label:hover {
+    color: var(--text-primary);
 }
 
 #sell-view .flight-type-toggle #domestic-label.active,
@@ -1280,13 +1320,10 @@
     box-shadow: 0 1px 2px rgba(249, 115, 22, 0.35);
 }
 
-/* Hide the legacy switch — labels themselves act as the segment now */
-#sell-view .flight-type-toggle .switch {
-    width: 28px;
-    height: 16px;
+#sell-view .flight-type-toggle #domestic-label.active:hover,
+#sell-view .flight-type-toggle #international-label.active:hover {
+    color: #fff;
 }
-#sell-view .flight-type-toggle .switch .slider { background: rgba(38, 37, 30, 0.15); }
-#sell-view .flight-type-toggle input:checked + .slider { background: var(--sell-coral); }
 
 /* ---------- Trip type segment — refined ---------- */
 #sell-view .trip-type-segment {
@@ -1387,13 +1424,20 @@
 }
 
 #sell-view .pax-panel-title::after {
-    background: linear-gradient(90deg, rgba(30, 58, 138, 0.12), transparent);
+    background: linear-gradient(90deg, rgba(13, 148, 136, 0.12), transparent);
 }
 
 /* Compact gender + tabs */
 #sell-view .gender-segment label {
     padding: 0.35rem 0.7rem;
     font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+#sell-view .gender-segment input:checked + label {
+    color: #fff;
+    background: var(--primary-accent);
+    box-shadow: 0 1px 2px rgba(13, 148, 136, 0.3);
 }
 
 #sell-view .doc-tab,
@@ -1402,71 +1446,243 @@
     font-size: 0.82rem;
 }
 
-/* ---------- Pricing — coral-accented Total like the reference ---------- */
+/* ---------- Pricing — totals are hidden per-passenger (sticky bar shows the totals) ---------- */
 #sell-view .pricing-grid {
     gap: 0.7rem;
 }
 
 #sell-view .pricing-totals {
-    margin-top: 0.7rem;
-    padding: 0.7rem 0.95rem;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.10), rgba(251, 113, 133, 0.06));
-    border: 1px solid rgba(249, 115, 22, 0.18);
-    border-radius: 10px;
-    font-size: 0.82rem;
+    display: none !important;
 }
 
-#sell-view .pricing-totals .label {
-    color: var(--text-secondary);
-    font-size: 0.74rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-
-#sell-view .pricing-totals .value {
-    color: var(--sell-coral-deep);
-    font-size: 0.95rem;
-    letter-spacing: -0.01em;
-}
-
-#sell-view .pricing-totals.is-grand {
-    background: linear-gradient(135deg, var(--sell-coral) 0%, var(--sell-coral-deep) 100%);
-    border-color: transparent;
-    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.30);
-    padding: 0.85rem 1rem;
-}
-
-#sell-view .pricing-totals.is-grand .label {
-    color: rgba(255, 255, 255, 0.85);
-    font-weight: 700;
-}
-
-#sell-view .pricing-totals.is-grand .value {
-    color: #fff;
-    font-size: 1.05rem;
-    font-weight: 800;
+/* Leg subtotal pill on each tab also hidden when totals removed */
+#sell-view .leg-tab .leg-total {
+    display: none;
 }
 
 /* ---------- Return flight block — softer warm tint ---------- */
 #sell-view .return-flight-block {
-    background: linear-gradient(135deg, rgba(8, 145, 178, 0.05), rgba(30, 58, 138, 0.04));
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.05), rgba(13, 148, 136, 0.04));
     border: 1px solid rgba(8, 145, 178, 0.16);
 }
 
 #sell-view .return-flight-icon {
-    background: linear-gradient(135deg, rgba(8, 145, 178, 0.18), rgba(30, 58, 138, 0.10));
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.18), rgba(13, 148, 136, 0.10));
     color: var(--sell-teal);
 }
 
-/* ---------- Sticky summary bar — colored stat icons + gradient submit ---------- */
+/* ---------- Sticky summary bar — VERTICAL right sidebar (trip.com-style) ---------- */
 .sticky-summary-bar {
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 -10px 28px rgba(15, 23, 42, 0.06);
-    padding: 0.85rem 1.5rem;
+    position: fixed;
+    top: 5rem;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    left: auto;
+    width: 320px;
+    max-width: calc(100vw - 2rem);
+    padding: 1.25rem;
+    border-radius: 16px;
+    border: 1px solid var(--sell-border, rgba(38, 37, 30, 0.10));
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 14px 36px rgba(15, 23, 42, 0.10);
+    overflow-y: auto;
+    z-index: 50;
+    display: none;
+}
+
+.sticky-summary-bar.is-visible {
+    display: block;
+    animation: slideInRight 0.35s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+/* Optional summary heading (CSS-injected for trip.com feel) */
+.sticky-summary-bar::before {
+    content: 'Order Summary';
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--sell-border, rgba(38, 37, 30, 0.08));
 }
 
 .sticky-summary-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: 1.25rem;
+    max-width: none;
+    margin: 0;
+    flex-wrap: nowrap;
+}
+
+/* Stats column */
+.sticky-summary-bar .summary-stats {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    flex: 0 0 auto;
+}
+
+/* Section divider between groups */
+.sticky-summary-bar .summary-stats,
+.sticky-summary-bar .summary-payment-controls {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--sell-border, rgba(38, 37, 30, 0.08));
+}
+
+/* Payment controls column */
+.sticky-summary-bar .summary-payment-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    flex-wrap: nowrap;
+}
+
+.sticky-summary-bar .summary-payment-controls .paid-toggle {
+    align-self: flex-start;
+}
+
+.sticky-summary-bar .summary-payment-controls .form-group {
+    width: 100%;
+    min-width: 0 !important;
+}
+
+.sticky-summary-bar .summary-payment-controls .form-group input,
+.sticky-summary-bar .summary-payment-controls .form-group select {
+    width: 100%;
+}
+
+/* When Mobile Banking is active, the bank-select wraps to next line */
+.sticky-summary-bar .payment-method-row {
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sticky-summary-bar .payment-method-row > select {
+    width: 100%;
+    min-width: 0;
+}
+
+.sticky-summary-bar .bank-select.show {
+    width: 100%;
+    max-width: none;
+    flex: 0 0 auto;
+}
+
+/* Action buttons stacked, Submit on top, Cancel below */
+.sticky-summary-bar .summary-actions {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+}
+
+.sticky-summary-bar .summary-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+}
+
+.sticky-summary-bar .summary-actions .btn-primary {
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+}
+
+/* Make room for the right sidebar in the form area */
+#sell-view .sell-sections {
+    padding-bottom: 2rem;
+    padding-right: calc(320px + 2.5rem);
+}
+
+/* Stats inside the sidebar — bigger value, label muted */
+.sticky-summary-bar .summary-stat {
+    padding: 0.5rem 0;
+}
+
+.sticky-summary-bar .summary-stat .stat-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+}
+
+.sticky-summary-bar .summary-stat .stat-value {
+    font-size: 1.05rem;
+}
+
+/* Mobile / narrow viewports — fall back to horizontal bottom bar */
+@media (max-width: 1024px) {
+    .sticky-summary-bar {
+        position: fixed;
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        max-width: none;
+        height: auto;
+        border-radius: 0;
+        border: none;
+        border-top: 1px solid var(--sell-border, rgba(38, 37, 30, 0.10));
+        padding: 0.85rem 1.5rem;
+        overflow: visible;
+    }
+
+    .sticky-summary-bar.is-visible {
+        animation: slideUp 0.3s ease;
+    }
+
+    .sticky-summary-bar::before {
+        display: none;
+    }
+
+    .sticky-summary-inner {
+        flex-direction: row;
+        align-items: center;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+    }
+
+    .sticky-summary-bar .summary-stats {
+        flex-direction: row;
+        gap: 1.25rem;
+        padding: 0;
+        border: none;
+        flex: 1;
+    }
+
+    .sticky-summary-bar .summary-payment-controls {
+        flex-direction: row;
+        gap: 0.75rem;
+        padding: 0;
+        border: none;
+        flex-wrap: wrap;
+    }
+
+    .sticky-summary-bar .summary-payment-controls .form-group {
+        width: auto;
+    }
+
+    .sticky-summary-bar .summary-actions {
+        flex-direction: row;
+    }
+
+    .sticky-summary-bar .summary-actions .btn {
+        width: auto;
+    }
+
+    #sell-view .sell-sections {
+        padding-right: 0;
+        padding-bottom: 140px;
+    }
 }
 
 .summary-stat {
@@ -1492,7 +1708,7 @@
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     font-size: 0.95rem;
-    background: linear-gradient(135deg, rgba(8, 145, 178, 0.14), rgba(30, 58, 138, 0.08));
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.14), rgba(13, 148, 136, 0.08));
     color: var(--sell-teal);
     box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.18);
 }
@@ -1575,14 +1791,14 @@
 }
 
 #sell-view #addPassengerBtn {
-    background: linear-gradient(135deg, var(--primary-accent), #1e40af);
+    background: linear-gradient(135deg, var(--primary-accent), #0f766e);
     color: #fff;
     border-color: transparent;
 }
 
 #sell-view #addPassengerBtn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(30, 58, 138, 0.30);
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.30);
 }
 
 /* Passenger count badge — coral, like the reference */

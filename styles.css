@@ -31,8 +31,8 @@ input, button, select, textarea {
 :root {
     /* Cursor Design System — Warm Cream Palette */
     --bg-color: #f2f1ed;
-    --primary-accent: #1e3a8a;
-    --primary-accent-dark: #172554;
+    --primary-accent: #0d9488;
+    --primary-accent-dark: #0f766e;
     --secondary-accent: #1f8a65;
     --success-accent: #1f8a65;
     --danger-accent: #cf2d56;
@@ -63,14 +63,14 @@ input, button, select, textarea {
     --duration-fast: 140ms;
     --duration: 220ms;
     --duration-slow: 420ms;
-    --focus-ring: rgba(30, 58, 138, 0.18);
+    --focus-ring: rgba(13, 148, 136, 0.18);
     --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-serif: 'Georgia', 'Cambria', 'Times New Roman', serif;
 
     /* Chart Colors */
     --chart-text: rgba(38, 37, 30, 0.75);
     --chart-grid: rgba(38, 37, 30, 0.08);
-    --chart-revenue: #1e3a8a;
+    --chart-revenue: #0d9488;
     --chart-profit: #1f8a65;
     --chart-tickets: #7c3aed;
 }
@@ -189,10 +189,10 @@ body::before {
 }
 
 .nav-btn.active {
-    background: rgba(30, 58, 138, 0.12);
+    background: rgba(13, 148, 136, 0.12);
     color: var(--text-primary);
     font-weight: 700;
-    border-color: rgba(30, 58, 138, 0.25);
+    border-color: rgba(13, 148, 136, 0.25);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
@@ -445,7 +445,7 @@ body::before {
 .search-inputs input:focus, .search-inputs select:focus {
     outline: none;
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
     background: #ffffff;
     transform: translateY(-1px);
 }
@@ -633,7 +633,7 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
     background: #ffffff;
     transform: translateY(-1px);
 }
@@ -783,7 +783,7 @@ input:checked + .slider:before {
 .custom-select-trigger:focus {
     outline: none;
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
 }
 
 .custom-select-trigger .arrow {
@@ -834,7 +834,7 @@ input:checked + .slider:before {
 }
 
 .custom-option.selected {
-    background: rgba(30, 58, 138, 0.08);
+    background: rgba(13, 148, 136, 0.08);
     color: var(--primary-accent);
     font-weight: 600;
 }
@@ -885,7 +885,7 @@ td .action-checkbox {
 .booking-search-section select:focus {
     outline: none;
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
     background-color: #ffffff;
     transform: translateY(-1px);
 }
@@ -952,7 +952,7 @@ td .action-checkbox {
 .datepicker-view .days .day:not(.disabled):not(.selected):hover,
 .datepicker-view .months .month:not(.disabled):not(.selected):hover,
 .datepicker-view .years .year:not(.disabled):not(.selected):hover {
-    background-color: rgba(30, 58, 138, 0.10);
+    background-color: rgba(13, 148, 136, 0.10);
 }
 
 .datepicker-view .day.prev,
@@ -1036,7 +1036,7 @@ body.dark-text-theme:not(.material-theme) .datepicker-view .days .day.selected:n
     background: var(--primary-accent-dark);
     border-color: var(--primary-accent-dark);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.20);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.20);
 }
 
 .btn-secondary {
@@ -1331,7 +1331,7 @@ body.dark-text-theme:not(.material-theme) .datepicker-view .days .day.selected:n
     cursor: pointer;
     border-radius: 50%;
     border: 2px solid #ffffff;
-    box-shadow: 0 2px 8px rgba(30, 58, 138, 0.25);
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
 }
 
 .setting-item input[type="range"]::-moz-range-thumb {
@@ -1388,7 +1388,7 @@ body.dark-text-theme:not(.material-theme) .datepicker-view .days .day.selected:n
     font-weight: 700;
     border-color: var(--primary-accent);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.20);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.20);
 }
 
 .pagination-btn:disabled {
@@ -1673,7 +1673,7 @@ td .icon-btn-table {
 }
 
 .notification-count {
-    background-color: #1e3a8a;   /* stronger blue */
+    background-color: #0d9488;   /* stronger blue */
     color: #ffffff;
     font-size: 0.75rem;
     font-weight: 700;
@@ -1919,8 +1919,8 @@ td .icon-btn-table {
 /* Material Theme - Update to use Cursor warm cream palette */
 body.material-theme {
     --bg-color: #f2f1ed;
-    --primary-accent: #1e3a8a;
-    --primary-accent-dark: #172554;
+    --primary-accent: #0d9488;
+    --primary-accent-dark: #0f766e;
     --secondary-accent: #1f8a65;
     --danger-accent: #cf2d56;
 
@@ -1940,7 +1940,7 @@ body.material-theme {
 
     --chart-text: rgba(38, 37, 30, 0.75);
     --chart-grid: rgba(38, 37, 30, 0.08);
-    --chart-revenue: #1e3a8a;
+    --chart-revenue: #0d9488;
     --chart-profit: #1f8a65;
     --chart-tickets: #7c3aed;
 }
@@ -1948,8 +1948,8 @@ body.material-theme {
 body.material-theme.dark-theme {
     /* Cursor dark variant */
     --bg-color: #1a1917;
-    --primary-accent: #1e3a8a;
-    --primary-accent-dark: #172554;
+    --primary-accent: #0d9488;
+    --primary-accent-dark: #0f766e;
     --secondary-accent: #34d399;
     --danger-accent: #cf2d56;
 
@@ -1966,7 +1966,7 @@ body.material-theme.dark-theme {
 
     --chart-text: rgba(255, 255, 255, 0.78);
     --chart-grid: rgba(255, 255, 255, 0.12);
-    --chart-revenue: #1e3a8a;
+    --chart-revenue: #0d9488;
     --chart-profit: #34d399;
     --chart-tickets: #a78bfa;
 }
@@ -2424,8 +2424,8 @@ body.material-theme {
     --surface: #ffffff;
     --surface-2: #f7f7f4;
 
-    --primary-accent: #1e3a8a;
-    --primary-accent-dark: #172554;
+    --primary-accent: #0d9488;
+    --primary-accent-dark: #0f766e;
 
     --secondary-accent: #1f8a65;
     --danger-accent: #cf2d56;
@@ -2442,7 +2442,7 @@ body.material-theme {
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 10px 30px rgba(0, 0, 0, 0.06);
     --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.10), 0 24px 60px rgba(0, 0, 0, 0.10);
 
-    --focus-ring: 0 0 0 4px rgba(30, 58, 138, 0.15);
+    --focus-ring: 0 0 0 4px rgba(13, 148, 136, 0.15);
     --ease: cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -2461,7 +2461,7 @@ body.material-theme.dark-theme {
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.60), 0 10px 30px rgba(0, 0, 0, 0.35);
     --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.60), 0 24px 60px rgba(0, 0, 0, 0.45);
 
-    --focus-ring: 0 0 0 4px rgba(30, 58, 138, 0.22);
+    --focus-ring: 0 0 0 4px rgba(13, 148, 136, 0.22);
 }
 
 /* --- Base typography & background --- */
@@ -2531,7 +2531,7 @@ body.material-theme .brand {
 
 body.material-theme .logo-icon {
     color: var(--primary-accent) !important;
-    filter: drop-shadow(0 8px 18px rgba(30, 58, 138, 0.20));
+    filter: drop-shadow(0 8px 18px rgba(13, 148, 136, 0.20));
 }
 
 body.material-theme .title {
@@ -2575,15 +2575,15 @@ body.material-theme.dark-theme .nav-btn:hover {
 }
 
 body.material-theme .nav-btn.active {
-    background: rgba(30, 58, 138, 0.12) !important;
+    background: rgba(13, 148, 136, 0.12) !important;
     color: var(--text-primary) !important;
-    border: 1px solid rgba(30, 58, 138, 0.25) !important;
+    border: 1px solid rgba(13, 148, 136, 0.25) !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 body.material-theme.dark-theme .nav-btn.active {
-    background: rgba(30, 58, 138, 0.15) !important;
-    border: 1px solid rgba(30, 58, 138, 0.30) !important;
+    background: rgba(13, 148, 136, 0.15) !important;
+    border: 1px solid rgba(13, 148, 136, 0.30) !important;
     box-shadow: none;
 }
 
@@ -2692,7 +2692,7 @@ body.material-theme .main-content {
 #monthly-revenue-box { --kpi-accent: var(--primary-accent); }
 #monthly-commission-box { --kpi-accent: var(--secondary-accent); }
 #monthly-extra-fare-box { --kpi-accent: var(--info-accent); }
-#notification-panel-box { --kpi-accent: #1e3a8a; }
+#notification-panel-box { --kpi-accent: #0d9488; }
 #upcoming-pnr-box { --kpi-accent: #1f8a65; }
 
 .dashboard-grid .info-card,
@@ -2984,8 +2984,8 @@ body.material-theme.dark-theme .notification-item {
 }
 
 .notification-item--deadline .notification-icon {
-    border-color: rgba(30, 58, 138, 0.45);
-    background: rgba(30, 58, 138, 0.12);
+    border-color: rgba(13, 148, 136, 0.45);
+    background: rgba(13, 148, 136, 0.12);
     color: var(--primary-accent-dark);
 }
 
@@ -3025,8 +3025,8 @@ body.material-theme.dark-theme .notification-item {
 }
 
 .notification-item--deadline .notification-badge {
-    border-color: rgba(30, 58, 138, 0.45);
-    background: rgba(30, 58, 138, 0.12);
+    border-color: rgba(13, 148, 136, 0.45);
+    background: rgba(13, 148, 136, 0.12);
     color: var(--primary-accent-dark);
 }
 
@@ -3105,9 +3105,9 @@ body.material-theme .upcoming-item--viewall:hover {
     border-radius: 16px;
     display: grid;
     place-items: center;
-    border: 1px solid rgba(30, 58, 138, 0.35);
-    background: rgba(30, 58, 138, 0.08);
-    color: #172554;
+    border: 1px solid rgba(13, 148, 136, 0.35);
+    background: rgba(13, 148, 136, 0.08);
+    color: #0f766e;
     font-weight: 800;
     line-height: 1.0;
     flex: 0 0 auto;
@@ -3148,9 +3148,9 @@ body.material-theme.dark-theme .upcoming-date {
     font-weight: 800;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
-    border: 1px solid rgba(30, 58, 138, 0.35);
-    background: rgba(30, 58, 138, 0.08);
-    color: #172554;
+    border: 1px solid rgba(13, 148, 136, 0.35);
+    background: rgba(13, 148, 136, 0.08);
+    color: #0f766e;
     white-space: nowrap;
 }
 
@@ -3197,14 +3197,14 @@ body.material-theme .btn-primary {
     background: var(--primary-accent) !important;
     border-color: var(--primary-accent) !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.18) !important;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.18) !important;
 }
 
 body.material-theme .btn-primary:hover {
     background: var(--primary-accent-dark) !important;
     border-color: var(--primary-accent-dark) !important;
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(30, 58, 138, 0.22) !important;
+    box-shadow: 0 6px 18px rgba(13, 148, 136, 0.22) !important;
 }
 
 body.material-theme .btn-secondary {
@@ -3407,8 +3407,8 @@ body.material-theme .notification-count {
     margin-left: 0.55rem;
     font-size: 0.75rem;
     font-weight: 850;
-    border: 1px solid rgba(30, 58, 138, 0.35);
-    background: rgba(30, 58, 138, 0.08);
+    border: 1px solid rgba(13, 148, 136, 0.35);
+    background: rgba(13, 148, 136, 0.08);
     color: var(--primary-accent-dark);
 }
 
@@ -3647,13 +3647,13 @@ body.material-theme.dark-theme .notification-count {
 
 /* PDF - Danger/Blue Tint */
 .btn-pdf {
-    color: #1e3a8a; /* Soft blue text */
-    border-color: rgba(30, 58, 138, 0.3);
+    color: #0d9488; /* Soft blue text */
+    border-color: rgba(13, 148, 136, 0.3);
 }
 .btn-pdf:hover {
-    background: rgba(30, 58, 138, 0.15);
-    color: #172554;
-    border-color: rgba(30, 58, 138, 0.6);
+    background: rgba(13, 148, 136, 0.15);
+    color: #0f766e;
+    border-color: rgba(13, 148, 136, 0.6);
 }
 
 /* Photo - Success/Green Tint */
@@ -3690,14 +3690,14 @@ body.material-theme .btn-service {
 
 /* PDF - Soft Blue (Notion Danger) */
 body.material-theme .btn-pdf { 
-    background-color: rgba(30, 58, 138, 0.1); 
-    color: #1e3a8a;
-    border: 1px solid rgba(30, 58, 138, 0.2);
+    background-color: rgba(13, 148, 136, 0.1); 
+    color: #0d9488;
+    border: 1px solid rgba(13, 148, 136, 0.2);
 }
 body.material-theme .btn-pdf:hover { 
-    background-color: rgba(30, 58, 138, 0.18);
-    border-color: rgba(30, 58, 138, 0.3);
-    color: #172554;
+    background-color: rgba(13, 148, 136, 0.18);
+    border-color: rgba(13, 148, 136, 0.3);
+    color: #0f766e;
     transform: translateY(-1px);
 }
 
@@ -4296,9 +4296,9 @@ body.material-theme .nav-btn:hover {
 }
 
 body.material-theme .nav-btn.active {
-    background: rgba(30, 58, 138, 0.12);
+    background: rgba(13, 148, 136, 0.12);
     color: var(--primary-accent);
-    border-color: rgba(30, 58, 138, 0.25);
+    border-color: rgba(13, 148, 136, 0.25);
 }
 
 body.material-theme .icon-btn {

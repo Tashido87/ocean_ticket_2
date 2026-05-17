@@ -1367,6 +1367,24 @@ export function initializeSellFormEnhancements() {
         radio.dataset.tripTypeBound = 'true';
     });
 
+    // --- Domestic / International labels: clickable segmented control ---
+    // The legacy slider is hidden by CSS; clicks on the labels toggle the
+    // underlying flightTypeToggle checkbox and re-fire its change handler.
+    ['domestic-label', 'international-label'].forEach(id => {
+        const span = document.getElementById(id);
+        if (!span || span.dataset.flightLabelBound === 'true') return;
+        span.addEventListener('click', () => {
+            const toggle = document.getElementById('flightTypeToggle');
+            if (!toggle) return;
+            const wantInternational = id === 'international-label';
+            if (toggle.checked !== wantInternational) {
+                toggle.checked = wantInternational;
+                toggle.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        span.dataset.flightLabelBound = 'true';
+    });
+
     // --- Return-flight "Customize" toggle ---
     const customizeToggle = document.getElementById('returnCustomizeToggle');
     const returnBlock = document.getElementById('returnFlightBlock');
@@ -2732,7 +2750,9 @@ const MOBILE_BANKING_SUB_OPTIONS = [
     'KBZ Special',
     'KBZ Normal',
     'AYA Banking',
-    'CB Banking'
+    'CB Banking',
+    'UAB Pay',
+    'UAB Special Account'
 ];
 
 /**
