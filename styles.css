@@ -3763,9 +3763,9 @@ body.material-theme.dark-theme .notification-count {
 }
 
 .format-segment input:checked + label {
-    background: linear-gradient(135deg, var(--primary-accent, #0d9488), #0f766e);
+    background: linear-gradient(135deg, #ea580c, #c2410c);
     color: #fff;
-    box-shadow: 0 1px 3px rgba(13, 148, 136, 0.30);
+    box-shadow: 0 1px 3px rgba(234, 88, 12, 0.30);
 }
 
 /* Buttons */
@@ -4026,6 +4026,92 @@ body.material-theme.dark-theme .notification-count {
 .document-card:hover .doc-action {
     background: var(--primary-accent);
     color: #fff;
+}
+
+/* ---------- Document view toggle ---------- */
+.view-toggle {
+    display: inline-flex;
+    background: rgba(38, 37, 30, 0.04);
+    border: 1px solid rgba(38, 37, 30, 0.08);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 0;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.view-toggle input[type="radio"] {
+    display: none;
+}
+
+.view-toggle label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.18s ease;
+    margin: 0;
+}
+
+.view-toggle label:hover {
+    color: var(--text-primary);
+}
+
+.view-toggle input:checked + label {
+    background: linear-gradient(135deg, #ea580c, #c2410c);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(234, 88, 12, 0.30);
+}
+
+/* ---------- Detail (list) view for documents ---------- */
+.documents-grid.is-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.documents-grid.is-detail .document-card {
+    display: grid;
+    grid-template-columns: 40px 1fr auto 120px 40px;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.9rem;
+}
+
+.documents-grid.is-detail .doc-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.documents-grid.is-detail .doc-title {
+    white-space: normal;
+    overflow: visible;
+}
+
+.documents-grid.is-detail .doc-meta {
+    justify-content: flex-end;
+}
+
+.documents-grid.is-detail .doc-action {
+    width: 32px;
+    height: 32px;
+}
+
+/* Responsive: detail view stacks on very small screens */
+@media (max-width: 480px) {
+    .documents-grid.is-detail .document-card {
+        grid-template-columns: 40px 1fr 40px;
+    }
+    .documents-grid.is-detail .doc-meta {
+        display: none;
+    }
 }
 
 /* ---------- Recent Activity ---------- */

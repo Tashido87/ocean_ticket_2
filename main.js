@@ -256,6 +256,60 @@ function setupEventListeners() {
         });
     }
 
+    // Document list (update base URL when switching to Firebase Storage)
+    const DOC_BASE_URL = 'https://raw.githubusercontent.com/Tashido87/ocean_ticket/main/assets';
+    const DOCS_LIST = [
+        {
+            title: 'Singapore Hotel Booking (Agoda)',
+            type: 'Hotel',
+            ext: 'pdf',
+            filename: 'singapore_hotel_booking.pdf',
+            iconClass: 'pdf',
+            icon: 'fa-file-pdf'
+        },
+        {
+            title: 'SSR Date Change Form',
+            type: 'Airline',
+            ext: 'pages',
+            iconClass: 'generic',
+            icon: 'fa-file-lines',
+            filename: 'WC_EO_form.pages'
+        }
+    ];
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function renderDocuments(view = 'card') {
+        const grid = document.getElementById('documentsGrid');
+        if (!grid) return;
+        grid.classList.toggle('is-detail', view === 'detail');
+        grid.innerHTML = DOCS_LIST.map(doc => `
+            <a href="${DOC_BASE_URL}/${doc.filename}" download="${doc.filename}" class="document-card" data-title="${escapeHtml(doc.title)}" data-type="${escapeHtml(doc.type)}" data-ext="${escapeHtml(doc.ext)}">
+                <div class="doc-icon-box ${doc.iconClass}"><i class="fa-solid ${doc.icon}"></i></div>
+                <div class="doc-info">
+                    <span class="doc-title">${escapeHtml(doc.title)}</span>
+                    <span class="doc-meta">
+                        <span class="doc-tag ${doc.type.toLowerCase()}">${escapeHtml(doc.type)}</span>
+                        <span class="doc-type">${escapeHtml(doc.ext.toUpperCase())}</span>
+                    </span>
+                </div>
+                <div class="doc-action"><i class="fa-solid fa-download"></i></div>
+            </a>
+        `).join('');
+    }
+
+    // Document view toggle
+    document.querySelectorAll('input[name="doc_view"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            renderDocuments(e.target.value);
+        });
+    });
+    renderDocuments('card');
+
     // Document search
     const docSearch = document.getElementById('docSearch');
     if (docSearch) {
