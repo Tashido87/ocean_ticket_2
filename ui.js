@@ -14,6 +14,7 @@ import { showToast } from './utils.js';
 import { displayTickets } from './tickets.js';
 import { renderBookingPage } from './booking.js';
 import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox } from './passport.js';
+import { ocrPassport } from './passport-ocr.js';
 
 
 /**
@@ -2127,61 +2128,49 @@ async function resizeImageToBase64(file, maxWidth = 1600, quality = 0.9) {
  * Calls the Gemini Passport OCR Netlify Function.
  *
  * @param {File} file - The passport image file.
- * @param {(msg: string) => void} [onStatus] - Status callback for UI.
- * @returns {Promise<Object|null>} Parsed OCR result or null on failure.
+ * @param {number} [passengerIndex=0] - Index of the passenger (for logging).
+ * @returns {Promise<Object>} Parsed OCR result.
+ * @throws {Error} If Gemini OCR fails.
  */
-async function scanPassportWithGemini(file, onStatus) {
-    try {
-        console.log(`[Gemini OCR] Selected file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
-        onStatus?.('Resizing image...');
+async function scanPassportWithGemini(file, passengerIndex = 0) {
+    console.log('[Passport upload] file:', file.name, file.size);
 
-        const imageBase64 = await resizeImageToBase64(file);
-        console.log(`[Gemini OCR] Resized base64 length: ${imageBase64.length}`);
+    const imageBase64 = await resizeImageToBase64(file);
 
-        onStatus?.('Scanning passport...');
+    console.log('[Gemini request] sending to /.netlify/functions/gemini-passport-ocr');
 
-        console.log('[Gemini request] sending to /.netlify/functions/gemini-passport-ocr');
+    const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            imageBase64,
+            mimeType: 'image/jpeg',
+        }),
+    });
 
-        const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                imageBase64,
-                mimeType: 'image/jpeg',
-            }),
-        });
+    const data = await response.json();
 
-        const data = await response.json();
-        console.log('[Gemini passport OCR]', data);
+    console.log('[Gemini passport OCR]', data);
 
-        if (!data.ok) {
-            console.warn('[Gemini OCR] Server returned not-ok:', data.error);
-            onStatus?.('OCR failed');
-            return null;
-        }
-
-        if (data.warnings?.length) {
-            console.warn('[Gemini OCR warnings]', data.warnings);
-        }
-
-        // Normalize Gemini response fields to match what applyOcrResults expects
-        const result = {
-            name: data.fullName || '',
-            passportNo: data.passportNo || '',
-            dob: data.dob || '',
-            expiry: data.expiry || '',
-            nationality: data.nationality || '',
-            sex: data.sex || '',
-            title: data.title || '',
-        };
-
-        console.log('[Gemini OCR] Normalized result for form:', result);
-        return result;
-    } catch (error) {
-        console.error('[Gemini OCR] Network/parse error:', error);
-        onStatus?.('OCR failed');
-        return null;
+    if (!data.ok) {
+        throw new Error(data.error || 'Gemini passport OCR failed');
     }
+
+    const finalFields = {
+        fullName: data.fullName || '',
+        passportNumber: data.passportNo || '',
+        dateOfBirth: data.dob || '',
+        expiryDate: data.expiry || '',
+        nationality: data.nationality || '',
+        sex: data.sex || '',
+        title: data.title || '',
+    };
+
+    console.log('[Final applied passenger fields]', finalFields);
+
+    return finalFields;
 }
 
 /**
@@ -2207,9 +2196,10 @@ function _attachPhotoUpload(formEl) {
         if (!ocr) return;
         console.log('[applyOcrResults] OCR data:', JSON.stringify(ocr));
 
-        // Passport number
-        if (ocr.passportNo) {
-            passportNoInput.value = ocr.passportNo;
+        // Passport number (support both old and new field names)
+        const passportNo = ocr.passportNo || ocr.passportNumber || '';
+        if (passportNo) {
+            passportNoInput.value = passportNo;
             passportNoInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
@@ -2217,33 +2207,35 @@ function _attachPhotoUpload(formEl) {
         // cannot overwrite the passport-accurate DOB/expiry with stale saved data.
         formEl._ocrFilling = true;
 
-        // Full name
+        // Full name (support both old and new field names)
+        const fullName = ocr.name || ocr.fullName || '';
         const nameInput = formEl.querySelector('.passenger-name');
-        if (ocr.name && nameInput) {
-            nameInput.value = ocr.name.toUpperCase();
+        if (fullName && nameInput) {
+            nameInput.value = fullName.toUpperCase();
             nameInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
-        // Date of birth
+        // Date of birth (support both old and new field names)
+        const dob = ocr.dob || ocr.dateOfBirth || '';
         const dobInput = formEl.querySelector('.passenger-dob');
-        console.log('[applyOcrResults] DOB from OCR:', ocr.dob, '| dobInput exists:', !!dobInput);
-        if (ocr.dob && dobInput) {
-            const dobResult = setDateInputFromOcr(dobInput, ocr.dob, { isBirth: true });
+        console.log('[applyOcrResults] DOB from OCR:', dob, '| dobInput exists:', !!dobInput);
+        if (dob && dobInput) {
+            const dobResult = setDateInputFromOcr(dobInput, dob, { isBirth: true });
             console.log('[applyOcrResults] DOB set result:', dobResult, '| input.value:', dobInput.value);
         }
 
-        // Expiry date
-        const expiryInput = formEl.querySelector('.passenger-passport-expiry');
-        const ocrExpiry = ocr.expiry || ocr.expiryDate || ocr.expirationDate || ocr.dateOfExpiry || ocr.date_of_expiry;
+        // Expiry date (support both old and new field names)
+        const ocrExpiry = ocr.expiry || ocr.expiryDate || ocr.expirationDate || ocr.dateOfExpiry || ocr.date_of_expiry || ocr.expiryDate || '';
         console.log('[applyOcrResults] Expiry from OCR:', ocrExpiry, '| expiryInput exists:', !!expiryInput);
         if (ocrExpiry && expiryInput) {
             const expResult = setDateInputFromOcr(expiryInput, ocrExpiry, { isBirth: false });
             console.log('[applyOcrResults] Expiry set result:', expResult, '| input.value:', expiryInput.value);
         }
 
-        // Title
-        if (ocr.title) {
-            const genderRadio = formEl.querySelector(`.passenger-gender[value="${ocr.title}"]`);
+        // Title / Sex (support both old and new field names)
+        const title = ocr.title || (ocr.sex === 'F' ? 'MS' : ocr.sex === 'M' ? 'MR' : '');
+        if (title) {
+            const genderRadio = formEl.querySelector(`.passenger-gender[value="${title}"]`);
             if (genderRadio) {
                 genderRadio.checked = true;
                 genderRadio.dispatchEvent(new Event('change', { bubbles: true }));
@@ -2290,22 +2282,35 @@ function _attachPhotoUpload(formEl) {
         ocrStatusEl.textContent = '';
         ocrStatusEl.className = 'pz-ocr-status';
 
-        // Run upload and Gemini OCR in parallel
+        // Run upload and OCR in parallel (upload always; OCR = Gemini first, Tesseract fallback)
         const uploadPromise = uploadPassportPhoto(file, {
             passportNo: passportNoInput.value || 'unknown',
             onProgress: (pct) => { progressBar.style.width = `${pct}%`; }
         });
 
-        const ocrPromise = scanPassportWithGemini(file, (msg) => {
-            ocrStatusEl.textContent = msg;
+        let ocrResult = null;
+
+        // 1) Try Gemini first
+        try {
+            ocrStatusEl.textContent = 'Scanning with Gemini...';
             ocrStatusEl.className = 'pz-ocr-status is-scanning';
-        }).catch(err => {
-            console.warn('[Gemini OCR] Unexpected error:', err);
-            return null;
-        });
+            ocrResult = await scanPassportWithGemini(file, 0);
+        } catch (error) {
+            console.warn('[Gemini failed, using fallback OCR]', error);
+            ocrStatusEl.textContent = 'Gemini failed, falling back...';
+            // 2) Fallback to Tesseract.js client-side OCR
+            try {
+                ocrResult = await ocrPassport(file, (msg) => {
+                    ocrStatusEl.textContent = msg;
+                    ocrStatusEl.className = 'pz-ocr-status is-scanning';
+                });
+            } catch (fallbackErr) {
+                console.error('[Fallback OCR] Failed:', fallbackErr);
+            }
+        }
 
         try {
-            const [uploadResult, ocrResult] = await Promise.all([uploadPromise, ocrPromise]);
+            const uploadResult = await uploadPromise;
 
             // Handle upload result
             urlHidden.value = uploadResult.url;
