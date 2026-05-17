@@ -47,7 +47,7 @@ export function buildClientList() {
                 passport_photo_url: ticket.passport_photo_url || '',
                 passport_photo_path: ticket.passport_photo_path || '',
                 dob: ticket.dob || '',
-                nationality: ticket.nationality || 'MM',
+                nationality: ticket.nationality || 'MMR',
                 gender: ticket.gender,
                 ticket_count: 0,
                 total_spent: 0,

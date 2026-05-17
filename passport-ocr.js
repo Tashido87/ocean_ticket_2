@@ -40,10 +40,13 @@ const OCR_FIELD_PARAMS = {
  * passports are much more reliable when the printed field area and MRZ are
  * read separately with different Tesseract settings.
  */
-async function runPassportOcrPasses(src, onStatus) {
-    const sources = await buildPassportOcrSources(src);
+async function runPassportOcrPasses(src, onStatus, { fallbackOnly = false } = {}) {
+    const sourceGroups = await buildPassportOcrSources(src);
+    const sources = fallbackOnly ? sourceGroups.fallback : sourceGroups.initial;
     const out = {};
     let currentStatus = 'Scanning passport…';
+
+    if (!sources.length) return out;
 
     if (typeof Tesseract.createWorker === 'function') {
         const worker = await Tesseract.createWorker('eng', 1, {
@@ -98,16 +101,11 @@ async function buildPassportOcrSources(src) {
 
     try {
         const img = await loadImage(src);
-        return [
-            {
-                key: 'name',
-                src: cropImage(img, { left: 0.32, top: 0.24, width: 0.63, height: 0.20 }, 2.6),
-                status: 'Reading printed name…',
-                params: OCR_FIELD_PARAMS
-            },
+        return {
+            initial: [
             {
                 key: 'visual',
-                src: cropImage(img, { left: 0.26, top: 0.22, width: 0.70, height: 0.48 }, 2.2),
+                src: cropImage(img, { left: 0.23, top: 0.10, width: 0.75, height: 0.66 }, 2.2),
                 status: 'Reading passport fields…',
                 params: OCR_FIELD_PARAMS
             },
@@ -122,12 +120,13 @@ async function buildPassportOcrSources(src) {
                 src: cropImage(img, { left: 0.02, top: 0.70, width: 0.96, height: 0.27 }, 2.2, true),
                 status: 'Reading passport MRZ…',
                 params: OCR_MRZ_PARAMS
-            },
-            fullPass
-        ];
+            }
+            ],
+            fallback: [fullPass]
+        };
     } catch (err) {
         console.warn('[Passport OCR] Region crop failed; falling back to full image OCR.', err);
-        return [fullPass];
+        return { initial: [fullPass], fallback: [] };
     }
 }
 
@@ -205,13 +204,33 @@ export async function ocrPassport(imageSource, onStatus) {
 
         onStatus?.('Reading passport…');
 
-        const ocrTexts = await runPassportOcrPasses(src, onStatus);
+        let ocrTexts = await runPassportOcrPasses(src, onStatus);
+
+        let result = parsePassportOcrTexts(ocrTexts, onStatus);
+        if (needsOcrFallback(result) && !ocrTexts.full) {
+            console.log('[Passport OCR] Running full-page fallback for missing fields.');
+            const fallbackTexts = await runPassportOcrPasses(src, onStatus, { fallbackOnly: true });
+            ocrTexts = { ...ocrTexts, ...fallbackTexts };
+            result = parsePassportOcrTexts(ocrTexts, onStatus);
+        }
 
         // Clean up object URL if we created one
         if (imageSource instanceof Blob) {
             URL.revokeObjectURL(src);
         }
 
+        if (result) return result;
+
+        onStatus?.('Could not parse passport data');
+        return null;
+    } catch (err) {
+        console.error('Passport OCR failed:', err);
+        onStatus?.('OCR failed');
+        return null;
+    }
+}
+
+function parsePassportOcrTexts(ocrTexts, onStatus) {
         const rawText = [
             ocrTexts.name,
             ocrTexts.visual,
@@ -257,7 +276,7 @@ export async function ocrPassport(imageSource, onStatus) {
                 expiry:      mrzExpiry               || fallbackExpiry          || freeExpiry || '',
                 sex:         mrzResult?.sex          || freeResult?.sex         || '',
                 gender:      mrzResult?.gender       || freeResult?.gender      || '',
-                nationality: mrzResult?.nationality  || freeResult?.nationality || '',
+                nationality: normalizeNationality(mrzResult?.nationality || freeResult?.nationality),
                 raw: rawText
             };
             console.log('[Passport OCR] Merged result:', merged);
@@ -265,14 +284,11 @@ export async function ocrPassport(imageSource, onStatus) {
             return merged;
         }
 
+        return null;
+}
 
-        onStatus?.('Could not parse passport data');
-        return null;
-    } catch (err) {
-        console.error('Passport OCR failed:', err);
-        onStatus?.('OCR failed');
-        return null;
-    }
+function needsOcrFallback(result) {
+    return !result || !result.name || !result.passportNo || !result.dob;
 }
 
 /* ------------------------------------------------------------------ */
@@ -328,7 +344,9 @@ function extractNameFromRawMrz(text) {
 const NAME_STOP_WORDS = new Set([
     'PASSPORT', 'REPUBLIC', 'UNION', 'MYANMAR', 'MMR', 'TYPE', 'COUNTRY', 'CODE',
     'PASSPORTNO', 'PASSPORT', 'NO', 'NAME', 'NATIONALITY', 'DATE', 'BIRTH', 'SEX',
-    'PLACE', 'ISSUE', 'EXPIRY', 'AUTHORITY', 'HOLDER', 'SIGNATURE'
+    'PLACE', 'ISSUE', 'EXPIRY', 'AUTHORITY', 'HOLDER', 'SIGNATURE',
+    // Common OCR label noise. These must never be allowed to become names.
+    'DATS', 'BATS', 'LATE', 'BIRTN', 'BITH', 'OF', 'WANF', 'WANE', 'VAME'
 ]);
 
 const SHORT_NAME_WORD_ALLOWLIST = new Set(['U', 'L', 'MA', 'KO', 'SA', 'AI', 'EI', 'OO']);
@@ -406,6 +424,11 @@ function scoreNameCandidate(candidate, reference = '') {
 
 function chooseBestPassportName(freeResult, mrzResult, rawText) {
     const reference = mrzResult?.name || extractNameFromRawMrz(rawText) || '';
+    const printedName = cleanPassportName(freeResult?.name || '');
+    if (isStrongPrintedName(printedName)) {
+        return printedName;
+    }
+
     const candidates = [
         ...(freeResult?.nameCandidates || []),
         freeResult?.name,
@@ -427,6 +450,13 @@ function chooseBestPassportName(freeResult, mrzResult, rawText) {
     return best;
 }
 
+function isStrongPrintedName(name) {
+    const tokens = tokenizeName(name);
+    if (tokens.length < 2) return false;
+    if (tokens.some(token => NAME_STOP_WORDS.has(token))) return false;
+    return true;
+}
+
 function chooseBestPassportNumber(mrzPassportNo = '', freePassportNo = '') {
     const mrzNo = normalizePassportNumber(mrzPassportNo);
     const freeNo = normalizePassportNumber(freePassportNo);
@@ -440,6 +470,13 @@ function chooseBestPassportNumber(mrzPassportNo = '', freePassportNo = '') {
     // agree on the numeric body, trust the printed prefix.
     if (
         /^M[A-Z]\d{6}$/.test(freeNo) &&
+        !/^M[A-Z]\d{6}$/.test(mrzNo)
+    ) {
+        return freeNo;
+    }
+
+    if (
+        /^M[A-Z]\d{6}$/.test(freeNo) &&
         /^M[A-Z]\d{6}$/.test(mrzNo) &&
         freeNo.slice(2) === mrzNo.slice(2)
     ) {
@@ -447,6 +484,13 @@ function chooseBestPassportNumber(mrzPassportNo = '', freePassportNo = '') {
     }
 
     return mrzNo;
+}
+
+function normalizeNationality(value = '') {
+    const raw = String(value || '').trim().toUpperCase();
+    if (!raw || raw === 'MM') return 'MMR';
+    if (raw === 'MYANMAR' || raw === 'MMR') return 'MMR';
+    return raw.length <= 3 ? raw : 'MMR';
 }
 
 /**
@@ -921,7 +965,7 @@ function normaliseDateToMMDDYYYY(dateStr, isBirth = false) {
     const raw = String(dateStr || '').trim();
 
     // DD MMM YYYY / DD MMM YY / compact DDMMMYYYY.
-    const namedMonth = raw.match(/(\d{1,2})\s+([A-Z0-9]{3,9})\.?\s+(\d{2,4})/i)
+    const namedMonth = raw.match(/(\d{1,2})\s+([A-Z0-9]{3,9})\.?\s*(\d{2,4})/i)
         || raw.match(/(\d{1,2})([A-Z0-9]{3})(\d{2,4})/i);
     if (namedMonth) {
         const dd = namedMonth[1].padStart(2, '0');
@@ -962,7 +1006,7 @@ function displayYear(displayDate) {
 function extractDateCandidates(text, isBirth = false) {
     const dates = [];
 
-    const namedRegex = /(\d{1,2})\s+([A-Z0-9]{3,9})\.?\s+(\d{2,4})/gi;
+    const namedRegex = /(\d{1,2})\s+([A-Z0-9]{3,9})\.?\s*(\d{2,4})/gi;
     let m;
     while ((m = namedRegex.exec(text)) !== null) {
         const display = normaliseDateToMMDDYYYY(m[0], isBirth);
@@ -1019,12 +1063,39 @@ function findLabeledDate(text, labelPattern, { isBirth = false, preferLatest = f
 }
 
 function findLooseSexValue(text) {
-    const match = String(text || '').match(/\bSex\b([\s\S]{0,120})/i);
-    if (!match) return null;
+    const source = String(text || '');
+    const sexLabel = /\bSex\b/gi;
+    let match;
 
-    const block = match[1].split(/Date\s+of\s+issue|Date\s+of\s+expiry|Authority/i)[0] || match[1];
-    const value = block.match(/(?:^|[\s:|"'])+([MF])(?:[\s|.,;:"']|[cClL]\b|$)/i);
-    return value ? [value[0], value[1].toUpperCase()] : null;
+    while ((match = sexLabel.exec(source)) !== null) {
+        const afterLabel = source.slice(match.index + match[0].length, match.index + match[0].length + 140);
+        const block = afterLabel.split(/Date\s+of\s+issue|Date\s+of\s+expiry|Authority/i)[0] || afterLabel;
+        const value = block.match(/(?:^|[\s:|"'])+([MF])(?:[\s|.,;:"']|[cClL]\b|$)/i);
+        if (value) return [value[0], value[1].toUpperCase()];
+    }
+
+    return null;
+}
+
+function extractPrintedNameCandidate(text) {
+    const lines = String(text || '').split(/\n/);
+
+    for (let i = 0; i < lines.length; i++) {
+        const label = lines[i].trim();
+        if (!/^(?:Name|Vame|Wane|Wanf)$/i.test(label)) continue;
+
+        for (let j = i + 1; j < Math.min(lines.length, i + 5); j++) {
+            const rawLine = lines[j].trim();
+            if (!rawLine) continue;
+            if (/^(?:Nationality|Date|Sex|Place|Authority|Passport|Type|Country)\b/i.test(rawLine)) break;
+
+            const candidate = rawLine.split(/\s{3,}/)[0];
+            const cleaned = cleanPassportName(candidate);
+            if (isStrongPrintedName(cleaned)) return cleaned;
+        }
+    }
+
+    return '';
 }
 
 /**
@@ -1095,10 +1166,16 @@ function parseFreeText(text) {
         /(?:GIVEN\s*NAME|FIRST\s*NAME|PRENOM)[:\s/]*\n?\s*([A-Z][A-Z\s]{2,30})/im,
     ];
 
+    const printedName = extractPrintedNameCandidate(text);
+    if (printedName) {
+        addNameCandidate(printedName);
+        result.name = printedName;
+    }
+
     // Try strict newline-anchored pattern first
-    const nameMatch = text.match(namePatterns[0]) || text.match(namePatterns[1]);
+    const nameMatch = result.name ? null : (text.match(namePatterns[0]) || text.match(namePatterns[1]));
     if (nameMatch) {
-        const rawName = nameMatch[1].trim().replace(/\s{2,}/g, ' ');
+        const rawName = nameMatch[1].trim().split(/\s{3,}/)[0].replace(/\s{2,}/g, ' ');
         // Filter out things that look like labels, not names
         if (!/PASSPORT|REPUBLIC|MYANMAR|NATIONALITY|DATE|TYPE|CODE|COUNTRY|AUTHORITY/i.test(rawName)) {
             addNameCandidate(rawName);
@@ -1153,7 +1230,7 @@ function parseFreeText(text) {
     result.issue = findLabeledDate(
         text,
         /(?:Date\s*[oO0]f\s*[iI1l][sS5]{1,2}[uU][eE]|ISSUED?|ISSUE\s*DATE)/i,
-        { isBirth: false, preferLatest: true }
+        { isBirth: false, preferLatest: false }
     );
 
     // Expiry — many OCR variations: "Date of expiry", "Date of Expiry", "Expiry", "Exp date",

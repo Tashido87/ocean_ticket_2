@@ -1594,7 +1594,7 @@ function _buildPassengerCardHtml(idx, opts) {
                     </div>
                     <div class="form-group intl-only" style="${intl ? '' : 'display:none;'}">
                         <label>Nationality</label>
-                        <input type="text" class="passenger-nationality" value="MM" maxlength="3" style="text-transform:uppercase;">
+                        <input type="text" class="passenger-nationality" value="MMR" maxlength="3" style="text-transform:uppercase;">
                     </div>
                 </div>
             </div>
@@ -2144,8 +2144,8 @@ function _attachPhotoUpload(formEl) {
 
         // Nationality
         const natInput = formEl.querySelector('.passenger-nationality');
-        if (ocr.nationality && natInput) {
-            natInput.value = ocr.nationality.toUpperCase();
+        if (natInput) {
+            natInput.value = (ocr.nationality || 'MMR').toUpperCase();
         }
 
         // Refresh all UI helpers (including age badge)
@@ -2268,7 +2268,7 @@ function _attachPhotoUpload(formEl) {
             expiryInput.value = '';
             expiryInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
-        if (natInput)    { natInput.value = 'MM'; }
+        if (natInput)    { natInput.value = 'MMR'; }
 
         // Reset gender to default MR
         const defaultGender = formEl.querySelector('.passenger-gender[value="MR"]');

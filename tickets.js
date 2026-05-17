@@ -513,7 +513,7 @@ function collectFormData(form) {
             gender: pForm.querySelector('.passenger-gender:checked')?.value || 'MR',
             name: readPassengerInput(pForm, '.passenger-name').toUpperCase(),
             dob: readPassengerInput(pForm, '.passenger-dob'),
-            nationality: (readPassengerInput(pForm, '.passenger-nationality') || 'MM').toUpperCase(),
+            nationality: (readPassengerInput(pForm, '.passenger-nationality') || 'MMR').toUpperCase(),
             document_type: isInternational ? 'Passport' : 'NRC',
             id_no: nrcNo || passportNo,
             nrc,
