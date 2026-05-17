@@ -1225,6 +1225,66 @@ function ageBucket(age) {
     return 'Adult';
 }
 
+function normalizePassportDateForInput(value, { isBirth = false } = {}) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    const namedMonths = {
+        JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+        JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12'
+    };
+    const named = raw.match(/(\d{1,2})\s+([A-Z]{3})[A-Z]*\.?\s+(\d{2,4})/i);
+    if (named) {
+        const dd = named[1].padStart(2, '0');
+        const mm = namedMonths[named[2].toUpperCase()];
+        let yyyy = named[3];
+        if (yyyy.length === 2) {
+            const yy = parseInt(yyyy, 10);
+            const currentYear = new Date().getFullYear() % 100;
+            yyyy = String(isBirth && yy > currentYear ? 1900 + yy : 2000 + yy);
+        }
+        return mm ? `${mm}/${dd}/${yyyy}` : raw;
+    }
+
+    const iso = raw.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+    if (iso) return `${iso[2].padStart(2, '0')}/${iso[3].padStart(2, '0')}/${iso[1]}`;
+
+    const numeric = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+    if (numeric) {
+        const first = parseInt(numeric[1], 10);
+        const second = parseInt(numeric[2], 10);
+        let yyyy = numeric[3];
+        if (yyyy.length === 2) {
+            const yy = parseInt(yyyy, 10);
+            const currentYear = new Date().getFullYear() % 100;
+            yyyy = String(isBirth && yy > currentYear ? 1900 + yy : 2000 + yy);
+        }
+
+        const mm = first > 12 ? numeric[2] : (second > 12 ? numeric[1] : numeric[1]);
+        const dd = first > 12 ? numeric[1] : (second > 12 ? numeric[2] : numeric[2]);
+        return `${String(mm).padStart(2, '0')}/${String(dd).padStart(2, '0')}/${yyyy}`;
+    }
+
+    return raw;
+}
+
+function setDateInputFromOcr(input, rawValue, { isBirth = false } = {}) {
+    if (!input || !rawValue) return false;
+    const value = normalizePassportDateForInput(rawValue, { isBirth });
+    if (!value) return false;
+
+    try {
+        if (input.datepicker) input.datepicker.setDate(value);
+    } catch (_) {
+        // The direct value assignment below is the reliable fallback.
+    }
+
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+}
+
 function getSelectedOrCustomValue(selectId, customId) {
     const select = document.getElementById(selectId);
     const custom = document.getElementById(customId);
@@ -1935,24 +1995,13 @@ function _attachPhotoUpload(formEl) {
         // Date of birth
         const dobInput = formEl.querySelector('.passenger-dob');
         if (ocr.dob && dobInput) {
-            if (dobInput.datepicker) {
-                dobInput.datepicker.setDate(ocr.dob);
-            } else {
-                dobInput.value = ocr.dob;
-            }
-            dobInput.dispatchEvent(new Event('change', { bubbles: true }));
+            setDateInputFromOcr(dobInput, ocr.dob, { isBirth: true });
         }
 
         // Expiry date
         const expiryInput = formEl.querySelector('.passenger-passport-expiry');
-        if (ocr.expiry && expiryInput) {
-            if (expiryInput.datepicker) {
-                expiryInput.datepicker.setDate(ocr.expiry);
-            } else {
-                expiryInput.value = ocr.expiry;
-            }
-            expiryInput.dispatchEvent(new Event('change', { bubbles: true }));
-        }
+        const ocrExpiry = ocr.expiry || ocr.expiryDate || ocr.expirationDate || ocr.dateOfExpiry || ocr.date_of_expiry;
+        setDateInputFromOcr(expiryInput, ocrExpiry, { isBirth: false });
 
         // Gender
         if (ocr.gender) {

@@ -347,28 +347,138 @@ const MONTH_MAP = {
 };
 
 /**
- * Converts "DD MMM YYYY" or "DD/MM/YYYY" or "MM/DD/YYYY" → "MM/DD/YYYY".
- * @param {string} dateStr
+ * Normalizes OCR-noisy month tokens to a 3-letter key.
+ * @param {string} token
  * @returns {string}
  */
-function normaliseDateToMMDDYYYY(dateStr) {
-    // DD MMM YYYY (e.g. "11 FEB 1997")
-    const namedMonth = dateStr.match(/(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{4})/i);
+function normaliseMonthToken(token = '') {
+    const fixed = String(token)
+        .toUpperCase()
+        .replace(/0/g, 'O')
+        .replace(/1/g, 'I')
+        .replace(/5/g, 'S')
+        .replace(/8/g, 'B')
+        .replace(/[^A-Z]/g, '');
+
+    if (fixed.startsWith('JAN')) return 'JAN';
+    if (fixed.startsWith('FEB') || fixed.startsWith('FEE') || fixed.startsWith('FES')) return 'FEB';
+    if (fixed.startsWith('MAR')) return 'MAR';
+    if (fixed.startsWith('APR')) return 'APR';
+    if (fixed.startsWith('MAY')) return 'MAY';
+    if (fixed.startsWith('JUN')) return 'JUN';
+    if (fixed.startsWith('JUL')) return 'JUL';
+    if (fixed.startsWith('AUG')) return 'AUG';
+    if (fixed.startsWith('SEP') || fixed.startsWith('SEF')) return 'SEP';
+    if (fixed.startsWith('OCT')) return 'OCT';
+    if (fixed.startsWith('NOV') || fixed.startsWith('NOU')) return 'NOV';
+    if (fixed.startsWith('DEC')) return 'DEC';
+    return fixed.substring(0, 3);
+}
+
+function normalizeYear(yearStr, isBirth = false) {
+    const raw = String(yearStr || '').trim();
+    if (raw.length === 4) return raw;
+    if (raw.length !== 2) return '';
+
+    const yy = parseInt(raw, 10);
+    if (Number.isNaN(yy)) return '';
+
+    const currentYear = new Date().getFullYear() % 100;
+    if (isBirth) return String(yy > currentYear ? 1900 + yy : 2000 + yy);
+    return String(2000 + yy);
+}
+
+/**
+ * Converts passport date strings into MM/DD/YYYY.
+ * Supports "DD MMM YYYY", "DD MMM YY", "DD/MM/YYYY", "DD-MM-YY", and "YYYY-MM-DD".
+ * @param {string} dateStr
+ * @param {boolean} [isBirth=false]
+ * @returns {string}
+ */
+function normaliseDateToMMDDYYYY(dateStr, isBirth = false) {
+    const raw = String(dateStr || '').trim();
+
+    // DD MMM YYYY / DD MMM YY (e.g. "11 FEB 1997" or "11 FEB 97")
+    const namedMonth = raw.match(/(\d{1,2})\s+([A-Z0-9]{3,9})\.?\s+(\d{2,4})/i);
     if (namedMonth) {
         const dd = namedMonth[1].padStart(2, '0');
-        const mm = MONTH_MAP[namedMonth[2].toUpperCase()];
-        const yyyy = namedMonth[3];
+        const mm = MONTH_MAP[normaliseMonthToken(namedMonth[2])];
+        const yyyy = normalizeYear(namedMonth[3], isBirth);
+        if (!mm || !yyyy) return '';
         return `${mm}/${dd}/${yyyy}`;
     }
 
-    // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
-    const numeric = dateStr.match(/(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})/);
+    // YYYY/MM/DD or YYYY-MM-DD
+    const isoLike = raw.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+    if (isoLike) {
+        return `${isoLike[2].padStart(2, '0')}/${isoLike[3].padStart(2, '0')}/${isoLike[1]}`;
+    }
+
+    // DD/MM/YYYY, DD-MM-YY, MM/DD/YYYY. In passport context, prefer DD/MM when ambiguous.
+    const numeric = raw.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
     if (numeric) {
-        // Assume DD/MM/YYYY for passport context
-        return `${numeric[2]}/${numeric[1]}/${numeric[3]}`;
+        const first = parseInt(numeric[1], 10);
+        const second = parseInt(numeric[2], 10);
+        const yyyy = normalizeYear(numeric[3], isBirth);
+        if (!yyyy) return '';
+
+        const dd = first > 12 ? numeric[1] : numeric[1];
+        const mm = first > 12 ? numeric[2] : (second > 12 ? numeric[1] : numeric[2]);
+        const day = first > 12 ? dd : (second > 12 ? numeric[2] : dd);
+        return `${String(mm).padStart(2, '0')}/${String(day).padStart(2, '0')}/${yyyy}`;
     }
 
     return '';
+}
+
+function displayYear(displayDate) {
+    const m = String(displayDate || '').match(/\d{1,2}\/\d{1,2}\/(\d{4})/);
+    return m ? parseInt(m[1], 10) : 0;
+}
+
+function extractDateCandidates(text, isBirth = false) {
+    const dates = [];
+
+    const namedRegex = /(\d{1,2})\s+([A-Z0-9]{3,9})\.?\s+(\d{2,4})/gi;
+    let m;
+    while ((m = namedRegex.exec(text)) !== null) {
+        const display = normaliseDateToMMDDYYYY(m[0], isBirth);
+        if (display) {
+            dates.push({
+                display,
+                year: displayYear(display),
+                raw: m[0],
+                index: m.index
+            });
+        }
+    }
+
+    const numericRegex = /(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/g;
+    while ((m = numericRegex.exec(text)) !== null) {
+        const display = normaliseDateToMMDDYYYY(m[0], isBirth);
+        if (display) {
+            dates.push({
+                display,
+                year: displayYear(display),
+                raw: m[0],
+                index: m.index
+            });
+        }
+    }
+
+    return dates;
+}
+
+function findLabeledDate(text, labelPattern, { isBirth = false, preferLatest = false } = {}) {
+    const match = labelPattern.exec(text);
+    if (!match) return '';
+
+    const slice = text.slice(match.index, match.index + 140);
+    const candidates = extractDateCandidates(slice, isBirth);
+    if (!candidates.length) return '';
+
+    candidates.sort((a, b) => a.year - b.year || a.index - b.index);
+    return preferLatest ? candidates[candidates.length - 1].display : candidates[0].display;
 }
 
 /**
@@ -436,51 +546,25 @@ function parseFreeText(text) {
     }
 
     // ---- Dates: smart extraction ----
-    // Step 1: Find ALL dates in the text (DD MMM YYYY or DD/MM/YYYY)
-    const allDates = [];
-    const dateRegex = /(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+(\d{4})/gi;
-    let dateMatch;
-    while ((dateMatch = dateRegex.exec(text)) !== null) {
-        const dd = dateMatch[1].padStart(2, '0');
-        const mmm = dateMatch[2].toUpperCase().substring(0, 3);
-        const yyyy = dateMatch[3];
-        const mm = MONTH_MAP[mmm];
-        if (mm) {
-            allDates.push({
-                display: `${mm}/${dd}/${yyyy}`,
-                year: parseInt(yyyy, 10),
-                raw: dateMatch[0],
-                index: dateMatch.index
-            });
-        }
-    }
-
-    // Also find DD/MM/YYYY or DD-MM-YYYY dates
-    const numericDateRegex = /(\d{2})[\/.\-](\d{2})[\/.\-](\d{4})/g;
-    while ((dateMatch = numericDateRegex.exec(text)) !== null) {
-        // Assume DD/MM/YYYY for passport context
-        allDates.push({
-            display: `${dateMatch[2]}/${dateMatch[1]}/${dateMatch[3]}`,
-            year: parseInt(dateMatch[3], 10),
-            raw: dateMatch[0],
-            index: dateMatch.index
-        });
-    }
+    // Step 1: Find ALL dates in the text with tolerant OCR month/date parsing.
+    const allDates = extractDateCandidates(text);
 
     console.log('[Passport OCR] All dates found:', allDates);
 
     // Step 2: Try label-based matching first (very flexible spacing)
     // DOB
-    const dobLabelMatch = text.match(/(?:Date\s*of\s*birth|DOB|BORN|D\.?O\.?B)[\s\S]{0,30}?(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i);
-    if (dobLabelMatch) {
-        result.dob = normaliseDateToMMDDYYYY(dobLabelMatch[1]);
-    }
+    result.dob = findLabeledDate(
+        text,
+        /(?:Date\s*of\s*birth|DOB|BORN|D\.?O\.?B)/i,
+        { isBirth: true, preferLatest: false }
+    );
 
     // Expiry
-    const expiryLabelMatch = text.match(/(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*(?:UNTIL|THRU)|EXP[\s.]*DATE?)[\s\S]{0,30}?(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i);
-    if (expiryLabelMatch) {
-        result.expiry = normaliseDateToMMDDYYYY(expiryLabelMatch[1]);
-    }
+    result.expiry = findLabeledDate(
+        text,
+        /(?:Date\s*of\s*expir\w*|EXPIR\w*|EXPI[KR]\w*|EXPIRES?|VALID\s*(?:UNTIL|THRU)|EXP[\s.]*DATE?)/i,
+        { isBirth: false, preferLatest: true }
+    );
 
     // Step 3: Smart date assignment if labels didn't work
     if (allDates.length >= 2 && (!result.dob || !result.expiry)) {
