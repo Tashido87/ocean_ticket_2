@@ -435,32 +435,74 @@ function parseFreeText(text) {
         }
     }
 
-    // ---- Date of Birth ----
-    const dobPatterns = [
-        /(?:Date\s*of\s*birth|DOB|BORN|D\.?O\.?B)[:\s]*\n?\s*(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i,
-        /(?:Date\s*of\s*birth|DOB|BORN)[:\s]*\n?\s*(\d{2}[\/.\-]\d{2}[\/.\-]\d{4})/i,
-        /(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i  // Any date as last resort for DOB
-    ];
-
-    for (const pat of dobPatterns) {
-        const m = text.match(pat);
-        if (m) {
-            result.dob = normaliseDateToMMDDYYYY(m[1]);
-            break;
+    // ---- Dates: smart extraction ----
+    // Step 1: Find ALL dates in the text (DD MMM YYYY or DD/MM/YYYY)
+    const allDates = [];
+    const dateRegex = /(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+(\d{4})/gi;
+    let dateMatch;
+    while ((dateMatch = dateRegex.exec(text)) !== null) {
+        const dd = dateMatch[1].padStart(2, '0');
+        const mmm = dateMatch[2].toUpperCase().substring(0, 3);
+        const yyyy = dateMatch[3];
+        const mm = MONTH_MAP[mmm];
+        if (mm) {
+            allDates.push({
+                display: `${mm}/${dd}/${yyyy}`,
+                year: parseInt(yyyy, 10),
+                raw: dateMatch[0],
+                index: dateMatch.index
+            });
         }
     }
 
-    // ---- Expiry Date ----
-    const expiryPatterns = [
-        /(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*UNTIL|EXP\.?\s*DATE)[:\s]*\n?\s*(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i,
-        /(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*UNTIL)[:\s]*\n?\s*(\d{2}[\/.\-]\d{2}[\/.\-]\d{4})/i
-    ];
+    // Also find DD/MM/YYYY or DD-MM-YYYY dates
+    const numericDateRegex = /(\d{2})[\/.\-](\d{2})[\/.\-](\d{4})/g;
+    while ((dateMatch = numericDateRegex.exec(text)) !== null) {
+        // Assume DD/MM/YYYY for passport context
+        allDates.push({
+            display: `${dateMatch[2]}/${dateMatch[1]}/${dateMatch[3]}`,
+            year: parseInt(dateMatch[3], 10),
+            raw: dateMatch[0],
+            index: dateMatch.index
+        });
+    }
 
-    for (const pat of expiryPatterns) {
-        const m = text.match(pat);
-        if (m) {
-            result.expiry = normaliseDateToMMDDYYYY(m[1]);
-            break;
+    console.log('[Passport OCR] All dates found:', allDates);
+
+    // Step 2: Try label-based matching first (very flexible spacing)
+    // DOB
+    const dobLabelMatch = text.match(/(?:Date\s*of\s*birth|DOB|BORN|D\.?O\.?B)[\s\S]{0,30}?(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i);
+    if (dobLabelMatch) {
+        result.dob = normaliseDateToMMDDYYYY(dobLabelMatch[1]);
+    }
+
+    // Expiry
+    const expiryLabelMatch = text.match(/(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*(?:UNTIL|THRU)|EXP[\s.]*DATE?)[\s\S]{0,30}?(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+\d{4})/i);
+    if (expiryLabelMatch) {
+        result.expiry = normaliseDateToMMDDYYYY(expiryLabelMatch[1]);
+    }
+
+    // Step 3: Smart date assignment if labels didn't work
+    if (allDates.length >= 2 && (!result.dob || !result.expiry)) {
+        const now = new Date().getFullYear();
+
+        // Sort by year
+        const sorted = [...allDates].sort((a, b) => a.year - b.year);
+
+        // DOB: the earliest date (usually born before 2015)
+        if (!result.dob) {
+            const dobCandidate = sorted.find(d => d.year < 2015);
+            if (dobCandidate) result.dob = dobCandidate.display;
+        }
+
+        // Expiry: the latest date (usually in the future)
+        if (!result.expiry) {
+            const expiryCandidate = sorted.filter(d => d.year >= now).pop()
+                                 || sorted[sorted.length - 1];
+            // Make sure it's not the same as DOB
+            if (expiryCandidate && expiryCandidate.display !== result.dob) {
+                result.expiry = expiryCandidate.display;
+            }
         }
     }
 

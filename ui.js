@@ -1914,34 +1914,34 @@ function _attachPhotoUpload(formEl) {
 
     /**
      * Applies OCR results to the passenger form fields.
-     * Only fills empty fields — never overwrites user-entered data.
+     * Always overwrites fields with passport data (re-upload = re-fill).
      */
     function applyOcrResults(ocr) {
         if (!ocr) return;
 
         // Passport number
-        if (ocr.passportNo && !passportNoInput.value.trim()) {
+        if (ocr.passportNo) {
             passportNoInput.value = ocr.passportNo;
             passportNoInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         // Full name
         const nameInput = formEl.querySelector('.passenger-name');
-        if (ocr.name && nameInput && !nameInput.value.trim()) {
+        if (ocr.name && nameInput) {
             nameInput.value = ocr.name.toUpperCase();
             nameInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         // Date of birth
         const dobInput = formEl.querySelector('.passenger-dob');
-        if (ocr.dob && dobInput && !dobInput.value.trim()) {
+        if (ocr.dob && dobInput) {
             dobInput.value = ocr.dob;
             dobInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
         // Expiry date
         const expiryInput = formEl.querySelector('.passenger-passport-expiry');
-        if (ocr.expiry && expiryInput && !expiryInput.value.trim()) {
+        if (ocr.expiry && expiryInput) {
             expiryInput.value = ocr.expiry;
             expiryInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
@@ -1949,7 +1949,7 @@ function _attachPhotoUpload(formEl) {
         // Gender
         if (ocr.gender) {
             const genderRadio = formEl.querySelector(`.passenger-gender[value="${ocr.gender}"]`);
-            if (genderRadio && !formEl.querySelector('.passenger-gender:checked')?.value) {
+            if (genderRadio) {
                 genderRadio.checked = true;
                 genderRadio.dispatchEvent(new Event('change', { bubbles: true }));
             }
@@ -1957,11 +1957,12 @@ function _attachPhotoUpload(formEl) {
 
         // Nationality
         const natInput = formEl.querySelector('.passenger-nationality');
-        if (ocr.nationality && natInput && (!natInput.value.trim() || natInput.value.trim() === 'MM')) {
+        if (ocr.nationality && natInput) {
             natInput.value = ocr.nationality.toUpperCase();
         }
 
-        // Refresh UI helpers
+        // Refresh all UI helpers (including age badge)
+        updateAgeBadge(formEl);
         updatePaxAvatar(formEl);
         updatePaxSummary(formEl);
         updatePaxStatus(formEl);
