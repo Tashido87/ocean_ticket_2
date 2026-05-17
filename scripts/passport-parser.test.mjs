@@ -134,4 +134,27 @@ assert.equal(badVisual.passportNo, '');
 assert.equal(badVisual.fullName, '');
 assert.equal(badVisual.nationality, '');
 
+const visualFallback = mergePassportOcr({
+    mrzText: 'NOT A VALID MRZ',
+    visualText: `
+        Passport No MF971828
+        Name YE MIN KHANT
+        Nationality MYANMAR
+        Date of birth
+        17 MAY 2000
+        Sex
+        M
+        Date of expiry
+        30 MAY 2027
+    `,
+    referenceDate: REFERENCE_DATE
+});
+assert.equal(visualFallback.fullName, 'YE MIN KHANT');
+assert.equal(visualFallback.passportNo, 'MF971828');
+assert.equal(visualFallback.dob, '05/17/2000');
+assert.equal(visualFallback.expiry, '05/30/2027');
+assert.equal(visualFallback.sex, 'M');
+assert.equal(visualFallback.title, 'MR');
+assert.equal(visualFallback.source.expiry, 'visual');
+
 console.log('passport-parser tests passed');
