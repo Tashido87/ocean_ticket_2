@@ -1111,3 +1111,522 @@
     .return-flight-header { flex-wrap: wrap; }
     .return-customize-toggle { margin-left: 0; width: 100%; }
 }
+
+/* =====================================================================
+   AESTHETIC POLISH — warm coral accents, compact rhythm, refined chrome
+   Scoped to #sell-view so the rest of the app keeps the navy palette.
+   ===================================================================== */
+#sell-view {
+    --sell-coral: #f97316;
+    --sell-coral-soft: rgba(249, 115, 22, 0.10);
+    --sell-coral-deep: #ea580c;
+    --sell-amber: #f59e0b;
+    --sell-teal: #0891b2;
+    --sell-rose: #fb7185;
+    --sell-surface: #ffffff;
+    --sell-surface-soft: #fbfaf6;
+    --sell-border: rgba(38, 37, 30, 0.08);
+    --sell-border-strong: rgba(38, 37, 30, 0.13);
+    --sell-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 28px rgba(15, 23, 42, 0.06);
+    --sell-shadow-pill: 0 1px 2px rgba(15, 23, 42, 0.04);
+    position: relative;
+}
+
+/* Soft warm gradient backdrop — visible behind translucent sections */
+#sell-view::before {
+    content: '';
+    position: absolute;
+    inset: -2rem -2rem 0 -2rem;
+    background:
+        radial-gradient(ellipse 60% 40% at 8% 0%, rgba(249, 115, 22, 0.08), transparent 60%),
+        radial-gradient(ellipse 50% 35% at 100% 12%, rgba(8, 145, 178, 0.06), transparent 60%),
+        radial-gradient(ellipse 70% 60% at 50% 110%, rgba(251, 113, 133, 0.06), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+#sell-view > .sell-sections {
+    position: relative;
+    z-index: 1;
+}
+
+/* ---------- Sections — tighter, lighter, glassier ---------- */
+#sell-view .sell-section {
+    padding: 1.4rem 1.5rem;
+    border-radius: 14px;
+    border: 1px solid var(--sell-border);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--sell-shadow-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+#sell-view .sell-section:hover {
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 14px 36px rgba(15, 23, 42, 0.08);
+    border-color: var(--sell-border-strong);
+}
+
+#sell-view .sell-section-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--sell-border);
+}
+
+#sell-view .sell-section-header h3 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+#sell-view .sell-section-header .section-subtitle {
+    font-size: 0.76rem;
+}
+
+/* Section icon — soft gradient chip, varies subtly per section */
+#sell-view .sell-section-header .section-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.14), rgba(8, 145, 178, 0.10));
+    color: var(--primary-accent);
+    box-shadow: inset 0 0 0 1px rgba(30, 58, 138, 0.10);
+    font-size: 0.95rem;
+}
+
+#sell-view #section-client .sell-section-header .section-icon {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.16), rgba(31, 138, 101, 0.10));
+    color: var(--sell-teal);
+    box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.14);
+}
+
+#sell-view #section-passengers .sell-section-header .section-icon {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.16), rgba(245, 158, 11, 0.10));
+    color: var(--sell-coral-deep);
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.16);
+}
+
+/* ---------- Compact form rhythm ---------- */
+#sell-view .form-grid {
+    gap: 0.85rem 1rem;
+}
+
+#sell-view .form-group label {
+    margin-bottom: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+}
+
+#sell-view .form-group input,
+#sell-view .form-group select,
+#sell-view .form-group textarea {
+    padding: 0.6rem 0.85rem;
+    font-size: 0.875rem;
+    border-radius: 9px;
+    border: 1px solid var(--sell-border-strong);
+    background: var(--sell-surface);
+    box-shadow: var(--sell-shadow-pill);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+#sell-view .form-group input:hover,
+#sell-view .form-group select:hover {
+    border-color: rgba(38, 37, 30, 0.22);
+}
+
+#sell-view .form-group input:focus,
+#sell-view .form-group select:focus,
+#sell-view .form-group textarea:focus {
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+    transform: none;
+}
+
+/* ---------- Route preview — softer chip ---------- */
+#sell-view .route-preview {
+    padding: 0.35rem 0.75rem;
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.10), rgba(31, 138, 101, 0.10));
+    border: 1px solid rgba(8, 145, 178, 0.20);
+    color: var(--sell-teal);
+    font-size: 0.78rem;
+    box-shadow: var(--sell-shadow-pill);
+}
+
+#sell-view .route-preview .fa-plane { color: var(--sell-teal); }
+
+/* ---------- Domestic / International toggle — coral active state ---------- */
+#sell-view .flight-type-toggle {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--sell-border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    box-shadow: var(--sell-shadow-pill);
+}
+
+#sell-view .flight-type-toggle #domestic-label,
+#sell-view .flight-type-toggle #international-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    transition: color 0.18s ease, background 0.18s ease;
+}
+
+#sell-view .flight-type-toggle #domestic-label.active,
+#sell-view .flight-type-toggle #international-label.active {
+    color: #fff;
+    background: linear-gradient(135deg, var(--sell-coral), var(--sell-coral-deep));
+    box-shadow: 0 1px 2px rgba(249, 115, 22, 0.35);
+}
+
+/* Hide the legacy switch — labels themselves act as the segment now */
+#sell-view .flight-type-toggle .switch {
+    width: 28px;
+    height: 16px;
+}
+#sell-view .flight-type-toggle .switch .slider { background: rgba(38, 37, 30, 0.15); }
+#sell-view .flight-type-toggle input:checked + .slider { background: var(--sell-coral); }
+
+/* ---------- Trip type segment — refined ---------- */
+#sell-view .trip-type-segment {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--sell-border);
+    box-shadow: var(--sell-shadow-pill);
+}
+
+/* ---------- Passenger cards — sub-cards with subtle shadow ---------- */
+#sell-view .passenger-form {
+    background: linear-gradient(180deg, #fbfaf6 0%, #f6f4ef 100%);
+    border: 1px solid var(--sell-border);
+    border-radius: 12px;
+    box-shadow: var(--sell-shadow-pill);
+}
+
+#sell-view .passenger-form:hover {
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+#sell-view .passenger-form.is-complete {
+    border-left: 3px solid var(--success-accent);
+}
+
+#sell-view .passenger-form.is-incomplete {
+    border-left: 3px solid var(--sell-coral);
+}
+
+#sell-view .pax-card-header {
+    padding: 0.85rem 1.15rem;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+#sell-view .pax-card-header .pax-avatar {
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(135deg, var(--sell-teal), var(--primary-accent));
+    box-shadow: 0 2px 8px rgba(8, 145, 178, 0.30);
+    font-size: 0.8rem;
+}
+
+#sell-view .pax-card-header .pax-summary {
+    font-size: 0.9rem;
+}
+
+#sell-view .pax-status {
+    padding: 0.22rem 0.62rem;
+    font-size: 0.7rem;
+    box-shadow: var(--sell-shadow-pill);
+}
+
+#sell-view .pax-status.status-complete {
+    background: linear-gradient(135deg, rgba(31, 138, 101, 0.14), rgba(31, 138, 101, 0.08));
+    color: var(--success-accent);
+    border: 1px solid rgba(31, 138, 101, 0.22);
+}
+
+#sell-view .pax-status.status-incomplete {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.14), rgba(249, 115, 22, 0.08));
+    color: var(--sell-coral-deep);
+    border: 1px solid rgba(249, 115, 22, 0.24);
+}
+
+/* Match chip already exists — give it a gradient */
+#sell-view .match-chip {
+    background: linear-gradient(135deg, rgba(31, 138, 101, 0.14), rgba(31, 138, 101, 0.06));
+    color: var(--success-accent);
+    border: 1px solid rgba(31, 138, 101, 0.22);
+    padding: 0.22rem 0.62rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+/* Card body — turn each panel into its own white sub-card */
+#sell-view .pax-card-body {
+    padding: 1rem 1.15rem 1.25rem;
+    background: transparent;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+}
+
+#sell-view .pax-panel {
+    margin: 0;
+    padding: 1rem 1.1rem;
+    background: var(--sell-surface);
+    border: 1px solid var(--sell-border);
+    border-radius: 11px;
+    box-shadow: var(--sell-shadow-pill);
+}
+
+#sell-view .pax-panel-title {
+    font-size: 0.68rem;
+    margin: 0 0 0.7rem 0;
+    color: var(--primary-accent);
+    letter-spacing: 0.1em;
+}
+
+#sell-view .pax-panel-title::after {
+    background: linear-gradient(90deg, rgba(30, 58, 138, 0.12), transparent);
+}
+
+/* Compact gender + tabs */
+#sell-view .gender-segment label {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.78rem;
+}
+
+#sell-view .doc-tab,
+#sell-view .leg-tab {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.82rem;
+}
+
+/* ---------- Pricing — coral-accented Total like the reference ---------- */
+#sell-view .pricing-grid {
+    gap: 0.7rem;
+}
+
+#sell-view .pricing-totals {
+    margin-top: 0.7rem;
+    padding: 0.7rem 0.95rem;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.10), rgba(251, 113, 133, 0.06));
+    border: 1px solid rgba(249, 115, 22, 0.18);
+    border-radius: 10px;
+    font-size: 0.82rem;
+}
+
+#sell-view .pricing-totals .label {
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+#sell-view .pricing-totals .value {
+    color: var(--sell-coral-deep);
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+}
+
+#sell-view .pricing-totals.is-grand {
+    background: linear-gradient(135deg, var(--sell-coral) 0%, var(--sell-coral-deep) 100%);
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.30);
+    padding: 0.85rem 1rem;
+}
+
+#sell-view .pricing-totals.is-grand .label {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 700;
+}
+
+#sell-view .pricing-totals.is-grand .value {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+/* ---------- Return flight block — softer warm tint ---------- */
+#sell-view .return-flight-block {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.05), rgba(30, 58, 138, 0.04));
+    border: 1px solid rgba(8, 145, 178, 0.16);
+}
+
+#sell-view .return-flight-icon {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.18), rgba(30, 58, 138, 0.10));
+    color: var(--sell-teal);
+}
+
+/* ---------- Sticky summary bar — colored stat icons + gradient submit ---------- */
+.sticky-summary-bar {
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 -10px 28px rgba(15, 23, 42, 0.06);
+    padding: 0.85rem 1.5rem;
+}
+
+.sticky-summary-inner {
+    gap: 1.25rem;
+}
+
+.summary-stat {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 0.7rem;
+    row-gap: 0;
+    align-items: center;
+}
+
+.summary-stat::before {
+    content: '\f0c0';                                                  /* users (default, overridden below) */
+    grid-row: 1 / 3;
+    grid-column: 1;
+    align-self: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 0.95rem;
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.14), rgba(30, 58, 138, 0.08));
+    color: var(--sell-teal);
+    box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.18);
+}
+
+.summary-stat .stat-label { grid-row: 1; grid-column: 2; }
+.summary-stat .stat-value { grid-row: 2; grid-column: 2; }
+
+.summary-stat:nth-child(2)::before {
+    content: '\f155';                                                  /* dollar-sign */
+    background: linear-gradient(135deg, rgba(31, 138, 101, 0.18), rgba(31, 138, 101, 0.08));
+    color: var(--success-accent);
+    box-shadow: inset 0 0 0 1px rgba(31, 138, 101, 0.22);
+}
+.summary-stat:nth-child(3)::before {
+    content: '\f06b';                                                  /* gift / commission */
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.18), rgba(249, 115, 22, 0.08));
+    color: var(--sell-coral-deep);
+    box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.22);
+}
+
+.summary-stat .stat-label {
+    font-size: 0.66rem;
+    letter-spacing: 0.07em;
+}
+
+.summary-stat .stat-value {
+    font-size: 1rem;
+}
+
+/* Submit button — coral gradient */
+#stickySummaryBar .btn-primary,
+#sellForm button[type="submit"].btn-primary {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.32);
+    color: #fff;
+    font-weight: 700;
+}
+
+#stickySummaryBar .btn-primary:hover,
+#sellForm button[type="submit"].btn-primary:hover {
+    background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.42);
+    transform: translateY(-1px);
+}
+
+/* Cancel button — softer ghost */
+#stickySummaryBar #cancelSellBtn {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--sell-border-strong);
+    box-shadow: var(--sell-shadow-pill);
+}
+
+/* Paid toggle — modern switch look */
+.summary-payment-controls .paid-toggle {
+    padding: 0.4rem 0.7rem;
+    background: var(--sell-surface);
+    border: 1px solid var(--sell-border);
+    border-radius: 999px;
+    box-shadow: var(--sell-shadow-pill);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.summary-payment-controls .paid-toggle input[type="checkbox"] {
+    accent-color: var(--sell-coral, #f97316);
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+
+/* "Add Passenger / Existing" buttons — softer */
+#sell-view #addPassengerBtn,
+#sell-view #existingPassengerBtn {
+    border-radius: 999px;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: var(--sell-shadow-pill);
+}
+
+#sell-view #addPassengerBtn {
+    background: linear-gradient(135deg, var(--primary-accent), #1e40af);
+    color: #fff;
+    border-color: transparent;
+}
+
+#sell-view #addPassengerBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(30, 58, 138, 0.30);
+}
+
+/* Passenger count badge — coral, like the reference */
+#sell-view .passenger-count-badge {
+    background: linear-gradient(135deg, var(--sell-coral), var(--sell-coral-deep));
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.30);
+}
+
+/* ---------- Sticky action area — paid date and method size match ---------- */
+.summary-payment-controls .form-group input,
+.summary-payment-controls .form-group select {
+    padding: 0.5rem 0.85rem !important;
+    font-size: 0.85rem !important;
+}
+
+/* ---------- Dark theme adjustments ---------- */
+body.dark-theme #sell-view .sell-section,
+body.material-theme.dark-theme #sell-view .sell-section {
+    background: rgba(28, 28, 26, 0.92);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+body.dark-theme #sell-view .pax-panel,
+body.material-theme.dark-theme #sell-view .pax-panel {
+    background: rgba(35, 34, 32, 0.92);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+body.dark-theme #sell-view .passenger-form,
+body.material-theme.dark-theme #sell-view .passenger-form {
+    background: linear-gradient(180deg, rgba(28, 28, 26, 0.6), rgba(20, 20, 18, 0.6));
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+body.dark-theme #sell-view .pax-card-header,
+body.material-theme.dark-theme #sell-view .pax-card-header {
+    background: rgba(28, 28, 26, 0.55);
+}
+
+/* ---------- Mobile — keep things readable ---------- */
+@media (max-width: 768px) {
+    #sell-view .sell-section { padding: 1.1rem 1rem; }
+    #sell-view .pax-card-body { padding: 0.85rem; }
+    #sell-view .pax-panel { padding: 0.85rem 0.95rem; }
+    .summary-stat::before { width: 30px; height: 30px; font-size: 0.85rem; }
+    .summary-stat .stat-value { font-size: 0.92rem; }
+}
