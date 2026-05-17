@@ -47,6 +47,7 @@ Rules:
 - fullName must be uppercase English letters and spaces only.
 - Do not include MR, MS, MSTR, MISS in fullName.
 - passportNo must be Myanmar passport format: two uppercase letters followed by six digits, e.g. MF971828.
+- The 6 characters after the two letters MUST be digits 0-9 only. Never write O, I, S, B, Z, G as letters in the digits portion. If the printed character looks like O write 0, like I write 1, like S write 5, like B write 8, like Z write 2, like G write 6.
 - dateOfBirth format: MM/DD/YYYY.
 - expiryDate format: MM/DD/YYYY.
 - nationality should be MMR for Myanmar passports.
@@ -181,11 +182,22 @@ function cleanFullName(value) {
 
 function cleanPassportNo(value) {
   const text = String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const match = text.match(/[A-Z]{2}[0-9]{6}/);
 
-  if (!match) return '';
+  // 1) Strict match: 2 letters + 6 digits.
+  const strict = text.match(/[A-Z]{2}[0-9]{6}/);
+  if (strict) return strict[0];
 
-  return match[0];
+  // 2) Repair common OCR letter↔digit confusions in the 6-character suffix.
+  //    Find any 8-character window of [A-Z0-9], then map possible letters to digits.
+  const letterToDigit = { O: '0', I: '1', S: '5', B: '8', Z: '2', G: '6', D: '0', Q: '0' };
+  const candidate = text.match(/[A-Z]{2}[A-Z0-9]{6}/);
+  if (candidate) {
+    const prefix = candidate[0].slice(0, 2);
+    const suffix = candidate[0].slice(2).split('').map((ch) => letterToDigit[ch] || ch).join('');
+    if (/^[0-9]{6}$/.test(suffix)) return prefix + suffix;
+  }
+
+  return '';
 }
 
 function cleanNationality(value) {

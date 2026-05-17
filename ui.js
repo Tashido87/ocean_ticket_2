@@ -2110,7 +2110,7 @@ function _attachPaxBehaviour(formEl, opts = {}) {
  * @param {number} [quality=0.9]
  * @returns {Promise<string>} data:image/jpeg;base64,...
  */
-async function resizeImageToBase64(file, maxWidth = 1600, quality = 0.9) {
+async function resizeImageToBase64(file, maxWidth = 1280, quality = 0.85) {
     const imageBitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxWidth / imageBitmap.width);
 
@@ -2121,7 +2121,9 @@ async function resizeImageToBase64(file, maxWidth = 1600, quality = 0.9) {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
 
-    return canvas.toDataURL('image/jpeg', quality);
+    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+    console.log(`[resize] ${imageBitmap.width}x${imageBitmap.height} -> ${canvas.width}x${canvas.height} | base64 size: ${(dataUrl.length / 1024).toFixed(0)} KB`);
+    return dataUrl;
 }
 
 /**
