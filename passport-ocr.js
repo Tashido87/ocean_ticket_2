@@ -100,19 +100,20 @@ export async function ocrPassport(imageSource, onStatus) {
                 const mrzLetters  = (bestName || '').replace(/\s+/g, '').toUpperCase();
                 const freeLetters = freeName.replace(/\s+/g, '').toUpperCase();
                 const hasMrzSpaces = bestName.includes(' ');
-                // Use free-text name if:
-                //   a) MRZ name is empty or fused (no spaces), AND
-                //   b) free-text letters contain/match MRZ letters (same person)
                 const freeIsBetter = (!hasMrzSpaces || !bestName) &&
                     freeName.length >= 3 &&
                     (mrzLetters === '' || freeLetters.includes(mrzLetters) || mrzLetters.includes(freeLetters));
-                if (freeIsBetter) {
-                    bestName = freeName;
-                }
+                if (freeIsBetter) bestName = freeName;
+            }
+
+            // Last-resort: try to pull name directly from raw MRZ line 1 text
+            // (handles case where parseMRZ failed or gave empty name)
+            if (!bestName) {
+                bestName = extractNameFromRawMrz(rawText);
             }
 
             const merged = {
-                name:        bestName                                         || freeName || '',
+                name:        bestName || freeName || '',
                 surname:     mrzResult?.surname      || freeResult?.surname     || '',
                 givenNames:  mrzResult?.givenNames   || freeResult?.givenNames  || '',
                 passportNo:  mrzResult?.passportNo   || freeResult?.passportNo  || '',
@@ -142,6 +143,46 @@ export async function ocrPassport(imageSource, onStatus) {
 /* ------------------------------------------------------------------ */
 
 /**
+ * Last-resort name extraction: scan raw OCR text for a passport MRZ line 1
+ * (starts with PV or P< + 3-letter country code) and extract the name portion.
+ * Handles OCR reading '<' as spaces (common with Tesseract on MRZ fonts).
+ *
+ * @param {string} text - Raw OCR text
+ * @returns {string} Extracted name or ''
+ */
+function extractNameFromRawMrz(text) {
+    const lines = text.split(/\n/);
+    for (const raw of lines) {
+        // Try with original spacing (< read as spaces by OCR)
+        const upper = raw.toUpperCase().trim();
+        // Match a line that starts like a passport MRZ line 1:
+        // "PV MMR NAME..." or "PVMMRNAME<<<<" or "P<MMR NAME..."
+        const m = upper.match(/^P[V<\s][<\s]?([A-Z]{3})[<\s]([A-Z][A-Z<\s]{5,50?)(?:[<\s]{3,}|$)/);
+        if (m) {
+            // m[2] is the raw name section — split on < or runs of spaces
+            const namePart = m[2].replace(/<+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+            // Remove trailing filler
+            const clean = namePart.replace(/[\s<]+$/, '').trim();
+            if (clean.length >= 3) {
+                console.log('[Passport OCR] Raw MRZ name recovery:', clean);
+                return clean;
+            }
+        }
+        // Fallback: look for the pattern without strict structure
+        // "PVMMR" or "P<MMR" followed by uppercase letters/spaces
+        const m2 = upper.match(/P[V<][A-Z]{3}([A-Z][A-Z <]{5,45}?)(?:\s{3,}|<{3,}|$)/);
+        if (m2) {
+            const namePart = m2[1].replace(/<+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+            if (namePart.length >= 3 && !/^\d/.test(namePart)) {
+                console.log('[Passport OCR] Raw MRZ name recovery (fallback):', namePart);
+                return namePart;
+            }
+        }
+    }
+    return '';
+}
+
+/**
  * Attempts to find and parse two MRZ lines from raw OCR text.
  * MRZ uses only A-Z, 0-9, and < characters.
  * Handles standard (P<) and Myanmar (PV) type codes.
@@ -150,6 +191,7 @@ export async function ocrPassport(imageSource, onStatus) {
  * @returns {object|null}
  */
 function parseMRZ(text) {
+
     // Normalise common OCR misreads in MRZ
     const cleaned = text
         .replace(/«/g, '<')
@@ -179,8 +221,10 @@ function parseMRZ(text) {
 
     for (let i = 0; i < mrzCandidates.length; i++) {
         const l = mrzCandidates[i];
-        // Line 1: starts with P, contains <, and has enough < padding at the end
-        if (!line1 && l.charAt(0) === 'P' && l.includes('<') && countChar(l, '<') >= 5) {
+        // Line 1: starts with P, followed by type char and country code
+        // Accept even with fewer < chars in case OCR read < as spaces in name section
+        if (!line1 && l.charAt(0) === 'P' &&
+            (l.includes('<') && countChar(l, '<') >= 3 || countChar(l, '<') >= 10)) {
             line1 = padOrTrim(l, 44);
             line1Idx = i;
             // Line 2 is usually the next candidate
