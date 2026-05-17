@@ -8,6 +8,9 @@
  *   - Expiry date
  *   - Gender
  *   - Nationality
+ *
+ * Handles Myanmar passports (PV type code, MG/MA/MC prefix numbers)
+ * and common OCR misreads in the MRZ font (OCR-B).
  */
 
 /* ------------------------------------------------------------------ */
@@ -63,19 +66,22 @@ export async function ocrPassport(imageSource, onStatus) {
         }
 
         const rawText = data.text || '';
+        console.log('[Passport OCR] Raw text:\n', rawText);
         onStatus?.('Parsing results…');
 
         // Try MRZ first (most reliable)
         const mrzResult = parseMRZ(rawText);
         if (mrzResult) {
+            console.log('[Passport OCR] MRZ result:', mrzResult);
             onStatus?.('Passport data extracted ✓');
             return { ...mrzResult, raw: rawText };
         }
 
-        // Fallback: try to find data in raw text
+        // Fallback: try to find data in raw text (visible fields on passport)
         const fallbackResult = parseFreeText(rawText);
         if (fallbackResult && (fallbackResult.passportNo || fallbackResult.name)) {
-            onStatus?.('Partial data extracted');
+            console.log('[Passport OCR] Free-text result:', fallbackResult);
+            onStatus?.('Passport data extracted ✓');
             return { ...fallbackResult, raw: rawText };
         }
 
@@ -95,6 +101,7 @@ export async function ocrPassport(imageSource, onStatus) {
 /**
  * Attempts to find and parse two MRZ lines from raw OCR text.
  * MRZ uses only A-Z, 0-9, and < characters.
+ * Handles standard (P<) and Myanmar (PV) type codes.
  *
  * @param {string} text - Raw OCR output.
  * @returns {object|null}
@@ -102,30 +109,45 @@ export async function ocrPassport(imageSource, onStatus) {
 function parseMRZ(text) {
     // Normalise common OCR misreads in MRZ
     const cleaned = text
-        .replace(/«/g, '<')   // OCR sometimes reads « instead of <<
+        .replace(/«/g, '<')
         .replace(/\u00AB/g, '<')
-        .replace(/\u00BB/g, '<');
+        .replace(/\u00BB/g, '<')
+        .replace(/\u2039/g, '<')
+        .replace(/\u203A/g, '<');
 
     // Split into lines, clean each, and find candidate MRZ lines
-    const lines = cleaned.split(/\n/).map(l => l.replace(/\s/g, '').toUpperCase());
+    const rawLines = cleaned.split(/\n/);
+    const lines = rawLines.map(l => {
+        // Remove spaces, uppercase, fix common OCR substitutions for MRZ
+        let s = l.replace(/\s/g, '').toUpperCase();
+        return sanitiseMrzLine(s);
+    });
 
     // MRZ characters: A-Z, 0-9, <
     // Allow some tolerance in length (OCR may miss/add a char)
-    const mrzCandidates = lines
-        .map(l => sanitiseMrzLine(l))
-        .filter(l => l.length >= 40 && l.length <= 48);
+    const mrzCandidates = lines.filter(l => l.length >= 38 && l.length <= 50);
 
-    // Find the two MRZ lines (Line 1 starts with P, Line 2 starts with digit or letter)
+    // Find the two MRZ lines
+    // Line 1 starts with P followed by type char (< or V or other) then country code
+    // Line 2 starts with passport number (letter + digits)
     let line1 = null;
     let line2 = null;
+    let line1Idx = -1;
 
     for (let i = 0; i < mrzCandidates.length; i++) {
         const l = mrzCandidates[i];
-        if (!line1 && l.startsWith('P') && l.includes('<')) {
+        // Line 1: starts with P, contains <, and has enough < padding at the end
+        if (!line1 && l.charAt(0) === 'P' && l.includes('<') && countChar(l, '<') >= 5) {
             line1 = padOrTrim(l, 44);
+            line1Idx = i;
             // Line 2 is usually the next candidate
-            if (i + 1 < mrzCandidates.length) {
-                line2 = padOrTrim(mrzCandidates[i + 1], 44);
+            for (let j = i + 1; j < mrzCandidates.length; j++) {
+                const l2 = mrzCandidates[j];
+                // Line 2 should start with a letter (passport number) and contain digits
+                if (/[A-Z]/.test(l2.charAt(0)) && /\d{4,}/.test(l2) && l2.includes('<')) {
+                    line2 = padOrTrim(l2, 44);
+                    break;
+                }
             }
             break;
         }
@@ -133,21 +155,48 @@ function parseMRZ(text) {
 
     if (!line1 || !line2) return null;
 
+    // --- Determine format ---
+    // Standard: P<ISOSURNAME<<GIVEN<<<
+    // Myanmar:  PVMMRSUTT<NAW<AUNG<<<
+    const typeChar = line1.charAt(1); // '<' for standard, 'V' for Myanmar PV type, etc.
+    const countryStart = 2;
+    const countryCode = line1.substring(countryStart, countryStart + 3).replace(/</g, '');
+    const nameStart = countryStart + 3; // position 5
+
     // --- Parse Line 1: Name ---
-    // Format: P<ISO<<SURNAME<<GIVEN<NAMES<<<...
-    const namePart = line1.substring(5); // Skip "P<ISO"
-    const nameParts = namePart.split('<<').filter(Boolean);
-    const surname = (nameParts[0] || '').replace(/</g, ' ').trim();
-    const givenNames = (nameParts.slice(1).join(' ') || '').replace(/</g, ' ').trim();
-    const nationality3 = line1.substring(2, 5).replace(/</g, '');
+    const namePart = line1.substring(nameStart);
+
+    // Names: surname and given names separated by <<
+    // Single < separates words within surname or given names
+    const doubleChevronIdx = namePart.indexOf('<<');
+    let surname, givenNames;
+
+    if (doubleChevronIdx > 0) {
+        // Standard format: SURNAME<<GIVEN<NAMES<<<
+        surname = namePart.substring(0, doubleChevronIdx).replace(/</g, ' ').trim();
+        const givenPart = namePart.substring(doubleChevronIdx + 2);
+        givenNames = givenPart.replace(/<<+/g, ' ').replace(/</g, ' ').trim();
+    } else {
+        // Myanmar format: all name parts separated by single <, trailing <<<
+        // e.g., SUTT<NAW<AUNG<<<<<<<<<
+        const trimmed = namePart.replace(/(<){2,}$/g, ''); // Remove trailing <<<
+        const parts = trimmed.split('<').filter(Boolean);
+        if (parts.length >= 2) {
+            surname = parts[0];
+            givenNames = parts.slice(1).join(' ');
+        } else {
+            surname = trimmed.replace(/</g, ' ').trim();
+            givenNames = '';
+        }
+    }
 
     // --- Parse Line 2: Numbers & Dates ---
-    // 0-8:   Passport number (9 chars)
+    // 0-8:   Passport number (9 chars, padded with <)
     // 9:     Check digit
-    // 10-12: Nationality
+    // 10-12: Nationality (3 chars)
     // 13-18: DOB (YYMMDD)
     // 19:    Check digit
-    // 20:    Gender
+    // 20:    Gender (M/F/<)
     // 21-26: Expiry (YYMMDD)
     // 27:    Check digit
     const passportNo = line2.substring(0, 9).replace(/</g, '').trim();
@@ -156,19 +205,31 @@ function parseMRZ(text) {
     const genderChar = line2.charAt(20);
     const expiryRaw = line2.substring(21, 27);
 
+    // Validate: passport number should have at least 5 alphanumeric chars
+    if (passportNo.length < 5) return null;
+    // DOB should be 6 digits
+    if (!/^\d{6}$/.test(dobRaw)) return null;
+
     // Convert YYMMDD → MM/DD/YYYY
     const dob = mrzDateToDisplay(dobRaw, true);
     const expiry = mrzDateToDisplay(expiryRaw, false);
 
     // Map gender
-    const gender = genderChar === 'F' ? 'MS' : 'MR';
+    let gender = '';
+    if (genderChar === 'F') gender = 'MS';
+    else if (genderChar === 'M') gender = 'MR';
 
-    const nationality = nationality2 || nationality3;
+    const nationality = nationality2 || countryCode;
+
+    const fullName = [surname, givenNames].filter(Boolean).join(' ');
+
+    // Only return if we got at least a name or passport number
+    if (!fullName && !passportNo) return null;
 
     return {
-        name: [surname, givenNames].filter(Boolean).join(' '),
-        surname,
-        givenNames,
+        name: fullName,
+        surname: surname || '',
+        givenNames: givenNames || '',
         passportNo,
         dob,
         expiry,
@@ -178,11 +239,30 @@ function parseMRZ(text) {
 }
 
 /**
+ * Count occurrences of a character in a string.
+ */
+function countChar(str, ch) {
+    let count = 0;
+    for (let i = 0; i < str.length; i++) {
+        if (str[i] === ch) count++;
+    }
+    return count;
+}
+
+/**
  * Sanitise a line to contain only valid MRZ characters.
- * Fixes common OCR substitutions: 0↔O, 1↔I, 8↔B, etc.
+ * Also fixes common OCR substitutions in OCR-B font.
  */
 function sanitiseMrzLine(line) {
-    return line.replace(/[^A-Z0-9<]/g, '');
+    // Common OCR misreads in MRZ:
+    let fixed = line
+        .replace(/\|/g, '<')   // pipe → chevron
+        .replace(/\\/g, '<')   // backslash → chevron
+        .replace(/\{/g, '<')   // brace → chevron
+        .replace(/\[/g, '<')   // bracket → chevron
+        .replace(/~/g, '<');   // tilde → chevron
+
+    return fixed.replace(/[^A-Z0-9<]/g, '');
 }
 
 /**
@@ -216,7 +296,7 @@ function mrzDateToDisplay(yymmdd, isBirth) {
         // Birth dates: if yy > current year, assume 1900s
         yyyy = yy > currentYear ? 1900 + yy : 2000 + yy;
     } else {
-        // Expiry dates: if yy < current year - 10, assume 2000s
+        // Expiry dates: always 2000s for passports
         yyyy = 2000 + yy;
     }
 
@@ -225,11 +305,42 @@ function mrzDateToDisplay(yymmdd, isBirth) {
 
 /* ------------------------------------------------------------------ */
 /*  FALLBACK: FREE-TEXT PARSING                                        */
+/*  Reads the visible printed fields on the passport page              */
 /* ------------------------------------------------------------------ */
+
+const MONTH_MAP = {
+    JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+    JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12'
+};
+
+/**
+ * Converts "DD MMM YYYY" or "DD/MM/YYYY" or "MM/DD/YYYY" → "MM/DD/YYYY".
+ * @param {string} dateStr
+ * @returns {string}
+ */
+function normaliseDateToMMDDYYYY(dateStr) {
+    // DD MMM YYYY (e.g. "11 FEB 1997")
+    const namedMonth = dateStr.match(/(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{4})/i);
+    if (namedMonth) {
+        const dd = namedMonth[1].padStart(2, '0');
+        const mm = MONTH_MAP[namedMonth[2].toUpperCase()];
+        const yyyy = namedMonth[3];
+        return `${mm}/${dd}/${yyyy}`;
+    }
+
+    // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+    const numeric = dateStr.match(/(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})/);
+    if (numeric) {
+        // Assume DD/MM/YYYY for passport context
+        return `${numeric[2]}/${numeric[1]}/${numeric[3]}`;
+    }
+
+    return '';
+}
 
 /**
  * Attempts to extract passport fields from unstructured OCR text.
- * Less reliable than MRZ but catches cases where MRZ is obscured.
+ * Reads the visible printed fields on the passport bio page.
  */
 function parseFreeText(text) {
     const upper = text.toUpperCase();
@@ -244,49 +355,96 @@ function parseFreeText(text) {
         nationality: ''
     };
 
-    // Passport number: typically starts with a letter followed by 6-8 digits
-    const ppMatch = upper.match(/\b([A-Z]\d{6,8})\b/);
-    if (ppMatch) {
-        result.passportNo = ppMatch[1];
-    }
-
-    // Dates: look for DD/MM/YYYY, MM/DD/YYYY, DD-MM-YYYY, DD MMM YYYY patterns
-    const datePatterns = [
-        /(\d{2})[\/\-.](\d{2})[\/\-.](\d{4})/g,
-        /(\d{2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{4})/gi
+    // ---- Passport number ----
+    // Myanmar: MA, MB, MC, MD, ME, MF, MG + 6 digits
+    // General: 1-2 letters + 6-8 digits
+    const ppPatterns = [
+        /\b(M[A-Z]\d{6})\b/,                           // Myanmar passport (MG336792)
+        /(?:PASSPORT\s*(?:NO|NUMBER|#)[.:\s]*)([A-Z]{1,2}\d{6,8})\b/i,  // Near "Passport No" label
+        /\b([A-Z]{1,2}\d{6,8})\b/                       // General passport pattern
     ];
 
-    const dates = [];
-    for (const pat of datePatterns) {
-        let m;
-        while ((m = pat.exec(upper)) !== null) {
-            dates.push(m[0]);
+    for (const pat of ppPatterns) {
+        const m = upper.match(pat);
+        if (m) {
+            result.passportNo = m[1];
+            break;
         }
     }
 
-    // Try to find name fields near keywords
+    // ---- Name ----
+    // Look for "Name" label followed by the name value
     const namePatterns = [
-        /(?:SURNAME|FAMILY\s*NAME|NOM)[:\s/]*([A-Z][A-Z\s]{2,25})/i,
-        /(?:GIVEN\s*NAME|FIRST\s*NAME|PRENOM)[:\s/]*([A-Z][A-Z\s]{2,30})/i
+        /(?:^|\n)\s*Name\s*\n\s*([A-Z][A-Z\s]{3,40})/im,
+        /(?:SURNAME|FAMILY\s*NAME|NOM)[:\s/]*\n?\s*([A-Z][A-Z\s]{2,25})/im,
+        /(?:GIVEN\s*NAME|FIRST\s*NAME|PRENOM)[:\s/]*\n?\s*([A-Z][A-Z\s]{2,30})/im,
+        /Name\s+([A-Z][A-Z\s]{3,40})/im
     ];
 
-    const surnameMatch = upper.match(namePatterns[0]);
-    const givenMatch = upper.match(namePatterns[1]);
-
-    if (surnameMatch) result.surname = surnameMatch[1].trim();
-    if (givenMatch) result.givenNames = givenMatch[1].trim();
-
-    if (result.surname || result.givenNames) {
-        result.name = [result.surname, result.givenNames].filter(Boolean).join(' ');
+    // Try the generic "Name" label first (common on Myanmar passports)
+    const nameMatch = text.match(namePatterns[0]) || text.match(namePatterns[3]);
+    if (nameMatch) {
+        const rawName = nameMatch[1].trim().replace(/\s{2,}/g, ' ');
+        // Filter out things that look like labels, not names
+        if (!/PASSPORT|REPUBLIC|MYANMAR|NATIONALITY|DATE|TYPE|CODE|COUNTRY/i.test(rawName)) {
+            result.name = rawName.toUpperCase();
+        }
     }
 
-    // Gender
-    if (/\bFEMALE\b|\bF\b/.test(upper)) result.gender = 'MS';
-    else if (/\bMALE\b|\bM\b/.test(upper)) result.gender = 'MR';
+    // Try surname + given name separately if full name wasn't found
+    if (!result.name) {
+        const surnameMatch = text.match(namePatterns[1]);
+        const givenMatch = text.match(namePatterns[2]);
+        if (surnameMatch) result.surname = surnameMatch[1].trim().toUpperCase();
+        if (givenMatch) result.givenNames = givenMatch[1].trim().toUpperCase();
+        if (result.surname || result.givenNames) {
+            result.name = [result.surname, result.givenNames].filter(Boolean).join(' ');
+        }
+    }
 
-    // Nationality
-    const natMatch = upper.match(/(?:NATIONALITY|NAT)[:\s/]*([A-Z]{2,3})/);
-    if (natMatch) result.nationality = natMatch[1];
+    // ---- Date of Birth ----
+    // Look for "Date of birth" followed by a date
+    const dobPatterns = [
+        /(?:Date\s*of\s*birth|DOB|BORN)\s*\n?\s*(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{4})/i,
+        /(?:Date\s*of\s*birth|DOB|BORN)\s*\n?\s*(\d{2}[\/\-.]\d{2}[\/\-.]\d{4})/i
+    ];
+
+    for (const pat of dobPatterns) {
+        const m = text.match(pat);
+        if (m) {
+            result.dob = normaliseDateToMMDDYYYY(m[1]);
+            break;
+        }
+    }
+
+    // ---- Expiry Date ----
+    const expiryPatterns = [
+        /(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*UNTIL)\s*\n?\s*(\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{4})/i,
+        /(?:Date\s*of\s*expiry|EXPIRY|EXPIRES?|VALID\s*UNTIL)\s*\n?\s*(\d{2}[\/\-.]\d{2}[\/\-.]\d{4})/i
+    ];
+
+    for (const pat of expiryPatterns) {
+        const m = text.match(pat);
+        if (m) {
+            result.expiry = normaliseDateToMMDDYYYY(m[1]);
+            break;
+        }
+    }
+
+    // ---- Gender ----
+    const sexMatch = text.match(/(?:Sex|Gender)\s*\n?\s*([MF])\b/i);
+    if (sexMatch) {
+        result.gender = sexMatch[1].toUpperCase() === 'F' ? 'MS' : 'MR';
+    }
+
+    // ---- Nationality ----
+    const natMatch = text.match(/(?:Nationality)\s*\n?\s*([A-Z]{3,15})/i);
+    if (natMatch) {
+        const nat = natMatch[1].toUpperCase();
+        // Map full country name → ISO code
+        if (nat === 'MYANMAR') result.nationality = 'MMR';
+        else if (nat.length <= 3) result.nationality = nat;
+    }
 
     return result;
 }
