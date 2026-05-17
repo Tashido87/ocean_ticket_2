@@ -479,16 +479,32 @@ function parseMRZ(text) {
     let passportNo = '', nationality = '', dob = '', expiry = '', sex = '', gender = '';
     let surname = '', givenNames = '', fullName = '';
 
-    // --- Parse Line 2 (numbers & dates — fixed positions) ---
+    // --- Parse Line 2 (numbers & dates — resilient to OCR shifts) ---
     if (line2) {
-        // Positions: 0-8 passport#, 9 check, 10-12 nationality, 13-18 DOB, 19 check, 20 sex, 21-26 expiry
-        passportNo = normalizePassportNumber(line2.substring(0, 9));
-        nationality = normalizeNationality(line2.substring(10, 13));
-        dob = mrzDateToDisplay(fixOcrDigits(line2.substring(13, 19)), true);
-        const genderChar = line2.charAt(20);
-        sex = (genderChar === 'F' || genderChar === 'M') ? genderChar : '';
-        gender = sex === 'F' ? 'MS' : (sex === 'M' ? 'MR' : '');
-        expiry = mrzDateToDisplay(fixOcrDigits(line2.substring(21, 27)), false);
+        // Tesseract sometimes inserts or misses a character (e.g. MH64L9431 instead of MH649431)
+        // This shifts the fixed positions. Using a regex makes it resilient.
+        // Pattern: [PassportNo (6-12)] + [Check (1)] + [Nationality (3)] + [DOB (6)] + [Check (1)] + [Sex (1)] + [Expiry (6)]
+        const line2Pattern = /^([A-Z0-9<]{6,12})[\d<]([A-Z<]{3})([\dOIZSBGT]{6})[\d<]([MFX<])([\dOIZSBGT]{6})/;
+        const match = line2.match(line2Pattern);
+
+        if (match) {
+            passportNo = normalizePassportNumber(match[1]);
+            nationality = normalizeNationality(match[2]);
+            dob = mrzDateToDisplay(fixOcrDigits(match[3]), true);
+            const genderChar = match[4];
+            sex = (genderChar === 'F' || genderChar === 'M') ? genderChar : '';
+            gender = sex === 'F' ? 'MS' : (sex === 'M' ? 'MR' : '');
+            expiry = mrzDateToDisplay(fixOcrDigits(match[5]), false);
+        } else {
+            // Fallback to strict positions if regex fails for some reason
+            passportNo = normalizePassportNumber(line2.substring(0, 9));
+            nationality = normalizeNationality(line2.substring(10, 13));
+            dob = mrzDateToDisplay(fixOcrDigits(line2.substring(13, 19)), true);
+            const genderChar = line2.charAt(20);
+            sex = (genderChar === 'F' || genderChar === 'M') ? genderChar : '';
+            gender = sex === 'F' ? 'MS' : (sex === 'M' ? 'MR' : '');
+            expiry = mrzDateToDisplay(fixOcrDigits(line2.substring(21, 27)), false);
+        }
     }
 
     // --- Parse Line 1 (name) ---
