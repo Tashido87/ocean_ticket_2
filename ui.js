@@ -1935,14 +1935,22 @@ function _attachPhotoUpload(formEl) {
         // Date of birth
         const dobInput = formEl.querySelector('.passenger-dob');
         if (ocr.dob && dobInput) {
-            dobInput.value = ocr.dob;
+            if (dobInput.datepicker) {
+                dobInput.datepicker.setDate(ocr.dob);
+            } else {
+                dobInput.value = ocr.dob;
+            }
             dobInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
         // Expiry date
         const expiryInput = formEl.querySelector('.passenger-passport-expiry');
         if (ocr.expiry && expiryInput) {
-            expiryInput.value = ocr.expiry;
+            if (expiryInput.datepicker) {
+                expiryInput.datepicker.setDate(ocr.expiry);
+            } else {
+                expiryInput.value = ocr.expiry;
+            }
             expiryInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
