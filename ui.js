@@ -1282,32 +1282,16 @@ function setDateInputFromOcr(input, rawValue, { isBirth = false } = {}) {
     const value = normalizePassportDateForInput(rawValue, { isBirth });
     if (!value) return false;
 
-    // Set the raw text value FIRST — this is the ground truth.
-    // The Datepicker may internally clamp or misparse years (e.g. 1997 → 2017),
-    // so we do NOT rely on setDate() for correctness. We set value directly and
-    // call setDate() only so the picker's UI syncs its internal highlight/calendar,
-    // then immediately restore the correct value if it was overwritten.
+    // Do NOT use datepicker.setDate() — it fires its own internal change event
+    // that re-parses and clamps the year (e.g. 1997 becomes 2017).
+    // Directly writing input.value is always correct and the datepicker text
+    // box displays whatever is in input.value.
     input.value = value;
-
-    try {
-        if (input.datepicker) {
-            // Parse the date ourselves to avoid datepicker year-range clamping
-            const parts = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-            if (parts) {
-                const d = new Date(parseInt(parts[3]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                input.datepicker.setDate(d);
-            }
-            // Restore correct value in case datepicker clamped it
-            if (input.value !== value) input.value = value;
-        }
-    } catch (_) {
-        // Silent fail — input.value is already set correctly above
-    }
-
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
 }
+
 
 
 function getSelectedOrCustomValue(selectId, customId) {
@@ -2076,9 +2060,12 @@ function _attachPaxBehaviour(formEl, opts = {}) {
     const suggestBox = formEl.querySelector('.passenger-name + .autosuggest-box');
     if (suggestBox) {
         setupPassengerAutoSuggest(nameInput, suggestBox, (client) => {
+            // Do not overwrite OCR data with client record while passport is being processed
+            if (formEl._ocrFilling) return;
             populatePassengerCardFromClient(formEl, client);
             suggestBox.style.display = 'none';
         });
+
     }
 
     // Initial state
@@ -2117,6 +2104,10 @@ function _attachPhotoUpload(formEl) {
             passportNoInput.value = ocr.passportNo;
             passportNoInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
+
+        // Suppress autosuggest during OCR fill so a client record match
+        // cannot overwrite the passport-accurate DOB/expiry with stale saved data.
+        formEl._ocrFilling = true;
 
         // Full name
         const nameInput = formEl.querySelector('.passenger-name');
@@ -2175,6 +2166,9 @@ function _attachPhotoUpload(formEl) {
         updatePaxAvatar(formEl);
         updatePaxSummary(formEl);
         updatePaxStatus(formEl);
+
+        // Re-enable autosuggest now that OCR fill is complete
+        formEl._ocrFilling = false;
     }
 
     const handleFile = async (file) => {
