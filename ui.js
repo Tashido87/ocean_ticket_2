@@ -2202,8 +2202,40 @@ function _attachPhotoUpload(formEl) {
         if (path) {
             try { await deletePassportPhoto(path); } catch (_) {}
         }
-        showToast('Photo removed.', 'info');
+
+        // Clear all OCR-filled fields when passport is removed
+        const nameInput   = formEl.querySelector('.passenger-name');
+        const dobInput    = formEl.querySelector('.passenger-dob');
+        const expiryInput = formEl.querySelector('.passenger-passport-expiry');
+        const natInput    = formEl.querySelector('.passenger-nationality');
+
+        if (nameInput)   { nameInput.value = '';   nameInput.dispatchEvent(new Event('input', { bubbles: true })); }
+        if (passportNoInput) { passportNoInput.value = ''; passportNoInput.dispatchEvent(new Event('input', { bubbles: true })); }
+        if (dobInput) {
+            if (dobInput.datepicker) dobInput.datepicker.setDate({ clear: true });
+            dobInput.value = '';
+            dobInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (expiryInput) {
+            if (expiryInput.datepicker) expiryInput.datepicker.setDate({ clear: true });
+            expiryInput.value = '';
+            expiryInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (natInput)    { natInput.value = 'MM'; }
+
+        // Reset gender to default MR
+        const defaultGender = formEl.querySelector('.passenger-gender[value="MR"]');
+        if (defaultGender) { defaultGender.checked = true; defaultGender.dispatchEvent(new Event('change', { bubbles: true })); }
+
+        // Refresh UI
+        updateAgeBadge(formEl);
+        updatePaxAvatar(formEl);
+        updatePaxSummary(formEl);
+        updatePaxStatus(formEl);
+
+        showToast('Passport photo removed. Fields cleared.', 'info');
     });
+
     previewImg.addEventListener('click', () => {
         if (urlHidden.value) openPhotoLightbox(urlHidden.value);
     });

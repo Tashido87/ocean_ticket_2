@@ -90,8 +90,29 @@ export async function ocrPassport(imageSource, onStatus) {
 
         // Merge: MRZ as base, free-text fills gaps, loose MRZ as last-resort expiry.
         if (mrzResult || (freeResult && (freeResult.passportNo || freeResult.name))) {
+
+            // Name: MRZ gives reliable letters but fuses words (e.g. "HTUAUNG").
+            // Free-text preserves spaces but may have OCR noise prefix (e.g. "GE HTU AUNG").
+            // Strategy: prefer free-text when it's a spaced superset of the MRZ name.
+            let bestName = mrzResult?.name || '';
+            const freeName = freeResult?.name || '';
+            if (freeName) {
+                const mrzLetters  = (bestName || '').replace(/\s+/g, '').toUpperCase();
+                const freeLetters = freeName.replace(/\s+/g, '').toUpperCase();
+                const hasMrzSpaces = bestName.includes(' ');
+                // Use free-text name if:
+                //   a) MRZ name is empty or fused (no spaces), AND
+                //   b) free-text letters contain/match MRZ letters (same person)
+                const freeIsBetter = (!hasMrzSpaces || !bestName) &&
+                    freeName.length >= 3 &&
+                    (mrzLetters === '' || freeLetters.includes(mrzLetters) || mrzLetters.includes(freeLetters));
+                if (freeIsBetter) {
+                    bestName = freeName;
+                }
+            }
+
             const merged = {
-                name:        mrzResult?.name        || freeResult?.name        || '',
+                name:        bestName                                         || freeName || '',
                 surname:     mrzResult?.surname      || freeResult?.surname     || '',
                 givenNames:  mrzResult?.givenNames   || freeResult?.givenNames  || '',
                 passportNo:  mrzResult?.passportNo   || freeResult?.passportNo  || '',
@@ -105,6 +126,7 @@ export async function ocrPassport(imageSource, onStatus) {
             onStatus?.('Passport data extracted ✓');
             return merged;
         }
+
 
         onStatus?.('Could not parse passport data');
         return null;
@@ -594,34 +616,73 @@ function parseFreeText(text) {
     }
 
     // ---- Name ----
-    // Look for "Name" label followed by the name value
+    // Burmese passports often have Myanmar-script labels that OCR reads as
+    // garbage Latin chars (e.g. "GE", "QE", "CE") immediately before the name.
+    // Strategy: anchor strictly to the "Name" label, then clean any leading noise.
+
+    /**
+     * Strip leading OCR-noise tokens from a name.
+     * A "noise token" is a leading word that is:
+     *   - 1–2 characters long (likely Burmese-script OCR artifact)
+     *   - OR matches a known OCR noise pattern near the Name label
+     * Keeps stripping as long as at least 2 valid words remain.
+     */
+    function cleanOcrName(raw) {
+        if (!raw) return '';
+        let words = raw.trim().split(/\s+/).filter(Boolean);
+        // Strip leading short tokens that look like noise, not name parts
+        // Known artifacts: GE, QE, CE, AG, LA, GS, GA, etc. (all ≤2 chars from Burmese OCR)
+        // Also strip single non-alpha chars
+        while (words.length > 1) {
+            const first = words[0];
+            const isNoise = first.length <= 2 && !/^(AL|AK|EL|ED|LI|LU|MO|BO|ZA|SI|SU|TI|TU|PO|PU|KO|MA|BA|NU|AI)$/i.test(first);
+            if (isNoise) {
+                words.shift();
+            } else {
+                break;
+            }
+        }
+        // Also strip trailing single chars (OCR noise at end)
+        while (words.length > 1 && words[words.length - 1].length <= 1) {
+            words.pop();
+        }
+        return words.join(' ');
+    }
+
+    // Pattern 1: "Name\n<value>" — strict newline anchor (best for Myanmar passports)
+    // Pattern 2: "Name <value>" — inline (some passports)
+    // Pattern 3: SURNAME/FAMILY NAME label
+    // Pattern 4: GIVEN NAME label
     const namePatterns = [
-        /(?:^|\n)\s*Name\s*\n\s*([A-Z][A-Z\s]{3,40})/im,
+        /(?:^|\n)\s*Name\s*\n\s*([A-Z][A-Z\s]{2,50}?)(?:\n|$)/im,
+        /\bName\s{1,5}([A-Z][A-Z\s]{3,50}?)(?:\n|Nationality|Date|Sex|Place|$)/im,
         /(?:SURNAME|FAMILY\s*NAME|NOM)[:\s/]*\n?\s*([A-Z][A-Z\s]{2,25})/im,
         /(?:GIVEN\s*NAME|FIRST\s*NAME|PRENOM)[:\s/]*\n?\s*([A-Z][A-Z\s]{2,30})/im,
-        /Name\s+([A-Z][A-Z\s]{3,40})/im
     ];
 
-    // Try the generic "Name" label first (common on Myanmar passports)
-    const nameMatch = text.match(namePatterns[0]) || text.match(namePatterns[3]);
+    // Try strict newline-anchored pattern first
+    const nameMatch = text.match(namePatterns[0]) || text.match(namePatterns[1]);
     if (nameMatch) {
         const rawName = nameMatch[1].trim().replace(/\s{2,}/g, ' ');
         // Filter out things that look like labels, not names
-        if (!/PASSPORT|REPUBLIC|MYANMAR|NATIONALITY|DATE|TYPE|CODE|COUNTRY/i.test(rawName)) {
-            result.name = rawName.toUpperCase();
+        if (!/PASSPORT|REPUBLIC|MYANMAR|NATIONALITY|DATE|TYPE|CODE|COUNTRY|AUTHORITY/i.test(rawName)) {
+            const cleaned = cleanOcrName(rawName.toUpperCase());
+            if (cleaned.length >= 3) result.name = cleaned;
         }
     }
 
     // Try surname + given name separately if full name wasn't found
     if (!result.name) {
-        const surnameMatch = text.match(namePatterns[1]);
-        const givenMatch = text.match(namePatterns[2]);
-        if (surnameMatch) result.surname = surnameMatch[1].trim().toUpperCase();
-        if (givenMatch) result.givenNames = givenMatch[1].trim().toUpperCase();
+        const surnameMatch = text.match(namePatterns[2]);
+        const givenMatch = text.match(namePatterns[3]);
+        if (surnameMatch) result.surname = cleanOcrName(surnameMatch[1].trim().toUpperCase());
+        if (givenMatch) result.givenNames = cleanOcrName(givenMatch[1].trim().toUpperCase());
         if (result.surname || result.givenNames) {
             result.name = [result.surname, result.givenNames].filter(Boolean).join(' ');
         }
     }
+
+
 
     // ---- Dates: smart extraction ----
     // Step 1: Find ALL dates in the text with tolerant OCR month/date parsing.
