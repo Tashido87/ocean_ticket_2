@@ -14,7 +14,7 @@ import { showToast } from './utils.js';
 import { displayTickets } from './tickets.js';
 import { renderBookingPage } from './booking.js';
 import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox } from './passport.js';
-import { ocrPassport } from './passport-ocr.js';
+
 
 /**
  * Normalizes passenger names for grouped dashboard widgets.
@@ -2101,6 +2101,88 @@ function _attachPaxBehaviour(formEl, opts = {}) {
 }
 
 /**
+ * Resizes an image File to a Base64 JPEG data-URI.
+ * Downscales to maxWidth while preserving aspect ratio.
+ *
+ * @param {File} file
+ * @param {number} [maxWidth=1600]
+ * @param {number} [quality=0.9]
+ * @returns {Promise<string>} data:image/jpeg;base64,...
+ */
+async function resizeImageToBase64(file, maxWidth = 1600, quality = 0.9) {
+    const imageBitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxWidth / imageBitmap.width);
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = Math.round(imageBitmap.width * scale);
+    canvas.height = Math.round(imageBitmap.height * scale);
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL('image/jpeg', quality);
+}
+
+/**
+ * Calls the Gemini Passport OCR Netlify Function.
+ *
+ * @param {File} file - The passport image file.
+ * @param {(msg: string) => void} [onStatus] - Status callback for UI.
+ * @returns {Promise<Object|null>} Parsed OCR result or null on failure.
+ */
+async function scanPassportWithGemini(file, onStatus) {
+    try {
+        console.log(`[Gemini OCR] Selected file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+        onStatus?.('Resizing image...');
+
+        const imageBase64 = await resizeImageToBase64(file);
+        console.log(`[Gemini OCR] Resized base64 length: ${imageBase64.length}`);
+
+        onStatus?.('Scanning passport...');
+
+        const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                imageBase64,
+                mimeType: 'image/jpeg',
+            }),
+        });
+
+        const data = await response.json();
+        console.log('[Gemini OCR] Response:', data);
+
+        if (!data.ok) {
+            console.warn('[Gemini OCR] Server returned not-ok:', data.error);
+            onStatus?.('OCR failed');
+            return null;
+        }
+
+        if (data.warnings?.length) {
+            console.warn('[Gemini OCR warnings]', data.warnings);
+        }
+
+        // Normalize Gemini response fields to match what applyOcrResults expects
+        const result = {
+            name: data.fullName || '',
+            passportNo: data.passportNo || '',
+            dob: data.dob || '',
+            expiry: data.expiry || '',
+            nationality: data.nationality || '',
+            sex: data.sex || '',
+            title: data.title || '',
+        };
+
+        console.log('[Gemini OCR] Normalized result for form:', result);
+        return result;
+    } catch (error) {
+        console.error('[Gemini OCR] Network/parse error:', error);
+        onStatus?.('OCR failed');
+        return null;
+    }
+}
+
+/**
  * Wires up the passport photo upload, preview, and remove flow for a card.
  */
 function _attachPhotoUpload(formEl) {
@@ -2195,17 +2277,17 @@ function _attachPhotoUpload(formEl) {
         ocrStatusEl.textContent = '';
         ocrStatusEl.className = 'pz-ocr-status';
 
-        // Run upload and OCR in parallel
+        // Run upload and Gemini OCR in parallel
         const uploadPromise = uploadPassportPhoto(file, {
             passportNo: passportNoInput.value || 'unknown',
             onProgress: (pct) => { progressBar.style.width = `${pct}%`; }
         });
 
-        const ocrPromise = ocrPassport(file, (msg) => {
+        const ocrPromise = scanPassportWithGemini(file, (msg) => {
             ocrStatusEl.textContent = msg;
             ocrStatusEl.className = 'pz-ocr-status is-scanning';
         }).catch(err => {
-            console.warn('OCR error:', err);
+            console.warn('[Gemini OCR] Unexpected error:', err);
             return null;
         });
 
