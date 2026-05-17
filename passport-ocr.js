@@ -49,9 +49,9 @@ function loadImage(src) {
  * @param {HTMLImageElement} img
  * @param {{ left: number, top: number, width: number, height: number }} crop - Fractions 0–1
  * @param {number} scale - Upscale factor for better OCR
- * @param {boolean} binarize - If true, apply hard black/white threshold (best for MRZ)
+ * @param {number|false} threshold - Binarization threshold (0-255). false = contrast boost only.
  */
-function cropImage(img, crop, scale = 2.5, binarize = false) {
+function cropImage(img, crop, scale = 2.5, threshold = false) {
     const sx = Math.max(0, Math.floor(img.naturalWidth * crop.left));
     const sy = Math.max(0, Math.floor(img.naturalHeight * crop.top));
     const sw = Math.min(img.naturalWidth - sx, Math.floor(img.naturalWidth * crop.width));
@@ -68,15 +68,14 @@ function cropImage(img, crop, scale = 2.5, binarize = false) {
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
 
-    // Apply contrast enhancement / binarization
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
         const lum = (data[i] * 0.299) + (data[i + 1] * 0.587) + (data[i + 2] * 0.114);
         let val;
-        if (binarize) {
-            // Hard threshold — MRZ text is dark on light background
-            val = lum < 160 ? 0 : 255;
+        if (typeof threshold === 'number') {
+            // Hard binarization — dark text becomes black, light background becomes white
+            val = lum < threshold ? 0 : 255;
         } else {
             // Moderate contrast boost
             val = Math.max(0, Math.min(255, ((lum - 128) * 1.5) + 128));
@@ -128,10 +127,7 @@ export async function ocrPassport(imageSource, onStatus) {
         }
 
         const img = await loadImage(src);
-
-        // === PASS 1: MRZ zone only (fast, ~3 seconds) ===
-        onStatus?.('Scanning passport MRZ…');
-        const mrzCrop = cropImage(img, { left: 0.0, top: 0.72, width: 1.0, height: 0.28 }, 2.5, true);
+        const mrzRegion = { left: 0.0, top: 0.72, width: 1.0, height: 0.28 };
 
         const worker = await Tesseract.createWorker('eng', 1, {
             logger: (info) => {
@@ -141,13 +137,27 @@ export async function ocrPassport(imageSource, onStatus) {
                 }
             }
         });
-
         await worker.setParameters(OCR_MRZ_PARAMS);
-        const { data: mrzData } = await worker.recognize(mrzCrop);
-        const mrzText = mrzData.text || '';
-        console.log('[Passport OCR] MRZ raw text:\n', mrzText);
 
-        let result = parseMRZ(mrzText);
+        // Try multiple binarization thresholds — different passports have
+        // different print darkness. Stop as soon as we get a valid MRZ parse.
+        const thresholds = [160, 130, 100, false]; // false = contrast-only
+        let result = null;
+
+        for (const thresh of thresholds) {
+            onStatus?.('Scanning passport MRZ…');
+            const crop = cropImage(img, mrzRegion, 2.5, thresh);
+            const { data } = await worker.recognize(crop);
+            const text = data.text || '';
+            console.log(`[Passport OCR] MRZ raw text (threshold=${thresh}):\n`, text);
+
+            result = parseMRZ(text);
+            if (result && result.passportNo && result.name) {
+                console.log('[Passport OCR] MRZ parsed successfully at threshold:', thresh);
+                break;
+            }
+            result = null; // reset for next attempt
+        }
 
         // === PASS 2: Full page fallback (only if MRZ failed) ===
         if (!result || !result.passportNo) {
@@ -328,6 +338,61 @@ function normalizeNationality(value = '') {
 }
 
 /**
+ * Normalize MRZ filler characters in the name section.
+ * Tesseract frequently misreads '<' (the MRZ filler/separator) as L, K, I, C.
+ * This function propagates: if a L/K/I/C is adjacent to a '<', it's likely a misread '<'.
+ * Runs multiple passes to propagate through chains of misread chars.
+ */
+function normalizeMrzFiller(namePart) {
+    let result = namePart;
+    const fillerLike = /[LKIC]/;
+
+    // Replace trailing run of filler-like chars with <
+    result = result.replace(/[LKIC<]+$/, m => '<'.repeat(m.length));
+
+    // Propagate: any L/K/I/C adjacent to < on either side → <
+    for (let pass = 0; pass < 8; pass++) {
+        const prev = result;
+        // L/K/I/C preceded by <
+        result = result.replace(/<([LKIC])/g, '<<');
+        // L/K/I/C followed by <
+        result = result.replace(/([LKIC])</g, '<<');
+        if (result === prev) break;
+    }
+
+    return result;
+}
+
+/**
+ * Clean remaining filler noise from an extracted MRZ name string.
+ * Strips trailing words composed entirely of filler-like characters (L,K,I,C),
+ * and trims trailing filler chars from the last real word.
+ */
+function cleanMrzFillerFromName(name) {
+    if (!name) return '';
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    const fillerWord = /^[LKIC]+$/;
+    const vowels = /[AEIOU]/;
+
+    // Strip trailing words that are pure filler noise
+    while (words.length > 1 && fillerWord.test(words[words.length - 1])) {
+        words.pop();
+    }
+
+    // If last word ends with filler-like chars, trim them
+    // but only if the word still has 2+ chars with a vowel after trimming
+    if (words.length > 0) {
+        const last = words[words.length - 1];
+        const trimmed = last.replace(/[LKIC]+$/, '');
+        if (trimmed.length >= 2 && vowels.test(trimmed)) {
+            words[words.length - 1] = trimmed;
+        }
+    }
+
+    return words.join(' ');
+}
+
+/**
  * Main MRZ parser. Finds two MRZ lines and extracts all fields.
  *
  * Line 1 format: P<ISONAME<<GIVENNAMES<<<<<<<<<<<<<<<<<<<<
@@ -408,7 +473,11 @@ function parseMRZ(text) {
     // --- Parse Line 1 (name) ---
     if (line1) {
         const nameStart = 5; // After P + type + 3-char country code
-        const namePart = line1.substring(nameStart);
+        let namePart = line1.substring(nameStart);
+
+        // CRITICAL: Tesseract often misreads MRZ filler '<' as L, K, I, C.
+        // Before parsing, normalize these back to '<' when they appear in filler zones.
+        namePart = normalizeMrzFiller(namePart);
 
         const doubleChevronIdx = namePart.indexOf('<<');
         if (doubleChevronIdx > 0) {
@@ -428,6 +497,9 @@ function parseMRZ(text) {
             }
         }
 
+        // Clean any remaining filler noise from name words
+        surname = cleanMrzFillerFromName(surname);
+        givenNames = cleanMrzFillerFromName(givenNames);
         fullName = [surname, givenNames].filter(Boolean).join(' ');
     }
 
