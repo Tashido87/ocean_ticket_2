@@ -2535,6 +2535,11 @@ body.material-theme .logo-icon {
     filter: drop-shadow(0 8px 18px rgba(13, 148, 136, 0.20));
 }
 
+body.dark-theme .brand-logo,
+body.material-theme.dark-theme .brand-logo {
+    filter: brightness(0) invert(1);
+}
+
 body.material-theme .title {
     font-weight: 650;
     letter-spacing: -0.01em;

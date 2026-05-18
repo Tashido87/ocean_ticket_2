@@ -2276,6 +2276,59 @@ body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-actions .
     background: rgba(255, 255, 255, 0.1);
 }
 
+/* ---------- Dark mode toggles ---------- */
+body.dark-theme #sell-view .flight-type-toggle,
+body.material-theme.dark-theme #sell-view .flight-type-toggle {
+    background: rgba(28, 28, 26, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme #sell-view .flight-type-toggle #domestic-label,
+body.material-theme.dark-theme #sell-view .flight-type-toggle #domestic-label,
+body.dark-theme #sell-view .flight-type-toggle #international-label,
+body.material-theme.dark-theme #sell-view .flight-type-toggle #international-label {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-theme #sell-view .flight-type-toggle #domestic-label:hover,
+body.material-theme.dark-theme #sell-view .flight-type-toggle #domestic-label:hover,
+body.dark-theme #sell-view .flight-type-toggle #international-label:hover,
+body.material-theme.dark-theme #sell-view .flight-type-toggle #international-label:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-theme #sell-view .trip-type-segment,
+body.material-theme.dark-theme #sell-view .trip-type-segment {
+    background: rgba(28, 28, 26, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme #sell-view .trip-type-segment label,
+body.material-theme.dark-theme #sell-view .trip-type-segment label {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-theme #sell-view .trip-type-segment label:hover,
+body.material-theme.dark-theme #sell-view .trip-type-segment label:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-theme #sell-view .gender-segment,
+body.material-theme.dark-theme #sell-view .gender-segment {
+    background: rgba(28, 28, 26, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme #sell-view .gender-segment label,
+body.material-theme.dark-theme #sell-view .gender-segment label {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+body.dark-theme #sell-view .gender-segment label:hover,
+body.material-theme.dark-theme #sell-view .gender-segment label:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
 /* ---------- Mobile — keep things readable ---------- */
 @media (max-width: 768px) {
     #sell-view .sell-section { padding: 1.1rem 1rem; }
