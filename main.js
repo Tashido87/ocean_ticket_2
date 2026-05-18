@@ -20,7 +20,7 @@ import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
 import { initHotelService } from './hotel.js'; 
-import { getAllDocuments, uploadDocument, deleteDocument, formatFileSize, formatUploadDate } from './documents.js';
+import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -327,14 +327,15 @@ function setupEventListeners() {
                     <span class="doc-size-cell">${escapeHtml(sizeStr)}</span>
                     <span class="doc-date-cell">${escapeHtml(dateStr)}</span>
                     <div class="doc-actions">
+                        <button type="button" class="doc-action doc-edit-action" data-doc-action="rename" title="${canDelete ? `Rename ${escapeHtml(doc.title)}` : 'Cannot rename'}" aria-label="Rename ${escapeHtml(doc.title)}" ${canDelete ? '' : 'disabled'}>
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
                         <button type="button" class="doc-action" data-doc-action="download" title="Download ${escapeHtml(doc.title)}" aria-label="Download ${escapeHtml(doc.title)}">
                             <i class="fa-solid fa-download"></i>
                         </button>
-                        ${isDetail ? `
-                            <button type="button" class="doc-action doc-delete-action" data-doc-action="delete" title="${canDelete ? `Delete ${escapeHtml(doc.title)}` : 'Seed documents cannot be deleted'}" aria-label="Delete ${escapeHtml(doc.title)}" ${canDelete ? '' : 'disabled'}>
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        ` : ''}
+                        <button type="button" class="doc-action doc-delete-action" data-doc-action="delete" title="${canDelete ? `Delete ${escapeHtml(doc.title)}` : 'Cannot delete'}" aria-label="Delete ${escapeHtml(doc.title)}" ${canDelete ? '' : 'disabled'}>
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             `;
@@ -395,11 +396,32 @@ function setupEventListeners() {
             if (!doc) return;
 
             const action = e.target.closest('[data-doc-action]')?.dataset.docAction;
+
+            if (action === 'rename') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (doc.source !== 'firebase' || !doc.path) {
+                    showToast('This document cannot be renamed.', 'info');
+                    return;
+                }
+                const newName = window.prompt('Enter new document name:', doc.title);
+                if (!newName || newName.trim() === '' || newName.trim() === doc.title) return;
+                try {
+                    await renameDocument(doc.path, newName.trim());
+                    showToast(`Renamed to "${newName.trim()}"`, 'success');
+                    await refreshDocuments();
+                } catch (err) {
+                    console.error(err);
+                    showToast(err.message || 'Rename failed.', 'error');
+                }
+                return;
+            }
+
             if (action === 'delete') {
                 e.preventDefault();
                 e.stopPropagation();
                 if (doc.source !== 'firebase' || !doc.path) {
-                    showToast('Seed documents cannot be deleted.', 'info');
+                    showToast('This document cannot be deleted.', 'info');
                     return;
                 }
                 const ok = window.confirm(`Delete "${doc.title}"? This cannot be undone.`);

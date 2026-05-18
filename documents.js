@@ -11,6 +11,7 @@ import {
     listAll,
     getDownloadURL,
     getMetadata,
+    updateMetadata,
     uploadBytesResumable,
     deleteObject
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -158,4 +159,19 @@ export async function deleteDocument(path) {
             throw err;
         }
     }
+}
+
+/**
+ * Renames a document by updating its title in Firebase Storage custom metadata.
+ * @param {string} path - Firebase Storage path
+ * @param {string} newTitle - New display title
+ */
+export async function renameDocument(path, newTitle) {
+    if (!path || !newTitle) throw new Error('Path and new title are required.');
+    const ref = storageRef(storage, path);
+    const metadata = await getMetadata(ref);
+    const existing = metadata.customMetadata || {};
+    await updateMetadata(ref, {
+        customMetadata: { ...existing, title: String(newTitle) }
+    });
 }

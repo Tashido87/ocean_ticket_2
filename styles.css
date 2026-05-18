@@ -3678,6 +3678,18 @@ body.material-theme.dark-theme .notification-count {
     text-transform: uppercase;
 }
 
+/* Reset the global label overrides for segment/toggle labels */
+#services-container .format-segment label,
+#services-container .view-toggle label {
+    display: inline-flex;
+    margin-bottom: 0;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: rgba(38, 37, 30, 0.52);
+    letter-spacing: 0;
+    text-transform: none;
+}
+
 /* ---------- Invoice horizontal form ---------- */
 .invoice-horizontal-form {
     display: grid;
@@ -3843,19 +3855,19 @@ body.material-theme.dark-theme .notification-count {
     transform: translateY(0);
 }
 
-/* Generate — primary teal gradient */
+/* Generate — primary orange gradient */
 .btn-generate {
-    background: linear-gradient(135deg, var(--primary-accent, #0d9488), #0f766e);
+    background: linear-gradient(135deg, #f97316, #ea580c);
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.30);
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.30);
     padding: 0.65rem 1.25rem;
     font-size: 0.9rem;
 }
 
 .btn-generate:hover {
-    background: linear-gradient(135deg, #0f766e, #0d5c54);
-    box-shadow: 0 6px 20px rgba(13, 148, 136, 0.40);
+    background: linear-gradient(135deg, #ea580c, #c2410c);
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.40);
 }
 
 /* Clear — muted ghost */
@@ -4111,6 +4123,11 @@ body.material-theme.dark-theme .notification-count {
 .document-card:hover .doc-action,
 .doc-action:hover {
     background: var(--primary-accent);
+    color: #fff;
+}
+
+.doc-edit-action:hover {
+    background: #3b82f6;
     color: #fff;
 }
 
