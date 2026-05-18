@@ -200,9 +200,7 @@ function rankRecord(record, type, query) {
     if (allAcrossFields) return { score: 460, quality: 'best', reasons: ['All words across fields'] };
 
     if (isMulti) {
-        if (hasAnyTokenInField(name, tokens) || hasAnyTokenInField(account, tokens) || hasAnyTokenInField(pnr, tokens)) {
-            return { score: 20, quality: 'related', reasons: ['Partial word match'] };
-        }
+        // Multi-word queries: reject unless all tokens were already matched above
         return { score: 0, quality: 'none', reasons: [] };
     }
 
@@ -235,6 +233,7 @@ function buildClientResult(client) {
 }
 
 function buildTicketResult(ticket) {
+    if (isFeeEntry(ticket)) return null;
     const rank = rankRecord(ticket, 'ticket', searchState.query);
     const payment = getPaymentStatus(ticket);
     return {
@@ -251,7 +250,7 @@ function buildTicketResult(ticket) {
 
 function buildAllRankedResults() {
     const clients = state.allClients.map(buildClientResult);
-    const tickets = state.allTickets.map(buildTicketResult);
+    const tickets = state.allTickets.map(buildTicketResult).filter(Boolean);
     return [...clients, ...tickets]
         .filter(result => {
             if (!searchState.query) return true;
@@ -700,10 +699,9 @@ function renderResults(results) {
         return;
     }
 
-    const colSpan = searchState.activeType === 'clients' ? 7 : 8;
     const rows = [
-        ...sectionRows('Best Matches', results.best, colSpan),
-        ...sectionRows('Related Matches', results.related, colSpan)
+        ...sectionRows('Best Matches', results.best),
+        ...sectionRows('Related Matches', results.related)
     ].join('');
 
     container.innerHTML = `
@@ -718,56 +716,29 @@ function renderResults(results) {
 }
 
 function renderTableHead() {
-    const clientOnly = searchState.activeType === 'clients';
-    if (clientOnly) {
-        return `
-            <thead><tr>
-                <th>Client Name</th><th>Phone</th><th>Account</th><th>Type</th><th>Tickets</th><th>Last Booking</th><th>Actions</th>
-            </tr></thead>
-        `;
-    }
     return `
         <thead><tr>
-            <th>Issued Date</th><th>Client Name</th><th>Booking Ref / PNR</th><th>Route</th><th>Airline</th><th>Travel Date</th><th>Payment</th><th>Actions</th>
+            <th>Issued Date</th><th>Client Name</th><th>Account Name</th><th>Actions</th>
         </tr></thead>
     `;
 }
 
-function sectionRows(title, rows, colSpan) {
+function sectionRows(title, rows) {
     if (!rows.length) return [];
     return [
-        `<tr class="search-section-row"><td colspan="${colSpan}">${title} <span>${rows.length}</span></td></tr>`,
-        ...rows.map(result => searchState.activeType === 'clients' ? renderClientRow(result) : renderMixedRow(result))
+        `<tr class="search-section-row"><td colspan="4">${title} <span>${rows.length}</span></td></tr>`,
+        ...rows.map(renderRow)
     ];
 }
 
-function renderClientRow(result) {
-    const client = result.data;
-    return `
-        <tr class="search-row" data-kind="client" data-client-key="${escapeHtml(client.client_key)}">
-            <td class="strong-cell">${highlightText(client.name)}</td>
-            <td>${highlightText(client.phone)}</td>
-            <td>${highlightText(client.account_name)}</td>
-            <td>${escapeHtml(client.account_type || '—')}</td>
-            <td>${Number(client.ticket_count || 0)}</td>
-            <td>${client.last_issued instanceof Date && client.last_issued.getTime() ? formatDateToDMMMY(formatDateForSheet(client.last_issued)) : '—'}</td>
-            <td>${clientActions(client.client_key)}</td>
-        </tr>
-    `;
-}
-
-function renderMixedRow(result) {
+function renderRow(result) {
     if (result.kind === 'client') {
         const client = result.data;
         return `
             <tr class="search-row" data-kind="client" data-client-key="${escapeHtml(client.client_key)}">
-                <td>—</td>
-                <td class="strong-cell">${highlightText(client.name)}</td>
-                <td><span class="result-kind-pill">Client</span></td>
-                <td>${highlightText(client.account_name)}</td>
-                <td>${escapeHtml(client.account_type || '—')}</td>
                 <td>${client.last_issued instanceof Date && client.last_issued.getTime() ? formatDateToDMMMY(formatDateForSheet(client.last_issued)) : '—'}</td>
-                <td>—</td>
+                <td class="strong-cell">${highlightText(client.name)}</td>
+                <td>${highlightText(client.account_name)}</td>
                 <td>${clientActions(client.client_key)}</td>
             </tr>
         `;
@@ -775,17 +746,12 @@ function renderMixedRow(result) {
 
     const ticket = result.data;
     const clientKey = getTicketClientKey(ticket);
-    const canSettle = result.payment !== 'paid';
     return `
         <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(ticket.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(ticket.booking_reference || '')}">
             <td>${ticket.issued_date ? formatDateToDMMMY(ticket.issued_date) : '—'}</td>
             <td class="strong-cell">${highlightText(ticket.name)}</td>
-            <td>${highlightText(ticket.booking_reference || '—')}</td>
-            <td>${escapeHtml(routeShort(ticket))}</td>
-            <td>${highlightText(ticket.airline || '—')}</td>
-            <td>${ticket.departing_on ? formatDateToDMMMY(ticket.departing_on) : '—'}</td>
-            <td>${paymentBadge(result)}</td>
-            <td>${ticketActions(Boolean(clientKey), canSettle)}</td>
+            <td>${highlightText(ticket.account_name || '—')}</td>
+            <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid')}</td>
         </tr>
     `;
 }
@@ -906,19 +872,6 @@ function refreshSearchView(useDelay = true) {
         renderResults(results);
         updateSearchUrl(false);
     }, useDelay ? 80 : 0);
-}
-
-function closeSearchPage() {
-    const fallbackView = searchState.previousView || 'home';
-    if (window.history.length > 1) {
-        window.history.back();
-        setTimeout(() => {
-            if (document.getElementById('search-view')?.classList.contains('active')) showView(fallbackView);
-        }, 120);
-        return;
-    }
-    window.location.hash = '';
-    showView(fallbackView);
 }
 
 function buildSuggestions(query) {
@@ -1059,8 +1012,6 @@ export function initSearchView() {
     if (input) input.value = searchState.query;
     const clear = document.getElementById('globalSearchClear');
     if (clear) clear.hidden = !searchState.query;
-    const closeBtn = document.getElementById('searchCloseBtn');
-    if (closeBtn) closeBtn.onclick = closeSearchPage;
     refreshSearchView();
 }
 

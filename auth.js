@@ -32,17 +32,20 @@ export function initAuth(onUserSignedIn, onUserSignedOut) {
         const loading = document.getElementById('loading');
         const dashboardContent = document.getElementById('dashboard-content');
         const mainHeader = document.getElementById('main-header');
+        const mainSidebar = document.getElementById('main-sidebar');
         const initialSplash = document.getElementById('initial-splash');
 
         if (user) {
             console.log('User signed in:', user.displayName);
             if (authContainer) authContainer.style.display = 'none';
             if (mainHeader) mainHeader.style.display = '';
+            if (mainSidebar) mainSidebar.style.display = '';
             if (loading) loading.style.display = 'flex';
             if (onUserSignedIn) onUserSignedIn(user);
         } else {
             if (authContainer) authContainer.style.display = 'grid';
             if (mainHeader) mainHeader.style.display = 'none';
+            if (mainSidebar) mainSidebar.style.display = 'none';
             if (loading) loading.style.display = 'none';
             if (dashboardContent) dashboardContent.style.display = 'none';
             if (onUserSignedOut) onUserSignedOut();

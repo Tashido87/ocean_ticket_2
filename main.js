@@ -122,6 +122,21 @@ function setupEventListeners() {
     document.getElementById('settings-btn').addEventListener('click', () => document.getElementById('settings-panel').classList.toggle('show'));
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     if (settingsCloseBtn) settingsCloseBtn.addEventListener('click', () => document.getElementById('settings-panel').classList.remove('show'));
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) document.body.classList.toggle('sidebar-open');
+            else document.body.classList.toggle('sidebar-collapsed');
+        });
+    }
+    // Close mobile sidebar on outside click
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth > 768) return;
+        if (!e.target.closest('.sidebar') && !e.target.closest('.sidebar-toggle')) {
+            document.body.classList.remove('sidebar-open');
+        }
+    });
 
     initGlobalSearch();
 

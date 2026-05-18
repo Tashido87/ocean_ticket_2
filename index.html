@@ -30,14 +30,12 @@
     </div>
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
     <div class="main-container">
-        <header class="header" id="main-header" style="display:none;">
-            <div class="header-left">
-                <div class="brand" aria-label="Ocean Travel">
-                    <img src="ocean-travel-logo.png" alt="Ocean Travel" class="brand-logo">
-                </div>
+        <aside class="sidebar" id="main-sidebar" style="display:none;" aria-label="Primary navigation">
+            <div class="sidebar-brand">
+                <img src="ocean-travel-logo.png" alt="Ocean Travel" class="brand-logo">
+                <span class="sidebar-brand-text">Ocean Travel</span>
             </div>
-
-            <nav class="nav header-center" aria-label="Primary navigation">
+            <nav class="sidebar-nav">
                 <button class="nav-btn active" data-view="home"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Dashboard</span></button>
                 <button class="nav-btn" data-view="sell"><i class="fa-solid fa-ticket" aria-hidden="true"></i><span>Sell Ticket</span></button>
                 <button class="nav-btn" data-view="manage"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Manage Ticket</span></button>
@@ -45,31 +43,41 @@
                 <button class="nav-btn" data-view="settle"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span>Settle</span></button>
                 <button class="nav-btn" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></button>
             </nav>
+        </aside>
 
-            <div class="header-right">
-                <div class="global-search-box">
-                    <button type="button" class="search-icon" id="globalSearchSubmit" aria-label="Search">
-                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <div class="app-body">
+            <header class="header" id="main-header" style="display:none;">
+                <div class="header-left">
+                    <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                        <i class="fa-solid fa-bars" aria-hidden="true"></i>
                     </button>
-                    <input type="text" id="globalSearchInput" placeholder="Search client, phone, account, PNR…" autocomplete="off" aria-label="Global search">
-                    <button type="button" class="global-search-clear" id="globalSearchClear" aria-label="Clear search" hidden>
-                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                    </button>
-                    <div class="global-search-suggestions" id="globalSearchSuggestions" hidden></div>
                 </div>
-                <a href="https://docs.google.com/spreadsheets/d/1SGc80isz0VRVt447R_q-fBdZ_me52H_Z32W5HauHMWQ/edit" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Open Google Sheet" aria-label="Open Google Sheet">
-                    <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
-                </a>
-                <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Open settings">
-                    <i class="fa-solid fa-gear" aria-hidden="true"></i>
-                </button>
-                <button id="signout-btn" class="icon-btn" title="Sign out" aria-label="Sign out">
-                    <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
-                </button>
-            </div>
-        </header>
+                <div class="header-center">
+                    <div class="global-search-box">
+                        <button type="button" class="search-icon" id="globalSearchSubmit" aria-label="Search">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        </button>
+                        <input type="text" id="globalSearchInput" placeholder="Search client, phone, account, PNR…" autocomplete="off" aria-label="Global search">
+                        <button type="button" class="global-search-clear" id="globalSearchClear" aria-label="Clear search" hidden>
+                            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                        </button>
+                        <div class="global-search-suggestions" id="globalSearchSuggestions" hidden></div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <a href="https://docs.google.com/spreadsheets/d/1SGc80isz0VRVt447R_q-fBdZ_me52H_Z32W5HauHMWQ/edit" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Open Google Sheet" aria-label="Open Google Sheet">
+                        <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
+                    </a>
+                    <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Open settings">
+                        <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                    </button>
+                    <button id="signout-btn" class="icon-btn" title="Sign out" aria-label="Sign out">
+                        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
 
-        <main class="main-content">
+            <main class="main-content">
             <section id="home-view" class="view active">
                 <div class="loading-indicator" id="loading" style="display:none;">
                     <div class="spinner"></div>
@@ -230,14 +238,9 @@
             <section id="search-view" class="view">
                 <div class="search-view-wrapper">
                     <div class="search-view-header">
-                        <div>
-                            <h2>Search Results</h2>
-                            <p id="searchSubtitle" class="search-subtitle">Search clients, tickets, PNR, or accounts</p>
-                            <div id="searchCountSummary" class="search-count-summary"></div>
-                        </div>
-                        <button type="button" class="search-close-btn" id="searchCloseBtn">
-                            <i class="fa-solid fa-xmark"></i><span>Close</span>
-                        </button>
+                        <h2>Search Results</h2>
+                        <p id="searchSubtitle" class="search-subtitle">Search clients, tickets, PNR, or accounts</p>
+                        <div id="searchCountSummary" class="search-count-summary"></div>
                     </div>
                     <div id="searchTypeTabs" class="search-type-tabs"></div>
                     <div id="searchFilterBar" class="search-filter-bar"></div>
@@ -878,6 +881,7 @@
             </section>
 
         </main>
+        </div>
     </div>
 
     <div id="settings-panel" class="glass-card settings-panel solid-bg" aria-label="Settings panel">
@@ -983,6 +987,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=4" type="module"></script>
+    <script src="main.js?v=5" type="module"></script>
 </body>
 </html>
