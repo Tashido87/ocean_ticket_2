@@ -150,63 +150,81 @@ body::before {
 .sidebar-brand {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    justify-content: center;
     padding: 0.5rem 0.75rem 1.25rem;
     margin-bottom: 0.5rem;
     border-bottom: 1px solid #f0efea;
 }
 
 .sidebar-brand .brand-logo {
-    width: 36px;
-    height: 36px;
+    width: 52px;
+    height: 52px;
     object-fit: contain;
+    margin: 0 auto;
 }
 
 .sidebar-brand-text {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.01em;
+    display: none;
 }
 
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.35rem;
+}
+
+.sidebar-nav-main {
+    flex: 1;
+}
+
+.sidebar-nav-footer {
+    margin-top: auto;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f0efea;
 }
 
 .sidebar-nav .nav-btn {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    padding: 0.65rem 0.85rem;
+    padding: 0.75rem 0.9rem;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.15s var(--ease-smooth);
     display: flex;
     align-items: center;
-    gap: 0.7rem;
+    gap: 0.85rem;
     text-align: left;
     width: 100%;
 }
 
 .sidebar-nav .nav-btn i {
-    width: 20px;
+    width: 22px;
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    transition: color 0.15s var(--ease-smooth);
 }
 
 .sidebar-nav .nav-btn:hover {
-    background: #f5f5f2;
+    background: #ffffff;
     color: var(--text-primary);
+}
+
+.sidebar-nav .nav-btn:hover i {
+    color: var(--primary-accent);
 }
 
 .sidebar-nav .nav-btn.active {
     background: rgba(13, 148, 136, 0.10);
     color: var(--primary-accent);
     font-weight: 600;
+}
+
+.sidebar-nav .nav-btn.active i {
+    color: var(--primary-accent);
 }
 
 .app-body {
@@ -241,8 +259,55 @@ body.sidebar-collapsed .app-body {
 }
 
 .header-left { display: flex; align-items: center; gap: 0.75rem; }
-.header-center { flex: 1; display: flex; justify-content: center; max-width: 420px; margin: 0 auto; }
+.header-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
 .header-right { display: flex; align-items: center; gap: 0.4rem; }
+
+/* --- HEADER FILTER DROPDOWNS --- */
+.header-filters {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.header-filter {
+    appearance: none;
+    -webkit-appearance: none;
+    background: #ffffff;
+    border: 1px solid rgba(38, 37, 30, 0.10);
+    border-radius: 8px;
+    padding: 0.45rem 1.6rem 0.45rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.15s var(--ease-smooth), box-shadow 0.15s var(--ease-smooth);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23999' d='M0 1l5 4 5-4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    min-width: 110px;
+    max-width: 150px;
+}
+
+.header-filter:focus {
+    outline: none;
+    border-color: rgba(13, 148, 136, 0.35);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.08);
+    color: var(--text-primary);
+}
+
+.header-filter option {
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
 
 .sidebar-toggle {
     background: transparent;
@@ -256,14 +321,14 @@ body.sidebar-collapsed .app-body {
 }
 
 .sidebar-toggle:hover {
-    background: #f5f5f2;
+    background: #ffffff;
     color: var(--text-primary);
 }
 
 .main-content {
-    padding: 1.5rem 1.75rem;
+    padding: 1.25rem 1.5rem;
     flex-grow: 1;
-    background: #f8f8f6;
+    background: #ffffff;
 }
 
 .settings-buttons, .auth-buttons { display: flex; gap: 0.5rem; }
@@ -2117,40 +2182,36 @@ body.material-theme .info-card .icon {
     background-color: transparent !important;
 }
 
-/* ADDED: Specific SOFT background colors for main dashboard cards */
-body.material-theme #total-tickets-box { background-color: #f5f3ff; }
+/* Dashboard card backgrounds — pure white */
+body.material-theme #total-tickets-box,
+body.material-theme #monthly-revenue-box,
+body.material-theme #monthly-commission-box,
+body.material-theme #monthly-extra-fare-box,
+body.material-theme #settlement-net-amount-box,
+body.material-theme #settlement-monthly-due-box,
+body.material-theme #settlement-commission-box {
+    background-color: #ffffff !important;
+}
+
+/* Icon colors kept for visual distinction */
 body.material-theme #total-tickets-box .icon { color: #8b5cf6; }
-
-body.material-theme #monthly-revenue-box { background-color: #f0fdf4; }
 body.material-theme #monthly-revenue-box .icon { color: #22c55e; }
-
-body.material-theme #monthly-commission-box { background-color: #ecfeff; }
 body.material-theme #monthly-commission-box .icon { color: #06b6d4; }
-
-body.material-theme #monthly-extra-fare-box { background-color: #fff7ed; }
 body.material-theme #monthly-extra-fare-box .icon { color: #f97316; }
-
-/* ADDED: Specific DARK background colors for main dashboard cards */
-body.material-theme.dark-theme #total-tickets-box { background-color: #282547; }
-body.material-theme.dark-theme #monthly-revenue-box { background-color: #163b22; }
-body.material-theme.dark-theme #monthly-commission-box { background-color: #1e3a45; }
-body.material-theme.dark-theme #monthly-extra-fare-box { background-color: #422814; }
-
-
-/* ADDED: Specific SOFT background colors for Settlement dashboard cards */
-body.material-theme #settlement-net-amount-box { background-color: #eff6ff; }
 body.material-theme #settlement-net-amount-box .icon { color: #3b82f6; }
-
-body.material-theme #settlement-monthly-due-box { background-color: #fdf2f8; }
 body.material-theme #settlement-monthly-due-box .icon { color: #ec4899; }
-
-body.material-theme #settlement-commission-box { background-color: #fefce8; }
 body.material-theme #settlement-commission-box .icon { color: #eab308; }
 
-/* ADDED: Specific DARK background colors for Settlement dashboard cards */
-body.material-theme.dark-theme #settlement-net-amount-box { background-color: #1c2f57; }
-body.material-theme.dark-theme #settlement-monthly-due-box { background-color: #442233; }
-body.material-theme.dark-theme #settlement-commission-box { background-color: #413a1a; }
+/* Dark theme overrides */
+body.material-theme.dark-theme #total-tickets-box,
+body.material-theme.dark-theme #monthly-revenue-box,
+body.material-theme.dark-theme #monthly-commission-box,
+body.material-theme.dark-theme #monthly-extra-fare-box,
+body.material-theme.dark-theme #settlement-net-amount-box,
+body.material-theme.dark-theme #settlement-monthly-due-box,
+body.material-theme.dark-theme #settlement-commission-box {
+    background-color: #1a1917 !important;
+}
 
 /* Styling for headers in Material mode */
 body.material-theme .search-section h3,
@@ -2211,7 +2272,7 @@ body.material-theme .flight-type-toggle {
 body.material-theme .notification-item,
 body.material-theme .notification-modal-item,
 body.material-theme .notification-icon {
-    background-color: #f8f9fa;
+    background-color: #ffffff;
     border: 1px solid var(--border-color);
 }
 body.material-theme.dark-theme .notification-item,
@@ -2228,7 +2289,7 @@ body.material-theme.dark-theme .notification-icon {
 
 /* Notification Modal Readability */
 body.material-theme .notification-modal-item {
-    background-color: #f8f9fa;
+    background-color: #ffffff;
 }
 body.material-theme.dark-theme .notification-modal-item {
     background-color: #343a40;
@@ -2340,6 +2401,14 @@ body.material-theme:not(.dark-theme) .datepicker-view .days .day.selected:nth-ch
 
     .header-left {
         flex-grow: 0;
+    }
+
+    .header-filters {
+        display: none;
+    }
+
+    .header-center {
+        max-width: 420px;
     }
 
     /* ADDED: Hide non-essential settings buttons on mobile */
@@ -2623,7 +2692,7 @@ body.material-theme .sidebar-nav .nav-btn {
 }
 
 body.material-theme .sidebar-nav .nav-btn:hover {
-    background: #f5f5f2 !important;
+    background: #ffffff !important;
     color: var(--text-primary) !important;
     transform: none;
 }
@@ -2645,7 +2714,7 @@ body.material-theme.dark-theme .sidebar-nav .nav-btn.active {
 }
 
 body.material-theme .main-content {
-    background: #f8f8f6;
+    background: #ffffff;
 }
 body.material-theme.dark-theme .main-content {
     background: #1a1917;
@@ -2700,7 +2769,6 @@ body.material-theme .icon-btn.icon-btn-xs {
 
 /* --- Main content spacing (compact) --- */
 body.material-theme .main-content {
-    margin-top: 76px;
     padding: 1.15rem;
 }
 

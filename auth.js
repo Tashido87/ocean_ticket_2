@@ -21,10 +21,14 @@ export function initAuth(onUserSignedIn, onUserSignedOut) {
         authorizeButton.addEventListener('click', handleAuthClick);
     }
 
-    // Wire up the sign-out button with confirmation
+    // Wire up the sign-out buttons with confirmation
     const signoutButton = document.getElementById('signout-btn');
     if (signoutButton) {
         signoutButton.addEventListener('click', confirmSignOut);
+    }
+    const sidebarSignoutBtn = document.getElementById('sidebarSignoutBtn');
+    if (sidebarSignoutBtn) {
+        sidebarSignoutBtn.addEventListener('click', confirmSignOut);
     }
 
     onAuthStateChanged(auth, (user) => {

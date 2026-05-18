@@ -16,7 +16,7 @@ import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBoo
 import { loadHistory } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements } from './settlement.js';
 import { buildClientList, loadFeaturedClients } from './clients.js';
-import { initGlobalSearch, initSearchView } from './search.js';
+import { initGlobalSearch, initSearchView, initHeaderFilters, populateHeaderFilterOptions } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
@@ -49,6 +49,7 @@ export async function initializeApp() {
 
         // Build derived data
         buildClientList();
+        initHeaderFilters();
         initializeDashboardSelectors();
 
         // Hash-based routing (for search page)
@@ -60,6 +61,7 @@ export async function initializeApp() {
             onTicketsChange((tickets) => {
                 state.allTickets = tickets;
                 populateSearchAirlines();
+                populateHeaderFilterOptions();
                 updateUnpaidCount();
                 displayInitialTickets();
                 updateNotifications();
@@ -119,7 +121,8 @@ function setupEventListeners() {
     document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', (e) => showView(e.currentTarget.dataset.view)));
     const authBtn = document.getElementById('authorize_button');
     if (authBtn) authBtn.addEventListener('click', handleAuthClick);
-    document.getElementById('settings-btn').addEventListener('click', () => document.getElementById('settings-panel').classList.toggle('show'));
+    document.getElementById('settings-btn')?.addEventListener('click', () => document.getElementById('settings-panel').classList.toggle('show'));
+    document.getElementById('sidebarSettingsBtn')?.addEventListener('click', () => document.getElementById('settings-panel').classList.toggle('show'));
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     if (settingsCloseBtn) settingsCloseBtn.addEventListener('click', () => document.getElementById('settings-panel').classList.remove('show'));
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -553,7 +556,11 @@ function setupEventListeners() {
         if (event.target == document.getElementById('modal')) closeModal();
         if (event.target == document.getElementById('exportConfirmModal')) document.getElementById('exportConfirmModal').classList.remove('show');
         const settingsPanel = document.getElementById('settings-panel');
-        if (!settingsPanel.contains(event.target) && event.target !== document.getElementById('settings-btn') && !document.getElementById('settings-btn').contains(event.target) ) {
+        const settingsBtn = document.getElementById('settings-btn');
+        const sidebarSettingsBtn = document.getElementById('sidebarSettingsBtn');
+        const clickedSettings = event.target === settingsBtn || (settingsBtn && settingsBtn.contains(event.target));
+        const clickedSidebarSettings = event.target === sidebarSettingsBtn || (sidebarSettingsBtn && sidebarSettingsBtn.contains(event.target));
+        if (!settingsPanel.contains(event.target) && !clickedSettings && !clickedSidebarSettings) {
             settingsPanel.classList.remove('show');
         }
     });

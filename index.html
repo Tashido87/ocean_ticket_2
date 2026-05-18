@@ -35,13 +35,17 @@
                 <img src="ocean-travel-logo.png" alt="Ocean Travel" class="brand-logo">
                 <span class="sidebar-brand-text">Ocean Travel</span>
             </div>
-            <nav class="sidebar-nav">
+            <nav class="sidebar-nav sidebar-nav-main">
                 <button class="nav-btn active" data-view="home"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Dashboard</span></button>
                 <button class="nav-btn" data-view="sell"><i class="fa-solid fa-ticket" aria-hidden="true"></i><span>Sell Ticket</span></button>
                 <button class="nav-btn" data-view="manage"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Manage Ticket</span></button>
                 <button class="nav-btn" data-view="booking"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span>Booking</span></button>
                 <button class="nav-btn" data-view="settle"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span>Settle</span></button>
                 <button class="nav-btn" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></button>
+            </nav>
+            <nav class="sidebar-nav sidebar-nav-footer">
+                <button class="nav-btn" id="sidebarSettingsBtn"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Settings</span></button>
+                <button class="nav-btn" id="sidebarSignoutBtn"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
             </nav>
         </aside>
 
@@ -53,6 +57,21 @@
                     </button>
                 </div>
                 <div class="header-center">
+                    <div class="header-filters" id="headerFilters">
+                        <select class="header-filter" id="headerFilterDeparture" aria-label="Filter by departure">
+                            <option value="">Departure</option>
+                        </select>
+                        <select class="header-filter" id="headerFilterDestination" aria-label="Filter by destination">
+                            <option value="">Destination</option>
+                        </select>
+                        <select class="header-filter" id="headerFilterDateRange" aria-label="Filter by date range">
+                            <option value="all">Date Range</option>
+                            <option value="today">Today</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="month">This Month</option>
+                        </select>
+                    </div>
                     <div class="global-search-box">
                         <button type="button" class="search-icon" id="globalSearchSubmit" aria-label="Search">
                             <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
@@ -65,14 +84,8 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <a href="https://docs.google.com/spreadsheets/d/1SGc80isz0VRVt447R_q-fBdZ_me52H_Z32W5HauHMWQ/edit" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Open Google Sheet" aria-label="Open Google Sheet">
-                        <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
-                    </a>
                     <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Open settings">
                         <i class="fa-solid fa-gear" aria-hidden="true"></i>
-                    </button>
-                    <button id="signout-btn" class="icon-btn" title="Sign out" aria-label="Sign out">
-                        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
                     </button>
                 </div>
             </header>

@@ -1012,7 +1012,64 @@ export function initSearchView() {
     if (input) input.value = searchState.query;
     const clear = document.getElementById('globalSearchClear');
     if (clear) clear.hidden = !searchState.query;
+    syncHeaderFiltersToState();
     refreshSearchView();
+}
+
+export function populateHeaderFilterOptions() {
+    const depSelect = document.getElementById('headerFilterDeparture');
+    const destSelect = document.getElementById('headerFilterDestination');
+    if (!depSelect || !destSelect) return;
+
+    const departures = [...new Set(state.allTickets.map(t => t.departure).filter(Boolean))].sort();
+    const destinations = [...new Set(state.allTickets.map(t => t.destination).filter(Boolean))].sort();
+
+    const buildOptions = (values, current) => {
+        const opts = values.map(v => `<option value="${escapeHtml(v)}" ${current === v ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('');
+        return opts;
+    };
+
+    const currentDep = searchState.filters.departure;
+    const currentDest = searchState.filters.destination;
+
+    depSelect.innerHTML = `<option value="">Departure</option>` + buildOptions(departures, currentDep);
+    destSelect.innerHTML = `<option value="">Destination</option>` + buildOptions(destinations, currentDest);
+}
+
+function syncHeaderFiltersToState() {
+    const depSelect = document.getElementById('headerFilterDeparture');
+    const destSelect = document.getElementById('headerFilterDestination');
+    const dateSelect = document.getElementById('headerFilterDateRange');
+    if (depSelect) depSelect.value = searchState.filters.departure || '';
+    if (destSelect) destSelect.value = searchState.filters.destination || '';
+    if (dateSelect) dateSelect.value = searchState.filters.dateRange || 'all';
+}
+
+export function initHeaderFilters() {
+    const depSelect = document.getElementById('headerFilterDeparture');
+    const destSelect = document.getElementById('headerFilterDestination');
+    const dateSelect = document.getElementById('headerFilterDateRange');
+    if (!depSelect || !destSelect || !dateSelect) return;
+
+    populateHeaderFilterOptions();
+
+    const handleFilterChange = () => {
+        searchState.filters.departure = depSelect.value;
+        searchState.filters.destination = destSelect.value;
+        searchState.filters.dateRange = dateSelect.value;
+        updateSearchUrl(false);
+        // If on search view, refresh; otherwise navigate to search
+        const searchView = document.getElementById('search-view');
+        if (searchView && searchView.classList.contains('active')) {
+            refreshSearchView();
+        } else {
+            navigateToSearch(searchState.query);
+        }
+    };
+
+    depSelect.addEventListener('change', handleFilterChange);
+    destSelect.addEventListener('change', handleFilterChange);
+    dateSelect.addEventListener('change', handleFilterChange);
 }
 
 export function handleGlobalSearch(query) {
