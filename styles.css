@@ -3762,15 +3762,12 @@ body.material-theme.dark-theme .notification-count {
 .format-segment {
     display: inline-flex;
     align-items: center;
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(247,250,248,0.86)),
-        rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(13, 148, 136, 0.18);
-    border-radius: 14px;
-    padding: 4px 4px 5px;
+    background: rgba(241, 245, 249, 0.85);
+    border: 1px solid rgba(13, 148, 136, 0.15);
+    border-radius: 12px;
+    padding: 5px;
     gap: 4px;
     overflow: visible;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), inset 0 0 0 1px rgba(255,255,255,0.65);
 }
 
 .format-segment input[type="radio"] {
@@ -3782,23 +3779,24 @@ body.material-theme.dark-theme .notification-count {
 .format-segment label {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.48rem 0.9rem;
-    border-radius: 10px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: rgba(38, 37, 30, 0.58);
+    gap: 0.45rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 9px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: rgba(38, 37, 30, 0.52);
     cursor: pointer;
     user-select: none;
-    transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     margin: 0;
     text-transform: none;
     letter-spacing: 0;
     line-height: 1;
+    white-space: nowrap;
 }
 
 .format-segment label i {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
 }
 
 .format-segment label:hover {
@@ -3807,9 +3805,9 @@ body.material-theme.dark-theme .notification-count {
 }
 
 .format-segment input:checked + label {
-    color: #083f3a !important;
-    background: linear-gradient(135deg, rgba(13, 148, 136, 0.18), rgba(8, 145, 178, 0.12));
-    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.14), inset 0 0 0 1px rgba(13, 148, 136, 0.20);
+    color: #fff !important;
+    background: linear-gradient(135deg, #0d9488, #0f766e);
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
 }
 
 .format-segment input:focus-visible + label {
@@ -4132,16 +4130,13 @@ body.material-theme.dark-theme .notification-count {
 .view-toggle {
     display: inline-flex;
     align-items: center;
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(247,250,248,0.86)),
-        rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(13, 148, 136, 0.18);
-    border-radius: 14px;
-    padding: 4px 4px 5px;
+    background: rgba(241, 245, 249, 0.85);
+    border: 1px solid rgba(13, 148, 136, 0.15);
+    border-radius: 12px;
+    padding: 5px;
     gap: 4px;
     flex-shrink: 0;
     overflow: visible;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), inset 0 0 0 1px rgba(255,255,255,0.65);
 }
 
 .view-toggle input[type="radio"] {
@@ -4154,23 +4149,24 @@ body.material-theme.dark-theme .notification-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    padding: 0.46rem 0.78rem;
-    border-radius: 10px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    color: rgba(38, 37, 30, 0.58);
+    gap: 0.45rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: rgba(38, 37, 30, 0.52);
     cursor: pointer;
     user-select: none;
-    transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     margin: 0;
     text-transform: none;
     letter-spacing: 0;
     line-height: 1;
+    white-space: nowrap;
 }
 
 .view-toggle label i {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
 }
 
 .view-toggle label:hover {
@@ -4179,9 +4175,9 @@ body.material-theme.dark-theme .notification-count {
 }
 
 .view-toggle input:checked + label {
-    color: #083f3a !important;
-    background: linear-gradient(135deg, rgba(13, 148, 136, 0.18), rgba(8, 145, 178, 0.12));
-    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.14), inset 0 0 0 1px rgba(13, 148, 136, 0.20);
+    color: #fff !important;
+    background: linear-gradient(135deg, #0d9488, #0f766e);
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
 }
 
 .view-toggle input:focus-visible + label {
@@ -4544,19 +4540,18 @@ body.material-theme.dark-theme .format-segment,
 body.material-theme.dark-theme .view-toggle {
     background: rgba(15, 23, 42, 0.56);
     border-color: rgba(45, 212, 191, 0.18);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 
 body.material-theme.dark-theme .format-segment label,
 body.material-theme.dark-theme .view-toggle label {
-    color: rgba(226, 232, 240, 0.68);
+    color: rgba(226, 232, 240, 0.58);
 }
 
 body.material-theme.dark-theme .format-segment input:checked + label,
 body.material-theme.dark-theme .view-toggle input:checked + label {
-    color: #dffdfa !important;
-    background: linear-gradient(135deg, rgba(20, 184, 166, 0.22), rgba(8, 145, 178, 0.18));
-    box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.22);
+    color: #fff !important;
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.55), rgba(8, 145, 178, 0.45));
+    box-shadow: 0 2px 8px rgba(45, 212, 191, 0.2);
 }
 
 body.material-theme.dark-theme .document-card {
