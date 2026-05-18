@@ -6010,6 +6010,11 @@ body.material-theme .suggestion-badge {
     font-weight: 800;
 }
 
+body.material-theme .suggestion-item[data-suggestion-kind="account"] .suggestion-badge {
+    background: rgba(124, 58, 237, 0.10);
+    color: #7c3aed;
+}
+
 body.material-theme .suggestion-empty {
     padding: 1rem;
     color: rgba(38, 37, 30, 0.56);

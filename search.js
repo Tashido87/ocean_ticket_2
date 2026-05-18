@@ -881,20 +881,71 @@ function getResultId(result) {
     return JSON.stringify(result);
 }
 
+function isPnrQuery(q) {
+    return /^[A-Z0-9]{5,8}$/.test(normalize(q).replace(/\s/g, ''));
+}
+
 function buildSuggestions(query) {
     const q = query.trim();
-    const all = q ? buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 8) : [];
+    if (!q) {
+        const recent = getRecentSearches().slice(0, 4);
+        return { top: [], clients: [], tickets: [], accounts: [], recent };
+    }
+
+    // PNR exact-match mode: only the exact PNR + associated clients
+    if (isPnrQuery(q)) {
+        const pnr = normalize(q).replace(/\s/g, '');
+        const exactTickets = state.allTickets
+            .filter(t => !isFeeEntry(t) && normalize(t.booking_reference || '').replace(/\s/g, '') === pnr)
+            .map(t => buildTicketResult(t, q))
+            .filter(Boolean);
+        const top = exactTickets.length ? [exactTickets[0]] : [];
+        const tickets = exactTickets.slice(1, 4);
+
+        const associatedClientKeys = new Set();
+        exactTickets.forEach(t => {
+            const client = getClientForTicket(t.data);
+            if (client) associatedClientKeys.add(client.client_key);
+        });
+        const clients = state.allClients
+            .filter(c => associatedClientKeys.has(c.client_key))
+            .map(c => buildClientResult(c, q))
+            .slice(0, 4);
+
+        return { top, clients, tickets, accounts: [], recent: [] };
+    }
+
+    const all = buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 8);
     const top = all[0] ? [all[0]] : [];
     const topIds = new Set(top.map(getResultId));
     const clients = all.filter(r => r.kind === 'client' && !topIds.has(getResultId(r))).slice(0, 4);
     const clientIds = new Set(clients.map(getResultId));
     const tickets = all.filter(r => r.kind === 'ticket' && !topIds.has(getResultId(r)) && !clientIds.has(getResultId(r))).slice(0, 4);
+
+    // Account name suggestions
+    const accountSet = new Set();
+    state.allClients.forEach(c => {
+        if (c.account_name && normalize(c.account_name).includes(normalize(q))) {
+            accountSet.add(c.account_name);
+        }
+    });
+    const accounts = [...accountSet].slice(0, 3).map(name => ({
+        kind: 'account',
+        label: name,
+        data: { account_name: name }
+    }));
+
+    // Suppress clients whose exact account_name matches a shown account
+    const accountNames = new Set(accounts.map(a => normalize(a.data.account_name)));
+    const filteredClients = clients.filter(c => !accountNames.has(normalize(c.data.account_name || '')));
+
     const shownIds = new Set([...topIds, ...clientIds, ...tickets.map(getResultId)]);
     const recent = getRecentSearches()
-        .filter(item => item.toLowerCase().includes(q.toLowerCase()) || !q)
+        .filter(item => item.toLowerCase().includes(q.toLowerCase()))
         .filter(item => !shownIds.has(item))
         .slice(0, 4);
-    return { top, clients, tickets, recent };
+
+    return { top, clients: filteredClients, tickets, accounts, recent };
 }
 
 function suggestionItem(result) {
@@ -919,6 +970,16 @@ function suggestionItem(result) {
         `;
     }
 
+    if (result.kind === 'account') {
+        return `
+            <button type="button" class="suggestion-item" data-suggestion-kind="account" data-account-name="${escapeHtml(result.data.account_name)}">
+                <span class="suggestion-main">${escapeHtml(result.data.account_name)}</span>
+                <span class="suggestion-meta">Account name</span>
+                <span class="suggestion-badge">Account</span>
+            </button>
+        `;
+    }
+
     const ticket = result.data;
     return `
         <button type="button" class="suggestion-item" data-suggestion-kind="ticket" data-ticket-id="${escapeHtml(ticket.id || '')}">
@@ -934,6 +995,7 @@ function renderSuggestions(input, panel) {
     const groups = buildSuggestions(query);
     const groupHtml = [
         ['Top Match', groups.top],
+        ['Account Names', groups.accounts],
         ['Clients', groups.clients],
         ['Tickets / PNR', groups.tickets],
         ['Recent Searches', groups.recent]
@@ -1014,7 +1076,10 @@ export function initGlobalSearch() {
         if (!item) return;
         if (item.dataset.suggestionQuery) {
             input.value = item.dataset.suggestionQuery;
-            navigateToSearch(input.value);
+            // do not navigate — user can press Enter or click search icon
+        } else if (item.dataset.suggestionKind === 'account') {
+            input.value = item.dataset.accountName;
+            // do not navigate — user can press Enter or click search icon
         } else if (item.dataset.suggestionKind === 'client') {
             viewClientHistory(item.dataset.clientKey);
         } else if (item.dataset.suggestionKind === 'ticket' && item.dataset.ticketId) {
