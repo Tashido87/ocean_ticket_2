@@ -37,7 +37,7 @@
                 </div>
             </div>
 
-            <nav class="nav" aria-label="Primary navigation">
+            <nav class="nav header-center" aria-label="Primary navigation">
                 <button class="nav-btn active" data-view="home"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Dashboard</span></button>
                 <button class="nav-btn" data-view="sell"><i class="fa-solid fa-ticket" aria-hidden="true"></i><span>Sell Ticket</span></button>
                 <button class="nav-btn" data-view="manage"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Manage Ticket</span></button>
@@ -46,14 +46,17 @@
                 <button class="nav-btn" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></button>
             </nav>
 
-            <div class="header-center">
-                <div class="global-search-box">
-                    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
-                    <input type="text" id="globalSearchInput" placeholder="Search client, phone, account, PNR…" autocomplete="off" aria-label="Global search">
-                </div>
-            </div>
-
             <div class="header-right">
+                <div class="global-search-box">
+                    <button type="button" class="search-icon" id="globalSearchSubmit" aria-label="Search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    </button>
+                    <input type="text" id="globalSearchInput" placeholder="Search client, phone, account, PNR…" autocomplete="off" aria-label="Global search">
+                    <button type="button" class="global-search-clear" id="globalSearchClear" aria-label="Clear search" hidden>
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                    <div class="global-search-suggestions" id="globalSearchSuggestions" hidden></div>
+                </div>
                 <a href="https://docs.google.com/spreadsheets/d/1SGc80isz0VRVt447R_q-fBdZ_me52H_Z32W5HauHMWQ/edit" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Open Google Sheet" aria-label="Open Google Sheet">
                     <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
                 </a>
@@ -227,21 +230,21 @@
             <section id="search-view" class="view">
                 <div class="search-view-wrapper">
                     <div class="search-view-header">
-                        <h2><i class="fa-solid fa-magnifying-glass"></i> Search Results</h2>
-                        <p id="searchSubtitle" class="search-subtitle">Search clients, tickets, PNR, or accounts</p>
-                        <div class="search-page-input-wrap">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" id="searchPageInput" placeholder="Search client, phone, account, PNR…" autocomplete="off">
+                        <div>
+                            <h2>Search Results</h2>
+                            <p id="searchSubtitle" class="search-subtitle">Search clients, tickets, PNR, or accounts</p>
+                            <div id="searchCountSummary" class="search-count-summary"></div>
                         </div>
+                        <button type="button" class="search-close-btn" id="searchCloseBtn">
+                            <i class="fa-solid fa-xmark"></i><span>Close</span>
+                        </button>
                     </div>
-                    <div class="search-view-body">
-                        <aside class="search-filter-panel" id="searchFilterPanel">
-                            <!-- Filters injected by search.js -->
-                        </aside>
-                        <div class="search-results-area">
-                            <div id="searchResultsContainer" class="search-results-container">
-                                <!-- Results injected by search.js -->
-                            </div>
+                    <div id="searchTypeTabs" class="search-type-tabs"></div>
+                    <div id="searchFilterBar" class="search-filter-bar"></div>
+                    <div id="searchMoreFilters" class="search-more-filters" hidden></div>
+                    <div class="search-results-area">
+                        <div id="searchResultsContainer" class="search-results-container">
+                            <!-- Results injected by search.js -->
                         </div>
                     </div>
                 </div>

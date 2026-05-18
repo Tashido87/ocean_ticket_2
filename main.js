@@ -16,7 +16,7 @@ import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBoo
 import { loadHistory } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements } from './settlement.js';
 import { buildClientList, loadFeaturedClients } from './clients.js';
-import { initSearchView, handleGlobalSearch, handleSearchInput, setSearchQuery } from './search.js';
+import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
@@ -123,33 +123,7 @@ function setupEventListeners() {
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     if (settingsCloseBtn) settingsCloseBtn.addEventListener('click', () => document.getElementById('settings-panel').classList.remove('show'));
 
-    // Global Search (header input)
-    const globalSearchInput = document.getElementById('globalSearchInput');
-    const globalSearchIcon = document.querySelector('.global-search-box .search-icon');
-    if (globalSearchInput) {
-        globalSearchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const query = globalSearchInput.value.trim();
-                if (query) handleGlobalSearch(query);
-            }
-        });
-    }
-    if (globalSearchIcon) {
-        globalSearchIcon.addEventListener('click', () => {
-            const query = globalSearchInput?.value.trim() || '';
-            if (query) handleGlobalSearch(query);
-            else globalSearchInput?.focus();
-        });
-    }
-
-    // Search page input
-    const searchPageInput = document.getElementById('searchPageInput');
-    if (searchPageInput) {
-        const debouncedPageSearch = debounce((e) => {
-            handleSearchInput(e.target.value.trim());
-        }, 250);
-        searchPageInput.addEventListener('input', debouncedPageSearch);
-    }
+    initGlobalSearch();
 
     // Dashboard Search
     const debouncedSearch = debounce(performSearch, 300);
