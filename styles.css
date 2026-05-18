@@ -157,8 +157,8 @@ body::before {
 }
 
 .sidebar-brand .brand-logo {
-    width: 140px;
-    aspect-ratio: 1 / 1;
+    width: 100%;
+    max-height: 220px;
     object-fit: contain;
 }
 
@@ -633,17 +633,23 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
 }
 .form-group {display: flex; flex-direction: column;}
 .form-group.full-width {grid-column: 1 / -1;}
-.form-group label {margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; color: var(--text-secondary);}
+.form-group label {
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
 
 .form-group input, .form-group select, .form-group textarea {
-    padding: 0.75rem 1rem;
-    border: 1px solid rgba(38, 37, 30, 0.12);
-    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid rgba(38, 37, 30, 0.14);
+    border-radius: 9px;
     background: #ffffff;
     color: var(--text-primary);
-    font-size: 1rem;
-    transition: all 0.2s var(--ease-smooth);
-    text-transform: uppercase;
+    font-size: 0.875rem;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
     resize: none;
 }
 
@@ -2042,8 +2048,8 @@ body.material-theme {
 }
 
 body.material-theme.dark-theme {
-    /* Cursor dark variant */
-    --bg-color: #1a1917;
+    /* Cursor dark variant — charcoal black */
+    --bg-color: #2b2b2b;
     --primary-accent: #0d9488;
     --primary-accent-dark: #0f766e;
     --secondary-accent: #34d399;
@@ -2084,7 +2090,7 @@ body.material-theme .modal-content {
 body.material-theme.dark-theme .glass-card,
 body.material-theme.dark-theme .settings-card,
 body.material-theme.dark-theme .modal-content {
-    background: #262522;
+    background: #333333;
 }
 
 
@@ -2525,9 +2531,9 @@ body.material-theme {
 
 /* --- Design tokens (Dark) --- */
 body.material-theme.dark-theme {
-    --bg-color: #1a1917;
-    --surface: #222120;
-    --surface-2: #2a2928;
+    --bg-color: #2b2b2b;
+    --surface: #333333;
+    --surface-2: #3d3d3d;
 
     --text-primary: #e8e5e0;
     --text-secondary: rgba(232, 229, 224, 0.55);
@@ -2661,6 +2667,16 @@ body.material-theme .sidebar-nav .nav-btn:hover {
 
 body.material-theme.dark-theme .sidebar-nav .nav-btn:hover {
     background: rgba(255,255,255,0.06) !important;
+}
+
+body.dark-theme .sidebar-nav .nav-btn,
+body.material-theme.dark-theme .sidebar-nav .nav-btn {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+body.dark-theme .sidebar-nav .nav-btn:hover,
+body.material-theme.dark-theme .sidebar-nav .nav-btn:hover {
+    color: #ffffff !important;
 }
 
 body.material-theme .sidebar-nav .nav-btn.active {
@@ -3328,9 +3344,11 @@ body.material-theme .form-group select,
 body.material-theme .form-group textarea,
 body.material-theme .booking-search-section select,
 body.material-theme .client-search-box input {
-    border-radius: 14px;
+    border-radius: 9px;
     border: 1px solid var(--border-color) !important;
     background: var(--surface) !important;
+    padding: 0.6rem 0.85rem !important;
+    font-size: 0.875rem !important;
 }
 
 body.material-theme .search-inputs input:focus,
@@ -5774,8 +5792,8 @@ body.material-theme ::-webkit-scrollbar-track {
    ============================================================ */
 
 body.material-theme .brand-logo {
-    width: 140px;
-    aspect-ratio: 1 / 1;
+    width: 100%;
+    max-height: 220px;
     object-fit: contain;
     display: block;
 }
@@ -5827,6 +5845,49 @@ body.material-theme .global-search-box input:focus {
     background: rgba(255, 255, 255, 0.94) !important;
     border-color: rgba(13, 148, 136, 0.34) !important;
     box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.11), 0 18px 38px rgba(38, 37, 30, 0.09) !important;
+}
+
+body.material-theme.dark-theme .global-search-box input {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+body.material-theme.dark-theme .global-search-box input:focus {
+    background: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(13, 148, 136, 0.45) !important;
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15), 0 18px 38px rgba(0, 0, 0, 0.25) !important;
+}
+
+body.material-theme.dark-theme .global-search-box .search-icon {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+body.material-theme.dark-theme .global-search-suggestions {
+    background: rgba(45, 45, 45, 0.96);
+    border-color: rgba(255, 255, 255, 0.10);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+
+body.material-theme.dark-theme .suggestion-empty {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+body.material-theme.dark-theme .suggestion-group-title {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+body.material-theme.dark-theme .suggestion-item {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+body.material-theme.dark-theme .suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.material-theme.dark-theme .suggestion-item .suggestion-meta {
+    color: rgba(255, 255, 255, 0.45);
 }
 
 body.material-theme .global-search-clear {

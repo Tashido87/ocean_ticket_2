@@ -874,13 +874,26 @@ function refreshSearchView(useDelay = true) {
     }, useDelay ? 80 : 0);
 }
 
+function getResultId(result) {
+    if (typeof result === 'string') return result;
+    if (result.kind === 'client') return 'client:' + (result.data.client_key || result.data.name);
+    if (result.kind === 'ticket') return 'ticket:' + (result.data.id || result.data.booking_reference);
+    return JSON.stringify(result);
+}
+
 function buildSuggestions(query) {
     const q = query.trim();
     const all = q ? buildAllRankedResults().filter(r => r.score > 0).slice(0, 8) : [];
     const top = all[0] ? [all[0]] : [];
-    const clients = all.filter(r => r.kind === 'client').slice(0, 4);
-    const tickets = all.filter(r => r.kind === 'ticket').slice(0, 4);
-    const recent = getRecentSearches().filter(item => item.toLowerCase().includes(q.toLowerCase()) || !q).slice(0, 4);
+    const topIds = new Set(top.map(getResultId));
+    const clients = all.filter(r => r.kind === 'client' && !topIds.has(getResultId(r))).slice(0, 4);
+    const clientIds = new Set(clients.map(getResultId));
+    const tickets = all.filter(r => r.kind === 'ticket' && !topIds.has(getResultId(r)) && !clientIds.has(getResultId(r))).slice(0, 4);
+    const shownIds = new Set([...topIds, ...clientIds, ...tickets.map(getResultId)]);
+    const recent = getRecentSearches()
+        .filter(item => item.toLowerCase().includes(q.toLowerCase()) || !q)
+        .filter(item => !shownIds.has(item))
+        .slice(0, 4);
     return { top, clients, tickets, recent };
 }
 
