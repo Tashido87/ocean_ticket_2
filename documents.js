@@ -19,30 +19,9 @@ const FIREBASE_DOC_PATH = 'documents';
 const MAX_DOC_BYTES = 25 * 1024 * 1024; // 25 MB per file
 
 /* =========================================
-   SEED DOCUMENTS (GitHub-hosted, will be removed once Firebase has them)
+   SEED DOCUMENTS — removed (files deleted from GitHub)
    ========================================= */
-const SEED_DOCS = [
-    {
-        source: 'github',
-        title: 'Singapore Hotel Booking (Agoda)',
-        type: 'Hotel',
-        ext: 'pdf',
-        size: 248_000,
-        url: 'https://raw.githubusercontent.com/Tashido87/ocean_ticket/main/assets/singapore_hotel_booking.pdf',
-        filename: 'Singapore_Hotel_Booking_Agoda.pdf',
-        uploadedAt: null
-    },
-    {
-        source: 'github',
-        title: 'SSR Date Change Form',
-        type: 'Airline',
-        ext: 'pages',
-        size: 132_000,
-        url: 'https://raw.githubusercontent.com/Tashido87/ocean_ticket/main/assets/WC_EO_form.pages',
-        filename: 'SSR_Date_Change_Form.pages',
-        uploadedAt: null
-    }
-];
+const SEED_DOCS = [];
 
 /* =========================================
    FORMAT HELPERS
