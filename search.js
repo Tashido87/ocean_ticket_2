@@ -550,11 +550,13 @@ function renderFilterBar() {
 }
 
 function setFilterBarValues() {
-    document.querySelector('[data-filter="dateRange"]')?.value = searchState.filters.dateRange;
-    document.querySelector('[data-filter="airline"]')?.value = searchState.filters.airline;
-    document.querySelector('[data-filter="route"]')?.value = searchState.filters.route;
-    document.querySelector('[data-filter="payment"]')?.value = searchState.filters.payment;
-    document.querySelector('[data-filter="social"]')?.value = searchState.filters.social;
+    const el = (sel) => document.querySelector(sel);
+    const set = (sel, val) => { const e = el(sel); if (e) e.value = val; };
+    set('[data-filter="dateRange"]', searchState.filters.dateRange);
+    set('[data-filter="airline"]', searchState.filters.airline);
+    set('[data-filter="route"]', searchState.filters.route);
+    set('[data-filter="payment"]', searchState.filters.payment);
+    set('[data-filter="social"]', searchState.filters.social);
 }
 
 function renderMoreFilters() {
