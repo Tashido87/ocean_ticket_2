@@ -44,7 +44,7 @@
                 <button class="nav-btn" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></button>
             </nav>
             <nav class="sidebar-nav sidebar-nav-footer">
-                <button class="nav-btn" id="sidebarSettingsBtn"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Settings</span></button>
+                <button class="nav-btn" data-view="settings" id="sidebarSettingsBtn"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Settings</span></button>
                 <button class="nav-btn" id="sidebarSignoutBtn"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
             </nav>
         </aside>
@@ -55,23 +55,6 @@
                     <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
                         <i class="fa-solid fa-bars" aria-hidden="true"></i>
                     </button>
-                </div>
-                <div class="header-center">
-                    <div class="header-filters" id="headerFilters">
-                        <select class="header-filter" id="headerFilterDeparture" aria-label="Filter by departure">
-                            <option value="">Departure</option>
-                        </select>
-                        <select class="header-filter" id="headerFilterDestination" aria-label="Filter by destination">
-                            <option value="">Destination</option>
-                        </select>
-                        <select class="header-filter" id="headerFilterDateRange" aria-label="Filter by date range">
-                            <option value="all">Date Range</option>
-                            <option value="today">Today</option>
-                            <option value="7d">Last 7 Days</option>
-                            <option value="30d">Last 30 Days</option>
-                            <option value="month">This Month</option>
-                        </select>
-                    </div>
                     <div class="global-search-box">
                         <button type="button" class="search-icon" id="globalSearchSubmit" aria-label="Search">
                             <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
@@ -83,11 +66,7 @@
                         <div class="global-search-suggestions" id="globalSearchSuggestions" hidden></div>
                     </div>
                 </div>
-                <div class="header-right">
-                    <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Open settings">
-                        <i class="fa-solid fa-gear" aria-hidden="true"></i>
-                    </button>
-                </div>
+                <div class="header-right"></div>
             </header>
 
             <main class="main-content">
@@ -893,64 +872,63 @@
                 </div>
             </section>
 
+            <section id="settings-view" class="view">
+                <div class="page-header">
+                    <h2><i class="fa-solid fa-gear" aria-hidden="true"></i> Settings</h2>
+                </div>
+                <div class="settings-view-body">
+                    <div class="settings-card">
+                        <div class="settings-section">
+                            <div class="settings-section-title"><i class="fa-solid fa-font" aria-hidden="true"></i> Font Style</div>
+                            <p class="settings-help">Select the font family for the application.</p>
+                            <div class="setting-item">
+                                <div class="setting-label-group">
+                                    <label for="font-select">Font Family</label>
+                                </div>
+                                <div class="custom-select-container" id="font-custom-select">
+                                    <div class="custom-select-trigger" tabindex="0">
+                                        <span class="current-font-name">Inter (Default)</span>
+                                        <i class="fa-solid fa-chevron-down arrow"></i>
+                                    </div>
+                                    <div class="custom-options">
+                                        <div class="custom-option selected" data-value="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" style="font-family: 'Inter', sans-serif;">Inter</div>
+                                        <div class="custom-option" data-value="'Roboto', sans-serif" style="font-family: 'Roboto', sans-serif;">Roboto</div>
+                                        <div class="custom-option" data-value="'Lato', sans-serif" style="font-family: 'Lato', sans-serif;">Lato</div>
+                                        <div class="custom-option" data-value="'Montserrat', sans-serif" style="font-family: 'Montserrat', sans-serif;">Montserrat</div>
+                                        <div class="custom-option" data-value="'Poppins', sans-serif" style="font-family: 'Poppins', sans-serif;">Poppins</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <div class="settings-section-title"><i class="fa-solid fa-palette" aria-hidden="true"></i> Appearance</div>
+                            <div class="setting-item" id="dark-mode-container">
+                                <div class="setting-label-group">
+                                    <label for="dark-mode-toggle">Dark Mode</label>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="dark-mode-toggle">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="settings-section commission-settings">
+                            <div class="settings-section-title"><i class="fa-solid fa-percent" aria-hidden="true"></i> Commission</div>
+                            <div class="setting-item">
+                                <div class="setting-label-group"><label for="agent-cut-slider">Agent Cut</label><span id="agent-cut-value">60%</span></div>
+                                <input type="range" id="agent-cut-slider" min="0" max="100" step="1" value="60">
+                            </div>
+                        </div>
+
+                        <button id="reset-settings-btn" class="btn btn-secondary btn-full" type="button"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset Settings</button>
+                    </div>
+                </div>
+            </section>
+
         </main>
         </div>
-    </div>
-
-    <div id="settings-panel" class="glass-card settings-panel solid-bg" aria-label="Settings panel">
-        <div class="settings-header">
-            <h3 class="settings-title">Settings</h3>
-            <button id="settings-close-btn" class="icon-btn icon-btn-sm" title="Close" aria-label="Close settings">
-                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-            </button>
-        </div>
-
-        <div class="settings-section">
-            <div class="settings-section-title"><i class="fa-solid fa-font" aria-hidden="true"></i> Font Style</div>
-            <p class="settings-help">Select the font family for the application.</p>
-            <div class="setting-item">
-                <div class="setting-label-group">
-                    <label for="font-select">Font Family</label>
-                </div>
-                <div class="custom-select-container" id="font-custom-select">
-                    <div class="custom-select-trigger" tabindex="0">
-                        <span class="current-font-name">Inter (Default)</span>
-                        <i class="fa-solid fa-chevron-down arrow"></i>
-                    </div>
-                    <div class="custom-options">
-                        <div class="custom-option selected" data-value="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" style="font-family: 'Inter', sans-serif;">Inter</div>
-                        <div class="custom-option" data-value="'Roboto', sans-serif" style="font-family: 'Roboto', sans-serif;">Roboto</div>
-                        <div class="custom-option" data-value="'Lato', sans-serif" style="font-family: 'Lato', sans-serif;">Lato</div>
-                        <div class="custom-option" data-value="'Montserrat', sans-serif" style="font-family: 'Montserrat', sans-serif;">Montserrat</div>
-                        <div class="custom-option" data-value="'Poppins', sans-serif" style="font-family: 'Poppins', sans-serif;">Poppins</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="settings-section">
-            <div class="settings-section-title"><i class="fa-solid fa-palette" aria-hidden="true"></i> Appearance</div>
-
-            <div class="setting-item" id="dark-mode-container">
-                <div class="setting-label-group">
-                    <label for="dark-mode-toggle">Dark Mode</label>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="dark-mode-toggle">
-                    <span class="slider round"></span>
-                </label>
-            </div>
-        </div>
-
-        <div class="settings-section commission-settings">
-            <div class="settings-section-title"><i class="fa-solid fa-percent" aria-hidden="true"></i> Commission</div>
-            <div class="setting-item">
-                <div class="setting-label-group"><label for="agent-cut-slider">Agent Cut</label><span id="agent-cut-value">60%</span></div>
-                <input type="range" id="agent-cut-slider" min="0" max="100" step="1" value="60">
-            </div>
-        </div>
-
-        <button id="reset-settings-btn" class="btn btn-secondary btn-full" type="button"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset Settings</button>
     </div>
 
     <div id="modal" class="modal"><div class="modal-content glass-card"><div id="modalBody"></div></div></div>
