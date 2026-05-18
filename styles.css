@@ -755,7 +755,7 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
     gap: 1.5rem;
     width: 100%;
     max-width: 450px;
-    margin: 2rem auto;
+    margin: 0.75rem auto;
 }
 .centered-form .form-group {
     width: 100%;
@@ -764,6 +764,10 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
 .centered-form .form-actions {
     justify-content: center;
     width: 100%;
+}
+
+#manage-view .form-container {
+    padding: 1rem 1.5rem;
 }
 
 /* --- BOOKING VIEW SPECIFIC STYLES --- */
