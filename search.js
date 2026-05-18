@@ -431,6 +431,18 @@ function navigateToSearch(query, push = true) {
     initSearchView();
 }
 
+function navigateToAccount(accountName) {
+    if (!accountName) return;
+    searchState.query = '';
+    searchState.activeType = 'clients';
+    searchState.filters.accountName = accountName;
+    const activeView = document.querySelector('.view.active')?.id?.replace(/-view$/, '');
+    if (activeView && activeView !== 'search') searchState.previousView = activeView;
+    updateSearchUrl(true);
+    showView('search');
+    initSearchView();
+}
+
 function highlightText(value, query = searchState.query) {
     const text = escapeHtml(value || '—');
     const tokens = queryTokens(query).sort((a, b) => b.length - a.length);
@@ -1078,8 +1090,7 @@ export function initGlobalSearch() {
             input.value = item.dataset.suggestionQuery;
             // do not navigate — user can press Enter or click search icon
         } else if (item.dataset.suggestionKind === 'account') {
-            input.value = item.dataset.accountName;
-            // do not navigate — user can press Enter or click search icon
+            navigateToAccount(item.dataset.accountName);
         } else if (item.dataset.suggestionKind === 'client') {
             viewClientHistory(item.dataset.clientKey);
         } else if (item.dataset.suggestionKind === 'ticket' && item.dataset.ticketId) {
