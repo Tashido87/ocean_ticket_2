@@ -1919,13 +1919,13 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .sticky-summary-bar .summary-actions .btn {
     width: 100%;
     justify-content: center;
-    padding: 0.7rem 1rem;
+    padding: 0.55rem 1rem;
     font-size: 0.9rem;
 }
 
 .sticky-summary-bar .summary-actions .btn-primary {
-    padding: 0.85rem 1rem;
-    font-size: 0.95rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.9rem;
 }
 
 /* Make room for the right sidebar in the form area */
@@ -2060,8 +2060,8 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .summary-stat .stat-label {
-    font-size: 0.66rem;
-    letter-spacing: 0.07em;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
 }
 
 .summary-stat .stat-value {
@@ -2137,8 +2137,8 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 /* ---------- Sticky action area — paid date and method size match ---------- */
 .summary-payment-controls .form-group input,
 .summary-payment-controls .form-group select {
-    padding: 0.5rem 0.85rem !important;
-    font-size: 0.85rem !important;
+    padding: 0.6rem 0.85rem !important;
+    font-size: 0.875rem !important;
 }
 
 /* Keep payment controls compact inside the right order-summary card. */
@@ -2163,15 +2163,15 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     box-sizing: border-box;
     display: block;
     width: 100% !important;
-    height: 42px !important;
-    min-height: 42px !important;
-    max-height: 42px !important;
-    padding: 0 0.85rem !important;
-    line-height: 42px !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    padding: 0.6rem 0.85rem !important;
+    line-height: 1.4 !important;
 }
 
 #stickySummaryBar #payment_method {
-    flex: 0 0 42px !important;
+    flex: 0 0 auto !important;
 }
 
 #stickySummaryBar .bank-select {
@@ -2181,7 +2181,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 #stickySummaryBar .bank-select.show {
     margin-top: 0.5rem;
-    flex: 0 0 42px !important;
+    flex: 0 0 auto !important;
 }
 
 /* ---------- Dark theme adjustments ---------- */

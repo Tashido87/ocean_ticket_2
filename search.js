@@ -219,8 +219,8 @@ function rankRecord(record, type, query) {
     };
 }
 
-function buildClientResult(client) {
-    const rank = rankRecord(client, 'client', searchState.query);
+function buildClientResult(client, query = searchState.query) {
+    const rank = rankRecord(client, 'client', query);
     return {
         kind: 'client',
         id: client.client_key,
@@ -232,9 +232,9 @@ function buildClientResult(client) {
     };
 }
 
-function buildTicketResult(ticket) {
+function buildTicketResult(ticket, query = searchState.query) {
     if (isFeeEntry(ticket)) return null;
-    const rank = rankRecord(ticket, 'ticket', searchState.query);
+    const rank = rankRecord(ticket, 'ticket', query);
     const payment = getPaymentStatus(ticket);
     return {
         kind: 'ticket',
@@ -248,12 +248,12 @@ function buildTicketResult(ticket) {
     };
 }
 
-function buildAllRankedResults() {
-    const clients = state.allClients.map(buildClientResult);
-    const tickets = state.allTickets.map(buildTicketResult).filter(Boolean);
+function buildAllRankedResults(query = searchState.query) {
+    const clients = state.allClients.map(c => buildClientResult(c, query));
+    const tickets = state.allTickets.map(t => buildTicketResult(t, query)).filter(Boolean);
     return [...clients, ...tickets]
         .filter(result => {
-            if (!searchState.query) return true;
+            if (!query) return true;
             return result.quality !== 'none' && result.score > 0;
         })
         .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a));
@@ -883,7 +883,7 @@ function getResultId(result) {
 
 function buildSuggestions(query) {
     const q = query.trim();
-    const all = q ? buildAllRankedResults().filter(r => r.score > 0).slice(0, 8) : [];
+    const all = q ? buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 8) : [];
     const top = all[0] ? [all[0]] : [];
     const topIds = new Set(top.map(getResultId));
     const clients = all.filter(r => r.kind === 'client' && !topIds.has(getResultId(r))).slice(0, 4);
@@ -994,6 +994,7 @@ export function initGlobalSearch() {
             input.blur();
         }
         if (e.key === 'Enter') {
+            e.preventDefault();
             navigateToSearch(input.value);
             closeSuggestions(input, panel);
         }

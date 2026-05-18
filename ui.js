@@ -114,6 +114,11 @@ export function showView(viewName) {
     // Stagger entrance animations for key blocks
     runIntroAnimations(targetView);
 
+    // Clear search hash when navigating away from search
+    if (viewName !== 'search' && window.location.hash.startsWith('#/search')) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
     // View-specific cleanup and setup
     if (viewName === 'sell') {
         document.getElementById('sellForm')?.reset();
