@@ -7,7 +7,6 @@
 import { CITIES } from './config.js';
 import { state } from './state.js';
 import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut } from './utils.js';
-import { renderClientsView } from './clients.js';
 import { clearManageResults } from './manage.js';
 import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard, renderSettlementPage } from './settlement.js';
 import { showToast } from './utils.js';
@@ -143,9 +142,6 @@ export function showView(viewName) {
         hideNewSettlementForm();
         displaySettlements();
         updateSettlementDashboard();
-    }
-    if (viewName === 'clients') {
-        renderClientsView();
     }
     if (viewName === 'manage') {
         clearManageResults();

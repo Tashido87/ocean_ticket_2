@@ -334,7 +334,7 @@ function copyClientInfo(name, id, phone, gender) {
  * Displays a modal with a client's complete ticket history and stats.
  * @param {string} clientKey The unique key of the client to view.
  */
-function viewClientHistory(clientKey) {
+export function viewClientHistory(clientKey) {
     const activeClient = state.allClients.find(c => c.client_key === clientKey);
     const clientName = activeClient ? activeClient.name : 'Unknown';
 
@@ -484,7 +484,7 @@ function toggleFeaturedClient(event, clientKey) {
  * Pre-fills the "Sell Ticket" form for a specific client.
  * @param {string} clientKey The unique key of the client.
  */
-function sellTicketForClient(clientKey) {
+export function sellTicketForClient(clientKey) {
     const client = state.allClients.find(c => c.client_key === clientKey);
     if (!client) {
         showToast('Could not find client details.', 'error');
@@ -510,7 +510,7 @@ function sellTicketForClient(clientKey) {
  * Pre-fills the "New Booking" form for a specific client.
  * @param {string} clientKey The unique key of the client.
  */
-function bookForClient(clientKey) {
+export function bookForClient(clientKey) {
     const client = state.allClients.find(c => c.client_key === clientKey);
     if (!client) {
         showToast('Could not find client details.', 'error');

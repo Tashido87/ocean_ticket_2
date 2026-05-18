@@ -39,13 +39,19 @@
 
             <nav class="nav" aria-label="Primary navigation">
                 <button class="nav-btn active" data-view="home"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Dashboard</span></button>
-                <button class="nav-btn" data-view="clients"><i class="fa-solid fa-users" aria-hidden="true"></i><span>Clients</span></button>
                 <button class="nav-btn" data-view="sell"><i class="fa-solid fa-ticket" aria-hidden="true"></i><span>Sell Ticket</span></button>
                 <button class="nav-btn" data-view="manage"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Manage Ticket</span></button>
                 <button class="nav-btn" data-view="booking"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span>Booking</span></button>
                 <button class="nav-btn" data-view="settle"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span>Settle</span></button>
                 <button class="nav-btn" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></button>
             </nav>
+
+            <div class="header-center">
+                <div class="global-search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                    <input type="text" id="globalSearchInput" placeholder="Search client, phone, account, PNR…" autocomplete="off" aria-label="Global search">
+                </div>
+            </div>
 
             <div class="header-right">
                 <a href="https://docs.google.com/spreadsheets/d/1SGc80isz0VRVt447R_q-fBdZ_me52H_Z32W5HauHMWQ/edit" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Open Google Sheet" aria-label="Open Google Sheet">
@@ -147,7 +153,7 @@
 
                     <div class="actions-grid">
                         <div class="search-section glass-card">
-                            <h3><i class="fa-solid fa-magnifying-glass"></i> Search Tickets</h3>
+                            <h3><i class="fa-solid fa-magnifying-glass"></i> Quick Ticket Search</h3>
                             <form id="searchForm" onsubmit="return false;">
                                 <div class="search-inputs">
                                     <input type="text" id="searchName" placeholder="Client Name" autocomplete="off">
@@ -185,6 +191,7 @@
                                     <button id="searchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i> Search</button>
                                     <button id="clearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
                                 </div>
+                                <a href="#/search" class="advanced-search-link"><i class="fa-solid fa-sliders"></i> Advanced Search</a>
                                 <div id="saved-searches-container" class="saved-searches-container"></div>
                             </form>
                         </div>
@@ -217,7 +224,27 @@
                 </div>
             </section>
 
-            <section id="clients-view" class="view">
+            <section id="search-view" class="view">
+                <div class="search-view-wrapper">
+                    <div class="search-view-header">
+                        <h2><i class="fa-solid fa-magnifying-glass"></i> Search Results</h2>
+                        <p id="searchSubtitle" class="search-subtitle">Search clients, tickets, PNR, or accounts</p>
+                        <div class="search-page-input-wrap">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="searchPageInput" placeholder="Search client, phone, account, PNR…" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="search-view-body">
+                        <aside class="search-filter-panel" id="searchFilterPanel">
+                            <!-- Filters injected by search.js -->
+                        </aside>
+                        <div class="search-results-area">
+                            <div id="searchResultsContainer" class="search-results-container">
+                                <!-- Results injected by search.js -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section id="settle-view" class="view">
@@ -953,6 +980,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=3" type="module"></script>
+    <script src="main.js?v=4" type="module"></script>
 </body>
 </html>

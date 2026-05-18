@@ -15,7 +15,8 @@ import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleS
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import { loadHistory } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements } from './settlement.js';
-import { buildClientList, renderClientsView, loadFeaturedClients } from './clients.js';
+import { buildClientList, loadFeaturedClients } from './clients.js';
+import { initSearchView, handleGlobalSearch, handleSearchInput, setSearchQuery } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
@@ -48,8 +49,11 @@ export async function initializeApp() {
 
         // Build derived data
         buildClientList();
-        renderClientsView();
         initializeDashboardSelectors();
+
+        // Hash-based routing (for search page)
+        window.addEventListener('hashchange', handleHashRoute);
+        handleHashRoute();
 
         // Set up real-time listeners
         state.unsubscribers.push(
@@ -97,6 +101,17 @@ export async function initializeApp() {
 }
 
 /**
+ * Handle URL hash routing for the search page.
+ */
+function handleHashRoute() {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/search')) {
+        showView('search');
+        initSearchView();
+    }
+}
+
+/**
  * Sets up all event listeners for the application.
  */
 function setupEventListeners() {
@@ -107,6 +122,35 @@ function setupEventListeners() {
     document.getElementById('settings-btn').addEventListener('click', () => document.getElementById('settings-panel').classList.toggle('show'));
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     if (settingsCloseBtn) settingsCloseBtn.addEventListener('click', () => document.getElementById('settings-panel').classList.remove('show'));
+
+    // Global Search (header input)
+    const globalSearchInput = document.getElementById('globalSearchInput');
+    const globalSearchIcon = document.querySelector('.global-search-box .search-icon');
+    if (globalSearchInput) {
+        globalSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = globalSearchInput.value.trim();
+                if (query) handleGlobalSearch(query);
+            }
+        });
+    }
+    if (globalSearchIcon) {
+        globalSearchIcon.addEventListener('click', () => {
+            const query = globalSearchInput?.value.trim() || '';
+            if (query) handleGlobalSearch(query);
+            else globalSearchInput?.focus();
+        });
+    }
+
+    // Search page input
+    const searchPageInput = document.getElementById('searchPageInput');
+    if (searchPageInput) {
+        const debouncedPageSearch = debounce((e) => {
+            handleSearchInput(e.target.value.trim());
+        }, 250);
+        searchPageInput.addEventListener('input', debouncedPageSearch);
+    }
+
     // Dashboard Search
     const debouncedSearch = debounce(performSearch, 300);
     document.getElementById('searchName').addEventListener('input', debouncedSearch);
