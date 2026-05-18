@@ -20,6 +20,28 @@ export function initHotelService() {
 
     if (generateBtn) generateBtn.addEventListener('click', () => runHotelGeneration(generateBtn));
     if (clearBtn) clearBtn.addEventListener('click', clearHotelInputs);
+    setupHotelGuestSourceToggle();
+}
+
+function setupHotelGuestSourceToggle() {
+    const radios = document.querySelectorAll('input[name="hotel_guest_source"]');
+    const update = () => {
+        const source = document.querySelector('input[name="hotel_guest_source"]:checked')?.value || 'pnr';
+        const manualFields = document.getElementById('hotelManualFields');
+        const pnrGroup = document.getElementById('hotel-pnr-group');
+        const pnrInput = document.getElementById('hotel-pnr');
+        const isManual = source === 'manual';
+        if (manualFields) manualFields.hidden = !isManual;
+        if (pnrGroup) pnrGroup.hidden = isManual;
+        if (pnrInput) pnrInput.required = !isManual;
+    };
+
+    radios.forEach(radio => {
+        if (radio.dataset.hotelSourceBound === 'true') return;
+        radio.addEventListener('change', update);
+        radio.dataset.hotelSourceBound = 'true';
+    });
+    update();
 }
 
 async function runHotelGeneration(btn) {
@@ -45,51 +67,63 @@ async function runHotelGeneration(btn) {
 function clearHotelInputs() {
     document.getElementById('hotel-city').value = 'BKK';
     document.getElementById('hotel-pnr').value = '';
+    document.getElementById('hotel_guest_source_pnr').checked = true;
+    document.getElementById('hotel-manual-name').value = '';
+    document.getElementById('hotel-manual-total').value = '1';
+    document.getElementById('hotel-manual-adults').value = '1';
+    document.getElementById('hotel-manual-children').value = '0';
     document.getElementById('hotel-arrival').value = '';
     document.getElementById('hotel-departure').value = '';
     document.getElementById('hotel-bed-qty').value = '1';
     document.getElementById('hotel-bed-type').value = 'Double';
     document.getElementById('hotel-extra-bed').checked = false;
+    setupHotelGuestSourceToggle();
     hideServiceToast('hotelToast');
 }
 
-/**
- * Main logic to generate the voucher data and render it.
- * @param {string} format 'pdf' or 'png'
- */
-async function generateVoucher(format) {
-    // 1. Collect Inputs
-    const city = document.getElementById('hotel-city').value; // BKK or KUL
-    const pnrInput = document.getElementById('hotel-pnr').value.trim();
-    const arrivalDateStr = document.getElementById('hotel-arrival').value;
-    const departureDateStr = document.getElementById('hotel-departure').value;
-    const bedQty = document.getElementById('hotel-bed-qty').value;
-    const bedType = document.getElementById('hotel-bed-type').value; // Double or Twin
-    const hasExtraBed = document.getElementById('hotel-extra-bed').checked;
+function readPositiveInt(id, fallback = 0) {
+    const value = parseInt(document.getElementById(id)?.value || '', 10);
+    return Number.isFinite(value) ? value : fallback;
+}
 
-    // 2. Validation
-    if (!pnrInput || !arrivalDateStr || !departureDateStr) {
-        showToast('Please fill in PNR and Dates.', 'error');
-        return;
+function buildManualGuests() {
+    const clientName = (document.getElementById('hotel-manual-name')?.value || '').trim().toUpperCase();
+    const total = readPositiveInt('hotel-manual-total', 0);
+    const adults = readPositiveInt('hotel-manual-adults', 0);
+    const children = readPositiveInt('hotel-manual-children', 0);
+
+    if (!clientName) {
+        showToast('Please fill the manual client name.', 'error');
+        return null;
+    }
+    if (total < 1) {
+        showToast('Number of clients must be at least 1.', 'error');
+        return null;
+    }
+    if (adults < 0 || children < 0 || adults + children < 1) {
+        showToast('Please fill adult/child counts.', 'error');
+        return null;
+    }
+    if (adults + children !== total) {
+        showToast('Adult + child count must match number of clients.', 'error');
+        return null;
     }
 
-    // 3. Format Dates (e.g., "Nov 12, 2025")
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    };
-    const arrival = formatDate(arrivalDateStr);
-    const departure = formatDate(departureDateStr);
+    const guestNames = [clientName];
+    let paxString = `${adults} Adult(s)`;
+    if (children > 0) paxString += `, ${children} Child(ren)`;
 
-    // 4. Fetch Client Names from PNR(s) & Detect Children
+    return { guestNames, adultCount: adults, childCount: children, paxString };
+}
+
+function buildPnrGuests(pnrInput) {
     const pnrs = pnrInput.split(/[,\s]+/).filter(p => p.trim());
-    let guestNames = [];
+    const guestNames = [];
     let adultCount = 0;
     let childCount = 0;
-    
+
     pnrs.forEach(pnr => {
-        const tickets = state.allTickets.filter(t => 
+        const tickets = state.allTickets.filter(t =>
             (t.booking_reference || '').toUpperCase() === pnr.toUpperCase()
         );
         tickets.forEach(t => {
@@ -109,10 +143,10 @@ async function generateVoucher(format) {
 
             // Remove title at end (MR, MRS, MS, MSTR, MISS)
             rawName = rawName.replace(/\s+(MR|MRS|MS|MISS|MSTR)$/, '');
-            
+
             // Format Name with Suffix
-            let formattedName = rawName + (isChild ? "(Child)" : "(Adult)");
-            
+            const formattedName = rawName + (isChild ? "(Child)" : "(Adult)");
+
             if (!guestNames.includes(formattedName)) {
                 guestNames.push(formattedName);
                 if (isChild) childCount++; else adultCount++;
@@ -120,8 +154,53 @@ async function generateVoucher(format) {
         });
     });
 
+    return { guestNames, adultCount, childCount };
+}
+
+function buildPaxString(adultCount, childCount) {
+    let paxString = `${adultCount} Adult(s)`;
+    if (childCount > 0) paxString += `, ${childCount} Child(ren)`;
+    return paxString;
+}
+
+/**
+ * Main logic to generate the voucher data and render it.
+ * @param {string} format 'pdf' or 'png'
+ */
+async function generateVoucher(format) {
+    // 1. Collect Inputs
+    const city = document.getElementById('hotel-city').value; // BKK or KUL
+    const guestSource = document.querySelector('input[name="hotel_guest_source"]:checked')?.value || 'pnr';
+    const pnrInput = document.getElementById('hotel-pnr').value.trim();
+    const arrivalDateStr = document.getElementById('hotel-arrival').value;
+    const departureDateStr = document.getElementById('hotel-departure').value;
+    const bedQty = document.getElementById('hotel-bed-qty').value;
+    const bedType = document.getElementById('hotel-bed-type').value; // Double or Twin
+    const hasExtraBed = document.getElementById('hotel-extra-bed').checked;
+
+    // 2. Validation
+    if ((guestSource === 'pnr' && !pnrInput) || !arrivalDateStr || !departureDateStr) {
+        showToast(guestSource === 'pnr' ? 'Please fill in PNR and dates.' : 'Please fill in dates.', 'error');
+        return;
+    }
+
+    // 3. Format Dates (e.g., "Nov 12, 2025")
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+    const arrival = formatDate(arrivalDateStr);
+    const departure = formatDate(departureDateStr);
+
+    // 4. Fetch Client Names from PNR(s), or use manual client/count fields.
+    const guestData = guestSource === 'manual' ? buildManualGuests() : buildPnrGuests(pnrInput);
+    if (!guestData) return;
+
+    let { guestNames, adultCount, childCount } = guestData;
+
     // Fallback if PNR not found (for manual testing)
-    if (guestNames.length === 0) {
+    if (guestSource === 'pnr' && guestNames.length === 0) {
         showToast(`Warning: No passengers found for PNR ${pnrInput}. Using placeholder.`, 'info');
         guestNames = ["GUEST / NAME(Adult)"];
         adultCount = 1;
@@ -129,10 +208,7 @@ async function generateVoucher(format) {
     }
 
     // Generate Pax String (e.g., "2 Adult(s), 1 Child(ren)")
-    let paxString = `${adultCount} Adult(s)`;
-    if (childCount > 0) {
-        paxString += `, ${childCount} Child(ren)`;
-    }
+    const paxString = guestData.paxString || buildPaxString(adultCount, childCount);
 
     // 5. Generate Reference & Details
     const refNum = city === 'BKK' 

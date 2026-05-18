@@ -20,7 +20,7 @@ import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
 import { initHotelService } from './hotel.js'; 
-import { getAllDocuments, uploadDocument, formatFileSize, formatUploadDate } from './documents.js';
+import { getAllDocuments, uploadDocument, deleteDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -302,17 +302,18 @@ function setupEventListeners() {
                     <span>Type</span>
                     <span>Size</span>
                     <span>Uploaded</span>
-                    <span></span>
+                    <span>Actions</span>
                 </div>`
             : '';
 
-        const rows = docCache.map(doc => {
+        const rows = docCache.map((doc, idx) => {
             const { iconClass, icon } = getDocIcon(doc.ext);
             const sizeStr = formatFileSize(doc.size);
             const dateStr = formatUploadDate(doc.uploadedAt);
             const tagClass = String(doc.type || 'document').toLowerCase().replace(/\s+/g, '-');
+            const canDelete = doc.source === 'firebase' && doc.path;
             return `
-                <a href="${escapeHtml(doc.url)}" download="${escapeHtml(doc.filename || doc.title)}" class="document-card" target="_blank" rel="noopener" data-title="${escapeHtml(doc.title)}" data-type="${escapeHtml(doc.type)}" data-ext="${escapeHtml(doc.ext)}">
+                <div class="document-card" role="link" tabindex="0" data-doc-index="${idx}" data-title="${escapeHtml(doc.title)}" data-type="${escapeHtml(doc.type)}" data-ext="${escapeHtml(doc.ext)}">
                     <div class="doc-icon-box ${iconClass}"><i class="fa-solid ${icon}"></i></div>
                     <div class="doc-info">
                         <span class="doc-title">${escapeHtml(doc.title)}</span>
@@ -325,12 +326,33 @@ function setupEventListeners() {
                     <span class="doc-tag-cell"><span class="doc-tag ${tagClass}">${escapeHtml(doc.type)}</span></span>
                     <span class="doc-size-cell">${escapeHtml(sizeStr)}</span>
                     <span class="doc-date-cell">${escapeHtml(dateStr)}</span>
-                    <div class="doc-action" title="Download"><i class="fa-solid fa-download"></i></div>
-                </a>
+                    <div class="doc-actions">
+                        <button type="button" class="doc-action" data-doc-action="download" title="Download ${escapeHtml(doc.title)}" aria-label="Download ${escapeHtml(doc.title)}">
+                            <i class="fa-solid fa-download"></i>
+                        </button>
+                        ${isDetail ? `
+                            <button type="button" class="doc-action doc-delete-action" data-doc-action="delete" title="${canDelete ? `Delete ${escapeHtml(doc.title)}` : 'Seed documents cannot be deleted'}" aria-label="Delete ${escapeHtml(doc.title)}" ${canDelete ? '' : 'disabled'}>
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
             `;
         }).join('');
 
         grid.innerHTML = headerRow + rows;
+    }
+
+    function downloadDocument(doc) {
+        if (!doc?.url) return;
+        const link = document.createElement('a');
+        link.href = doc.url;
+        link.download = doc.filename || doc.title || 'document';
+        link.target = '_blank';
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     async function refreshDocuments() {
@@ -364,6 +386,48 @@ function setupEventListeners() {
         }, 150));
     }
 
+    const documentsGrid = document.getElementById('documentsGrid');
+    if (documentsGrid) {
+        documentsGrid.addEventListener('click', async (e) => {
+            const card = e.target.closest('.document-card');
+            if (!card) return;
+            const doc = docCache[Number(card.dataset.docIndex)];
+            if (!doc) return;
+
+            const action = e.target.closest('[data-doc-action]')?.dataset.docAction;
+            if (action === 'delete') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (doc.source !== 'firebase' || !doc.path) {
+                    showToast('Seed documents cannot be deleted.', 'info');
+                    return;
+                }
+                const ok = window.confirm(`Delete "${doc.title}"? This cannot be undone.`);
+                if (!ok) return;
+                try {
+                    await deleteDocument(doc.path);
+                    showToast(`Deleted "${doc.title}"`, 'success');
+                    await refreshDocuments();
+                } catch (err) {
+                    console.error(err);
+                    showToast(err.message || 'Delete failed.', 'error');
+                }
+                return;
+            }
+
+            downloadDocument(doc);
+        });
+
+        documentsGrid.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const card = e.target.closest('.document-card');
+            if (!card || e.target.closest('[data-doc-action]')) return;
+            e.preventDefault();
+            const doc = docCache[Number(card.dataset.docIndex)];
+            downloadDocument(doc);
+        });
+    }
+
     // Upload feature
     const uploadBtn = document.getElementById('docUploadBtn');
     const uploadInput = document.getElementById('docUploadInput');
@@ -379,7 +443,18 @@ function setupEventListeners() {
             const file = e.target.files?.[0];
             if (!file) return;
 
-            const ext = (file.name.match(/\.([^.]+)$/) || [])[1] || '';
+            const defaultTitle = file.name.replace(/\.[^.]+$/, '');
+            const enteredTitle = window.prompt('Enter document name', defaultTitle);
+            if (enteredTitle === null) {
+                uploadInput.value = '';
+                return;
+            }
+            const documentTitle = enteredTitle.trim();
+            if (!documentTitle) {
+                showToast('Document name is required.', 'error');
+                uploadInput.value = '';
+                return;
+            }
             const inferType = (n) => {
                 const lower = n.toLowerCase();
                 if (lower.includes('hotel')) return 'Hotel';
@@ -388,21 +463,21 @@ function setupEventListeners() {
             };
 
             uploadProgress.hidden = false;
-            uploadName.textContent = file.name;
+            uploadName.textContent = documentTitle;
             uploadPct.textContent = '0%';
             uploadFill.style.width = '0%';
             setButtonLoading(uploadBtn, true);
 
             try {
                 await uploadDocument(file, {
-                    title: file.name.replace(/\.[^.]+$/, ''),
+                    title: documentTitle,
                     type: inferType(file.name),
                     onProgress: (pct) => {
                         uploadPct.textContent = `${pct}%`;
                         uploadFill.style.width = `${pct}%`;
                     }
                 });
-                showToast(`Uploaded "${file.name}"`, 'success');
+                showToast(`Uploaded "${documentTitle}"`, 'success');
                 await refreshDocuments();
             } catch (err) {
                 console.error(err);

@@ -698,8 +698,37 @@
                                     </div>
 
                                     <div class="form-group">
+                                        <label>Guest Source</label>
+                                        <div class="format-segment hotel-source-segment" id="hotelGuestSourceSegment">
+                                            <input type="radio" name="hotel_guest_source" id="hotel_guest_source_pnr" value="pnr" checked>
+                                            <label for="hotel_guest_source_pnr"><i class="fa-solid fa-ticket"></i> PNR</label>
+                                            <input type="radio" name="hotel_guest_source" id="hotel_guest_source_manual" value="manual">
+                                            <label for="hotel_guest_source_manual"><i class="fa-solid fa-user-pen"></i> Manual</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group" id="hotel-pnr-group">
                                         <label for="hotel-pnr">PNR Code(s)</label>
-                                        <input type="text" id="hotel-pnr" placeholder="PNR for Names" required autocomplete="off">
+                                        <input type="text" id="hotel-pnr" placeholder="PNR for Names" autocomplete="off">
+                                    </div>
+
+                                    <div class="hotel-manual-fields" id="hotelManualFields" hidden>
+                                        <div class="form-group">
+                                            <label for="hotel-manual-name">Client Name</label>
+                                            <input type="text" id="hotel-manual-name" placeholder="Lead guest / client name" autocomplete="off">
+                                        </div>
+                                        <div class="form-group short-input">
+                                            <label for="hotel-manual-total">Clients</label>
+                                            <input type="number" id="hotel-manual-total" min="1" value="1">
+                                        </div>
+                                        <div class="form-group short-input">
+                                            <label for="hotel-manual-adults">Adults</label>
+                                            <input type="number" id="hotel-manual-adults" min="0" value="1">
+                                        </div>
+                                        <div class="form-group short-input">
+                                            <label for="hotel-manual-children">Children</label>
+                                            <input type="number" id="hotel-manual-children" min="0" value="0">
+                                        </div>
                                     </div>
 
                                     <div class="form-group">
