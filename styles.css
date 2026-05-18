@@ -767,7 +767,32 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
 }
 
 #manage-view .form-container {
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 1rem !important;
+}
+
+#manage-view .form-container h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1.15rem;
+}
+
+#manage-view .centered-form {
+    gap: 0.6rem;
+    margin: 0.25rem auto;
+}
+
+#manage-view .form-actions {
+    margin-top: 0.4rem;
+    gap: 0.5rem;
+}
+
+#manage-view #modificationHistoryContainer {
+    margin-top: 0.75rem !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+#manage-view #modificationHistoryContainer h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1rem;
 }
 
 /* --- BOOKING VIEW SPECIFIC STYLES --- */
