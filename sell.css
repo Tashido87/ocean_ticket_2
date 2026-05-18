@@ -2208,6 +2208,74 @@ body.material-theme.dark-theme #sell-view .pax-card-header {
     background: rgba(28, 28, 26, 0.55);
 }
 
+/* Sticky summary bar (right sidebar) */
+body.dark-theme #sell-view .sticky-summary-bar,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar {
+    background: rgba(35, 34, 32, 0.95);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar::before,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar::before {
+    color: rgba(255, 255, 255, 0.55);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .summary-stats,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-stats,
+body.dark-theme #sell-view .sticky-summary-bar .summary-payment-controls,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-payment-controls {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .summary-stat .stat-label,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-stat .stat-label {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .summary-stat .stat-value,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-stat .stat-value {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .paid-toggle,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .paid-toggle {
+    background: rgba(28, 28, 26, 0.7);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .paid-toggle .paid-label,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .paid-toggle .paid-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .summary-payment-controls .form-group input,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-payment-controls .form-group input,
+body.dark-theme #sell-view .sticky-summary-bar .summary-payment-controls .form-group select,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-payment-controls .form-group select {
+    background: rgba(28, 28, 26, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .summary-payment-controls .form-group label,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-payment-controls .form-group label {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .summary-actions .btn-secondary,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-actions .btn-secondary {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.75);
+}
+
+body.dark-theme #sell-view .sticky-summary-bar .summary-actions .btn-secondary:hover,
+body.material-theme.dark-theme #sell-view .sticky-summary-bar .summary-actions .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
 /* ---------- Mobile — keep things readable ---------- */
 @media (max-width: 768px) {
     #sell-view .sell-section { padding: 1.1rem 1rem; }
