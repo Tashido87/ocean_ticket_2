@@ -2329,6 +2329,28 @@ body.material-theme.dark-theme #sell-view .gender-segment label:hover {
     color: rgba(255, 255, 255, 0.9);
 }
 
+/* NRC input dark mode */
+body.dark-theme #sell-view .nrc-input,
+body.material-theme.dark-theme #sell-view .nrc-input {
+    background: rgba(28, 28, 26, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme #sell-view .nrc-input input,
+body.material-theme.dark-theme #sell-view .nrc-input input {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.dark-theme #sell-view .nrc-input .nrc-sep,
+body.material-theme.dark-theme #sell-view .nrc-input .nrc-sep {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+body.dark-theme #sell-view .nrc-input:focus-within,
+body.material-theme.dark-theme #sell-view .nrc-input:focus-within {
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+}
+
 /* ---------- Mobile — keep things readable ---------- */
 @media (max-width: 768px) {
     #sell-view .sell-section { padding: 1.1rem 1rem; }
