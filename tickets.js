@@ -648,7 +648,8 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
  * Filters and displays tickets based on search criteria.
  */
 export function performSearch() {
-    const name = (document.getElementById('searchName')?.value || '').toUpperCase();
+    const nameRaw = (document.getElementById('searchName')?.value || '').toUpperCase().trim();
+    const nameTokens = nameRaw ? nameRaw.split(/\s+/) : [];
     const bookRef = (document.getElementById('searchBooking')?.value || '').toUpperCase();
     let startDateVal = document.getElementById('searchStartDate')?.value;
     let endDateVal = document.getElementById('searchEndDate')?.value;
@@ -669,8 +670,9 @@ export function performSearch() {
     const results = state.allTickets.filter(t => {
         const issuedDate = parseSheetDate(t.issued_date);
         const travelDate = parseSheetDate(t.departing_on);
+        const tName = (t.name || '').toUpperCase();
 
-        const nameMatch = !name || t.name.toUpperCase().includes(name);
+        const nameMatch = nameTokens.length === 0 || nameTokens.every(token => tName.includes(token));
         const bookRefMatch = !bookRef || t.booking_reference.toUpperCase().includes(bookRef);
         const issuedDateMatch = (!searchStartDate || issuedDate >= searchStartDate) && (!searchEndDate || issuedDate <= searchEndDate);
         const travelDateMatch = !searchTravelDate || (travelDate && travelDate.getTime() === searchTravelDate.getTime());

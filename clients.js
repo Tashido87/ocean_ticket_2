@@ -205,12 +205,16 @@ export function renderClientsView(page) {
     }
 
     if (searchQuery) {
-        filteredClients = filteredClients.filter(c =>
-            String(c.name || '').toLowerCase().includes(query) ||
-            String(c.phone || '').toLowerCase().includes(query) ||
-            (c.account_name && c.account_name.toLowerCase().includes(query)) ||
-            (c.account_type && c.account_type.toLowerCase().includes(query))
-        );
+        const queryTokens = query.split(/\s+/).filter(Boolean);
+        filteredClients = filteredClients.filter(c => {
+            const n = String(c.name || '').toLowerCase();
+            const p = String(c.phone || '').toLowerCase();
+            const an = String(c.account_name || '').toLowerCase();
+            const at = String(c.account_type || '').toLowerCase();
+            return queryTokens.every(token => 
+                n.includes(token) || p.includes(token) || an.includes(token) || at.includes(token)
+            );
+        });
     }
 
     // MODIFICATION: Update the total count badge
