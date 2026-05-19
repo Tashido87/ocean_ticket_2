@@ -27,6 +27,18 @@ import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, format
 // MODIFIED: Added 'addExistingPassengerForm' to imports
 import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview } from './ui.js';
 
+function syncGroupToggleState() {
+    const start = document.getElementById('searchStartDate')?.value;
+    const end = document.getElementById('searchEndDate')?.value;
+    const toggle = document.getElementById('groupByAccountToggle');
+    if (!toggle) return;
+    const hasRange = !!(start && end);
+    toggle.disabled = !hasRange;
+    if (!hasRange) {
+        toggle.checked = false;
+    }
+}
+
 /**
  * Main application initialization function. Called after authentication.
  * @export
@@ -182,12 +194,6 @@ function setupEventListeners() {
         if (panel) panel.hidden = !panel.hidden;
     });
 
-    // Group toggle can be used in any situation
-    function syncGroupToggleState() {
-        const toggle = document.getElementById('groupByAccountToggle');
-        if (!toggle) return;
-        toggle.disabled = false;
-    }
     ['searchStartDate', 'searchEndDate'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
