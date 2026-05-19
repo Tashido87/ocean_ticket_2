@@ -180,7 +180,7 @@ export function displayTickets(tickets, page = 1) {
 
         const ticket = isGroup ? item : item;
         const nameCell = isGroup
-            ? `${escapeHtml(ticket.accountName)}<span class="group-badge">${ticket.count} clients</span>`
+            ? `<strong>${escapeHtml(ticket.tickets[0]?.name || 'Unknown')}</strong> <span class="group-badge">${ticket.count} clients</span>`
             : escapeHtml(ticket.name || '');
 
         row.innerHTML = `
@@ -809,24 +809,37 @@ export function clearSearch() {
 
 /**
  * Sets the date range for the search based on a preset.
- * @param {string} range The preset range ('7', '30', 'month').
+ * @param {string} range The preset range ('7', '30', 'month', 'this-month', 'last-month', 'all-time').
  */
 export function setDateRangePreset(range) {
     const startDateInput = document.getElementById('searchStartDate');
     const endDateInput = document.getElementById('searchEndDate');
     const today = new Date();
+
+    if (range === 'all-time') {
+        startDateInput.value = '';
+        endDateInput.value = '';
+        performSearch();
+        togglePrivateReportButton();
+        return;
+    }
+
     let startDate = new Date();
+    let endDate = new Date();
 
     if (range === '7') {
         startDate.setDate(today.getDate() - 7);
     } else if (range === '30') {
         startDate.setDate(today.getDate() - 30);
-    } else if (range === 'month') {
+    } else if (range === 'month' || range === 'this-month') {
         startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    } else if (range === 'last-month') {
+        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
     }
 
     startDateInput.value = formatDateForSheet(startDate);
-    endDateInput.value = formatDateForSheet(today);
+    endDateInput.value = formatDateForSheet(endDate);
     performSearch();
     togglePrivateReportButton();
 }

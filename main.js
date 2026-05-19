@@ -51,6 +51,10 @@ export async function initializeApp() {
         buildClientList();
         initializeDashboardSelectors();
 
+        // Default: show This Month
+        setDateRangePreset('this-month');
+        syncGroupToggleState();
+
         // Hash-based routing (for search page)
         window.addEventListener('hashchange', handleHashRoute);
         handleHashRoute();
@@ -165,22 +169,24 @@ function setupEventListeners() {
         clearSearch();
         syncGroupToggleState();
     });
+    document.querySelectorAll('.records-preset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.records-preset-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            setDateRangePreset(e.target.dataset.range);
+            syncGroupToggleState();
+        });
+    });
     document.getElementById('recordsFilterToggle').addEventListener('click', () => {
         const panel = document.getElementById('recordsFilters');
         if (panel) panel.hidden = !panel.hidden;
     });
 
-    // Group toggle: only enable when both start and end dates are set
+    // Group toggle can be used in any situation
     function syncGroupToggleState() {
-        const start = document.getElementById('searchStartDate')?.value;
-        const end = document.getElementById('searchEndDate')?.value;
         const toggle = document.getElementById('groupByAccountToggle');
         if (!toggle) return;
-        const hasRange = !!(start && end);
-        toggle.disabled = !hasRange;
-        if (!hasRange) {
-            toggle.checked = false;
-        }
+        toggle.disabled = false;
     }
     ['searchStartDate', 'searchEndDate'].forEach(id => {
         const el = document.getElementById(id);
