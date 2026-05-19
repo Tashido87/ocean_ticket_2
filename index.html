@@ -256,49 +256,172 @@
             </section>
 
             <section id="settle-view" class="view">
-                <div class="dashboard-content-wrapper">
-                    <div class="info-grid">
-                        <div id="settlement-net-amount-box" class="info-card glass-card"></div>
-                        <div id="settlement-monthly-due-box" class="info-card glass-card"></div>
-                        <div id="settlement-commission-box" class="info-card glass-card"></div>
-                    </div>
-                    <div id="settle-form-container" class="form-container glass-card" style="display: none; margin-top: 1.5rem;">
-                        <h2><i class="fa-solid fa-handshake"></i> New Settlement</h2>
-                        <form id="newSettlementForm">
-                            <div class="form-grid">
-                               <div class="form-group"><label for="settlement_date">Settlement Date</label><input type="text" id="settlement_date" placeholder="DD-MMM-YYYY" required autocomplete="off"></div>
-                               <div class="form-group"><label for="settlement_amount_paid">Amount Paid</label><input type="number" id="settlement_amount_paid" required></div>
-                               <div class="form-group"><label for="settlement_payment_method">Payment Method</label>
-                                   <select id="settlement_payment_method" required>
-                                       <option value="" disabled selected>Select Payment Method</option>
-                                       <option value="KBZ Pay">KBZ Pay</option>
-                                       <option value="Mobile Banking">Mobile Banking</option>
-                                       <option value="Aya Pay">Aya Pay</option>
-                                       <option value="UAB Pay">UAB Pay</option>
-                                       <option value="Cash">Cash</option>
-                                   </select>
-                               </div>
-                               <div class="form-group"><label for="settlement_transaction_id">Transaction ID</label><input type="text" id="settlement_transaction_id"></div>
-                               <div class="form-group full-width"><label for="settlement_notes">Notes</label><textarea id="settlement_notes" rows="3"></textarea></div>
+                <div class="settle-wrapper">
+                    <!-- Premium Header -->
+                    <header class="settle-header">
+                        <div class="settle-header-text">
+                            <h2><i class="fa-solid fa-handshake"></i> Owner Settlement</h2>
+                            <p>Track owner payable, paid settlements, profit, and outstanding balances</p>
+                        </div>
+                        <div class="settle-header-actions">
+                            <button id="newSettlementBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Settlement</button>
+                            <button id="generateStatementBtn" class="btn btn-secondary"><i class="fa-solid fa-file-lines"></i> Statement</button>
+                            <button id="exportSettlementPdfBtn" class="btn btn-secondary"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+                            <button id="closeMonthBtn" class="btn btn-secondary"><i class="fa-solid fa-lock"></i> Close Month</button>
+                        </div>
+                    </header>
+
+                    <!-- Period + Basis Bar -->
+                    <div class="settle-toolbar glass-card">
+                        <div class="settle-toolbar-group">
+                            <span class="settle-toolbar-label">Period</span>
+                            <div class="period-tabs" id="settlePeriodTabs">
+                                <button type="button" class="period-tab" data-period="today">Today</button>
+                                <button type="button" class="period-tab active" data-period="month">This Month</button>
+                                <button type="button" class="period-tab" data-period="lastMonth">Last Month</button>
+                                <button type="button" class="period-tab" data-period="custom">Custom</button>
                             </div>
-                            <div class="form-actions" style="margin-top: 2rem;">
-                               <button type="button" class="btn btn-secondary" id="cancelNewSettlementBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
-                               <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Settlement</button>
-                            </div>
-                        </form>
-                    </div>
-    
-                    <div id="settle-display-container" class="results-section glass-card" style="margin-top: 1.5rem;">
-                         <div class="table-header">
-                            <h3><i class="fa-solid fa-list-check"></i> Settlement Records</h3>
-                            <div class="table-controls">
-                               <button id="newSettlementBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Settlement</button>
+                            <div class="period-custom" id="settleCustomRange" hidden>
+                                <input type="date" id="settleStartDate" aria-label="Start date">
+                                <span>to</span>
+                                <input type="date" id="settleEndDate" aria-label="End date">
+                                <button type="button" id="settleApplyCustom" class="btn btn-ghost btn-sm">Apply</button>
                             </div>
                         </div>
-                        <div id="settlementTableContainer" class="table-container">
+                        <div class="settle-toolbar-group">
+                            <span class="settle-toolbar-label">Basis</span>
+                            <div class="basis-toggle" id="settleBasisToggle" role="tablist">
+                                <button type="button" class="basis-option active" data-basis="cash" role="tab" aria-selected="true">Cash Basis</button>
+                                <button type="button" class="basis-option" data-basis="issued" role="tab" aria-selected="false">Issued Basis</button>
+                            </div>
                         </div>
+                        <div class="settle-toolbar-meta" id="settlePeriodLabel"></div>
+                    </div>
+
+                    <!-- KPI Cards -->
+                    <div class="settle-kpi-grid" id="settleKpiGrid"></div>
+
+                    <!-- Health Panel -->
+                    <div class="settle-health-card glass-card" id="settleHealthCard"></div>
+
+                    <!-- Owner Ledger -->
+                    <section class="settle-section glass-card">
+                        <div class="settle-section-head">
+                            <div class="settle-section-titles">
+                                <span class="settle-section-icon"><i class="fa-solid fa-book"></i></span>
+                                <div>
+                                    <h3>Owner Ledger</h3>
+                                    <p class="settle-section-subtitle">Running balance of owner payable, settlements, and adjustments</p>
+                                </div>
+                            </div>
+                            <div class="settle-section-actions">
+                                <input type="text" id="settleLedgerSearch" class="settle-search-input" placeholder="Search by PNR, client, type…">
+                                <button id="addAdjustmentBtn" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i> Adjustment</button>
+                            </div>
+                        </div>
+                        <div class="settle-table-wrap"><table class="settle-table" id="settleLedgerTable">
+                            <thead><tr>
+                                <th>Date</th><th>Type</th><th>PNR / Ref</th><th>Client</th><th>Description</th>
+                                <th class="num">Owner Payable</th><th class="num">Paid to Owner</th><th class="num">Agent Profit</th><th class="num">Balance</th>
+                            </tr></thead>
+                            <tbody id="settleLedgerBody"></tbody>
+                        </table></div>
+                    </section>
+
+                    <!-- Ticket Breakdown -->
+                    <section class="settle-section glass-card">
+                        <div class="settle-section-head">
+                            <div class="settle-section-titles">
+                                <span class="settle-section-icon"><i class="fa-solid fa-ticket"></i></span>
+                                <div>
+                                    <h3>Ticket Breakdown</h3>
+                                    <p class="settle-section-subtitle">Tickets that contribute to the current settlement period</p>
+                                </div>
+                            </div>
+                            <div class="settle-section-actions">
+                                <select id="settleTicketStatusFilter" class="settle-select">
+                                    <option value="all">All statuses</option>
+                                    <option value="included">Included</option>
+                                    <option value="paid_owner">Paid to Owner</option>
+                                    <option value="unsettled">Unsettled</option>
+                                    <option value="excluded">Excluded</option>
+                                    <option value="review">Needs Review</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="settle-table-wrap"><table class="settle-table" id="settleTicketsTable">
+                            <thead><tr>
+                                <th>Issued</th><th>PNR</th><th>Client</th><th>Route</th><th>Airline</th>
+                                <th>Travel</th><th>Payment</th>
+                                <th class="num">Net</th><th class="num">Comm.</th><th class="num">Extra</th>
+                                <th class="num">Owner Payable</th><th>Settlement</th>
+                            </tr></thead>
+                            <tbody id="settleTicketsBody"></tbody>
+                        </table></div>
+                    </section>
+
+                    <!-- Settlement Records -->
+                    <section class="settle-section glass-card">
+                        <div class="settle-section-head">
+                            <div class="settle-section-titles">
+                                <span class="settle-section-icon"><i class="fa-solid fa-list-check"></i></span>
+                                <div>
+                                    <h3>Settlement Records</h3>
+                                    <p class="settle-section-subtitle">All payments made to owner</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="settle-table-wrap"><table class="settle-table" id="settleRecordsTable">
+                            <thead><tr>
+                                <th>Date</th><th class="num">Amount</th><th>Method</th><th>Txn ID</th><th>Proof</th>
+                                <th>Allocated To</th><th>Status</th><th>Notes</th><th>Actions</th>
+                            </tr></thead>
+                            <tbody id="settleRecordsBody"></tbody>
+                        </table></div>
                         <div id="settlementPagination" class="pagination-container"></div>
-                    </div>
+                    </section>
+
+                    <!-- Aging Report -->
+                    <section class="settle-section glass-card">
+                        <div class="settle-section-head">
+                            <div class="settle-section-titles">
+                                <span class="settle-section-icon"><i class="fa-solid fa-hourglass-half"></i></span>
+                                <div>
+                                    <h3>Aging Report</h3>
+                                    <p class="settle-section-subtitle">Unsettled owner payable by age</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="settleAgingGrid" class="settle-aging-grid"></div>
+                    </section>
+
+                    <!-- Discrepancy / Needs Review -->
+                    <section class="settle-section glass-card">
+                        <div class="settle-section-head">
+                            <div class="settle-section-titles">
+                                <span class="settle-section-icon settle-warning"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                                <div>
+                                    <h3>Needs Review</h3>
+                                    <p class="settle-section-subtitle">Discrepancies and anomalies that need attention</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="settleDiscrepancyList" class="settle-discrepancy-list"></div>
+                    </section>
+
+                    <!-- Closed Periods -->
+                    <section class="settle-section glass-card">
+                        <div class="settle-section-head">
+                            <div class="settle-section-titles">
+                                <span class="settle-section-icon"><i class="fa-solid fa-lock"></i></span>
+                                <div>
+                                    <h3>Closed Periods</h3>
+                                    <p class="settle-section-subtitle">Locked months with finalized opening/closing balances</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="settleClosedPeriods" class="settle-closed-list"></div>
+                    </section>
                 </div>
             </section>
             

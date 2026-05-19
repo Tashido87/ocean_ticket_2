@@ -27,6 +27,8 @@ const ticketsCol = collection(db, 'tickets');
 const bookingsCol = collection(db, 'bookings');
 const settlementsCol = collection(db, 'settlements');
 const historyCol = collection(db, 'history');
+const closedPeriodsCol = collection(db, 'closedPeriods');
+const adjustmentsCol = collection(db, 'settlementAdjustments');
 
 // --- TICKETS ---
 
@@ -159,6 +161,73 @@ export async function addSettlement(data) {
         updatedAt: serverTimestamp()
     });
     return docRef.id;
+}
+
+export async function updateSettlement(id, data) {
+    await updateDoc(doc(db, 'settlements', id), {
+        ...data,
+        updatedAt: serverTimestamp()
+    });
+}
+
+export async function deleteSettlement(id) {
+    await deleteDoc(doc(db, 'settlements', id));
+}
+
+// --- CLOSED PERIODS (Monthly Lock) ---
+
+export async function getClosedPeriods() {
+    const q = query(closedPeriodsCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export function onClosedPeriodsChange(callback) {
+    const q = query(closedPeriodsCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+}
+
+export async function addClosedPeriod(data) {
+    const ref = await addDoc(closedPeriodsCol, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return ref.id;
+}
+
+export async function deleteClosedPeriod(id) {
+    await deleteDoc(doc(db, 'closedPeriods', id));
+}
+
+// --- SETTLEMENT ADJUSTMENTS ---
+
+export async function getAdjustments() {
+    const q = query(adjustmentsCol, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export function onAdjustmentsChange(callback) {
+    const q = query(adjustmentsCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+}
+
+export async function addAdjustment(data) {
+    const ref = await addDoc(adjustmentsCol, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return ref.id;
+}
+
+export async function deleteAdjustment(id) {
+    await deleteDoc(doc(db, 'settlementAdjustments', id));
 }
 
 // --- HISTORY ---

@@ -1,256 +1,1671 @@
 /**
- * @fileoverview Manages all logic related to financial settlements, including loading,
- * displaying, creating, and calculating settlement dashboard figures.
- * UPDATED: Reset Date changed to Mar 1, 2026 to clear previous carry-over.
+ * @fileoverview Owner Settlement Dashboard.
+ *
+ * Financial formula assumptions (preserved from existing app logic):
+ *   - `net_amount`     : ticket net price (excluding the agent commission cut)
+ *   - `commission`     : agent's commission (already calculated as agent-cut via calculateAgentCut)
+ *   - `extra_fare`     : extra mark-up agent keeps (agent profit, not owner's)
+ *   - `date_change`    : date-change fee charged to customer (belongs to owner)
+ *   - `paid` (bool)    : whether customer has paid for the ticket
+ *
+ * Helpers (single source of truth — do NOT scatter formulas):
+ *   - getTicketCustomerCharge(t) = net_amount + date_change + extra_fare   (what customer pays in total)
+ *   - getTicketOwnerPayable(t)   = (net_amount + date_change) - commission (owner's share)
+ *   - getTicketAgentProfit(t)    = commission + extra_fare                 (agent's share)
+ *   - getTicketCollectedAmount(t)= paid ? getTicketCustomerCharge(t) : 0   (cash basis)
+ *
+ * Refund/cancel tickets (remarks contain "cancel" or "refund") are treated as Excluded.
+ * Fee-entry rows (name endsWith "(Fees)" or remarks contains "fee entry") are excluded.
+ *
+ * Settlement closing balance:
+ *   closing = opening + ownerPayable(period) + adjustmentsNet(period) - paidToOwner(period)
+ *
+ * Cash Basis (default): only paid tickets count toward owner payable for the period
+ * Issued Basis        : all issued tickets count toward owner payable for the period
  */
 
-import {
-    state
-} from './state.js';
+import { state } from './state.js';
 import {
     getSettlements,
-    addSettlement
+    addSettlement,
+    updateSettlement,
+    deleteSettlement,
+    getClosedPeriods,
+    addClosedPeriod,
+    deleteClosedPeriod,
+    getAdjustments,
+    addAdjustment,
+    deleteAdjustment
 } from './db.js';
 import {
     showToast,
     parseSheetDate,
-    renderEmptyState,
     formatDateToDDMMMYYYY,
-    formatPaymentMethod
+    formatDateToDMMMY,
+    formatPaymentMethod,
+    parsePaymentMethod,
+    formatDateForSheet
 } from './utils.js';
-import {
-    setupSettlementPagination
-} from './ui.js';
+import { openModal, closeModal, setupGenericPagination } from './ui.js';
+
+/* ============================================================
+   MODULE STATE
+   ============================================================ */
+
+const ui = {
+    basis: 'cash',          // 'cash' | 'issued'
+    period: 'month',        // 'today' | 'month' | 'lastMonth' | 'custom'
+    customStart: null,
+    customEnd: null,
+    ledgerSearch: '',
+    ticketStatusFilter: 'all',
+    recordsPage: 1,
+    rowsPerRecordsPage: 10
+};
+
+const HEALTHY_DUE_DAYS = 21; // due is "old" if last settlement is older than this
+const STORAGE_KEY = 'oceanSettlementUI';
+
+function persistUiState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ basis: ui.basis, period: ui.period })); } catch {}
+}
+function loadUiState() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        if (raw.basis === 'issued' || raw.basis === 'cash') ui.basis = raw.basis;
+        if (['today', 'month', 'lastMonth', 'custom'].includes(raw.period)) ui.period = raw.period;
+    } catch {}
+}
+
+/* ============================================================
+   GENERIC HELPERS
+   ============================================================ */
+
+export function formatMMK(amount) {
+    const n = Math.round(Number(amount || 0));
+    const sign = n < 0 ? '-' : '';
+    return `${sign}MMK ${Math.abs(n).toLocaleString('en-US')}`;
+}
+
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = String(value ?? '');
+    return div.innerHTML;
+}
+
+function isFeeEntry(t) {
+    const name = String(t?.name || '');
+    const remarks = String(t?.remarks || '').toLowerCase();
+    return /\(fees\)\s*$/i.test(name) || remarks.includes('fee entry');
+}
+
+function isCanceled(t) {
+    const r = String(t?.remarks || '').toLowerCase();
+    return r.includes('cancel') || r.includes('refund');
+}
+
+function isExcluded(t) {
+    return isFeeEntry(t) || isCanceled(t);
+}
+
+function n(v) { return Number(v || 0); }
+
+/* ============================================================
+   TICKET FINANCIAL HELPERS
+   ============================================================ */
+
+export function getTicketCustomerCharge(t) {
+    return n(t.net_amount) + n(t.date_change) + n(t.extra_fare);
+}
+
+export function getTicketOwnerPayable(t) {
+    return (n(t.net_amount) + n(t.date_change)) - n(t.commission);
+}
+
+export function getTicketAgentProfit(t) {
+    return n(t.commission) + n(t.extra_fare);
+}
+
+export function getTicketCollectedAmount(t) {
+    return t.paid ? getTicketCustomerCharge(t) : 0;
+}
+
+/* ============================================================
+   PERIOD RANGE
+   ============================================================ */
+
+export function getSettlementPeriodRange() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    if (ui.period === 'today') {
+        return { start, end };
+    }
+    if (ui.period === 'month') {
+        return {
+            start: new Date(now.getFullYear(), now.getMonth(), 1),
+            end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+        };
+    }
+    if (ui.period === 'lastMonth') {
+        return {
+            start: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+            end: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+        };
+    }
+    if (ui.period === 'custom' && ui.customStart && ui.customEnd) {
+        const s = new Date(ui.customStart);
+        const e = new Date(ui.customEnd);
+        e.setHours(23, 59, 59, 999);
+        return { start: s, end: e };
+    }
+    // Default fallback: this month
+    return {
+        start: new Date(now.getFullYear(), now.getMonth(), 1),
+        end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+    };
+}
+
+function inRange(date, start, end) {
+    if (!date) return false;
+    const t = date instanceof Date ? date.getTime() : parseSheetDate(date).getTime();
+    if (!t || Number.isNaN(t)) return false;
+    return t >= start.getTime() && t <= end.getTime();
+}
+
+/* ============================================================
+   AGGREGATIONS
+   ============================================================ */
 
 /**
- * Loads settlement data from Firestore.
+ * Returns the cumulative opening balance up to (but not including) the start date,
+ * across all tickets/settlements/adjustments, using the selected basis.
  */
-export async function loadSettlementData() {
-    try {
-        const settlements = await getSettlements();
-        state.allSettlements = settlements;
-        displaySettlements();
-    } catch (error) {
-        renderEmptyState('settlementTableContainer', 'fa-handshake-slash', 'Failed to load settlements', 'Could not retrieve settlement data.');
-    }
+export function getOpeningBalance(start) {
+    const tickets = state.allTickets.filter(t => !isExcluded(t));
+    let ownerPayable = 0;
+    tickets.forEach(t => {
+        const d = parseSheetDate(t.issued_date);
+        if (!d.getTime() || d.getTime() >= start.getTime()) return;
+        if (ui.basis === 'cash' && !t.paid) return;
+        ownerPayable += getTicketOwnerPayable(t);
+    });
+
+    let paidToOwner = 0;
+    state.allSettlements.forEach(s => {
+        const d = parseSheetDate(s.settlement_date);
+        if (!d.getTime() || d.getTime() >= start.getTime()) return;
+        paidToOwner += n(s.amount_paid);
+    });
+
+    let adjustments = 0;
+    state.allAdjustments.forEach(a => {
+        const d = parseSheetDate(a.adjustment_date);
+        if (!d.getTime() || d.getTime() >= start.getTime()) return;
+        adjustments += adjustmentSignedAmount(a);
+    });
+
+    return ownerPayable + adjustments - paidToOwner;
+}
+
+function adjustmentSignedAmount(a) {
+    const amt = n(a.amount);
+    if (a.type === 'Owner Debit' || a.type === 'Refund') return amt;     // adds to payable
+    if (a.type === 'Owner Credit' || a.type === 'Correction') return -amt; // reduces payable
+    return amt; // 'Other' defaults to positive
 }
 
 /**
- * Displays the list of settlements with pagination.
+ * Comprehensive settlement summary for the active range/basis.
  */
+export function getSettlementSummary() {
+    const { start, end } = getSettlementPeriodRange();
+    const tickets = state.allTickets.filter(t => !isExcluded(t));
+
+    let totalCollected = 0;
+    let ownerPayable = 0;
+    let myProfit = 0;
+    let unpaidClientBalance = 0;
+    const periodTickets = [];
+
+    tickets.forEach(t => {
+        const issued = parseSheetDate(t.issued_date);
+        if (!issued.getTime()) return;
+        const inP = inRange(issued, start, end);
+        if (!inP) return;
+
+        periodTickets.push(t);
+
+        if (t.paid) totalCollected += getTicketCustomerCharge(t);
+        else unpaidClientBalance += getTicketCustomerCharge(t);
+
+        if (ui.basis === 'cash') {
+            if (t.paid) ownerPayable += getTicketOwnerPayable(t);
+        } else {
+            ownerPayable += getTicketOwnerPayable(t);
+        }
+
+        myProfit += getTicketAgentProfit(t);
+    });
+
+    const periodSettlements = state.allSettlements.filter(s => inRange(parseSheetDate(s.settlement_date), start, end));
+    const paidToOwner = periodSettlements.reduce((sum, s) => sum + n(s.amount_paid), 0);
+
+    const periodAdjustments = state.allAdjustments.filter(a => inRange(parseSheetDate(a.adjustment_date), start, end));
+    const adjustmentsTotal = periodAdjustments.reduce((sum, a) => sum + adjustmentSignedAmount(a), 0);
+
+    const opening = getOpeningBalance(start);
+    const closing = opening + ownerPayable + adjustmentsTotal - paidToOwner;
+
+    const pendingSettlements = state.allSettlements.filter(s => (s.status || 'Paid') !== 'Verified');
+
+    return {
+        start, end,
+        basis: ui.basis,
+        opening,
+        totalCollected,
+        ownerPayable,
+        paidToOwner,
+        remainingDue: opening + ownerPayable + adjustmentsTotal - paidToOwner,
+        myProfit,
+        unpaidClientBalance,
+        adjustmentsTotal,
+        closing,
+        periodTickets,
+        periodSettlements,
+        periodAdjustments,
+        pendingSettlements
+    };
+}
+
+/* ============================================================
+   LEDGER ROWS
+   ============================================================ */
+
+export function getOwnerLedgerRows() {
+    const { start, end } = getSettlementPeriodRange();
+    const rows = [];
+
+    state.allTickets.forEach(t => {
+        if (isFeeEntry(t)) return;
+        const issued = parseSheetDate(t.issued_date);
+        if (!issued.getTime() || !inRange(issued, start, end)) return;
+
+        const canceled = isCanceled(t);
+        const ownerPayable = canceled ? -getTicketOwnerPayable(t) : getTicketOwnerPayable(t);
+        const includeOwnerPayable = canceled
+            ? true
+            : (ui.basis === 'cash' ? !!t.paid : true);
+
+        if (n(t.net_amount) > 0) {
+            rows.push({
+                date: issued,
+                type: canceled ? 'Refund / Cancel' : 'Ticket',
+                ref: t.booking_reference || '—',
+                client: t.name || '—',
+                description: `${(t.departure || '').split(' ')[0]} → ${(t.destination || '').split(' ')[0]} · ${t.airline || ''}`,
+                ownerPayable: includeOwnerPayable ? ownerPayable : 0,
+                paidToOwner: 0,
+                agentProfit: canceled ? -getTicketAgentProfit(t) : getTicketAgentProfit(t),
+                meta: { kind: 'ticket', ticketId: t.id, pnr: t.booking_reference }
+            });
+        }
+        if (n(t.date_change) > 0 && !canceled) {
+            rows.push({
+                date: issued,
+                type: 'Date Change Fee',
+                ref: t.booking_reference || '—',
+                client: t.name || '—',
+                description: 'Date change fee',
+                ownerPayable: ui.basis === 'cash' && !t.paid ? 0 : n(t.date_change),
+                paidToOwner: 0,
+                agentProfit: 0,
+                meta: { kind: 'date_change', ticketId: t.id }
+            });
+        }
+        if (n(t.extra_fare) > 0 && !canceled) {
+            rows.push({
+                date: issued,
+                type: 'Extra Fare',
+                ref: t.booking_reference || '—',
+                client: t.name || '—',
+                description: 'Agent extra fare (profit)',
+                ownerPayable: 0,
+                paidToOwner: 0,
+                agentProfit: n(t.extra_fare),
+                meta: { kind: 'extra_fare', ticketId: t.id }
+            });
+        }
+    });
+
+    state.allSettlements.forEach(s => {
+        const d = parseSheetDate(s.settlement_date);
+        if (!d.getTime() || !inRange(d, start, end)) return;
+        rows.push({
+            date: d,
+            type: 'Settlement Payment',
+            ref: s.transaction_id || s.id?.slice(0, 6) || '—',
+            client: '— (Owner)',
+            description: `Paid via ${s.payment_method || '—'}`,
+            ownerPayable: 0,
+            paidToOwner: n(s.amount_paid),
+            agentProfit: 0,
+            meta: { kind: 'settlement', id: s.id }
+        });
+    });
+
+    state.allAdjustments.forEach(a => {
+        const d = parseSheetDate(a.adjustment_date);
+        if (!d.getTime() || !inRange(d, start, end)) return;
+        const signed = adjustmentSignedAmount(a);
+        rows.push({
+            date: d,
+            type: `Adjustment · ${a.type || 'Other'}`,
+            ref: a.id?.slice(0, 6) || '—',
+            client: a.reason || '—',
+            description: a.notes || '',
+            ownerPayable: signed,
+            paidToOwner: 0,
+            agentProfit: 0,
+            meta: { kind: 'adjustment', id: a.id }
+        });
+    });
+
+    rows.sort((a, b) => a.date - b.date);
+
+    // Running balance
+    const opening = getOpeningBalance(start);
+    let balance = opening;
+    rows.forEach(r => {
+        balance += n(r.ownerPayable) - n(r.paidToOwner);
+        r.balance = balance;
+    });
+
+    return { rows, opening };
+}
+
+/* ============================================================
+   AGING
+   ============================================================ */
+
+export function getSettlementAging() {
+    const buckets = {
+        '0-2': { label: '0 – 2 days', amount: 0, count: 0 },
+        '3-7': { label: '3 – 7 days', amount: 0, count: 0 },
+        '8-14': { label: '8 – 14 days', amount: 0, count: 0 },
+        '15+': { label: '15+ days', amount: 0, count: 0 }
+    };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const paidToOwnerTotal = state.allSettlements.reduce((s, x) => s + n(x.amount_paid), 0);
+
+    // Sort unsettled tickets oldest first; allocate paidToOwnerTotal against them in FIFO.
+    const eligible = state.allTickets
+        .filter(t => !isExcluded(t))
+        .filter(t => ui.basis === 'cash' ? !!t.paid : true)
+        .map(t => ({ t, d: parseSheetDate(t.issued_date) }))
+        .filter(x => x.d.getTime())
+        .sort((a, b) => a.d - b.d);
+
+    let remaining = paidToOwnerTotal;
+    eligible.forEach(({ t, d }) => {
+        let payable = getTicketOwnerPayable(t);
+        if (payable <= 0) return;
+        if (remaining > 0) {
+            const consumed = Math.min(remaining, payable);
+            remaining -= consumed;
+            payable -= consumed;
+        }
+        if (payable <= 0) return;
+
+        const ageDays = Math.floor((today - d) / 86400000);
+        const key = ageDays <= 2 ? '0-2' : ageDays <= 7 ? '3-7' : ageDays <= 14 ? '8-14' : '15+';
+        buckets[key].amount += payable;
+        buckets[key].count += 1;
+    });
+
+    return buckets;
+}
+
+/* ============================================================
+   DISCREPANCIES
+   ============================================================ */
+
+export function getSettlementDiscrepancies() {
+    const issues = [];
+    const tickets = state.allTickets.filter(t => !isFeeEntry(t));
+
+    tickets.forEach(t => {
+        if (n(t.net_amount) > 0 && n(t.commission) === 0 && !isCanceled(t)) {
+            issues.push({
+                severity: 'warning',
+                title: 'Missing commission',
+                description: `Ticket ${t.booking_reference || ''} has no commission recorded.`,
+                client: t.name, pnr: t.booking_reference, ticketId: t.id
+            });
+        }
+        if (t.paid && !t.payment_method) {
+            issues.push({
+                severity: 'warning',
+                title: 'Paid ticket missing payment method',
+                description: `Ticket ${t.booking_reference || ''} is marked paid but has no payment method.`,
+                client: t.name, pnr: t.booking_reference, ticketId: t.id
+            });
+        }
+        if (n(t.net_amount) === 0 && !isCanceled(t) && !isFeeEntry(t)) {
+            issues.push({
+                severity: 'info',
+                title: 'Ticket amount is zero',
+                description: `Ticket ${t.booking_reference || ''} has zero net amount.`,
+                client: t.name, pnr: t.booking_reference, ticketId: t.id
+            });
+        }
+    });
+
+    // PNRs with mixed paid/unpaid
+    const byPnr = {};
+    tickets.forEach(t => {
+        const pnr = t.booking_reference;
+        if (!pnr) return;
+        if (!byPnr[pnr]) byPnr[pnr] = [];
+        byPnr[pnr].push(t);
+    });
+    Object.entries(byPnr).forEach(([pnr, list]) => {
+        const paid = list.filter(t => t.paid).length;
+        const unpaid = list.filter(t => !t.paid).length;
+        if (paid > 0 && unpaid > 0) {
+            issues.push({
+                severity: 'info',
+                title: 'PNR has mixed paid/unpaid status',
+                description: `PNR ${pnr}: ${paid} paid, ${unpaid} unpaid.`,
+                pnr, client: list[0].name
+            });
+        }
+    });
+
+    // Duplicate transaction IDs
+    const txMap = {};
+    state.allSettlements.forEach(s => {
+        if (!s.transaction_id) return;
+        if (!txMap[s.transaction_id]) txMap[s.transaction_id] = [];
+        txMap[s.transaction_id].push(s);
+    });
+    Object.entries(txMap).forEach(([tx, list]) => {
+        if (list.length > 1) {
+            issues.push({
+                severity: 'critical',
+                title: 'Duplicate transaction ID',
+                description: `Txn ID ${tx} appears in ${list.length} settlement records.`,
+                pnr: null, client: null
+            });
+        }
+    });
+
+    // Settlements without proof
+    state.allSettlements.forEach(s => {
+        if (n(s.amount_paid) >= 100000 && !s.proofUrl) {
+            issues.push({
+                severity: 'info',
+                title: 'Settlement without proof',
+                description: `Settlement on ${s.settlement_date || ''} (${formatMMK(s.amount_paid)}) has no proof attached.`,
+                client: null, pnr: null, settlementId: s.id
+            });
+        }
+    });
+
+    // Overpayment check: total paid > total owner payable to date
+    const totalOwnerPayable = tickets.reduce((sum, t) => {
+        if (isCanceled(t)) return sum - getTicketOwnerPayable(t);
+        return sum + getTicketOwnerPayable(t);
+    }, 0);
+    const totalPaid = state.allSettlements.reduce((sum, s) => sum + n(s.amount_paid), 0);
+    if (totalPaid > totalOwnerPayable + 1) {
+        issues.push({
+            severity: 'critical',
+            title: 'Settlement overpayment',
+            description: `Total paid to owner (${formatMMK(totalPaid)}) exceeds total owner payable (${formatMMK(totalOwnerPayable)}).`,
+            client: null, pnr: null
+        });
+    }
+
+    // Negative balance
+    const summary = getSettlementSummary();
+    if (summary.closing < 0) {
+        issues.push({
+            severity: 'critical',
+            title: 'Negative closing balance',
+            description: `Current period closing balance is ${formatMMK(summary.closing)}. Possible overpayment or missing income.`
+        });
+    }
+
+    return issues;
+}
+
+/* ============================================================
+   PER-TICKET SETTLEMENT STATUS
+   ============================================================ */
+
+function getTicketSettlementStatus(t, summary) {
+    if (isFeeEntry(t)) return { key: 'excluded', label: 'Excluded' };
+    if (isCanceled(t)) return { key: 'excluded', label: 'Refunded / Canceled' };
+    if (n(t.net_amount) === 0) return { key: 'review', label: 'Needs Review' };
+
+    if (ui.basis === 'cash' && !t.paid) return { key: 'unsettled', label: 'Awaiting customer' };
+
+    // Determine if a settlement covers this ticket via allocations OR FIFO best-effort
+    const allocated = state.allSettlements.some(s => Array.isArray(s.allocations) && s.allocations.some(a => a.ticketId === t.id));
+    if (allocated) return { key: 'paid_owner', label: 'Paid to Owner' };
+
+    // FIFO fallback: tickets up to cumulative paid amount are considered paid
+    if (!summary._fifoMap) {
+        const eligibleTickets = state.allTickets
+            .filter(x => !isExcluded(x))
+            .filter(x => ui.basis === 'cash' ? !!x.paid : true)
+            .map(x => ({ id: x.id, payable: getTicketOwnerPayable(x), d: parseSheetDate(x.issued_date) }))
+            .filter(x => x.d.getTime() && x.payable > 0)
+            .sort((a, b) => a.d - b.d);
+        const totalPaid = state.allSettlements.reduce((sum, s) => sum + n(s.amount_paid), 0);
+        const map = new Map();
+        let remaining = totalPaid;
+        eligibleTickets.forEach(et => {
+            if (remaining >= et.payable) { map.set(et.id, 'full'); remaining -= et.payable; }
+            else if (remaining > 0)      { map.set(et.id, 'partial'); remaining = 0; }
+            else                          { map.set(et.id, 'none'); }
+        });
+        summary._fifoMap = map;
+    }
+    const fifo = summary._fifoMap.get(t.id);
+    if (fifo === 'full') return { key: 'paid_owner', label: 'Paid to Owner' };
+    if (fifo === 'partial') return { key: 'partial', label: 'Partially Settled' };
+    return { key: 'unsettled', label: 'Unsettled' };
+}
+
+/* ============================================================
+   PUBLIC RENDER ENTRY POINT
+   ============================================================ */
+
+export async function loadSettlementData() {
+    loadUiState();
+    try {
+        const [settlements, closed, adjustments] = await Promise.all([
+            getSettlements(),
+            getClosedPeriods().catch(() => []),
+            getAdjustments().catch(() => [])
+        ]);
+        state.allSettlements = settlements;
+        state.allClosedPeriods = closed;
+        state.allAdjustments = adjustments;
+        displaySettlements();
+    } catch (error) {
+        console.error('Failed to load settlement data', error);
+        showToast('Could not load settlement data.', 'error');
+    }
+}
+
 export function displaySettlements() {
-    const container = document.getElementById('settlementTableContainer');
-    container.innerHTML = '';
+    if (!document.getElementById('settle-view')) return;
+    renderToolbarState();
+    renderPeriodLabel();
+    renderKpis();
+    renderHealthCard();
+    renderLedger();
+    renderTickets();
+    renderRecords();
+    renderAging();
+    renderDiscrepancies();
+    renderClosedPeriods();
+}
 
-    const sortedSettlements = [...state.allSettlements].sort((a, b) => parseSheetDate(b.settlement_date) - parseSheetDate(a.settlement_date));
+export function updateSettlementDashboard() { displaySettlements(); }
 
-    if (sortedSettlements.length === 0) {
-        renderEmptyState('settlementTableContainer', 'fa-handshake', 'No Settlements Yet', 'Start by adding a new settlement record.');
-        setupSettlementPagination([]);
+// Back-compat (no-ops since the legacy inline form was removed)
+export function showNewSettlementForm() { openNewSettlementModal(); }
+export function hideNewSettlementForm() { closeModal(); }
+export function renderSettlementPage(page) {
+    ui.recordsPage = page;
+    renderRecords();
+}
+
+/* ============================================================
+   TOOLBAR / PERIOD / BASIS
+   ============================================================ */
+
+function renderToolbarState() {
+    document.querySelectorAll('#settlePeriodTabs .period-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.period === ui.period);
+    });
+    document.querySelectorAll('#settleBasisToggle .basis-option').forEach(btn => {
+        const active = btn.dataset.basis === ui.basis;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', String(active));
+    });
+    const custom = document.getElementById('settleCustomRange');
+    if (custom) custom.hidden = ui.period !== 'custom';
+}
+
+function renderPeriodLabel() {
+    const label = document.getElementById('settlePeriodLabel');
+    if (!label) return;
+    const { start, end } = getSettlementPeriodRange();
+    label.innerHTML = `
+        <i class="fa-regular fa-calendar"></i>
+        <span>${formatDateToDMMMY(formatDateForSheet(start))} – ${formatDateToDMMMY(formatDateForSheet(end))}</span>
+        <span class="settle-basis-pill">${ui.basis === 'cash' ? 'Cash Basis' : 'Issued Basis'}</span>
+    `;
+}
+
+/* ============================================================
+   KPI CARDS
+   ============================================================ */
+
+function renderKpis() {
+    const grid = document.getElementById('settleKpiGrid');
+    if (!grid) return;
+    const s = getSettlementSummary();
+
+    const cards = [
+        kpi('fa-money-bill-wave', 'navy', 'Opening Balance', formatMMK(s.opening), 'Carried from prior period'),
+        kpi('fa-coins', 'teal', 'Total Collected', formatMMK(s.totalCollected), 'Customer payments received'),
+        kpi('fa-file-invoice-dollar', 'navy', 'Owner Payable', formatMMK(s.ownerPayable), `${s.basis === 'cash' ? 'Cash basis' : 'Issued basis'} · period`),
+        kpi('fa-handshake', 'teal', 'Paid to Owner', formatMMK(s.paidToOwner), `${s.periodSettlements.length} settlements`),
+        kpi('fa-scale-balanced', s.remainingDue > 0 ? 'coral' : 'teal', 'Remaining Due', formatMMK(s.remainingDue), s.remainingDue > 0 ? 'Outstanding to owner' : 'All caught up'),
+        kpi('fa-chart-line', 'teal', 'My Profit', formatMMK(s.myProfit), 'Commission + extra fare'),
+        kpi('fa-user-clock', 'coral', 'Unpaid Client Balance', formatMMK(s.unpaidClientBalance), 'Customers still owe you'),
+        kpi('fa-circle-exclamation', s.pendingSettlements.length ? 'amber' : 'teal', 'Pending Settlements', String(s.pendingSettlements.length), 'Unverified entries')
+    ];
+
+    grid.innerHTML = cards.join('');
+}
+
+function kpi(icon, color, label, value, support) {
+    return `
+        <div class="settle-kpi-card kpi-${color}">
+            <div class="settle-kpi-icon"><i class="fa-solid ${icon}"></i></div>
+            <div class="settle-kpi-body">
+                <div class="settle-kpi-label">${escapeHtml(label)}</div>
+                <div class="settle-kpi-value">${value}</div>
+                ${support ? `<div class="settle-kpi-support">${escapeHtml(support)}</div>` : ''}
+            </div>
+        </div>
+    `;
+}
+
+/* ============================================================
+   HEALTH PANEL
+   ============================================================ */
+
+function renderHealthCard() {
+    const card = document.getElementById('settleHealthCard');
+    if (!card) return;
+    const s = getSettlementSummary();
+
+    const lastSettlement = [...state.allSettlements]
+        .map(x => ({ x, d: parseSheetDate(x.settlement_date) }))
+        .filter(x => x.d.getTime())
+        .sort((a, b) => b.d - a.d)[0];
+
+    const lastDate = lastSettlement ? formatDateToDMMMY(formatDateForSheet(lastSettlement.d)) : '—';
+    const daysSince = lastSettlement ? Math.floor((Date.now() - lastSettlement.d.getTime()) / 86400000) : null;
+
+    let statusKey, statusLabel, statusIcon;
+    if (Math.abs(s.remainingDue) < 1) {
+        statusKey = 'balanced'; statusLabel = 'Balanced'; statusIcon = 'fa-circle-check';
+    } else if (s.remainingDue > 0) {
+        statusKey = 'due'; statusLabel = 'Owner Due'; statusIcon = 'fa-triangle-exclamation';
+    } else {
+        statusKey = 'overpaid'; statusLabel = 'Overpaid'; statusIcon = 'fa-circle-info';
+    }
+    if (s.pendingSettlements.length) {
+        statusKey = 'review'; statusLabel = 'Needs Review'; statusIcon = 'fa-clipboard-question';
+    }
+
+    const suggestedAmount = Math.max(0, s.remainingDue);
+    const suggestedDeadline = new Date();
+    suggestedDeadline.setDate(suggestedDeadline.getDate() + 7);
+
+    const oldDueWarning = daysSince !== null && daysSince > HEALTHY_DUE_DAYS && s.remainingDue > 0
+        ? `<div class="settle-health-warning"><i class="fa-solid fa-triangle-exclamation"></i> It has been ${daysSince} days since the last settlement.</div>`
+        : '';
+
+    card.innerHTML = `
+        <div class="settle-health-status status-${statusKey}">
+            <i class="fa-solid ${statusIcon}"></i>
+            <span>${statusLabel}</span>
+        </div>
+        <div class="settle-health-grid">
+            <div>
+                <div class="settle-health-label">Remaining Due</div>
+                <div class="settle-health-value ${s.remainingDue > 0 ? 'is-due' : ''}">${formatMMK(s.remainingDue)}</div>
+            </div>
+            <div>
+                <div class="settle-health-label">Last Settlement</div>
+                <div class="settle-health-value">${escapeHtml(lastDate)}</div>
+                <div class="settle-health-sub">${lastSettlement ? formatMMK(lastSettlement.x.amount_paid) : '—'}</div>
+            </div>
+            <div>
+                <div class="settle-health-label">Suggested Next Payment</div>
+                <div class="settle-health-value">${formatMMK(suggestedAmount)}</div>
+                <div class="settle-health-sub">by ${formatDateToDMMMY(formatDateForSheet(suggestedDeadline))}</div>
+            </div>
+            <div>
+                <div class="settle-health-label">Period Closing Balance</div>
+                <div class="settle-health-value ${s.closing > 0 ? 'is-due' : ''}">${formatMMK(s.closing)}</div>
+            </div>
+        </div>
+        ${oldDueWarning}
+    `;
+}
+
+/* ============================================================
+   LEDGER
+   ============================================================ */
+
+function renderLedger() {
+    const body = document.getElementById('settleLedgerBody');
+    if (!body) return;
+    const { rows, opening } = getOwnerLedgerRows();
+    const term = ui.ledgerSearch.toLowerCase();
+    const filtered = !term ? rows : rows.filter(r =>
+        [r.type, r.ref, r.client, r.description].join(' ').toLowerCase().includes(term)
+    );
+
+    const openingRow = `
+        <tr class="ledger-opening"><td colspan="8"><strong>Opening Balance</strong></td>
+        <td class="num"><strong>${formatMMK(opening)}</strong></td></tr>
+    `;
+
+    if (!filtered.length) {
+        body.innerHTML = `${openingRow}<tr><td colspan="9" class="settle-empty">No transactions in this period.</td></tr>`;
         return;
     }
 
-    const table = document.createElement('table');
-    table.innerHTML = `
-        <thead>
-            <tr>
-                <th>Settlement Date</th><th>Amount Paid</th><th>Payment Method</th><th>Transaction ID</th><th>Status</th><th>Notes</th>
+    body.innerHTML = openingRow + filtered.map(r => `
+        <tr>
+            <td>${escapeHtml(formatDateToDMMMY(formatDateForSheet(r.date)))}</td>
+            <td><span class="ledger-type ledger-type-${typeClass(r.type)}">${escapeHtml(r.type)}</span></td>
+            <td>${escapeHtml(r.ref)}</td>
+            <td>${escapeHtml(r.client)}</td>
+            <td>${escapeHtml(r.description)}</td>
+            <td class="num">${r.ownerPayable ? formatMMK(r.ownerPayable) : '—'}</td>
+            <td class="num">${r.paidToOwner ? formatMMK(r.paidToOwner) : '—'}</td>
+            <td class="num">${r.agentProfit ? formatMMK(r.agentProfit) : '—'}</td>
+            <td class="num"><strong>${formatMMK(r.balance)}</strong></td>
+        </tr>
+    `).join('');
+}
+
+function typeClass(type) {
+    const t = type.toLowerCase();
+    if (t.includes('settlement')) return 'paid';
+    if (t.includes('adjust')) return 'adjust';
+    if (t.includes('refund') || t.includes('cancel')) return 'refund';
+    if (t.includes('date change')) return 'fee';
+    if (t.includes('extra')) return 'extra';
+    return 'ticket';
+}
+
+/* ============================================================
+   TICKETS
+   ============================================================ */
+
+function renderTickets() {
+    const body = document.getElementById('settleTicketsBody');
+    if (!body) return;
+    const summary = getSettlementSummary();
+    const filter = ui.ticketStatusFilter;
+
+    const rows = summary.periodTickets.map(t => {
+        const status = getTicketSettlementStatus(t, summary);
+        const payment = t.paid ? 'paid' : 'unpaid';
+        return { t, status, payment };
+    }).filter(r => filter === 'all' ? true : r.status.key === filter);
+
+    if (!rows.length) {
+        body.innerHTML = `<tr><td colspan="12" class="settle-empty">No tickets match the current filter.</td></tr>`;
+        return;
+    }
+
+    body.innerHTML = rows.map(({ t, status, payment }) => `
+        <tr>
+            <td>${escapeHtml(formatDateToDMMMY(t.issued_date))}</td>
+            <td><strong>${escapeHtml(t.booking_reference || '—')}</strong></td>
+            <td>${escapeHtml(t.name || '—')}</td>
+            <td>${escapeHtml(`${(t.departure || '').split(' ')[0]} → ${(t.destination || '').split(' ')[0]}`)}</td>
+            <td>${escapeHtml(t.airline || '—')}</td>
+            <td>${escapeHtml(formatDateToDMMMY(t.departing_on) || '—')}</td>
+            <td><span class="status-pill status-${payment}">${payment === 'paid' ? 'Paid' : 'Unpaid'}</span></td>
+            <td class="num">${formatMMK(n(t.net_amount))}</td>
+            <td class="num">${formatMMK(n(t.commission))}</td>
+            <td class="num">${formatMMK(n(t.extra_fare))}</td>
+            <td class="num"><strong>${formatMMK(getTicketOwnerPayable(t))}</strong></td>
+            <td><span class="status-pill settle-${status.key}">${escapeHtml(status.label)}</span></td>
+        </tr>
+    `).join('');
+}
+
+/* ============================================================
+   SETTLEMENT RECORDS
+   ============================================================ */
+
+function renderRecords() {
+    const body = document.getElementById('settleRecordsBody');
+    if (!body) return;
+    const sorted = [...state.allSettlements].sort((a, b) => parseSheetDate(b.settlement_date) - parseSheetDate(a.settlement_date));
+
+    if (!sorted.length) {
+        body.innerHTML = `<tr><td colspan="9" class="settle-empty"><i class="fa-solid fa-handshake"></i> No settlements yet — record your first payment to the owner.</td></tr>`;
+        document.getElementById('settlementPagination').innerHTML = '';
+        return;
+    }
+
+    const page = ui.recordsPage || 1;
+    const size = ui.rowsPerRecordsPage;
+    const paged = sorted.slice((page - 1) * size, page * size);
+
+    body.innerHTML = paged.map(s => {
+        const allocations = Array.isArray(s.allocations) ? s.allocations : [];
+        const allocSummary = allocations.length
+            ? `${allocations.length} PNR${allocations.length > 1 ? 's' : ''}`
+            : (s.allocationMode === 'unallocated' ? 'Unallocated' : 'Auto (FIFO)');
+        const proofCell = s.proofUrl
+            ? `<a class="settle-link" href="${escapeHtml(s.proofUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-paperclip"></i> ${escapeHtml(s.proofName || 'View')}</a>`
+            : '<span class="settle-muted">No proof</span>';
+        const statusKey = (s.status || 'Paid').toLowerCase();
+        return `
+            <tr data-settlement-id="${escapeHtml(s.id)}">
+                <td>${escapeHtml(s.settlement_date || '—')}</td>
+                <td class="num"><strong>${formatMMK(n(s.amount_paid))}</strong></td>
+                <td>${escapeHtml(s.payment_method || '—')}</td>
+                <td>${escapeHtml(s.transaction_id || '—')}</td>
+                <td>${proofCell}</td>
+                <td>${escapeHtml(allocSummary)}</td>
+                <td><span class="status-pill settle-status-${statusKey}">${escapeHtml(s.status || 'Paid')}</span></td>
+                <td>${escapeHtml(s.notes || '—')}</td>
+                <td>
+                    <div class="settle-row-actions">
+                        <button class="settle-row-btn" data-settle-action="view"><i class="fa-solid fa-eye"></i></button>
+                        <button class="settle-row-btn" data-settle-action="edit"><i class="fa-solid fa-pen"></i></button>
+                        <button class="settle-row-btn" data-settle-action="verify" title="Verify"><i class="fa-solid fa-circle-check"></i></button>
+                        <button class="settle-row-btn settle-danger" data-settle-action="delete"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>
             </tr>
-        </thead>
-        <tbody id="settlementTableBody"></tbody>
-    `;
-    container.appendChild(table);
-
-    state.settlementPage = 1;
-    renderSettlementPage(1, sortedSettlements);
-}
-
-/**
- * Renders a specific page of the settlement list.
- * @param {number} page The page number to render.
- * @param {Array<Object>} settlements The array of settlements to display.
- */
-export function renderSettlementPage(page, settlements) {
-    state.settlementPage = page;
-    const tbody = document.getElementById('settlementTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    const paginated = settlements.slice((page - 1) * state.rowsPerPage, page * state.rowsPerPage);
-
-    paginated.forEach(settlement => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${settlement.settlement_date || ''}</td>
-            <td>${(settlement.amount_paid || 0).toLocaleString()}</td>
-            <td>${settlement.payment_method || ''}</td>
-            <td>${settlement.transaction_id || 'N/A'}</td>
-            <td>${settlement.status || ''}</td>
-            <td>${settlement.notes || ''}</td>
         `;
+    }).join('');
+
+    setupGenericPagination(sorted, 'settlementPagination', (p) => { ui.recordsPage = p; renderRecords(); }, page);
+
+    body.querySelectorAll('tr[data-settlement-id]').forEach(row => {
+        const id = row.dataset.settlementId;
+        row.querySelectorAll('[data-settle-action]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleRecordAction(btn.dataset.settleAction, id);
+            });
+        });
     });
-
-    setupSettlementPagination(settlements);
 }
 
-/**
- * Shows the form for creating a new settlement.
- */
-export function showNewSettlementForm() {
-    document.getElementById('settle-display-container').style.display = 'none';
-    document.getElementById('settle-form-container').style.display = 'block';
+function handleRecordAction(action, id) {
+    const settlement = state.allSettlements.find(s => s.id === id);
+    if (!settlement) return;
+    if (action === 'view') openSettlementDetailModal(settlement);
+    if (action === 'edit') openNewSettlementModal(settlement);
+    if (action === 'verify') verifySettlement(settlement);
+    if (action === 'delete') confirmDeleteSettlement(settlement);
 }
 
-/**
- * Hides the form for creating a new settlement.
- */
-export function hideNewSettlementForm() {
-    document.getElementById('settle-form-container').style.display = 'none';
-    document.getElementById('settle-display-container').style.display = 'block';
-    document.getElementById('newSettlementForm').reset();
+async function verifySettlement(s) {
+    try {
+        await updateSettlement(s.id, { status: 'Verified', verifiedAt: new Date().toISOString() });
+        showToast('Settlement marked as verified.', 'success');
+        await loadSettlementData();
+    } catch (err) {
+        showToast('Failed to verify settlement.', 'error');
+    }
 }
 
-/**
- * Handles the submission of the new settlement form.
- * @param {Event} e The form submission event.
- */
-export async function handleNewSettlementSubmit(e) {
+function confirmDeleteSettlement(s) {
+    const ok = window.confirm(`Delete settlement of ${formatMMK(s.amount_paid)} on ${s.settlement_date || ''}?\n\nThis cannot be undone.`);
+    if (!ok) return;
+    deleteSettlement(s.id).then(async () => {
+        showToast('Settlement deleted.', 'success');
+        await loadSettlementData();
+    }).catch(() => showToast('Failed to delete settlement.', 'error'));
+}
+
+function openSettlementDetailModal(s) {
+    const allocations = Array.isArray(s.allocations) ? s.allocations : [];
+    const allocHtml = allocations.length ? `
+        <table class="settle-table"><thead><tr><th>PNR</th><th>Client</th><th class="num">Amount</th></tr></thead><tbody>
+            ${allocations.map(a => `<tr><td>${escapeHtml(a.pnr || '—')}</td><td>${escapeHtml(a.clientName || '—')}</td><td class="num">${formatMMK(a.amount)}</td></tr>`).join('')}
+        </tbody></table>
+    ` : `<p class="settle-muted">${escapeHtml(s.allocationMode === 'unallocated' ? 'Unallocated' : 'Auto (oldest first)')}</p>`;
+
+    openModal(`
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-handshake"></i> Settlement Detail</h3>
+            <button class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+        <div class="modal-body-content">
+            <div class="settle-detail-grid">
+                <div><span>Date</span><strong>${escapeHtml(s.settlement_date || '—')}</strong></div>
+                <div><span>Amount</span><strong>${formatMMK(s.amount_paid)}</strong></div>
+                <div><span>Method</span><strong>${escapeHtml(s.payment_method || '—')}</strong></div>
+                <div><span>Txn ID</span><strong>${escapeHtml(s.transaction_id || '—')}</strong></div>
+                <div><span>Status</span><strong>${escapeHtml(s.status || 'Paid')}</strong></div>
+                <div><span>Paid By</span><strong>${escapeHtml(s.paid_by || '—')}</strong></div>
+                <div><span>Verified By</span><strong>${escapeHtml(s.verifiedBy || '—')}</strong></div>
+                <div><span>Proof</span><strong>${s.proofUrl ? `<a href="${escapeHtml(s.proofUrl)}" target="_blank" class="settle-link">${escapeHtml(s.proofName || 'Open')}</a>` : '—'}</strong></div>
+            </div>
+            <div style="margin-top:1rem"><strong>Notes</strong><p>${escapeHtml(s.notes || '—')}</p></div>
+            <div style="margin-top:1rem"><strong>Allocations</strong>${allocHtml}</div>
+            <div class="form-actions" style="margin-top:1.25rem">
+                <button class="btn btn-secondary" data-close-modal>Close</button>
+            </div>
+        </div>
+    `, 'large-modal');
+    document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
+}
+
+/* ============================================================
+   AGING
+   ============================================================ */
+
+function renderAging() {
+    const grid = document.getElementById('settleAgingGrid');
+    if (!grid) return;
+    const buckets = getSettlementAging();
+    const colors = { '0-2': 'teal', '3-7': 'amber', '8-14': 'coral', '15+': 'coral' };
+    grid.innerHTML = Object.entries(buckets).map(([key, b]) => `
+        <div class="settle-aging-card aging-${colors[key]}">
+            <div class="settle-aging-head">${escapeHtml(b.label)}</div>
+            <div class="settle-aging-amount">${formatMMK(b.amount)}</div>
+            <div class="settle-aging-count">${b.count} ticket${b.count === 1 ? '' : 's'}</div>
+        </div>
+    `).join('');
+}
+
+/* ============================================================
+   DISCREPANCIES
+   ============================================================ */
+
+function renderDiscrepancies() {
+    const wrap = document.getElementById('settleDiscrepancyList');
+    if (!wrap) return;
+    const issues = getSettlementDiscrepancies();
+    if (!issues.length) {
+        wrap.innerHTML = `<div class="settle-discrepancy-empty"><i class="fa-solid fa-circle-check"></i> No discrepancies detected.</div>`;
+        return;
+    }
+    wrap.innerHTML = issues.map(issue => `
+        <div class="settle-issue settle-issue-${issue.severity}">
+            <div class="settle-issue-icon">
+                <i class="fa-solid ${issue.severity === 'critical' ? 'fa-circle-exclamation' : issue.severity === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info'}"></i>
+            </div>
+            <div class="settle-issue-body">
+                <div class="settle-issue-title">${escapeHtml(issue.title)}</div>
+                <div class="settle-issue-desc">${escapeHtml(issue.description)}</div>
+                ${(issue.pnr || issue.client) ? `<div class="settle-issue-meta">${[issue.pnr ? `PNR ${issue.pnr}` : '', issue.client ? `· ${issue.client}` : ''].join(' ')}</div>` : ''}
+            </div>
+            <span class="settle-issue-severity">${issue.severity}</span>
+        </div>
+    `).join('');
+}
+
+/* ============================================================
+   CLOSED PERIODS
+   ============================================================ */
+
+function renderClosedPeriods() {
+    const list = document.getElementById('settleClosedPeriods');
+    if (!list) return;
+    const closed = [...state.allClosedPeriods].sort((a, b) => (b.periodKey || '').localeCompare(a.periodKey || ''));
+    if (!closed.length) {
+        list.innerHTML = `<div class="settle-discrepancy-empty"><i class="fa-solid fa-lock-open"></i> No closed periods yet.</div>`;
+        return;
+    }
+    list.innerHTML = closed.map(p => `
+        <div class="settle-closed-card">
+            <div class="settle-closed-head">
+                <span class="status-pill settle-status-locked"><i class="fa-solid fa-lock"></i> Locked</span>
+                <strong>${escapeHtml(p.periodKey || '—')}</strong>
+                <span class="settle-muted">${escapeHtml(p.basis === 'cash' ? 'Cash Basis' : 'Issued Basis')}</span>
+            </div>
+            <div class="settle-closed-grid">
+                <div><span>Opening</span><strong>${formatMMK(p.openingBalance)}</strong></div>
+                <div><span>Owner Payable</span><strong>${formatMMK(p.ownerPayable)}</strong></div>
+                <div><span>Paid</span><strong>${formatMMK(p.paidToOwner)}</strong></div>
+                <div><span>Adjustments</span><strong>${formatMMK(p.adjustments)}</strong></div>
+                <div><span>Closing</span><strong>${formatMMK(p.closingBalance)}</strong></div>
+            </div>
+            <div class="settle-closed-actions">
+                <button class="settle-row-btn settle-danger" data-unlock-period="${escapeHtml(p.id)}"><i class="fa-solid fa-lock-open"></i> Unlock</button>
+            </div>
+        </div>
+    `).join('');
+
+    list.querySelectorAll('[data-unlock-period]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.unlockPeriod;
+            if (!window.confirm('Unlock this closed period? Totals can change after unlocking.')) return;
+            deleteClosedPeriod(id).then(async () => {
+                showToast('Period unlocked.', 'success');
+                await loadSettlementData();
+            }).catch(() => showToast('Failed to unlock.', 'error'));
+        });
+    });
+}
+
+/* ============================================================
+   NEW / EDIT SETTLEMENT MODAL
+   ============================================================ */
+
+export function openNewSettlementModal(existing = null) {
+    const isEdit = !!existing;
+    const { method, bank } = parsePaymentMethod(existing?.payment_method);
+
+    const unpaidTickets = state.allTickets
+        .filter(t => !isExcluded(t))
+        .filter(t => ui.basis === 'cash' ? !!t.paid : true)
+        .filter(t => getTicketOwnerPayable(t) > 0)
+        .sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date));
+
+    const existingAllocations = Array.isArray(existing?.allocations) ? existing.allocations : [];
+    const checkedSet = new Set(existingAllocations.map(a => a.ticketId));
+
+    openModal(`
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-handshake"></i> ${isEdit ? 'Edit' : 'New'} Settlement</h3>
+            <button class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+        <div class="modal-body-content">
+            <form id="settlementForm" class="settle-form">
+                <div class="form-grid">
+                    <div class="form-group"><label>Settlement Date</label>
+                        <input type="date" id="set_date" required value="${toIsoDate(existing?.settlement_date) || todayIso()}">
+                    </div>
+                    <div class="form-group"><label>Amount Paid (MMK)</label>
+                        <input type="number" id="set_amount" min="0" required value="${existing?.amount_paid || ''}">
+                    </div>
+                    <div class="form-group"><label>Payment Method</label>
+                        <select id="set_method" required>
+                            <option value="" disabled ${!method ? 'selected' : ''}>Select payment method</option>
+                            <option ${method === 'KBZ Pay' ? 'selected' : ''}>KBZ Pay</option>
+                            <option ${method === 'Mobile Banking' ? 'selected' : ''}>Mobile Banking</option>
+                            <option ${method === 'Aya Pay' ? 'selected' : ''}>Aya Pay</option>
+                            <option ${method === 'UAB Pay' ? 'selected' : ''}>UAB Pay</option>
+                            <option ${method === 'Cash' ? 'selected' : ''}>Cash</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="set_bank_group" ${method === 'Mobile Banking' ? '' : 'hidden'}>
+                        <label>Bank</label>
+                        <input type="text" id="set_bank" placeholder="e.g. KBZ" value="${escapeHtml(bank || '')}">
+                    </div>
+                    <div class="form-group"><label>Transaction ID</label>
+                        <input type="text" id="set_txn" value="${escapeHtml(existing?.transaction_id || '')}" autocomplete="off">
+                    </div>
+                    <div class="form-group"><label>Paid By</label>
+                        <input type="text" id="set_paid_by" placeholder="e.g. Tashi" value="${escapeHtml(existing?.paid_by || '')}">
+                    </div>
+                    <div class="form-group"><label>Confirmed By (Owner)</label>
+                        <input type="text" id="set_verified_by" placeholder="Owner name" value="${escapeHtml(existing?.verifiedBy || '')}">
+                    </div>
+                    <div class="form-group"><label>Status</label>
+                        <select id="set_status">
+                            <option ${(existing?.status || 'Paid') === 'Paid' ? 'selected' : ''}>Paid</option>
+                            <option ${existing?.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                            <option ${existing?.status === 'Verified' ? 'selected' : ''}>Verified</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width"><label>Proof URL (image/PDF link)</label>
+                        <input type="url" id="set_proof_url" placeholder="https://…" value="${escapeHtml(existing?.proofUrl || '')}">
+                    </div>
+                    <div class="form-group"><label>Proof Name</label>
+                        <input type="text" id="set_proof_name" placeholder="e.g. KBZ Receipt 12 Nov" value="${escapeHtml(existing?.proofName || '')}">
+                    </div>
+                    <div class="form-group"><label>Proof Type</label>
+                        <select id="set_proof_type">
+                            <option value="">—</option>
+                            <option ${existing?.proofType === 'image' ? 'selected' : ''} value="image">Image</option>
+                            <option ${existing?.proofType === 'pdf' ? 'selected' : ''} value="pdf">PDF</option>
+                            <option ${existing?.proofType === 'other' ? 'selected' : ''} value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width"><label>Notes</label>
+                        <textarea id="set_notes" rows="2">${escapeHtml(existing?.notes || '')}</textarea>
+                    </div>
+                </div>
+
+                <fieldset class="settle-allocation">
+                    <legend>Allocation</legend>
+                    <div class="settle-alloc-modes">
+                        <label><input type="radio" name="allocMode" value="auto" ${(existing?.allocationMode || 'auto') === 'auto' ? 'checked' : ''}> Auto (oldest first)</label>
+                        <label><input type="radio" name="allocMode" value="manual" ${existing?.allocationMode === 'manual' ? 'checked' : ''}> Manual</label>
+                        <label><input type="radio" name="allocMode" value="unallocated" ${existing?.allocationMode === 'unallocated' ? 'checked' : ''}> Unallocated</label>
+                    </div>
+                    <div id="manualAllocPanel" class="settle-alloc-panel" ${existing?.allocationMode === 'manual' ? '' : 'hidden'}>
+                        <div class="settle-alloc-summary">
+                            <span>Selected total: <strong id="allocSelected">MMK 0</strong></span>
+                            <span>Payment: <strong id="allocAmount">MMK 0</strong></span>
+                            <span>Remaining: <strong id="allocRemaining">MMK 0</strong></span>
+                        </div>
+                        <div class="settle-alloc-list">
+                            ${unpaidTickets.map(t => `
+                                <label class="settle-alloc-item">
+                                    <input type="checkbox" data-alloc-ticket="${escapeHtml(t.id)}" data-alloc-payable="${getTicketOwnerPayable(t)}" data-alloc-pnr="${escapeHtml(t.booking_reference || '')}" data-alloc-name="${escapeHtml(t.name || '')}" ${checkedSet.has(t.id) ? 'checked' : ''}>
+                                    <span class="alloc-pnr">${escapeHtml(t.booking_reference || '—')}</span>
+                                    <span class="alloc-name">${escapeHtml(t.name || '—')}</span>
+                                    <span class="alloc-date">${escapeHtml(formatDateToDMMMY(t.issued_date))}</span>
+                                    <span class="num">${formatMMK(getTicketOwnerPayable(t))}</span>
+                                </label>
+                            `).join('') || '<p class="settle-muted">No unsettled tickets available.</p>'}
+                        </div>
+                        <label class="settle-alloc-override">
+                            <input type="checkbox" id="set_allow_over"> Allow allocation greater than payment amount
+                        </label>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions" style="margin-top:1.25rem">
+                    <button type="button" class="btn btn-secondary" data-close-modal><i class="fa-solid fa-xmark"></i> Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> ${isEdit ? 'Update' : 'Save'} Settlement</button>
+                </div>
+            </form>
+        </div>
+    `, 'large-modal');
+
+    document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
+    document.getElementById('set_method')?.addEventListener('change', (e) => {
+        document.getElementById('set_bank_group').hidden = e.target.value !== 'Mobile Banking';
+    });
+    document.querySelectorAll('input[name="allocMode"]').forEach(r => {
+        r.addEventListener('change', () => {
+            document.getElementById('manualAllocPanel').hidden = r.value !== 'manual' || !r.checked;
+            updateAllocationSummary();
+        });
+    });
+    document.getElementById('set_amount')?.addEventListener('input', updateAllocationSummary);
+    document.querySelectorAll('[data-alloc-ticket]').forEach(cb => cb.addEventListener('change', updateAllocationSummary));
+    updateAllocationSummary();
+
+    document.getElementById('settlementForm').addEventListener('submit', (e) => handleSettlementSubmit(e, existing));
+}
+
+function updateAllocationSummary() {
+    const amount = Number(document.getElementById('set_amount')?.value || 0);
+    let selected = 0;
+    document.querySelectorAll('[data-alloc-ticket]:checked').forEach(cb => {
+        selected += Number(cb.dataset.allocPayable || 0);
+    });
+    const remaining = amount - selected;
+    const el = (id) => document.getElementById(id);
+    if (el('allocSelected')) el('allocSelected').textContent = formatMMK(selected);
+    if (el('allocAmount')) el('allocAmount').textContent = formatMMK(amount);
+    if (el('allocRemaining')) el('allocRemaining').textContent = formatMMK(remaining);
+}
+
+function toIsoDate(displayDate) {
+    if (!displayDate) return '';
+    const d = parseSheetDate(displayDate);
+    if (!d.getTime()) return '';
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function todayIso() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+async function handleSettlementSubmit(e, existing) {
     e.preventDefault();
     if (state.isSubmitting) return;
     state.isSubmitting = true;
-    const submitButton = e.target.querySelector('button[type="submit"]');
-    if (submitButton) submitButton.disabled = true;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
 
     try {
-        const settlementData = {
-            settlement_date: document.getElementById('settlement_date').value,
-            amount_paid: document.getElementById('settlement_amount_paid').value,
-            payment_method: formatPaymentMethod(
-                document.getElementById('settlement_payment_method').value,
-                document.getElementById('settlement_payment_method_bank')?.value || ''
-            ),
-            transaction_id: document.getElementById('settlement_transaction_id').value.toUpperCase(),
-            notes: document.getElementById('settlement_notes').value
-        };
+        const dateIso = document.getElementById('set_date').value;
+        const amount = parseFloat(document.getElementById('set_amount').value) || 0;
+        const method = document.getElementById('set_method').value;
+        const bank = document.getElementById('set_bank')?.value || '';
+        const allocMode = document.querySelector('input[name="allocMode"]:checked')?.value || 'auto';
 
-        if (!settlementData.settlement_date || !settlementData.amount_paid) {
-            throw new Error('Settlement Date and Amount Paid are required.');
+        if (!dateIso || amount <= 0 || !method) {
+            throw new Error('Date, amount, and payment method are required.');
         }
 
-        await addSettlement({
-            settlement_date: formatDateToDDMMMYYYY(settlementData.settlement_date),
+        let allocations = [];
+        if (allocMode === 'manual') {
+            document.querySelectorAll('[data-alloc-ticket]:checked').forEach(cb => {
+                allocations.push({
+                    ticketId: cb.dataset.allocTicket,
+                    pnr: cb.dataset.allocPnr,
+                    clientName: cb.dataset.allocName,
+                    amount: Number(cb.dataset.allocPayable || 0)
+                });
+            });
+            const total = allocations.reduce((s, a) => s + a.amount, 0);
+            const allowOver = document.getElementById('set_allow_over')?.checked;
+            if (total > amount && !allowOver) {
+                throw new Error(`Allocation (${formatMMK(total)}) exceeds payment (${formatMMK(amount)}). Enable override to save anyway.`);
+            }
+        }
+
+        const payload = {
+            settlement_date: formatDateToDDMMMYYYY(dateIso),
             net_amount: '',
-            amount_paid: parseFloat(settlementData.amount_paid) || 0,
-            payment_method: settlementData.payment_method,
-            transaction_id: settlementData.transaction_id,
-            status: 'Paid',
-            notes: settlementData.notes
-        });
-        showToast('Settlement saved successfully!', 'success');
-        hideNewSettlementForm();
+            amount_paid: amount,
+            payment_method: formatPaymentMethod(method, bank),
+            transaction_id: (document.getElementById('set_txn').value || '').toUpperCase(),
+            status: document.getElementById('set_status').value || 'Paid',
+            paid_by: document.getElementById('set_paid_by').value || '',
+            verifiedBy: document.getElementById('set_verified_by').value || '',
+            verifiedAt: document.getElementById('set_status').value === 'Verified' ? new Date().toISOString() : (existing?.verifiedAt || ''),
+            notes: document.getElementById('set_notes').value || '',
+            proofUrl: document.getElementById('set_proof_url').value || '',
+            proofName: document.getElementById('set_proof_name').value || '',
+            proofType: document.getElementById('set_proof_type').value || '',
+            proofUploadedAt: document.getElementById('set_proof_url').value ? new Date().toISOString() : (existing?.proofUploadedAt || ''),
+            allocationMode: allocMode,
+            allocations
+        };
+
+        if (existing) {
+            await updateSettlement(existing.id, payload);
+            showToast('Settlement updated.', 'success');
+        } else {
+            await addSettlement(payload);
+            showToast('Settlement saved successfully!', 'success');
+        }
+        closeModal();
         await loadSettlementData();
-        updateSettlementDashboard();
-    } catch (error) {
-        showToast(error.message || 'Failed to save settlement.', 'error');
+    } catch (err) {
+        showToast(err.message || 'Failed to save settlement.', 'error');
     } finally {
         state.isSubmitting = false;
-        if (submitButton) submitButton.disabled = false;
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
-/**
- * Calculates and updates the figures on the settlement dashboard.
- */
-export function updateSettlementDashboard() {
-    const now = new Date(); 
-    const currentMonth = now.getMonth(); 
-    const currentYear = now.getFullYear(); 
-    
-    const firstDayOfCurrentMonth = new Date(currentYear, currentMonth, 1); 
+/* Back-compat for old inline form handler if main.js still wires it. */
+export async function handleNewSettlementSubmit(e) {
+    if (e?.preventDefault) e.preventDefault();
+    openNewSettlementModal();
+}
 
-    // --- Previous Balance Calculation (Corrected Logic with Reset Date) ---
-    // UPDATED: User requested a hard reset starting March 1, 2026.
-    const RESET_DATE = new Date(2026, 2, 1); 
+/* ============================================================
+   ADJUSTMENT MODAL
+   ============================================================ */
 
-    let previousEndOfMonthDue = 0;
+export function openAdjustmentModal() {
+    openModal(`
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-pen-to-square"></i> New Adjustment</h3>
+            <button class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+        <div class="modal-body-content">
+            <form id="adjustmentForm" class="settle-form">
+                <div class="form-grid">
+                    <div class="form-group"><label>Date</label><input type="date" id="adj_date" required value="${todayIso()}"></div>
+                    <div class="form-group"><label>Type</label>
+                        <select id="adj_type" required>
+                            <option value="Owner Credit">Owner Credit (reduces payable)</option>
+                            <option value="Owner Debit">Owner Debit (adds to payable)</option>
+                            <option value="Correction">Correction</option>
+                            <option value="Refund">Refund</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Amount (MMK)</label><input type="number" id="adj_amount" min="0" required></div>
+                    <div class="form-group"><label>Reason</label><input type="text" id="adj_reason" required placeholder="Short reason"></div>
+                    <div class="form-group full-width"><label>Notes</label><textarea id="adj_notes" rows="2"></textarea></div>
+                    <div class="form-group full-width"><label>Proof URL (optional)</label><input type="url" id="adj_proof" placeholder="https://…"></div>
+                </div>
+                <div class="form-actions" style="margin-top:1rem">
+                    <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Adjustment</button>
+                </div>
+            </form>
+        </div>
+    `, 'large-modal');
+    document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
 
-    if (firstDayOfCurrentMonth < RESET_DATE) {
-        // --- OLD FLAWED LOGIC (for months before the reset, e.g., Oct/Nov 2025) ---
-        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-        const lastDayOfPreviousMonth = new Date(firstDayOfMonth.getTime() - 1);
-        const previousMonth = lastDayOfPreviousMonth.getMonth();
-        const previousYear = lastDayOfPreviousMonth.getFullYear();
+    document.getElementById('adjustmentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const dateIso = document.getElementById('adj_date').value;
+            const data = {
+                adjustment_date: formatDateToDDMMMYYYY(dateIso),
+                type: document.getElementById('adj_type').value,
+                amount: parseFloat(document.getElementById('adj_amount').value) || 0,
+                reason: document.getElementById('adj_reason').value || '',
+                notes: document.getElementById('adj_notes').value || '',
+                proofUrl: document.getElementById('adj_proof').value || ''
+            };
+            if (!data.amount) throw new Error('Amount is required.');
+            await addAdjustment(data);
+            showToast('Adjustment saved.', 'success');
+            closeModal();
+            await loadSettlementData();
+        } catch (err) {
+            showToast(err.message || 'Failed to save adjustment.', 'error');
+        }
+    });
+}
 
-        const ticketsLastMonth = state.allTickets.filter(t => {
-            const ticketDate = parseSheetDate(t.issued_date);
-            const lowerRemarks = t.remarks?.toLowerCase() || '';
-            return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear;
+/* ============================================================
+   CLOSE MONTH MODAL
+   ============================================================ */
+
+export function openCloseMonthModal() {
+    const today = new Date();
+    const defaultPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    openModal(`
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-lock"></i> Close Month</h3>
+            <button class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+        <div class="modal-body-content">
+            <div class="form-grid">
+                <div class="form-group"><label>Period (YYYY-MM)</label><input type="month" id="close_period" required value="${defaultPeriod}"></div>
+            </div>
+            <div id="close_preview" class="settle-close-preview"></div>
+            <div class="form-actions" style="margin-top:1rem">
+                <button class="btn btn-secondary" data-close-modal>Cancel</button>
+                <button class="btn btn-primary" id="closeMonthConfirm"><i class="fa-solid fa-lock"></i> Confirm & Lock</button>
+            </div>
+        </div>
+    `, 'large-modal');
+
+    document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
+    const refreshPreview = () => renderClosePreview(document.getElementById('close_period').value);
+    document.getElementById('close_period').addEventListener('change', refreshPreview);
+    refreshPreview();
+
+    document.getElementById('closeMonthConfirm').addEventListener('click', async () => {
+        const periodKey = document.getElementById('close_period').value;
+        if (!periodKey) return showToast('Select a period.', 'error');
+        if (state.allClosedPeriods.some(p => p.periodKey === periodKey)) {
+            return showToast('Period already locked.', 'error');
+        }
+        const snapshot = buildCloseSnapshot(periodKey);
+        if (!snapshot) return;
+        try {
+            await addClosedPeriod({ ...snapshot, status: 'Locked', lockedAt: new Date().toISOString() });
+            showToast(`Locked ${periodKey}.`, 'success');
+            closeModal();
+            await loadSettlementData();
+        } catch {
+            showToast('Failed to lock period.', 'error');
+        }
+    });
+}
+
+function buildCloseSnapshot(periodKey) {
+    const [y, m] = periodKey.split('-').map(Number);
+    if (!y || !m) return null;
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 0, 23, 59, 59, 999);
+
+    const prevUi = { ...ui };
+    ui.period = 'custom';
+    ui.customStart = start;
+    ui.customEnd = end;
+    const s = getSettlementSummary();
+    Object.assign(ui, prevUi);
+
+    return {
+        periodKey,
+        startDate: formatDateToDDMMMYYYY(start.toISOString().slice(0, 10)),
+        endDate: formatDateToDDMMMYYYY(end.toISOString().slice(0, 10)),
+        basis: ui.basis,
+        openingBalance: Math.round(s.opening),
+        ownerPayable: Math.round(s.ownerPayable),
+        paidToOwner: Math.round(s.paidToOwner),
+        adjustments: Math.round(s.adjustmentsTotal),
+        closingBalance: Math.round(s.closing)
+    };
+}
+
+function renderClosePreview(periodKey) {
+    const wrap = document.getElementById('close_preview');
+    if (!wrap || !periodKey) return;
+    const snap = buildCloseSnapshot(periodKey);
+    if (!snap) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `
+        <h4>Statement Preview · ${escapeHtml(periodKey)}</h4>
+        <div class="settle-close-grid">
+            <div><span>Opening</span><strong>${formatMMK(snap.openingBalance)}</strong></div>
+            <div><span>Owner Payable</span><strong>${formatMMK(snap.ownerPayable)}</strong></div>
+            <div><span>Paid to Owner</span><strong>${formatMMK(snap.paidToOwner)}</strong></div>
+            <div><span>Adjustments</span><strong>${formatMMK(snap.adjustments)}</strong></div>
+            <div><span>Closing</span><strong>${formatMMK(snap.closingBalance)}</strong></div>
+        </div>
+        <p class="settle-muted">Locking will preserve these totals. You can unlock the period later if needed.</p>
+    `;
+}
+
+/* ============================================================
+   STATEMENT VIEW
+   ============================================================ */
+
+export function openStatementModal() {
+    const s = getSettlementSummary();
+    const lineItems = s.periodTickets.map(t => `
+        <tr>
+            <td>${escapeHtml(formatDateToDMMMY(t.issued_date))}</td>
+            <td>${escapeHtml(t.booking_reference || '—')}</td>
+            <td>${escapeHtml(t.name || '—')}</td>
+            <td class="num">${formatMMK(n(t.net_amount))}</td>
+            <td class="num">${formatMMK(n(t.date_change))}</td>
+            <td class="num">${formatMMK(n(t.commission))}</td>
+            <td class="num"><strong>${formatMMK(getTicketOwnerPayable(t))}</strong></td>
+        </tr>
+    `).join('') || '<tr><td colspan="7" class="settle-empty">No tickets in this period.</td></tr>';
+
+    const settlementRows = s.periodSettlements.map(x => `
+        <tr>
+            <td>${escapeHtml(x.settlement_date || '—')}</td>
+            <td>${escapeHtml(x.payment_method || '—')}</td>
+            <td>${escapeHtml(x.transaction_id || '—')}</td>
+            <td class="num">${formatMMK(n(x.amount_paid))}</td>
+        </tr>
+    `).join('') || '<tr><td colspan="4" class="settle-empty">No settlements in this period.</td></tr>';
+
+    const adjRows = s.periodAdjustments.map(a => `
+        <tr>
+            <td>${escapeHtml(a.adjustment_date || '—')}</td>
+            <td>${escapeHtml(a.type || '—')}</td>
+            <td>${escapeHtml(a.reason || '—')}</td>
+            <td class="num">${formatMMK(adjustmentSignedAmount(a))}</td>
+        </tr>
+    `).join('') || '<tr><td colspan="4" class="settle-empty">No adjustments.</td></tr>';
+
+    openModal(`
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-file-lines"></i> Owner Settlement Statement</h3>
+            <button class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+        <div class="modal-body-content statement-view" id="statementBody">
+            <header class="statement-header">
+                <h2>Ocean Travel</h2>
+                <p>Owner Settlement Statement</p>
+                <p class="settle-muted">${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.start)))} – ${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.end)))} · ${s.basis === 'cash' ? 'Cash Basis' : 'Issued Basis'}</p>
+            </header>
+            <section class="statement-summary">
+                <div><span>Opening Balance</span><strong>${formatMMK(s.opening)}</strong></div>
+                <div><span>Owner Payable (Tickets)</span><strong>${formatMMK(s.ownerPayable)}</strong></div>
+                <div><span>Adjustments</span><strong>${formatMMK(s.adjustmentsTotal)}</strong></div>
+                <div><span>Settlements Paid</span><strong>${formatMMK(s.paidToOwner)}</strong></div>
+                <div class="statement-closing"><span>Closing Balance</span><strong>${formatMMK(s.closing)}</strong></div>
+            </section>
+            <h4>Ticket Line Items</h4>
+            <table class="settle-table"><thead><tr><th>Date</th><th>PNR</th><th>Client</th><th class="num">Net</th><th class="num">Date Chg</th><th class="num">Comm.</th><th class="num">Owner Payable</th></tr></thead><tbody>${lineItems}</tbody></table>
+            <h4>Settlement Payments</h4>
+            <table class="settle-table"><thead><tr><th>Date</th><th>Method</th><th>Txn</th><th class="num">Amount</th></tr></thead><tbody>${settlementRows}</tbody></table>
+            <h4>Adjustments</h4>
+            <table class="settle-table"><thead><tr><th>Date</th><th>Type</th><th>Reason</th><th class="num">Amount</th></tr></thead><tbody>${adjRows}</tbody></table>
+            <footer class="statement-footer">All amounts in MMK · Private · Owner Settlement Statement</footer>
+        </div>
+        <div class="form-actions" style="padding: 0.5rem 1.5rem 1.25rem">
+            <button class="btn btn-secondary" id="statementPrintBtn"><i class="fa-solid fa-print"></i> Print</button>
+            <button class="btn btn-primary" id="statementPdfBtn"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+            <button class="btn btn-secondary" data-close-modal>Close</button>
+        </div>
+    `, 'xlarge-modal');
+
+    document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
+    document.getElementById('statementPrintBtn').addEventListener('click', () => printStatementHtml());
+    document.getElementById('statementPdfBtn').addEventListener('click', () => exportStatementPdf());
+}
+
+function printStatementHtml() {
+    const body = document.getElementById('statementBody')?.innerHTML;
+    if (!body) return;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(`<html><head><title>Owner Settlement Statement</title>
+        <style>
+            body { font-family: -apple-system, system-ui, sans-serif; padding: 32px; color: #26251e; }
+            h2 { margin: 0 0 .25rem; }
+            table { width: 100%; border-collapse: collapse; margin: .5rem 0 1rem; font-size: 12px; }
+            th, td { border-bottom: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+            th { background: #f7f7f4; }
+            .num { text-align: right; }
+            .statement-summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: .75rem; margin: 1rem 0; }
+            .statement-summary div { padding: .5rem .75rem; border: 1px solid #ddd; border-radius: 8px; }
+            .statement-summary span { display: block; font-size: 10px; text-transform: uppercase; color: #888; }
+            .statement-summary strong { font-size: 14px; }
+            .statement-closing { background: #f0fdfa; }
+            footer { text-align: center; margin-top: 1.5rem; color: #888; font-size: 11px; }
+        </style>
+    </head><body>${body}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 250);
+}
+
+export function exportStatementPdf() {
+    if (!window.jspdf) { showToast('PDF library not available.', 'error'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const s = getSettlementSummary();
+
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+    doc.text('Ocean Travel — Owner Settlement Statement', 105, 16, { align: 'center' });
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+    doc.text(`${formatDateToDMMMY(formatDateForSheet(s.start))}  –  ${formatDateToDMMMY(formatDateForSheet(s.end))}  ·  ${s.basis === 'cash' ? 'Cash Basis' : 'Issued Basis'}`, 105, 22, { align: 'center' });
+
+    const summaryRows = [
+        ['Opening Balance', formatMMK(s.opening)],
+        ['Owner Payable (Tickets)', formatMMK(s.ownerPayable)],
+        ['Adjustments', formatMMK(s.adjustmentsTotal)],
+        ['Settlements Paid', formatMMK(s.paidToOwner)],
+        ['Closing Balance', formatMMK(s.closing)]
+    ];
+    if (doc.autoTable) {
+        doc.autoTable({
+            head: [['Summary', 'Amount']],
+            body: summaryRows,
+            startY: 28,
+            styles: { fontSize: 10 },
+            headStyles: { fillColor: [13, 148, 136] }
         });
 
-        const revenueLastMonth = ticketsLastMonth.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
-        const commissionLastMonth = ticketsLastMonth.reduce((sum, t) => sum + (t.commission || 0), 0);
-
-        const settlementsLastMonth = state.allSettlements.filter(s => {
-            const settlementDate = parseSheetDate(s.settlement_date);
-            return settlementDate.getMonth() === previousMonth && settlementDate.getFullYear() === previousYear;
+        const ticketBody = s.periodTickets.map(t => [
+            formatDateToDMMMY(t.issued_date),
+            t.booking_reference || '—',
+            t.name || '—',
+            n(t.net_amount).toLocaleString(),
+            n(t.date_change).toLocaleString(),
+            n(t.commission).toLocaleString(),
+            Math.round(getTicketOwnerPayable(t)).toLocaleString()
+        ]);
+        doc.autoTable({
+            head: [['Issued', 'PNR', 'Client', 'Net', 'Date Chg', 'Comm.', 'Owner Payable']],
+            body: ticketBody.length ? ticketBody : [['—', '—', '—', '—', '—', '—', '—']],
+            startY: doc.lastAutoTable.finalY + 6,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [31, 138, 101] }
         });
-        const totalSettlementsLastMonth = settlementsLastMonth.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-        previousEndOfMonthDue = revenueLastMonth - (commissionLastMonth + totalSettlementsLastMonth);
-        // --- END OF OLD FLAWED LOGIC ---
 
+        const settleBody = s.periodSettlements.map(x => [
+            x.settlement_date || '—',
+            x.payment_method || '—',
+            x.transaction_id || '—',
+            n(x.amount_paid).toLocaleString()
+        ]);
+        doc.autoTable({
+            head: [['Settlement Date', 'Method', 'Txn ID', 'Amount']],
+            body: settleBody.length ? settleBody : [['—', '—', '—', '—']],
+            startY: doc.lastAutoTable.finalY + 6,
+            styles: { fontSize: 9 },
+            headStyles: { fillColor: [192, 133, 50] }
+        });
     } else {
-        // --- NEW CORRECT LOGIC (For Dec 1, 2025 and after) ---
-        // This calculates the true running balance *since the last reset*.
-        
-        // We calculate all transactions from the RESET_DATE (Mar 1) up to the start of the current month.
-        const filterStartDate = RESET_DATE;
-        
-        const ticketsBefore = state.allTickets.filter(t => {
-            const ticketDate = parseSheetDate(t.issued_date);
-            return ticketDate >= filterStartDate && ticketDate < firstDayOfCurrentMonth;
-        });
-        const revenueBefore = ticketsBefore.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
-        const commissionBefore = ticketsBefore.reduce((sum, t) => sum + (t.commission || 0), 0);
-
-        const settlementsBefore = state.allSettlements.filter(s => {
-            const settlementDate = parseSheetDate(s.settlement_date);
-            return settlementDate >= filterStartDate && settlementDate < firstDayOfCurrentMonth;
-        });
-        const totalSettlementsBefore = settlementsBefore.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-        
-        // If current month is December, 'ticketsBefore' (Dec 1 -> Dec 1) is empty.
-        // Therefore, this will be 0.
-        previousEndOfMonthDue = revenueBefore - (commissionBefore + totalSettlementsBefore);
+        let y = 32;
+        summaryRows.forEach(([k, v]) => { doc.text(`${k}: ${v}`, 14, y); y += 6; });
     }
 
-    // --- Current Month's Figures ---
-    const ticketsThisMonth = state.allTickets.filter(t => {
-        const ticketDate = parseSheetDate(t.issued_date);
-        return ticketDate.getMonth() === currentMonth && ticketDate.getFullYear() === currentYear;
+    doc.setFontSize(8);
+    doc.text('All amounts in MMK · Private · Owner Settlement Statement', 105, 290, { align: 'center' });
+    doc.save(`owner_statement_${Date.now()}.pdf`);
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+
+export function initSettlementView() {
+    const root = document.getElementById('settle-view');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    document.getElementById('newSettlementBtn')?.addEventListener('click', () => openNewSettlementModal());
+    document.getElementById('generateStatementBtn')?.addEventListener('click', () => openStatementModal());
+    document.getElementById('exportSettlementPdfBtn')?.addEventListener('click', () => exportStatementPdf());
+    document.getElementById('closeMonthBtn')?.addEventListener('click', () => openCloseMonthModal());
+    document.getElementById('addAdjustmentBtn')?.addEventListener('click', () => openAdjustmentModal());
+
+    document.querySelectorAll('#settlePeriodTabs .period-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            ui.period = btn.dataset.period;
+            persistUiState();
+            displaySettlements();
+        });
     });
 
-    const revenueThisMonth = ticketsThisMonth.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
-    const commissionThisMonth = ticketsThisMonth.reduce((sum, t) => sum + (t.commission || 0), 0);
-    const extraFareThisMonth = ticketsThisMonth.reduce((sum, t) => sum + (t.extra_fare || 0), 0);
-
-    const settlementsThisMonth = state.allSettlements.filter(s => {
-        const settlementDate = parseSheetDate(s.settlement_date);
-        return settlementDate.getMonth() === currentMonth && settlementDate.getFullYear() === currentYear;
+    document.querySelectorAll('#settleBasisToggle .basis-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            ui.basis = btn.dataset.basis;
+            persistUiState();
+            displaySettlements();
+        });
     });
-    const totalSettlementsThisMonth = settlementsThisMonth.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
-    // --- Update Dashboard Cards ---
-    // Rule: Total outstanding revenue = total revenue of current month + carried over from previous month.
-    const totalOutstandingRevenue = revenueThisMonth + previousEndOfMonthDue;
-    const netAmountBox = document.getElementById('settlement-net-amount-box');
-    netAmountBox.innerHTML = `<div class="info-card-content"><h3>Total Outstanding Revenue</h3><div class="main-value">${totalOutstandingRevenue.toLocaleString()}</div><span class="sub-value">MMK</span><i class="icon fa-solid fa-file-invoice-dollar"></i></div>`;
+    document.getElementById('settleApplyCustom')?.addEventListener('click', () => {
+        const s = document.getElementById('settleStartDate').value;
+        const e = document.getElementById('settleEndDate').value;
+        if (!s || !e) return showToast('Pick start and end dates.', 'error');
+        ui.period = 'custom';
+        ui.customStart = new Date(s);
+        ui.customEnd = new Date(e);
+        displaySettlements();
+    });
 
-    // Rule: End-of-Month Settlement Due = Total Outstanding Revenue - (settlements from current month + total commissions of current month)
-    const endOfMonthSettlement = totalOutstandingRevenue - (totalSettlementsThisMonth + commissionThisMonth); 
-    const monthlyDueBox = document.getElementById('settlement-monthly-due-box');
-    monthlyDueBox.innerHTML = `<div class="info-card-content"><h3>End-of-Month Settlement Due</h3><div class="main-value">${endOfMonthSettlement.toLocaleString()}</div><span class="sub-value">MMK</span><i class="icon fa-solid fa-cash-register"></i></div>`;
+    document.getElementById('settleLedgerSearch')?.addEventListener('input', (e) => {
+        ui.ledgerSearch = e.target.value;
+        renderLedger();
+    });
 
-    const totalProfitThisMonth = commissionThisMonth + extraFareThisMonth;
-    const commissionBox = document.getElementById('settlement-commission-box');
-    commissionBox.innerHTML = `<div class="info-card-content"><h3>Current Month's Total Profit</h3><div class="main-value">${totalProfitThisMonth.toLocaleString()}</div><span class="sub-value">MMK</span><i class="icon fa-solid fa-hand-holding-dollar"></i></div>`;
+    document.getElementById('settleTicketStatusFilter')?.addEventListener('change', (e) => {
+        ui.ticketStatusFilter = e.target.value;
+        renderTickets();
+    });
 }

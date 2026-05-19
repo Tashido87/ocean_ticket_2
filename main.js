@@ -7,14 +7,14 @@
 // Core Modules
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
-import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange } from './db.js';
+import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange } from './db.js';
 import { showToast, parseSheetDate, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity } from './utils.js';
 
 // Feature Modules
 import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import { loadHistory } from './history.js';
-import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements } from './settlement.js';
+import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView } from './settlement.js';
 import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
@@ -79,9 +79,24 @@ export async function initializeApp() {
             onSettlementsChange((settlements) => {
                 state.allSettlements = settlements;
                 displaySettlements();
-                updateSettlementDashboard();
             })
         );
+
+        state.unsubscribers.push(
+            onClosedPeriodsChange((periods) => {
+                state.allClosedPeriods = periods;
+                displaySettlements();
+            })
+        );
+
+        state.unsubscribers.push(
+            onAdjustmentsChange((adjustments) => {
+                state.allAdjustments = adjustments;
+                displaySettlements();
+            })
+        );
+
+        initSettlementView();
 
         state.unsubscribers.push(
             onHistoryChange((history) => {
@@ -206,10 +221,7 @@ function setupEventListeners() {
     document.getElementById('bookingSearchBtn').addEventListener('click', performBookingSearch);
     document.getElementById('bookingClearBtn').addEventListener('click', clearBookingSearch);
 
-    // Settlement
-    document.getElementById('newSettlementBtn').addEventListener('click', showNewSettlementForm);
-    document.getElementById('cancelNewSettlementBtn').addEventListener('click', hideNewSettlementForm);
-    document.getElementById('newSettlementForm').addEventListener('submit', handleNewSettlementSubmit);
+    // Settlement is wired by initSettlementView() in initializeApp().
 
     // Hotel Service Initialization
     initHotelService();

@@ -10,6 +10,8 @@ export const state = {
     filteredBookings: [],
     allClients: [],
     allSettlements: [],
+    allClosedPeriods: [],
+    allAdjustments: [],
     featuredClients: [], // For starred clients
     history: [],
     charts: {
