@@ -6,7 +6,8 @@
 
 import { state } from './state.js';
 import { parseSheetDate, formatDateForSheet, formatDateToDMMMY, debounce, showToast } from './utils.js';
-import { showView, openModal, closeModal } from './ui.js';
+import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
+import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets } from './db.js';
 import { sellTicketForClient, bookForClient } from './clients.js';
 import { showDetails } from './tickets.js';
@@ -1206,15 +1207,8 @@ function documentsCard(c) {
                     </div>
                     ${nrcNo ? '<span class="verified-pill nrc-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>' : '<span class="nrc-missing">No NRC</span>'}
                 </div>
-                <div class="passport-doc-block ${photo ? 'has-photo' : ''}">
+                <div class="passport-doc-block">
                     <div class="travel-doc-title passport-title"><i class="fa-solid fa-passport"></i> Passport</div>
-                    ${photo ? `<button type="button" class="doc-photo" data-doc-action="view"><img src="${escapeHtml(photo)}" alt="Passport"></button>` : `
-                        <div class="doc-photo doc-photo-empty">
-                            <i class="fa-regular fa-address-card"></i>
-                            <strong>No passport uploaded</strong>
-                            <span>Upload a clear image of the passport information page.</span>
-                        </div>
-                    `}
                     <dl class="passport-doc-info">
                         <div><dt>Passport No.</dt><dd>${escapeHtml(passportNo || '—')}</dd></div>
                         <div><dt>Country</dt><dd>${escapeHtml(c.nationality || '—')}</dd></div>
@@ -1222,11 +1216,6 @@ function documentsCard(c) {
                         <div><dt>Date of Birth</dt><dd>${escapeHtml(dob || '—')}</dd></div>
                         <div><dt>Uploaded</dt><dd>${escapeHtml(uploadedLabel)}</dd></div>
                     </dl>
-                    <div class="passport-doc-actions">
-                        <button class="btn btn-ghost" data-doc-action="view" ${photo ? '' : 'disabled'}><i class="fa-regular fa-eye"></i> View</button>
-                        <button class="btn btn-ghost" data-doc-action="replace"><i class="fa-solid fa-rotate"></i> Replace</button>
-                        <button class="btn btn-primary" data-doc-action="upload"><i class="fa-solid fa-upload"></i> Upload Passport</button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1408,8 +1397,8 @@ function openTravelDocumentEditModal(client) {
                     </div>
                     <div class="form-group full-width">
                         <label>Passport Photo</label>
-                        <input type="file" id="editDocPhotoFile" accept="image/*,.pdf">
-                        ${client.passport_photo_url ? `<div class="settle-proof-existing"><a href="${escapeHtml(client.passport_photo_url)}" target="_blank" class="settle-link"><i class="fa-solid fa-paperclip"></i> View current photo</a></div>` : '<div class="settle-muted">No photo uploaded.</div>'}
+                        <input type="file" id="editDocPhotoFile" accept="image/*">
+                        <div id="editDocOcrStatus" class="pz-ocr-status"></div>
                     </div>
                 </div>
                 <p class="settle-muted">Updates are saved to this client's non-fee ticket records so future client detail views show the corrected documents.</p>
@@ -1423,6 +1412,60 @@ function openTravelDocumentEditModal(client) {
 
     document.querySelectorAll('[data-close-modal]').forEach(btn => btn.addEventListener('click', closeModal));
     document.getElementById('clientDocsForm')?.addEventListener('submit', (e) => saveTravelDocuments(e, client));
+
+    const photoInput = document.getElementById('editDocPhotoFile');
+    const ocrStatus = document.getElementById('editDocOcrStatus');
+
+    photoInput?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !file.type.startsWith('image/')) return;
+
+        ocrStatus.textContent = 'Scanning passport with Gemini...';
+        ocrStatus.className = 'pz-ocr-status is-scanning';
+
+        let ocrResult = null;
+        try {
+            ocrResult = await scanPassportWithGemini(file);
+        } catch (err) {
+            console.warn('[Gemini OCR failed]', err);
+            ocrStatus.textContent = 'Falling back to Tesseract...';
+            try {
+                ocrResult = await ocrPassport(file, (msg) => {
+                    ocrStatus.textContent = msg;
+                    ocrStatus.className = 'pz-ocr-status is-scanning';
+                });
+            } catch (fallbackErr) {
+                console.error('[Tesseract OCR failed]', fallbackErr);
+            }
+        }
+
+        if (ocrResult) {
+            const passportNo = ocrResult.passportNo || ocrResult.passportNumber || '';
+            const dob = ocrResult.dob || ocrResult.dateOfBirth || '';
+            const expiry = ocrResult.expiry || ocrResult.expiryDate || '';
+            const nationality = ocrResult.nationality || '';
+
+            if (passportNo) {
+                document.getElementById('editDocPassport').value = passportNo;
+            }
+            if (nationality) {
+                document.getElementById('editDocNationality').value = nationality;
+            }
+            if (expiry) {
+                document.getElementById('editDocExpiry').value = expiry;
+            }
+            if (dob) {
+                document.getElementById('editDocDob').value = dob;
+            }
+
+            ocrStatus.textContent = 'Passport data extracted';
+            ocrStatus.className = 'pz-ocr-status is-success';
+            showToast('Passport scanned and fields filled.', 'success');
+        } else {
+            ocrStatus.textContent = 'Could not extract passport data';
+            ocrStatus.className = 'pz-ocr-status is-warn';
+        }
+    });
 }
 
 async function saveTravelDocuments(e, client) {

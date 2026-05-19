@@ -6958,13 +6958,11 @@ body.material-theme .search-skeleton-row span {
     font-weight: 700;
 }
 .passport-doc-block {
-    display: grid;
-    grid-template-columns: minmax(160px, 0.92fr) minmax(150px, 0.8fr);
-    grid-template-rows: auto 1fr auto;
+    display: flex;
+    flex-direction: column;
     gap: 0.75rem;
     padding: 0.78rem;
 }
-.passport-title { grid-column: 1 / -1; }
 .doc-label {
     font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--text-secondary);
@@ -7158,8 +7156,6 @@ body.material-theme .search-skeleton-row span {
     .client-kpi-grid { grid-template-columns: 1fr 1fr; }
     .travel-doc-layout { grid-template-columns: 1fr; }
     .nrc-mini-card { min-height: auto; }
-    .passport-doc-block { grid-template-columns: 1fr; }
-    .doc-photo img, .doc-photo-empty { height: 132px; min-height: 132px; }
     .detail-kv { grid-template-columns: 1fr; }
     .client-hero { padding: 1.1rem; }
     .client-hero-name { font-size: 1.45rem; }

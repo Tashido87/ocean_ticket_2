@@ -2190,7 +2190,7 @@ async function resizeImageToBase64(file, maxWidth = 1280, quality = 0.85) {
  * @returns {Promise<Object>} Parsed OCR result.
  * @throws {Error} If Gemini OCR fails.
  */
-async function scanPassportWithGemini(file, passengerIndex = 0) {
+export async function scanPassportWithGemini(file, passengerIndex = 0) {
     console.log('[Passport upload] file:', file.name, file.size);
 
     const imageBase64 = await resizeImageToBase64(file);
