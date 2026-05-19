@@ -72,7 +72,7 @@ function digitsOnly(value) {
 }
 
 function queryTokens(query) {
-    return normalize(query).split(/\s+/).filter(token => token.length >= 2);
+    return normalize(query).split(/\s+/).filter(token => token.length >= 1);
 }
 
 function isFeeEntry(ticket) {
@@ -274,15 +274,23 @@ function rankRecord(record, type, query) {
     if (name && name === q) return { score: 900, quality: 'best', reasons: ['Exact name'] };
     if (account && account === q) return { score: 860, quality: 'best', reasons: ['Exact account'] };
 
-    if (name.startsWith(q) && q.length >= 3) return { score: 820, quality: 'best', reasons: ['Name starts with query'] };
-    if (account.startsWith(q) && q.length >= 3) return { score: 780, quality: 'best', reasons: ['Account starts with query'] };
-    if (q.length >= 3 && name.includes(q)) return { score: 740, quality: 'best', reasons: ['Name contains phrase'] };
-    if (q.length >= 3 && account.includes(q)) return { score: 720, quality: 'best', reasons: ['Account contains phrase'] };
-    if (pnr && pnr.includes(q) && q.length >= 4) return { score: 700, quality: 'best', reasons: ['PNR contains query'] };
+    if (name.startsWith(q) && q.length >= 1) return { score: 820, quality: 'best', reasons: ['Name starts with query'] };
+    if (account.startsWith(q) && q.length >= 1) return { score: 780, quality: 'best', reasons: ['Account starts with query'] };
+    if (q.length >= 1 && name.includes(q)) return { score: 740, quality: 'best', reasons: ['Name contains phrase'] };
+    if (q.length >= 1 && account.includes(q)) return { score: 720, quality: 'best', reasons: ['Account contains phrase'] };
+    if (pnr && pnr.includes(q) && q.length >= 2) return { score: 700, quality: 'best', reasons: ['PNR contains query'] };
 
     if (isMulti) {
-        if (hasAllTokensInField(name, tokens)) return { score: 620, quality: 'best', reasons: ['All words in name'] };
-        if (hasAllTokensInField(account, tokens)) return { score: 580, quality: 'best', reasons: ['All words in account'] };
+        if (hasAllTokensInField(name, tokens)) {
+            let score = 620;
+            if (name.startsWith(tokens[0])) score += 50;
+            return { score, quality: 'best', reasons: ['All words in name'] };
+        }
+        if (hasAllTokensInField(account, tokens)) {
+            let score = 580;
+            if (account.startsWith(tokens[0])) score += 50;
+            return { score, quality: 'best', reasons: ['All words in account'] };
+        }
     }
 
     /* ---------- RELATED ---------- */
@@ -1820,6 +1828,8 @@ function buildSuggestions(query) {
         return { top, clients, tickets, accounts: [], recent: [], showMore: false };
     }
 
+    const tokens = queryTokens(normalize(q));
+
     // Wider pool so partial middle-word matches survive slicing
     const all = buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 20);
     const bestOnly = all.filter(r => r.quality === 'best');
@@ -1835,12 +1845,11 @@ function buildSuggestions(query) {
     let clients = [...clientBest, ...clientRelated];
 
     // Gather ALL clients whose names contain every query token
-    const tokens = queryTokens(normalize(q));
     let showMore = false;
     const allNameMatches = state.allClients
         .filter(c => {
             const n = normalize(c.name);
-            return tokens.every(t => n.includes(t)) && !topIds.has(c.client_key);
+            return tokens.every(t => n.includes(t)) && !topIds.has('client:' + c.client_key);
         })
         .map(c => buildClientResult(c, q))
         .filter(Boolean)
@@ -1856,6 +1865,17 @@ function buildSuggestions(query) {
         const rankedClients = [...clientBest, ...clientRelated]
             .filter(r => !directIds.has(getResultId(r)));
         clients = [...directMatches, ...rankedClients].slice(0, 6);
+    }
+
+    if (tokens.length > 1 && !clients.length && !top.length) {
+        clients = state.allClients
+            .filter(c => {
+                const text = [c.name, c.account_name, c.phone].map(normalize).join(' ');
+                return tokens.every(token => text.includes(token));
+            })
+            .map(c => buildClientResult(c, q))
+            .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a))
+            .slice(0, 6);
     }
 
     const clientIds = new Set(clients.map(getResultId));
@@ -1875,7 +1895,9 @@ function buildSuggestions(query) {
         accountNamesShown.add(normalize(name));
         return { kind: 'account', label: name, data: { account_name: name } };
     });
-    const filteredClients = clients.filter(c => !accountNamesShown.has(normalize(c.data.account_name || '')));
+    const filteredClients = tokens.length > 1
+        ? clients
+        : clients.filter(c => !accountNamesShown.has(normalize(c.data.account_name || '')));
 
     const shownIds = new Set([...topIds, ...clientIds, ...tickets.map(getResultId)]);
     const recent = getRecentSearches()

@@ -229,6 +229,21 @@ export function renderClientsView(page) {
         if (aIsFeatured && !bIsFeatured) return -1;
         if (!aIsFeatured && bIsFeatured) return 1;
 
+        if (searchQuery) {
+            const aName = String(a.name || '').toLowerCase();
+            const bName = String(b.name || '').toLowerCase();
+            const getScore = (n) => {
+                if (n.startsWith(query)) return 3;
+                if (n.includes(query)) return 2;
+                const tokens = query.split(/\s+/).filter(Boolean);
+                if (tokens.length > 0 && n.startsWith(tokens[0])) return 1.5;
+                return 1;
+            };
+            const aScore = getScore(aName);
+            const bScore = getScore(bName);
+            if (aScore !== bScore) return bScore - aScore;
+        }
+
         if (savedSortOption === 'recently_issued') {
             return b.last_issued - a.last_issued;
         } else if (savedSortOption === 'most_tickets') {
