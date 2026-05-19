@@ -161,11 +161,35 @@ function setupEventListeners() {
         if (el) el.addEventListener('change', performSearch);
     });
     document.getElementById('recordsSearchBtn').addEventListener('click', performSearch);
-    document.getElementById('recordsClearBtn').addEventListener('click', clearSearch);
+    document.getElementById('recordsClearBtn').addEventListener('click', () => {
+        clearSearch();
+        syncGroupToggleState();
+    });
     document.getElementById('recordsFilterToggle').addEventListener('click', () => {
         const panel = document.getElementById('recordsFilters');
         if (panel) panel.hidden = !panel.hidden;
     });
+
+    // Group toggle: only enable when both start and end dates are set
+    function syncGroupToggleState() {
+        const start = document.getElementById('searchStartDate')?.value;
+        const end = document.getElementById('searchEndDate')?.value;
+        const toggle = document.getElementById('groupByAccountToggle');
+        if (!toggle) return;
+        const hasRange = !!(start && end);
+        toggle.disabled = !hasRange;
+        if (!hasRange) {
+            toggle.checked = false;
+        }
+    }
+    ['searchStartDate', 'searchEndDate'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', syncGroupToggleState);
+            el.addEventListener('change', syncGroupToggleState);
+        }
+    });
+    syncGroupToggleState();
 
     // Reports
     document.getElementById('exportPdfBtn').addEventListener('click', () => document.getElementById('exportConfirmModal').classList.add('show'));
