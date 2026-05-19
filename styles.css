@@ -6817,7 +6817,7 @@ body.material-theme .search-skeleton-row span {
 /* Detail cards grid */
 .client-detail-grid {
     display: grid;
-    grid-template-columns: minmax(0, 0.42fr) minmax(0, 1.58fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     gap: 1rem;
 }
 .detail-card {
@@ -6888,6 +6888,11 @@ body.material-theme .search-skeleton-row span {
     gap: 0.65rem 1rem;
     margin: 0;
 }
+.overview-kv,
+.insights-kv,
+.payment-kv {
+    grid-template-columns: 1fr;
+}
 .detail-kv > div { min-width: 0; }
 .detail-kv dt {
     font-size: 0.7rem;
@@ -6939,16 +6944,11 @@ body.material-theme .search-skeleton-row span {
     min-width: 0;
     text-align: left;
     color: #0b1f3a;
-}
-.nrc-number-block strong,
-.nrc-number-block span {
-    display: block;
     font-weight: 850;
+    font-size: 0.9rem;
     line-height: 1.25;
     overflow-wrap: anywhere;
 }
-.nrc-number-block strong { font-size: 0.78rem; }
-.nrc-number-block span { font-size: 0.9rem; margin-top: 0.08rem; }
 .nrc-verified { justify-self: start; align-self: end; }
 .nrc-missing {
     justify-self: start;

@@ -1157,11 +1157,12 @@ function overviewCard(c) {
                 <span class="detail-card-icon"><i class="fa-solid fa-id-card"></i></span>
                 <h3>Client Overview</h3>
             </div>
-            <dl class="detail-kv">
+            <dl class="detail-kv overview-kv">
                 <div><dt>Account Name</dt><dd>${escapeHtml(c.account_name || '—')}</dd></div>
                 <div><dt>Phone</dt><dd>${phoneVal}</dd></div>
                 <div><dt>Account Type</dt><dd>${escapeHtml(c.account_type || '—')}</dd></div>
                 <div><dt>Account Link</dt><dd>${linkVal}</dd></div>
+                <div><dt>Frequent Flyer</dt><dd>${escapeHtml(c.frequent_flyer_no || '—')}</dd></div>
             </dl>
         </div>
     `;
@@ -1169,7 +1170,6 @@ function overviewCard(c) {
 
 function documentsCard(c) {
     const nrcNo = getClientNrc(c);
-    const nrcDisplay = splitNrcDisplay(nrcNo);
     const passportNo = getClientPassportNo(c);
     const photo = c.passport_photo_url || '';
     const expiry = c.passport_expiry || '';
@@ -1188,10 +1188,7 @@ function documentsCard(c) {
             <div class="travel-doc-layout">
                 <div class="nrc-mini-card">
                     <div class="travel-doc-title"><i class="fa-regular fa-id-card"></i> NRC</div>
-                    <div class="nrc-number-block">
-                        <strong>${escapeHtml(nrcDisplay.prefix)}</strong>
-                        ${nrcDisplay.serial ? `<span>${escapeHtml(nrcDisplay.serial)}</span>` : ''}
-                    </div>
+                    <div class="nrc-number-block">${escapeHtml((nrcNo || '').toUpperCase())}</div>
                     ${nrcNo ? '<span class="verified-pill nrc-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>' : '<span class="nrc-missing">No NRC</span>'}
                 </div>
                 <div class="passport-doc-block ${photo ? 'has-photo' : ''}">
@@ -1228,7 +1225,7 @@ function insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet) {
                 <span class="detail-card-icon"><i class="fa-solid fa-chart-pie"></i></span>
                 <h3>Client Insights</h3>
             </div>
-            <dl class="detail-kv">
+            <dl class="detail-kv insights-kv">
                 <div><dt>Most frequent route</dt><dd>${escapeHtml(mostFrequentRoute)}</dd></div>
                 <div><dt>One-way tickets</dt><dd>${oneWay}</dd></div>
                 <div><dt>Round-trip tickets</dt><dd>${roundTrip}</dd></div>
@@ -1245,7 +1242,7 @@ function paymentCard(paid, unpaid, outstanding, preferredPayment) {
                 <span class="detail-card-icon"><i class="fa-solid fa-credit-card"></i></span>
                 <h3>Payment & Booking Status</h3>
             </div>
-            <dl class="detail-kv">
+            <dl class="detail-kv payment-kv">
                 <div><dt>Paid bookings</dt><dd>${paid}</dd></div>
                 <div><dt>Pending bookings</dt><dd>${unpaid}</dd></div>
                 <div><dt>Outstanding balance</dt><dd>${fmtMmk(outstanding)}</dd></div>
