@@ -1152,10 +1152,11 @@ function overviewCard(c) {
         ? `<a href="${escapeHtml(accountLink)}" target="_blank" rel="noopener" class="kv-link"><i class="fa-solid fa-link"></i> ${escapeHtml(accountLink)}</a>`
         : '—';
     return `
-        <div class="detail-card">
+        <div class="detail-card overview-card">
             <div class="detail-card-head">
                 <span class="detail-card-icon"><i class="fa-solid fa-id-card"></i></span>
                 <h3>Client Overview</h3>
+                <button class="doc-edit-btn" data-overview-action="edit"><i class="fa-solid fa-pen"></i> Edit</button>
             </div>
             <dl class="detail-kv overview-kv">
                 <div><dt>Account Name</dt><dd>${escapeHtml(c.account_name || '—')}</dd></div>
@@ -1175,10 +1176,9 @@ function documentsCard(c) {
     const expiry = c.passport_expiry || '';
     const dob = c.dob || '';
     const verified = !!(passportNo || nrcNo);
-    const uploadedLabel = photo ? 'Uploaded' : 'Not uploaded';
 
     return `
-        <div class="detail-card">
+        <div class="detail-card documents-card">
             <div class="detail-card-head">
                 <span class="detail-card-icon"><i class="fa-solid fa-passport"></i></span>
                 <h3>Travel Documents</h3>
@@ -1205,7 +1205,6 @@ function documentsCard(c) {
                         <div><dt>Country</dt><dd>${escapeHtml(c.nationality || '—')}</dd></div>
                         <div><dt>Expiry Date</dt><dd>${escapeHtml(expiry || '—')}</dd></div>
                         <div><dt>Date of Birth</dt><dd>${escapeHtml(dob || '—')}</dd></div>
-                        <div><dt>Uploaded</dt><dd>${escapeHtml(uploadedLabel)}</dd></div>
                     </dl>
                     <div class="passport-doc-actions">
                         <button class="btn btn-ghost" data-doc-action="view" ${photo ? '' : 'disabled'}><i class="fa-regular fa-eye"></i> View</button>
@@ -1220,7 +1219,7 @@ function documentsCard(c) {
 
 function insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet) {
     return `
-        <div class="detail-card">
+        <div class="detail-card insights-card">
             <div class="detail-card-head">
                 <span class="detail-card-icon"><i class="fa-solid fa-chart-pie"></i></span>
                 <h3>Client Insights</h3>
@@ -1237,7 +1236,7 @@ function insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet) {
 
 function paymentCard(paid, unpaid, outstanding, preferredPayment) {
     return `
-        <div class="detail-card">
+        <div class="detail-card payment-card">
             <div class="detail-card-head">
                 <span class="detail-card-icon"><i class="fa-solid fa-credit-card"></i></span>
                 <h3>Payment & Booking Status</h3>
@@ -1327,6 +1326,13 @@ function wireDetailActions(detail, client) {
             const action = btn.dataset.docAction;
             if (action === 'view' && client.passport_photo_url) openPhotoLightbox(client.passport_photo_url);
             if (['edit', 'replace', 'upload'].includes(action)) openTravelDocumentEditModal(client);
+        });
+    });
+
+    detail.querySelectorAll('[data-overview-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const action = btn.dataset.overviewAction;
+            if (action === 'edit') openClientOverviewEditModal(client);
         });
     });
 
@@ -1532,6 +1538,196 @@ async function saveTravelDocuments(e, client) {
     } catch (err) {
         console.error('Failed to update travel documents', err);
         showToast('Failed to update travel documents.', 'error');
+    }
+}
+
+function openClientOverviewEditModal(client) {
+    const ffIds = Array.isArray(client.frequent_flyer_ids) ? [...client.frequent_flyer_ids] : [];
+    if (!ffIds.length && client.frequent_flyer_no) {
+        ffIds.push({ airline: client.member_airline || '', id: client.frequent_flyer_no });
+    }
+
+    const ffRowsHtml = ffIds.map((entry, i) => `
+        <div class="member-id-row" data-ff-index="${i}">
+            <div class="form-group">
+                <label>Airline / Programme</label>
+                <input type="text" class="member-row-airline" placeholder="e.g. Myanmar Airways, KLM" value="${escapeHtml(entry.airline || '')}" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Member ID</label>
+                <input type="text" class="member-row-id" placeholder="e.g. KL1234567" value="${escapeHtml(entry.id || '')}" autocomplete="off">
+            </div>
+            <button type="button" class="member-row-remove" title="Remove" aria-label="Remove">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    `).join('');
+
+    const hasFf = ffIds.length > 0;
+
+    openModal(`
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-id-card"></i> Edit Client Overview</h3>
+            <button class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+        <div class="modal-body-content">
+            <form id="clientOverviewForm" class="client-doc-edit-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Account Name</label>
+                        <input type="text" id="editOverviewAccountName" value="${escapeHtml(client.account_name || '')}" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="text" id="editOverviewPhone" value="${escapeHtml(client.phone || '')}" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Account Type</label>
+                        <input type="text" id="editOverviewAccountType" value="${escapeHtml(client.account_type || '')}" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Account Link</label>
+                        <input type="text" id="editOverviewAccountLink" value="${escapeHtml(client.account_link || '')}" autocomplete="off">
+                    </div>
+                    <div class="form-group full-width">
+                        <div class="member-id-header" style="margin-top:0.5rem;">
+                            <h5 style="margin:0; font-size:0.82rem;">
+                                <i class="fa-solid fa-star"></i> Frequent Flyer / Member ID
+                                <span style="font-size:0.68rem; font-weight:500; color:var(--primary-accent); margin-left:0.25rem;">(optional)</span>
+                            </h5>
+                            <button type="button" class="member-id-toggle-btn" id="overviewMemberToggle" aria-expanded="${hasFf ? 'true' : 'false'}">
+                                <i class="fa-solid ${hasFf ? 'fa-xmark' : 'fa-plus'}"></i> ${hasFf ? 'Remove all' : 'Add'}
+                            </button>
+                        </div>
+                        <div class="member-id-body" id="overviewMemberBody" style="display:${hasFf ? '' : 'none'};">
+                            <div class="member-id-list" id="overviewMemberList">
+                                ${ffRowsHtml}
+                            </div>
+                            <button type="button" class="member-id-add-more" id="overviewMemberAddMore">
+                                <i class="fa-solid fa-circle-plus"></i> Add another airline
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="settle-muted">Updates are saved to this client's non-fee ticket records so future client detail views show the corrected information.</p>
+                <div class="form-actions" style="margin-top:1rem">
+                    <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    `, 'large-modal');
+
+    document.querySelectorAll('[data-close-modal]').forEach(btn => btn.addEventListener('click', closeModal));
+    document.getElementById('clientOverviewForm')?.addEventListener('submit', (e) => saveClientOverview(e, client));
+
+    const memberToggle = document.getElementById('overviewMemberToggle');
+    const memberBody = document.getElementById('overviewMemberBody');
+    const memberList = document.getElementById('overviewMemberList');
+    const memberAddMore = document.getElementById('overviewMemberAddMore');
+
+    function createMemberRow(airline = '', id = '') {
+        const row = document.createElement('div');
+        row.className = 'member-id-row';
+        row.innerHTML = `
+            <div class="form-group">
+                <label>Airline / Programme</label>
+                <input type="text" class="member-row-airline" placeholder="e.g. Myanmar Airways, KLM" value="${escapeHtml(airline)}" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Member ID</label>
+                <input type="text" class="member-row-id" placeholder="e.g. KL1234567" value="${escapeHtml(id)}" autocomplete="off">
+            </div>
+            <button type="button" class="member-row-remove" title="Remove" aria-label="Remove">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+        const idInput = row.querySelector('.member-row-id');
+        idInput.addEventListener('input', () => {
+            const p = idInput.selectionStart;
+            idInput.value = idInput.value.toUpperCase();
+            idInput.setSelectionRange(p, p);
+        });
+        row.querySelector('.member-row-remove').addEventListener('click', () => {
+            row.remove();
+            if (!memberList.children.length) {
+                memberBody.style.display = 'none';
+                memberToggle.setAttribute('aria-expanded', 'false');
+                memberToggle.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
+            }
+        });
+        memberList.appendChild(row);
+        return row;
+    }
+
+    if (memberToggle && memberBody && memberList) {
+        memberToggle.addEventListener('click', () => {
+            const isOpen = memberBody.style.display !== 'none';
+            if (isOpen) {
+                memberList.innerHTML = '';
+                memberBody.style.display = 'none';
+                memberToggle.setAttribute('aria-expanded', 'false');
+                memberToggle.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
+            } else {
+                memberBody.style.display = '';
+                memberToggle.setAttribute('aria-expanded', 'true');
+                memberToggle.innerHTML = '<i class="fa-solid fa-xmark"></i> Remove all';
+                if (!memberList.children.length) createMemberRow();
+            }
+        });
+
+        if (memberAddMore) {
+            memberAddMore.addEventListener('click', () => {
+                const newRow = createMemberRow();
+                newRow.querySelector('.member-row-airline').focus();
+            });
+        }
+    }
+}
+
+async function saveClientOverview(e, client) {
+    e.preventDefault();
+    const accountName = document.getElementById('editOverviewAccountName')?.value.trim() || '';
+    const phone = document.getElementById('editOverviewPhone')?.value.trim() || '';
+    const accountType = document.getElementById('editOverviewAccountType')?.value.trim() || '';
+    const accountLink = document.getElementById('editOverviewAccountLink')?.value.trim() || '';
+
+    const ffRows = document.querySelectorAll('#overviewMemberList .member-id-row');
+    const frequentFlyerIds = [];
+    ffRows.forEach(row => {
+        const airline = row.querySelector('.member-row-airline')?.value?.trim() || '';
+        const id = row.querySelector('.member-row-id')?.value?.trim() || '';
+        if (airline || id) frequentFlyerIds.push({ airline, id });
+    });
+
+    const data = {
+        account_name: accountName,
+        phone,
+        account_type: accountType,
+        account_link: accountLink,
+        frequent_flyer_no: frequentFlyerIds[0]?.id || '',
+        member_airline: frequentFlyerIds[0]?.airline || '',
+        member_id: frequentFlyerIds[0]?.id || '',
+        frequent_flyer_ids: JSON.stringify(frequentFlyerIds)
+    };
+
+    const targetTickets = state.allTickets.filter(t => clientKeyFromTicket(t) === client.client_key && !isFeeEntry(t) && t.id);
+    if (!targetTickets.length) {
+        showToast('No editable ticket records found for this client.', 'error');
+        return;
+    }
+
+    try {
+        await batchUpdateTickets(targetTickets.map(t => ({ id: t.id, data })));
+        targetTickets.forEach(t => Object.assign(t, data));
+        Object.assign(client, data);
+        client.frequent_flyer_ids = frequentFlyerIds;
+        closeModal();
+        showToast('Client overview updated.', 'success');
+        renderClientDetailView();
+    } catch (err) {
+        console.error('Failed to update client overview', err);
+        showToast('Failed to update client overview.', 'error');
     }
 }
 

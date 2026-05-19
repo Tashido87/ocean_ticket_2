@@ -58,8 +58,8 @@ Rules:
 - If a field is not clearly readable, return empty string.
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const generatePromise = ai.models.generateContent({
+      model: 'gemini-2.0-flash',
       contents: [
         {
           role: 'user',
@@ -79,6 +79,11 @@ Rules:
         temperature: 0,
       },
     });
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini OCR timed out')), 25000)
+    );
+    const response = await Promise.race([generatePromise, timeoutPromise]);
 
     const text = response.text || '';
     const extracted = safeJsonParse(text);

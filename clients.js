@@ -83,6 +83,16 @@ export function buildClientList() {
         if (!clients[clientKey].passport_photo_path && ticket.passport_photo_path) clients[clientKey].passport_photo_path = ticket.passport_photo_path;
         if (!clients[clientKey].dob && ticket.dob) clients[clientKey].dob = ticket.dob;
         if ((!clients[clientKey].nationality || clients[clientKey].nationality === 'MMR') && ticket.nationality) clients[clientKey].nationality = ticket.nationality;
+        if (!clients[clientKey].frequent_flyer_no && ticket.member_id) clients[clientKey].frequent_flyer_no = ticket.member_id;
+        if (!clients[clientKey].member_airline && ticket.member_airline) clients[clientKey].member_airline = ticket.member_airline;
+        if (!clients[clientKey].frequent_flyer_ids && ticket.frequent_flyer_ids) {
+            try {
+                const parsed = JSON.parse(ticket.frequent_flyer_ids);
+                if (Array.isArray(parsed) && parsed.length) clients[clientKey].frequent_flyer_ids = parsed;
+            } catch {
+                // ignore
+            }
+        }
 
         if (!lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund')) {
             clients[clientKey].ticket_count++;

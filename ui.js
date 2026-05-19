@@ -2166,7 +2166,7 @@ function _attachPaxBehaviour(formEl, opts = {}) {
  * @param {number} [quality=0.9]
  * @returns {Promise<string>} data:image/jpeg;base64,...
  */
-async function resizeImageToBase64(file, maxWidth = 1280, quality = 0.85) {
+async function resizeImageToBase64(file, maxWidth = 800, quality = 0.75) {
     const imageBitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxWidth / imageBitmap.width);
 
@@ -2197,16 +2197,21 @@ export async function scanPassportWithGemini(file, passengerIndex = 0) {
 
     console.log('[Gemini request] sending to /.netlify/functions/gemini-passport-ocr');
 
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 15000);
+
     const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         body: JSON.stringify({
             imageBase64,
             mimeType: 'image/jpeg',
         }),
     });
+    clearTimeout(abortTimer);
 
     const data = await response.json();
 

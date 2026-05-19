@@ -6818,8 +6818,13 @@ body.material-theme .search-skeleton-row span {
 .client-detail-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    grid-template-rows: repeat(3, auto);
     gap: 1rem;
 }
+.overview-card { grid-column: 1; grid-row: 1; }
+.insights-card { grid-column: 1; grid-row: 2; }
+.payment-card { grid-column: 1; grid-row: 3; }
+.documents-card { grid-column: 2; grid-row: 1 / span 3; }
 .detail-card {
     background: #ffffff;
     border: 1px solid rgba(38, 37, 30, 0.10);
@@ -7161,6 +7166,7 @@ body.material-theme .search-skeleton-row span {
 @media (max-width: 1024px) {
     .client-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .client-detail-grid { grid-template-columns: 1fr; }
+    .overview-card, .insights-card, .payment-card, .documents-card { grid-column: auto; grid-row: auto; }
     .client-hero { grid-template-columns: auto 1fr; }
     .client-hero-actions { grid-column: 1 / -1; justify-content: flex-start; }
 }
