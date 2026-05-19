@@ -152,22 +152,19 @@ function setupEventListeners() {
 
     initGlobalSearch();
 
-    // Dashboard Search
+    // Records Search Panel
     const debouncedSearch = debounce(performSearch, 300);
     document.getElementById('searchName').addEventListener('input', debouncedSearch);
     document.getElementById('searchBooking').addEventListener('input', debouncedSearch);
-    ['searchTravelDate', 'searchStartDate', 'searchEndDate', 'searchDeparture', 'searchDestination', 'searchAirline', 'searchNotPaidToggle'].forEach(id => {
+    ['searchTravelDate', 'searchStartDate', 'searchEndDate', 'searchDeparture', 'searchDestination', 'groupByAccountToggle'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', performSearch);
     });
-    document.getElementById('searchBtn').addEventListener('click', performSearch);
-    document.getElementById('clearBtn').addEventListener('click', clearSearch);
-    document.querySelectorAll('.preset-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            setDateRangePreset(e.target.dataset.range);
-            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-        });
+    document.getElementById('recordsSearchBtn').addEventListener('click', performSearch);
+    document.getElementById('recordsClearBtn').addEventListener('click', clearSearch);
+    document.getElementById('recordsFilterToggle').addEventListener('click', () => {
+        const panel = document.getElementById('recordsFilters');
+        if (panel) panel.hidden = !panel.hidden;
     });
 
     // Reports

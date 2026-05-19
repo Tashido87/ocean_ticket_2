@@ -155,53 +155,14 @@
                     </div>
 
                     <div class="actions-grid">
-                        <div class="search-section glass-card">
-                            <h3><i class="fa-solid fa-magnifying-glass"></i> Quick Ticket Search</h3>
-                            <form id="searchForm" onsubmit="return false;">
-                                <div class="search-inputs">
-                                    <input type="text" id="searchName" placeholder="Client Name" autocomplete="off">
-                                    <input type="text" id="searchBooking" placeholder="Booking Reference" autocomplete="off">
-                                    <div class="date-range-group">
-                                        <input type="text" id="searchStartDate" placeholder="Start Date" autocomplete="off">
-                                        <input type="text" id="searchEndDate" placeholder="End Date" autocomplete="off">
-                                    </div>
-                                    <div class="desktop-only">
-                                        <div class="date-range-presets">
-                                            <button type="button" class="preset-btn" data-range="7">Last 7 Days</button>
-                                            <button type="button" class="preset-btn" data-range="30">Last 30 Days</button>
-                                            <button type="button" class="preset-btn" data-range="month">This Month</button>
-                                        </div>
-                                        <input type="text" id="searchTravelDate" placeholder="Travel Date (DD/MM/YYYY)" autocomplete="off">
-                                        <select id="searchDeparture">
-                                            <option value="" disabled selected>DEPARTURE</option>
-                                        </select>
-                                        <select id="searchDestination">
-                                            <option value="" disabled selected>DESTINATION</option>
-                                        </select>
-                                        <select id="searchAirline">
-                                            <option value="" disabled selected>AIRLINE</option>
-                                        </select>
-                                        <div class="toggle-switch">
-                                            <label for="searchNotPaidToggle" id="unpaid-only-label">Unpaid Only</label>
-                                            <label class="switch">
-                                                <input type="checkbox" id="searchNotPaidToggle">
-                                                <span class="slider round"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="search-buttons">
-                                    <button id="searchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i> Search</button>
-                                    <button id="clearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
-                                </div>
-                                <a href="#/search" class="advanced-search-link"><i class="fa-solid fa-sliders"></i> Advanced Search</a>
-                                <div id="saved-searches-container" class="saved-searches-container"></div>
-                            </form>
-                        </div>
-
-                        <div class="results-section glass-card">
+                        <div class="results-section glass-card" id="recordsSection">
                             <div class="results-header">
-                                <h3>Search Results</h3>
+                                <div class="records-header-left">
+                                    <button id="recordsFilterToggle" class="icon-btn icon-btn-table" title="Search Filters" style="margin-right:0.5rem;">
+                                        <i class="fa-solid fa-bars-staggered"></i>
+                                    </button>
+                                    <h3>Records</h3>
+                                </div>
                                 <div>
                                     <button id="exportPdfBtn" class="btn btn-secondary" title="Export Agent Report to PDF">
                                         <i class="fa-solid fa-file-pdf"></i>
@@ -213,8 +174,39 @@
                                     </button>
                                 </div>
                             </div>
-                            <div id="resultsBodyContainer" class="table-container">
-                                </div>
+
+                            <div id="recordsFilters" class="records-filters" hidden>
+                                <form id="recordsSearchForm" onsubmit="return false;">
+                                    <div class="records-filter-grid">
+                                        <input type="text" id="searchName" placeholder="Client Name" autocomplete="off">
+                                        <input type="text" id="searchBooking" placeholder="PNR / Booking Reference" autocomplete="off">
+                                        <div class="date-range-group">
+                                            <input type="text" id="searchStartDate" placeholder="Start Date" autocomplete="off">
+                                            <input type="text" id="searchEndDate" placeholder="End Date" autocomplete="off">
+                                        </div>
+                                        <input type="text" id="searchTravelDate" placeholder="Travel Date (DD/MM/YYYY)" autocomplete="off">
+                                        <select id="searchDeparture">
+                                            <option value="" disabled selected>DEPARTURE</option>
+                                        </select>
+                                        <select id="searchDestination">
+                                            <option value="" disabled selected>DESTINATION</option>
+                                        </select>
+                                        <div class="toggle-switch">
+                                            <label for="groupByAccountToggle">Group with Account Name</label>
+                                            <label class="switch">
+                                                <input type="checkbox" id="groupByAccountToggle">
+                                                <span class="slider round"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="records-filter-actions">
+                                        <button type="button" id="recordsSearchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i> Search</button>
+                                        <button type="button" id="recordsClearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div id="resultsBodyContainer" class="table-container"></div>
                             <div id="pagination" class="pagination-container"></div>
                         </div>
                     </div>
@@ -322,8 +314,8 @@
                         </div>
                         <div class="settle-table-wrap"><table class="settle-table" id="settleRecordsTable">
                             <thead><tr>
-                                <th>Date</th><th class="num">Amount</th><th>Method</th><th>Txn ID</th><th>Proof</th>
-                                <th>Allocated To</th><th>Status</th><th>Notes</th><th>Actions</th>
+                                <th>Date</th><th class="num">Amount</th><th>Method</th><th>Txn ID</th>
+                                <th>Status</th><th>Notes</th><th>Actions</th>
                             </tr></thead>
                             <tbody id="settleRecordsBody"></tbody>
                         </table></div>
