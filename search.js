@@ -290,6 +290,11 @@ function rankRecord(record, type, query) {
         return { score: 220, quality: 'related', reasons: ['All words across fields'] };
     }
 
+    // Fallback: at least one token in the name → related
+    if (isMulti && tokens.some(token => name.includes(token))) {
+        return { score: 180, quality: 'related', reasons: ['Some words in name'] };
+    }
+
     // Multi-word: must not promote single-token partial matches
     if (isMulti) return { score: 0, quality: 'none', reasons: [] };
 
@@ -1751,7 +1756,7 @@ function buildSuggestions(query) {
     const q = query.trim();
     if (!q) {
         const recent = getRecentSearches().slice(0, 4);
-        return { top: [], clients: [], tickets: [], accounts: [], recent };
+        return { top: [], clients: [], tickets: [], accounts: [], recent, showMore: false };
     }
 
     if (isPnrQuery(q)) {
@@ -1773,18 +1778,39 @@ function buildSuggestions(query) {
             .map(c => buildClientResult(c, q))
             .slice(0, 4);
 
-        return { top, clients, tickets, accounts: [], recent: [] };
+        return { top, clients, tickets, accounts: [], recent: [], showMore: false };
     }
 
-    // Only 'best' quality may be Top Match.
-    const all = buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 12);
+    // Wider pool so partial middle-word matches survive slicing
+    const all = buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 20);
     const bestOnly = all.filter(r => r.quality === 'best');
-    const top = bestOnly[0] ? [bestOnly[0]] : [];
+    const relatedOnly = all.filter(r => r.quality === 'related');
+
+    // Top match: prefer best, fallback to related
+    const top = bestOnly[0] ? [bestOnly[0]] : (relatedOnly[0] ? [relatedOnly[0]] : []);
     const topIds = new Set(top.map(getResultId));
 
-    const clients = bestOnly
-        .filter(r => r.kind === 'client' && !topIds.has(getResultId(r)))
-        .slice(0, 4);
+    // Clients: combine best + related, deduplicate
+    const clientBest = bestOnly.filter(r => r.kind === 'client' && !topIds.has(getResultId(r)));
+    const clientRelated = relatedOnly.filter(r => r.kind === 'client' && !topIds.has(getResultId(r)));
+    let clients = [...clientBest, ...clientRelated];
+
+    // Single-word query: gather ALL clients whose names contain the token
+    const tokens = queryTokens(normalize(q));
+    let showMore = false;
+    if (tokens.length === 1) {
+        const token = tokens[0];
+        const allNameMatches = state.allClients
+            .filter(c => normalize(c.name).includes(token) && !topIds.has(c.client_key))
+            .map(c => buildClientResult(c, q))
+            .filter(r => r.score > 0)
+            .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a));
+        showMore = allNameMatches.length > 6;
+        clients = allNameMatches.slice(0, 6);
+    } else {
+        clients = clients.slice(0, 6);
+    }
+
     const clientIds = new Set(clients.map(getResultId));
     const tickets = bestOnly
         .filter(r => r.kind === 'ticket' && !topIds.has(getResultId(r)) && !clientIds.has(getResultId(r)))
@@ -1810,7 +1836,7 @@ function buildSuggestions(query) {
         .filter(item => !shownIds.has(item))
         .slice(0, 4);
 
-    return { top, clients: filteredClients, tickets, accounts, recent };
+    return { top, clients: filteredClients, tickets, accounts, recent, showMore };
 }
 
 function suggestionItem(result) {
@@ -1871,6 +1897,16 @@ function renderSuggestions(input, panel) {
         </div>
     `).join('');
 
+    const showMoreHtml = groups.showMore ? `
+        <div class="suggestion-group">
+            <button type="button" class="suggestion-item suggestion-show-more" data-suggestion-query="${escapeHtml(query)}">
+                <span class="suggestion-main">Show all names containing “${escapeHtml(query)}”</span>
+                <span class="suggestion-meta">Search results</span>
+                <span class="suggestion-badge"><i class="fa-solid fa-arrow-right"></i></span>
+            </button>
+        </div>
+    ` : '';
+
     const clearRecentBtn = groups.recent.length ? `
         <div class="suggestion-clear-recent">
             <button type="button" class="suggestion-clear-btn" id="clearRecentSearches">
@@ -1881,7 +1917,7 @@ function renderSuggestions(input, panel) {
 
     panel.innerHTML = (groupHtml || `
         <div class="suggestion-empty">Type a client name, phone, account, or PNR.</div>
-    `) + clearRecentBtn;
+    `) + showMoreHtml + clearRecentBtn;
     panel.hidden = false;
     input.closest('.global-search-box')?.classList.add('is-open');
 

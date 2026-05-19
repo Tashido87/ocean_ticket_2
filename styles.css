@@ -5931,6 +5931,15 @@ body.material-theme.dark-theme .suggestion-item .suggestion-meta {
     color: rgba(255, 255, 255, 0.45);
 }
 
+body.material-theme.dark-theme .suggestion-show-more .suggestion-main {
+    color: var(--primary-accent);
+}
+
+body.material-theme.dark-theme .suggestion-show-more .suggestion-badge {
+    background: rgba(13, 148, 136, 0.20);
+    color: var(--primary-accent);
+}
+
 body.material-theme .global-search-clear {
     position: absolute;
     right: 0.45rem;
@@ -6052,6 +6061,15 @@ body.material-theme .suggestion-badge {
 body.material-theme .suggestion-item[data-suggestion-kind="account"] .suggestion-badge {
     background: rgba(124, 58, 237, 0.10);
     color: #7c3aed;
+}
+
+body.material-theme .suggestion-show-more .suggestion-main {
+    color: var(--primary-accent);
+}
+
+body.material-theme .suggestion-show-more .suggestion-badge {
+    background: rgba(13, 148, 136, 0.15);
+    color: var(--primary-accent);
 }
 
 body.material-theme .suggestion-empty {
