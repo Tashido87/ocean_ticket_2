@@ -99,6 +99,16 @@ function getClientPassportNo(c) {
         || (looksLikePassport(c.id_no) ? c.id_no : '');
 }
 
+function splitNrcDisplay(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return { prefix: '—', serial: '' };
+    const match = raw.match(/^(.+\([A-Z]\))(\d{5,6})$/i);
+    if (match) return { prefix: match[1].toLowerCase(), serial: match[2] };
+    const tail = raw.match(/^(.+?)(\d{5,6})$/);
+    if (tail) return { prefix: tail[1].toLowerCase(), serial: tail[2] };
+    return { prefix: raw, serial: '' };
+}
+
 function clientKeyFromTicket(ticket) {
     return `${ticket.name}|${ticket.phone}|${ticket.account_name}`;
 }
@@ -1171,27 +1181,13 @@ function overviewCard(c, year) {
 
 function documentsCard(c) {
     const nrcNo = getClientNrc(c);
+    const nrcDisplay = splitNrcDisplay(nrcNo);
     const passportNo = getClientPassportNo(c);
     const photo = c.passport_photo_url || '';
     const expiry = c.passport_expiry || '';
+    const dob = c.dob || '';
     const verified = !!(passportNo || nrcNo);
-    const empty = !nrcNo && !passportNo && !photo;
-
-    if (empty) {
-        return `
-            <div class="detail-card">
-                <div class="detail-card-head">
-                    <span class="detail-card-icon"><i class="fa-solid fa-passport"></i></span>
-                    <h3>Travel Documents</h3>
-                    <button class="doc-edit-btn" data-doc-action="edit"><i class="fa-solid fa-pen"></i> Edit</button>
-                </div>
-                <div class="document-empty">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <p>No documents on file yet.</p>
-                </div>
-            </div>
-        `;
-    }
+    const uploadedLabel = photo ? 'Uploaded' : 'Not uploaded';
 
     return `
         <div class="detail-card">
@@ -1201,15 +1197,35 @@ function documentsCard(c) {
                 ${verified ? '<span class="verified-pill"><i class="fa-solid fa-circle-check"></i> Verified</span>' : ''}
                 <button class="doc-edit-btn" data-doc-action="edit"><i class="fa-solid fa-pen"></i> Edit</button>
             </div>
-            <div class="documents-grid">
-                ${nrcNo ? `<div class="doc-row doc-row-nrc"><span class="doc-label">NRC</span><strong>${escapeHtml(nrcNo)}</strong></div>` : ''}
+            <div class="travel-doc-layout">
+                <div class="nrc-mini-card">
+                    <div class="travel-doc-title"><i class="fa-regular fa-id-card"></i> NRC</div>
+                    <div class="nrc-number-block">
+                        <strong>${escapeHtml(nrcDisplay.prefix)}</strong>
+                        ${nrcDisplay.serial ? `<span>${escapeHtml(nrcDisplay.serial)}</span>` : ''}
+                    </div>
+                    ${nrcNo ? '<span class="verified-pill nrc-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>' : '<span class="nrc-missing">No NRC</span>'}
+                </div>
                 <div class="passport-doc-block ${photo ? 'has-photo' : ''}">
-                    ${photo ? `<button type="button" class="doc-photo" data-doc-action="view"><img src="${escapeHtml(photo)}" alt="Passport"></button>` : '<div class="doc-photo doc-photo-empty"><i class="fa-solid fa-passport"></i></div>'}
-                    <div class="passport-doc-info">
-                        <span class="doc-label">Passport</span>
-                        <strong>${escapeHtml(passportNo || '—')}</strong>
-                        <small>Expiry: ${escapeHtml(expiry || '—')}</small>
-                        <small>Country: ${escapeHtml(c.nationality || 'MMR')}</small>
+                    <div class="travel-doc-title passport-title"><i class="fa-solid fa-passport"></i> Passport</div>
+                    ${photo ? `<button type="button" class="doc-photo" data-doc-action="view"><img src="${escapeHtml(photo)}" alt="Passport"></button>` : `
+                        <div class="doc-photo doc-photo-empty">
+                            <i class="fa-regular fa-address-card"></i>
+                            <strong>No passport uploaded</strong>
+                            <span>Upload a clear image of the passport information page.</span>
+                        </div>
+                    `}
+                    <dl class="passport-doc-info">
+                        <div><dt>Passport No.</dt><dd>${escapeHtml(passportNo || '—')}</dd></div>
+                        <div><dt>Country</dt><dd>${escapeHtml(c.nationality || '—')}</dd></div>
+                        <div><dt>Expiry Date</dt><dd>${escapeHtml(expiry || '—')}</dd></div>
+                        <div><dt>DOB</dt><dd>${escapeHtml(dob || '—')}</dd></div>
+                        <div><dt>Uploaded</dt><dd>${escapeHtml(uploadedLabel)}</dd></div>
+                    </dl>
+                    <div class="passport-doc-actions">
+                        <button class="btn btn-ghost" data-doc-action="view" ${photo ? '' : 'disabled'}><i class="fa-regular fa-eye"></i> View</button>
+                        <button class="btn btn-ghost" data-doc-action="replace"><i class="fa-solid fa-rotate"></i> Replace</button>
+                        <button class="btn btn-primary" data-doc-action="upload"><i class="fa-solid fa-upload"></i> Upload Passport</button>
                     </div>
                 </div>
             </div>
@@ -1325,7 +1341,7 @@ function wireDetailActions(detail, client) {
         btn.addEventListener('click', () => {
             const action = btn.dataset.docAction;
             if (action === 'view' && client.passport_photo_url) openPhotoLightbox(client.passport_photo_url);
-            if (action === 'edit') openTravelDocumentEditModal(client);
+            if (['edit', 'replace', 'upload'].includes(action)) openTravelDocumentEditModal(client);
         });
     });
 
