@@ -331,10 +331,22 @@ function copyClientInfo(name, id, phone, gender) {
 }
 
 /**
- * Displays a modal with a client's complete ticket history and stats.
- * @param {string} clientKey The unique key of the client to view.
+ * Open the rich client detail view inside the Search Results page.
+ * Replaces the legacy modal-based history viewer.
+ * @param {string} clientKey
  */
 export function viewClientHistory(clientKey) {
+    if (!clientKey) return;
+    // Lazy import to avoid circular dependency at module load time
+    import('./search.js').then(mod => {
+        if (typeof mod.navigateToClient === 'function') mod.navigateToClient(clientKey);
+    });
+}
+
+/**
+ * @deprecated Legacy modal-based client history. Kept for fallback only; not exported.
+ */
+function _legacyViewClientHistory(clientKey) {
     const activeClient = state.allClients.find(c => c.client_key === clientKey);
     const clientName = activeClient ? activeClient.name : 'Unknown';
 

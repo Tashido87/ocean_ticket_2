@@ -1,52 +1,58 @@
 /**
  * @fileoverview Premium global search for clients, tickets, PNRs, and accounts.
+ * Refactor: strict multi-word ranking, suggestions route to Search Results,
+ * inline client detail view inside Search Results page.
  */
 
 import { state } from './state.js';
 import { parseSheetDate, formatDateForSheet, formatDateToDMMMY, debounce } from './utils.js';
 import { showView } from './ui.js';
-import { viewClientHistory, sellTicketForClient, bookForClient } from './clients.js';
+import { sellTicketForClient, bookForClient } from './clients.js';
 import { showDetails } from './tickets.js';
 import { findTicketForManage } from './manage.js';
 
 const RECENT_SEARCH_KEY = 'oceanRecentSearches';
-const BEST_THRESHOLD = 60;
-const RELATED_THRESHOLD = 8;
 const RESULT_LIMIT = 120;
 const TYPES = ['all', 'clients', 'tickets', 'pnr', 'unpaid', 'upcoming'];
 const PAYMENT_OPTIONS = ['all', 'paid', 'unpaid', 'partial'];
 const SOCIAL_OPTIONS = ['all', 'viber', 'messenger', 'facebook', 'telegram'];
 const DATE_OPTIONS = ['all', 'today', '7d', '30d', 'month', 'custom'];
 
+const defaultFilters = () => ({
+    dateRange: 'all',
+    startDate: '',
+    endDate: '',
+    airline: '',
+    route: '',
+    payment: 'all',
+    social: 'all',
+    clientName: '',
+    phone: '',
+    accountName: '',
+    bookingRef: '',
+    pnr: '',
+    departure: '',
+    destination: '',
+    issuedDate: '',
+    travelDate: '',
+    ticketCount: '',
+    upcomingWithin: '',
+    unpaidOnly: false
+});
+
 let searchState = {
     query: '',
     activeType: 'all',
-    filters: {
-        dateRange: 'all',
-        startDate: '',
-        endDate: '',
-        airline: '',
-        route: '',
-        payment: 'all',
-        social: 'all',
-        clientName: '',
-        phone: '',
-        accountName: '',
-        bookingRef: '',
-        pnr: '',
-        departure: '',
-        destination: '',
-        issuedDate: '',
-        travelDate: '',
-        ticketCount: '',
-        upcomingWithin: '',
-        unpaidOnly: false
-    },
+    filters: defaultFilters(),
     moreOpen: false,
     lastResults: null,
     searchTimeout: null,
-    previousView: 'home'
+    previousView: 'home',
+    selectedClientKey: '',
+    selectedTicketId: ''
 };
+
+/* ------------------------------ utilities ------------------------------ */
 
 function escapeHtml(value) {
     const div = document.createElement('div');
@@ -78,11 +84,22 @@ function clientKeyFromTicket(ticket) {
 
 function getClientForTicket(ticket) {
     const key = clientKeyFromTicket(ticket);
-    return state.allClients.find(client => client.client_key === key)
-        || state.allClients.find(client =>
-            normalize(client.name) === normalize(ticket.name)
-            && digitsOnly(client.phone) === digitsOnly(ticket.phone)
+    return state.allClients.find(c => c.client_key === key)
+        || state.allClients.find(c =>
+            normalize(c.name) === normalize(ticket.name)
+            && digitsOnly(c.phone) === digitsOnly(ticket.phone)
         );
+}
+
+function ticketsForClient(clientKey) {
+    return state.allTickets
+        .filter(t => clientKeyFromTicket(t) === clientKey)
+        .sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date));
+}
+
+function isCanceled(ticket) {
+    const r = String(ticket?.remarks || '').toLowerCase();
+    return r.includes('cancel') || r.includes('refund');
 }
 
 function routeShort(ticket) {
@@ -90,10 +107,6 @@ function routeShort(ticket) {
     const dest = String(ticket.destination || '').split(' ')[0];
     if (!dep && !dest) return '—';
     return `${dep || '—'} → ${dest || '—'}`;
-}
-
-function fullRoute(ticket) {
-    return `${ticket.departure || ''} → ${ticket.destination || ''}`.trim();
 }
 
 function getTicketAmount(ticket) {
@@ -153,6 +166,41 @@ function hasAnyTokenInField(field, tokens) {
     return tokens.some(token => text.includes(token));
 }
 
+function initialsOf(name) {
+    return String(name || '?')
+        .trim()
+        .split(/\s+/)
+        .map(p => p[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join('')
+        .toUpperCase() || '?';
+}
+
+function fmtMmk(amount) {
+    const n = Math.round(Number(amount || 0));
+    return `MMK ${n.toLocaleString('en-US')}`;
+}
+
+function fmtDateOrDash(value) {
+    if (!value) return '—';
+    if (value instanceof Date) {
+        if (Number.isNaN(value.getTime()) || value.getTime() === 0) return '—';
+        return formatDateToDMMMY(formatDateForSheet(value));
+    }
+    return formatDateToDMMMY(value) || '—';
+}
+
+/* --------------------------- ranking ----------------------------------- */
+
+/**
+ * Strict ranking. Quality is one of: 'best' | 'related' | 'none'.
+ *  - 'best'    : strong, deterministic match (exact, prefix, full phrase, all tokens in same field).
+ *  - 'related' : weaker hint (cross-field token spread, partial single-token).
+ *  - 'none'    : no useful match.
+ *
+ * For multi-word queries, NO single-token partial may produce a 'best' result.
+ */
 function rankRecord(record, type, query) {
     const q = normalize(query);
     if (!q) return { score: 40, quality: 'best', reasons: ['No query'] };
@@ -166,7 +214,8 @@ function rankRecord(record, type, query) {
             account: record.account_name,
             accountType: record.account_type,
             pnr: '',
-            route: ''
+            route: '',
+            airline: ''
         }
         : {
             name: record.name,
@@ -186,37 +235,42 @@ function rankRecord(record, type, query) {
     const haystack = Object.values(fields).map(normalize).join(' ');
     const allAcrossFields = tokens.length > 0 && tokens.every(token => haystack.includes(token));
 
+    /* ---------- BEST ---------- */
     if (pnr && pnr === q) return { score: 1000, quality: 'best', reasons: ['Exact PNR'] };
     if (phone && qDigits && phone === qDigits) return { score: 950, quality: 'best', reasons: ['Exact phone'] };
-    if (name && name === q) return { score: 900, quality: 'best', reasons: ['Exact client name'] };
+    if (name && name === q) return { score: 900, quality: 'best', reasons: ['Exact name'] };
     if (account && account === q) return { score: 860, quality: 'best', reasons: ['Exact account'] };
-    if (name.startsWith(q)) return { score: 780, quality: 'best', reasons: ['Name starts with query'] };
-    if (account.startsWith(q)) return { score: 740, quality: 'best', reasons: ['Account starts with query'] };
-    if (name.includes(q)) return { score: 700, quality: 'best', reasons: ['Name contains phrase'] };
-    if (account.includes(q)) return { score: 680, quality: 'best', reasons: ['Account contains phrase'] };
-    if (pnr && pnr.includes(q)) return { score: 650, quality: 'best', reasons: ['PNR contains query'] };
-    if (hasAllTokensInField(name, tokens)) return { score: 560, quality: 'best', reasons: ['All words in name'] };
-    if (hasAllTokensInField(account, tokens)) return { score: 530, quality: 'best', reasons: ['All words in account'] };
-    if (allAcrossFields) return { score: 460, quality: 'best', reasons: ['All words across fields'] };
+
+    if (name.startsWith(q) && q.length >= 3) return { score: 820, quality: 'best', reasons: ['Name starts with query'] };
+    if (account.startsWith(q) && q.length >= 3) return { score: 780, quality: 'best', reasons: ['Account starts with query'] };
+    if (q.length >= 3 && name.includes(q)) return { score: 740, quality: 'best', reasons: ['Name contains phrase'] };
+    if (q.length >= 3 && account.includes(q)) return { score: 720, quality: 'best', reasons: ['Account contains phrase'] };
+    if (pnr && pnr.includes(q) && q.length >= 4) return { score: 700, quality: 'best', reasons: ['PNR contains query'] };
 
     if (isMulti) {
-        // Multi-word queries: reject unless all tokens were already matched above
-        return { score: 0, quality: 'none', reasons: [] };
+        if (hasAllTokensInField(name, tokens)) return { score: 620, quality: 'best', reasons: ['All words in name'] };
+        if (hasAllTokensInField(account, tokens)) return { score: 580, quality: 'best', reasons: ['All words in account'] };
     }
 
-    let partialScore = 0;
-    if (hasAnyTokenInField(name, tokens)) partialScore += 45;
-    if (hasAnyTokenInField(account, tokens)) partialScore += 35;
-    if (hasAnyTokenInField(fields.accountType, tokens)) partialScore += 20;
-    if (hasAnyTokenInField(fields.route, tokens)) partialScore += 20;
-    if (hasAnyTokenInField(fields.airline, tokens)) partialScore += 25;
-    if (qDigits && phone.includes(qDigits)) partialScore += 40;
+    /* ---------- RELATED ---------- */
+    if (isMulti && allAcrossFields) {
+        return { score: 220, quality: 'related', reasons: ['All words across fields'] };
+    }
 
-    return {
-        score: partialScore,
-        quality: partialScore >= BEST_THRESHOLD ? 'best' : partialScore >= RELATED_THRESHOLD ? 'related' : 'none',
-        reasons: partialScore ? ['Partial match'] : []
-    };
+    // Multi-word: must not promote single-token partial matches
+    if (isMulti) return { score: 0, quality: 'none', reasons: [] };
+
+    // Single token: weak partials → 'related'
+    let partial = 0;
+    if (hasAnyTokenInField(name, tokens)) partial += 70;
+    if (hasAnyTokenInField(account, tokens)) partial += 45;
+    if (hasAnyTokenInField(fields.accountType, tokens)) partial += 18;
+    if (hasAnyTokenInField(fields.route, tokens)) partial += 25;
+    if (hasAnyTokenInField(fields.airline, tokens)) partial += 25;
+    if (qDigits && phone.includes(qDigits)) partial += 60;
+
+    if (!partial) return { score: 0, quality: 'none', reasons: [] };
+    return { score: partial, quality: 'related', reasons: ['Partial match'] };
 }
 
 function buildClientResult(client, query = searchState.query) {
@@ -227,8 +281,7 @@ function buildClientResult(client, query = searchState.query) {
         data: client,
         score: rank.score,
         quality: rank.quality,
-        label: client.name || 'Unknown client',
-        searchableText: `${client.name || ''} ${client.phone || ''} ${client.account_name || ''} ${client.account_type || ''}`
+        label: client.name || 'Unknown client'
     };
 }
 
@@ -243,8 +296,7 @@ function buildTicketResult(ticket, query = searchState.query) {
         score: rank.score,
         quality: rank.quality,
         payment,
-        label: ticket.booking_reference || ticket.name || 'Ticket',
-        searchableText: `${ticket.name || ''} ${ticket.phone || ''} ${ticket.account_name || ''} ${ticket.account_type || ''} ${ticket.booking_reference || ''} ${ticket.departure || ''} ${ticket.destination || ''} ${ticket.airline || ''}`
+        label: ticket.booking_reference || ticket.name || 'Ticket'
     };
 }
 
@@ -321,9 +373,9 @@ function applyFilters(results, options = {}) {
 function getSearchResults() {
     const ranked = buildAllRankedResults();
     const filtered = applyFilters(ranked).slice(0, RESULT_LIMIT);
-    const best = filtered.filter(result => result.quality === 'best');
-    const related = filtered.filter(result => result.quality === 'related');
-    const allForCounts = applyFilters(ranked.map(result => ({ ...result })), { ignoreActiveType: true });
+    const best = filtered.filter(r => r.quality === 'best');
+    const related = filtered.filter(r => r.quality === 'related');
+    const allForCounts = applyFilters(ranked.map(r => ({ ...r })), { ignoreActiveType: true });
     const counts = countByType(allForCounts);
     searchState.lastResults = { all: filtered, best, related, counts };
     return searchState.lastResults;
@@ -340,15 +392,19 @@ function countByType(results) {
     };
 }
 
+/* ----------------------- URL state ------------------------------------- */
+
 function readSearchUrl() {
     const hash = window.location.hash;
     const queryIndex = hash.indexOf('?');
     const params = queryIndex >= 0 ? new URLSearchParams(hash.slice(queryIndex + 1)) : new URLSearchParams();
     searchState.query = params.get('q') || '';
     searchState.activeType = TYPES.includes(params.get('type')) ? params.get('type') : 'all';
+    searchState.selectedClientKey = params.get('client') || '';
+    searchState.selectedTicketId = params.get('ticket') || '';
 
     searchState.filters = {
-        ...searchState.filters,
+        ...defaultFilters(),
         dateRange: params.get('date') || 'all',
         startDate: params.get('start') || '',
         endDate: params.get('end') || '',
@@ -356,7 +412,7 @@ function readSearchUrl() {
         route: params.get('route') || '',
         payment: PAYMENT_OPTIONS.includes(params.get('payment')) ? params.get('payment') : 'all',
         social: SOCIAL_OPTIONS.includes(params.get('social')) ? params.get('social') : 'all',
-        clientName: params.get('client') || '',
+        clientName: params.get('clientName') || '',
         phone: params.get('phone') || '',
         accountName: params.get('account') || '',
         bookingRef: params.get('booking') || '',
@@ -376,6 +432,8 @@ function updateSearchUrl(push = false) {
     const f = searchState.filters;
     if (searchState.query) params.set('q', searchState.query);
     if (searchState.activeType !== 'all') params.set('type', searchState.activeType);
+    if (searchState.selectedClientKey) params.set('client', searchState.selectedClientKey);
+    if (searchState.selectedTicketId) params.set('ticket', searchState.selectedTicketId);
     if (f.dateRange !== 'all') params.set('date', f.dateRange);
     if (f.startDate) params.set('start', f.startDate);
     if (f.endDate) params.set('end', f.endDate);
@@ -383,7 +441,7 @@ function updateSearchUrl(push = false) {
     if (f.route) params.set('route', f.route);
     if (f.payment !== 'all') params.set('payment', f.payment);
     if (f.social !== 'all') params.set('social', f.social);
-    if (f.clientName) params.set('client', f.clientName);
+    if (f.clientName) params.set('clientName', f.clientName);
     if (f.phone) params.set('phone', f.phone);
     if (f.accountName) params.set('account', f.accountName);
     if (f.bookingRef) params.set('booking', f.bookingRef);
@@ -403,6 +461,8 @@ function updateSearchUrl(push = false) {
     }
 }
 
+/* -------------------- recent searches ---------------------------------- */
+
 function saveRecentSearch(query) {
     const q = query.trim();
     if (!q) return;
@@ -419,13 +479,20 @@ function getRecentSearches() {
     }
 }
 
-function navigateToSearch(query, push = true) {
-    const q = query.trim();
-    if (!q) return;
-    saveRecentSearch(q);
-    searchState.query = q;
+/* -------------------- navigation helpers ------------------------------- */
+
+function captureReturnView() {
     const activeView = document.querySelector('.view.active')?.id?.replace(/-view$/, '');
     if (activeView && activeView !== 'search') searchState.previousView = activeView;
+}
+
+function navigateToSearch(query, push = true) {
+    const q = (query || '').trim();
+    if (q) saveRecentSearch(q);
+    searchState.query = q;
+    searchState.selectedClientKey = '';
+    searchState.selectedTicketId = '';
+    captureReturnView();
     updateSearchUrl(push);
     showView('search');
     initSearchView();
@@ -435,13 +502,52 @@ function navigateToAccount(accountName) {
     if (!accountName) return;
     searchState.query = '';
     searchState.activeType = 'clients';
-    searchState.filters.accountName = accountName;
-    const activeView = document.querySelector('.view.active')?.id?.replace(/-view$/, '');
-    if (activeView && activeView !== 'search') searchState.previousView = activeView;
+    searchState.filters = { ...defaultFilters(), accountName };
+    searchState.selectedClientKey = '';
+    searchState.selectedTicketId = '';
+    captureReturnView();
     updateSearchUrl(true);
     showView('search');
     initSearchView();
 }
+
+function navigateToClient(clientKey, query = '') {
+    if (!clientKey) return;
+    if (query) {
+        searchState.query = query.trim();
+        saveRecentSearch(searchState.query);
+    }
+    searchState.selectedClientKey = clientKey;
+    searchState.selectedTicketId = '';
+    captureReturnView();
+    updateSearchUrl(true);
+    showView('search');
+    initSearchView();
+}
+
+function navigateToTicket(ticketId, query = '') {
+    if (!ticketId) return;
+    if (query) {
+        searchState.query = query.trim();
+        saveRecentSearch(searchState.query);
+    }
+    searchState.selectedTicketId = ticketId;
+    searchState.selectedClientKey = '';
+    captureReturnView();
+    updateSearchUrl(true);
+    showView('search');
+    initSearchView();
+}
+
+function closeSearchView() {
+    searchState.selectedClientKey = '';
+    searchState.selectedTicketId = '';
+    const target = searchState.previousView || 'home';
+    history.pushState(null, '', '#/');
+    showView(target);
+}
+
+/* -------------------- highlighting ------------------------------------- */
 
 function highlightText(value, query = searchState.query) {
     const text = escapeHtml(value || '—');
@@ -455,9 +561,8 @@ function highlightText(value, query = searchState.query) {
     return highlighted;
 }
 
-function paymentBadge(result) {
-    if (result.kind !== 'ticket') return '';
-    const status = result.payment;
+function paymentBadge(payment) {
+    const status = payment;
     const label = status === 'paid' ? 'Paid' : status === 'partial' ? 'Partial' : 'Unpaid';
     return `<span class="payment-badge payment-${status}">${label}</span>`;
 }
@@ -465,6 +570,8 @@ function paymentBadge(result) {
 function getTicketClientKey(ticket) {
     return getClientForTicket(ticket)?.client_key || '';
 }
+
+/* -------------------- list view rendering ------------------------------ */
 
 function renderTabs(counts) {
     const labels = {
@@ -520,7 +627,7 @@ function renderFilterBar() {
         <label>Airline
             <select data-filter="airline">
                 <option value="">All airlines</option>
-                ${airlines.map(airline => `<option value="${escapeHtml(airline)}">${escapeHtml(airline)}</option>`).join('')}
+                ${airlines.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('')}
             </select>
         </label>
         <label>Route
@@ -539,7 +646,7 @@ function renderFilterBar() {
         </label>
         <label>Social Type
             <select data-filter="social">
-                ${SOCIAL_OPTIONS.map(type => `<option value="${type}">${type === 'all' ? 'All' : type[0].toUpperCase() + type.slice(1)}</option>`).join('')}
+                ${SOCIAL_OPTIONS.map(t => `<option value="${t}">${t === 'all' ? 'All' : t[0].toUpperCase() + t.slice(1)}</option>`).join('')}
             </select>
         </label>
         <button type="button" class="search-more-btn" id="searchMoreBtn">
@@ -561,8 +668,7 @@ function renderFilterBar() {
 }
 
 function setFilterBarValues() {
-    const el = (sel) => document.querySelector(sel);
-    const set = (sel, val) => { const e = el(sel); if (e) e.value = val; };
+    const set = (sel, val) => { const e = document.querySelector(sel); if (e) e.value = val; };
     set('[data-filter="dateRange"]', searchState.filters.dateRange);
     set('[data-filter="airline"]', searchState.filters.airline);
     set('[data-filter="route"]', searchState.filters.route);
@@ -667,13 +773,15 @@ function renderHeader(results) {
     const summary = document.getElementById('searchCountSummary');
     if (!subtitle || !summary) return;
 
-    if (!searchState.query) {
+    if (!searchState.query && !hasActiveFilters()) {
         subtitle.textContent = 'Use the search box in the header to find records quickly.';
         summary.textContent = '';
         return;
     }
 
-    subtitle.innerHTML = `Showing results for <strong>“${escapeHtml(searchState.query)}”</strong>`;
+    subtitle.innerHTML = searchState.query
+        ? `Showing results for <strong>“${escapeHtml(searchState.query)}”</strong>`
+        : 'Filtered results';
     summary.textContent = `${results.best.length} best matches · ${results.related.length} related matches`;
 }
 
@@ -730,7 +838,8 @@ function renderResults(results) {
 function renderTableHead() {
     return `
         <thead><tr>
-            <th>Issued Date</th><th>Client Name</th><th>Account Name</th><th>Actions</th>
+            <th>Client / PNR</th><th>Phone</th><th>Account</th>
+            <th>Type</th><th>Tickets</th><th>Last Booking</th><th>Actions</th>
         </tr></thead>
     `;
 }
@@ -738,31 +847,47 @@ function renderTableHead() {
 function sectionRows(title, rows) {
     if (!rows.length) return [];
     return [
-        `<tr class="search-section-row"><td colspan="4">${title} <span>${rows.length}</span></td></tr>`,
+        `<tr class="search-section-row"><td colspan="7">${title} <span>${rows.length}</span></td></tr>`,
         ...rows.map(renderRow)
     ];
 }
 
 function renderRow(result) {
     if (result.kind === 'client') {
-        const client = result.data;
+        const c = result.data;
         return `
-            <tr class="search-row" data-kind="client" data-client-key="${escapeHtml(client.client_key)}">
-                <td>${client.last_issued instanceof Date && client.last_issued.getTime() ? formatDateToDMMMY(formatDateForSheet(client.last_issued)) : '—'}</td>
-                <td class="strong-cell">${highlightText(client.name)}</td>
-                <td>${highlightText(client.account_name)}</td>
-                <td>${clientActions(client.client_key)}</td>
+            <tr class="search-row" data-kind="client" data-client-key="${escapeHtml(c.client_key)}">
+                <td class="strong-cell">
+                    <div class="cell-with-avatar">
+                        <span class="cell-avatar">${escapeHtml(initialsOf(c.name))}</span>
+                        <span>${highlightText(c.name)}</span>
+                    </div>
+                </td>
+                <td>${highlightText(c.phone || '—')}</td>
+                <td>${highlightText(c.account_name || '—')}</td>
+                <td>${escapeHtml(c.account_type || '—')}</td>
+                <td>${Number(c.ticket_count || 0)}</td>
+                <td>${fmtDateOrDash(c.last_issued)}</td>
+                <td>${clientActions(c.client_key)}</td>
             </tr>
         `;
     }
 
-    const ticket = result.data;
-    const clientKey = getTicketClientKey(ticket);
+    const t = result.data;
+    const clientKey = getTicketClientKey(t);
     return `
-        <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(ticket.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(ticket.booking_reference || '')}">
-            <td>${ticket.issued_date ? formatDateToDMMMY(ticket.issued_date) : '—'}</td>
-            <td class="strong-cell">${highlightText(ticket.name)}</td>
-            <td>${highlightText(ticket.account_name || '—')}</td>
+        <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(t.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(t.booking_reference || '')}">
+            <td class="strong-cell">
+                <div class="cell-with-avatar">
+                    <span class="cell-avatar ticket-avatar"><i class="fa-solid fa-ticket"></i></span>
+                    <span>${highlightText(t.booking_reference || t.name || '—')}<small class="cell-sub">${escapeHtml(t.name || '')}</small></span>
+                </div>
+            </td>
+            <td>${highlightText(t.phone || '—')}</td>
+            <td>${highlightText(t.account_name || '—')}</td>
+            <td>${escapeHtml(routeShort(t))}</td>
+            <td>${paymentBadge(result.payment)}</td>
+            <td>${fmtDateOrDash(t.issued_date)}</td>
             <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid')}</td>
         </tr>
     `;
@@ -793,7 +918,7 @@ function wireResultActions(container) {
     container.querySelectorAll('.search-row').forEach(row => {
         row.addEventListener('click', (e) => {
             if (e.target.closest('button')) return;
-            if (row.dataset.kind === 'client') viewClientHistory(row.dataset.clientKey);
+            if (row.dataset.kind === 'client') navigateToClient(row.dataset.clientKey);
             else if (row.dataset.ticketId) showDetails(row.dataset.ticketId);
         });
     });
@@ -807,7 +932,7 @@ function wireResultActions(container) {
             const ticketId = row?.dataset.ticketId;
             const pnr = row?.dataset.pnr;
 
-            if (action === 'view-client' && clientKey) viewClientHistory(clientKey);
+            if (action === 'view-client' && clientKey) navigateToClient(clientKey);
             if (action === 'booking-client' && clientKey) bookForClient(clientKey);
             if (action === 'sell-client' && clientKey) sellTicketForClient(clientKey);
             if (action === 'view-ticket' && ticketId) showDetails(ticketId);
@@ -829,27 +954,7 @@ function hasActiveFilters() {
 
 function clearFiltersOnly() {
     searchState.activeType = 'all';
-    searchState.filters = {
-        dateRange: 'all',
-        startDate: '',
-        endDate: '',
-        airline: '',
-        route: '',
-        payment: 'all',
-        social: 'all',
-        clientName: '',
-        phone: '',
-        accountName: '',
-        bookingRef: '',
-        pnr: '',
-        departure: '',
-        destination: '',
-        issuedDate: '',
-        travelDate: '',
-        ticketCount: '',
-        upcomingWithin: '',
-        unpaidOnly: false
-    };
+    searchState.filters = defaultFilters();
     searchState.moreOpen = false;
     refreshSearchView();
 }
@@ -857,14 +962,13 @@ function clearFiltersOnly() {
 function showSkeleton() {
     const container = document.getElementById('searchResultsContainer');
     if (!container) return;
-    const colSpan = searchState.activeType === 'clients' ? 7 : 8;
     container.innerHTML = `
         <div class="search-table-shell">
             <table class="search-results-table">
                 ${renderTableHead()}
                 <tbody>
-                    ${Array.from({ length: 8 }).map(() => `
-                        <tr class="search-skeleton-row"><td colspan="${colSpan}"><span></span></td></tr>
+                    ${Array.from({ length: 6 }).map(() => `
+                        <tr class="search-skeleton-row"><td colspan="7"><span></span></td></tr>
                     `).join('')}
                 </tbody>
             </table>
@@ -874,8 +978,16 @@ function showSkeleton() {
 
 function refreshSearchView(useDelay = true) {
     clearTimeout(searchState.searchTimeout);
+    if (searchState.selectedClientKey) {
+        searchState.searchTimeout = setTimeout(() => {
+            renderClientDetailView();
+            updateSearchUrl(false);
+        }, 0);
+        return;
+    }
     if (useDelay) showSkeleton();
     searchState.searchTimeout = setTimeout(() => {
+        showListView();
         const results = getSearchResults();
         renderHeader(results);
         renderTabs(results.counts);
@@ -885,6 +997,340 @@ function refreshSearchView(useDelay = true) {
         updateSearchUrl(false);
     }, useDelay ? 80 : 0);
 }
+
+function showListView() {
+    document.getElementById('searchListContainer')?.removeAttribute('hidden');
+    document.getElementById('searchClientDetail')?.setAttribute('hidden', '');
+}
+
+function showDetailView() {
+    document.getElementById('searchListContainer')?.setAttribute('hidden', '');
+    document.getElementById('searchClientDetail')?.removeAttribute('hidden');
+}
+
+/* ----------------------- client detail view ----------------------------- */
+
+function renderClientDetailView() {
+    const detail = document.getElementById('searchClientDetail');
+    const headerEl = document.getElementById('searchViewHeader');
+    if (!detail) return;
+
+    const client = state.allClients.find(c => c.client_key === searchState.selectedClientKey);
+    if (!client) {
+        searchState.selectedClientKey = '';
+        showListView();
+        refreshSearchView(false);
+        return;
+    }
+
+    showDetailView();
+    if (headerEl) headerEl.classList.add('is-detail');
+
+    const tickets = ticketsForClient(client.client_key);
+    const activeTickets = tickets.filter(t => !isCanceled(t) && !isFeeEntry(t));
+    const totalSpent = activeTickets.reduce((sum, t) => sum + getTicketAmount(t), 0);
+    const totalProfit = activeTickets.reduce((sum, t) => sum + Number(t.commission || 0) + Number(t.extra_fare || 0), 0);
+    const totalTicketCount = activeTickets.length;
+    const lastIssuedTicket = tickets.find(t => parseSheetDate(t.issued_date)?.getTime?.());
+    const lastBooking = lastIssuedTicket ? lastIssuedTicket.issued_date : null;
+    const customerSinceTicket = [...tickets].sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date))[0];
+    const customerSinceYear = customerSinceTicket ? (parseSheetDate(customerSinceTicket.issued_date)?.getFullYear?.() || '—') : '—';
+
+    const isVip = totalSpent >= 1500000 || totalTicketCount >= 10;
+
+    // route insights
+    const routeCounts = {};
+    let oneWay = 0;
+    let roundTrip = 0;
+    activeTickets.forEach(t => {
+        const r = `${(t.departure || '—').split(' ')[0]} → ${(t.destination || '—').split(' ')[0]}`;
+        routeCounts[r] = (routeCounts[r] || 0) + 1;
+        const tt = String(t.ticket_type || '').toUpperCase();
+        if (tt.includes('ROUND')) roundTrip++;
+        else oneWay++;
+    });
+    const mostFrequentRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+    const avgNet = totalTicketCount ? Math.round(totalSpent / totalTicketCount) : 0;
+
+    // payment
+    const paidCount = activeTickets.filter(t => getPaymentStatus(t) === 'paid').length;
+    const unpaidTickets = activeTickets.filter(t => getPaymentStatus(t) !== 'paid');
+    const outstanding = unpaidTickets.reduce((sum, t) => sum + getTicketAmount(t), 0);
+    const paymentMethods = {};
+    activeTickets.forEach(t => {
+        const m = (t.payment_method || '').trim();
+        if (!m) return;
+        paymentMethods[m] = (paymentMethods[m] || 0) + 1;
+    });
+    const preferredPayment = Object.entries(paymentMethods).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+
+    detail.innerHTML = `
+        <div class="client-detail-card">
+            <div class="client-hero">
+                <div class="client-hero-avatar">${escapeHtml(initialsOf(client.name))}</div>
+                <div class="client-hero-info">
+                    <div class="client-hero-badges">
+                        <span class="status-badge status-active"><i class="fa-solid fa-circle-check"></i> Active Client</span>
+                        ${isVip ? '<span class="status-badge status-vip"><i class="fa-solid fa-crown"></i> VIP</span>' : ''}
+                        <span class="status-badge status-since"><i class="fa-solid fa-calendar"></i> Customer since ${escapeHtml(String(customerSinceYear))}</span>
+                    </div>
+                    <h2 class="client-hero-name">${escapeHtml(client.name || 'Unknown')}</h2>
+                    <p class="client-hero-meta">
+                        <span><i class="fa-solid fa-phone"></i> ${escapeHtml(client.phone || '—')}</span>
+                        <span><i class="fa-solid fa-at"></i> ${escapeHtml(client.account_name || '—')}</span>
+                        <span><i class="fa-solid fa-tag"></i> ${escapeHtml(client.account_type || '—')}</span>
+                    </p>
+                </div>
+                <div class="client-hero-actions">
+                    <button class="btn btn-primary" data-detail-action="sell"><i class="fa-solid fa-ticket"></i> Sell New Ticket</button>
+                    <button class="btn btn-secondary" data-detail-action="booking"><i class="fa-solid fa-calendar-plus"></i> Booking</button>
+                    <button class="btn btn-secondary" data-detail-action="edit"><i class="fa-solid fa-pen"></i> Edit Client</button>
+                    <button class="btn btn-ghost" data-detail-action="back"><i class="fa-solid fa-arrow-left"></i> Back to results</button>
+                </div>
+            </div>
+
+            <div class="client-kpi-grid">
+                ${kpiCard('fa-ticket', 'teal', 'Total Tickets', totalTicketCount)}
+                ${kpiCard('fa-coins', 'green', 'Total Spent', fmtMmk(totalSpent))}
+                ${kpiCard('fa-chart-line', 'amber', 'Total Profit', fmtMmk(totalProfit))}
+                ${kpiCard('fa-clock', 'coral', 'Last Booking', fmtDateOrDash(lastBooking))}
+            </div>
+
+            <div class="client-detail-grid">
+                ${overviewCard(client, customerSinceYear)}
+                ${documentsCard(client)}
+                ${insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet)}
+                ${paymentCard(paidCount, unpaidTickets.length, outstanding, preferredPayment)}
+            </div>
+
+            ${ticketHistorySection(client, tickets)}
+
+            <p class="client-detail-footer">All amounts in MMK (Myanmar Kyat) · Secure · Private · Confidential</p>
+        </div>
+    `;
+
+    wireDetailActions(detail, client);
+}
+
+function kpiCard(icon, color, label, value) {
+    return `
+        <div class="kpi-card">
+            <div class="kpi-icon kpi-${color}"><i class="fa-solid ${icon}"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">${escapeHtml(label)}</div>
+                <div class="kpi-value">${typeof value === 'number' ? value.toLocaleString() : value}</div>
+            </div>
+        </div>
+    `;
+}
+
+function overviewCard(c, year) {
+    const fields = [
+        ['Nationality', c.nationality || '—'],
+        ['Customer Since', String(year || '—')],
+        ['Date of Birth', c.dob || '—'],
+        ['Account Type', c.account_type || '—'],
+        ['Account', c.account_name || '—'],
+        ['Account Link', c.account_link || '—'],
+        ['Frequent Flyer', c.frequent_flyer_no || '—'],
+        ['Preferred Contact', c.preferred_contact || c.account_type || 'Phone']
+    ];
+    return `
+        <div class="detail-card">
+            <div class="detail-card-head">
+                <span class="detail-card-icon"><i class="fa-solid fa-id-card"></i></span>
+                <h3>Client Overview</h3>
+            </div>
+            <dl class="detail-kv">
+                ${fields.map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v || '—')}</dd></div>`).join('')}
+            </dl>
+        </div>
+    `;
+}
+
+function documentsCard(c) {
+    const passportNo = c.passport_no || '';
+    const masked = passportNo ? passportNo.replace(/.(?=.{4})/g, '•') : '—';
+    const photo = c.passport_photo_url || '';
+    const expiry = c.passport_expiry || '';
+    const verified = !!(c.passport_no || c.nrc_no);
+    const empty = !c.nrc_no && !c.passport_no;
+
+    if (empty) {
+        return `
+            <div class="detail-card">
+                <div class="detail-card-head">
+                    <span class="detail-card-icon"><i class="fa-solid fa-passport"></i></span>
+                    <h3>Travel Documents</h3>
+                </div>
+                <div class="document-empty">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>No documents on file yet.</p>
+                    <button class="btn btn-secondary"><i class="fa-solid fa-upload"></i> Upload New</button>
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="detail-card">
+            <div class="detail-card-head">
+                <span class="detail-card-icon"><i class="fa-solid fa-passport"></i></span>
+                <h3>Travel Documents</h3>
+                ${verified ? '<span class="verified-pill"><i class="fa-solid fa-circle-check"></i> Verified</span>' : ''}
+            </div>
+            <div class="documents-grid">
+                ${c.nrc_no ? `<div class="doc-row"><span class="doc-label">NRC</span><strong>${escapeHtml(c.nrc_no)}</strong></div>` : ''}
+                ${passportNo ? `<div class="doc-row"><span class="doc-label">Passport</span><strong>${escapeHtml(masked)}</strong></div>` : ''}
+                ${expiry ? `<div class="doc-row"><span class="doc-label">Expiry</span><strong>${escapeHtml(expiry)}</strong></div>` : ''}
+                <div class="doc-row"><span class="doc-label">Country</span><strong>${escapeHtml(c.nationality || 'MMR')}</strong></div>
+                ${photo ? `<div class="doc-photo"><img src="${escapeHtml(photo)}" alt="Passport"></div>` : ''}
+            </div>
+            <div class="doc-actions">
+                ${photo ? '<button class="btn btn-ghost" data-doc-action="view"><i class="fa-regular fa-eye"></i> View</button>' : ''}
+                <button class="btn btn-ghost" data-doc-action="replace"><i class="fa-solid fa-rotate"></i> Replace</button>
+                <button class="btn btn-secondary" data-doc-action="upload"><i class="fa-solid fa-upload"></i> Upload New</button>
+            </div>
+        </div>
+    `;
+}
+
+function insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet) {
+    return `
+        <div class="detail-card">
+            <div class="detail-card-head">
+                <span class="detail-card-icon"><i class="fa-solid fa-chart-pie"></i></span>
+                <h3>Client Insights</h3>
+            </div>
+            <dl class="detail-kv">
+                <div><dt>Most frequent route</dt><dd>${escapeHtml(mostFrequentRoute)}</dd></div>
+                <div><dt>One-way tickets</dt><dd>${oneWay}</dd></div>
+                <div><dt>Round-trip tickets</dt><dd>${roundTrip}</dd></div>
+                <div><dt>Average net</dt><dd>${fmtMmk(avgNet)}</dd></div>
+            </dl>
+        </div>
+    `;
+}
+
+function paymentCard(paid, unpaid, outstanding, preferredPayment) {
+    return `
+        <div class="detail-card">
+            <div class="detail-card-head">
+                <span class="detail-card-icon"><i class="fa-solid fa-credit-card"></i></span>
+                <h3>Payment & Booking Status</h3>
+            </div>
+            <dl class="detail-kv">
+                <div><dt>Paid bookings</dt><dd>${paid}</dd></div>
+                <div><dt>Pending bookings</dt><dd>${unpaid}</dd></div>
+                <div><dt>Outstanding balance</dt><dd>${fmtMmk(outstanding)}</dd></div>
+                <div><dt>Preferred payment</dt><dd>${escapeHtml(preferredPayment || '—')}</dd></div>
+            </dl>
+        </div>
+    `;
+}
+
+function ticketHistorySection(client, tickets) {
+    const years = [...new Set(tickets.map(t => parseSheetDate(t.issued_date)?.getFullYear?.()).filter(Boolean))].sort((a, b) => b - a);
+
+    const rows = tickets.map(t => {
+        const status = getPaymentStatus(t);
+        const upcoming = isUpcoming(t) ? 'upcoming' : (parseSheetDate(t.departing_on) < new Date() ? 'completed' : 'scheduled');
+        const canceled = isCanceled(t);
+        return `
+            <tr data-pnr="${escapeHtml(t.booking_reference || '')}" data-tt="${escapeHtml(String(t.ticket_type || '').toUpperCase().includes('ROUND') ? 'round' : 'oneway')}" data-year="${escapeHtml(String(parseSheetDate(t.issued_date)?.getFullYear?.() || ''))}" class="${canceled ? 'canceled-row' : ''}">
+                <td>${fmtDateOrDash(t.issued_date)}</td>
+                <td><strong>${escapeHtml(t.booking_reference || '—')}</strong></td>
+                <td>${escapeHtml(routeShort(t))}</td>
+                <td>${fmtDateOrDash(t.departing_on)}</td>
+                <td>${escapeHtml(t.airline || '—')}</td>
+                <td>
+                    ${canceled ? '<span class="payment-badge payment-unpaid">Canceled</span>' : `<span class="payment-badge payment-${upcoming === 'upcoming' ? 'partial' : 'paid'}">${upcoming === 'upcoming' ? 'Upcoming' : 'Completed'}</span>`}
+                    ${paymentBadge(status)}
+                </td>
+                <td>${fmtMmk(getTicketAmount(t))}</td>
+                <td>${fmtMmk(Number(t.commission || 0) + Number(t.extra_fare || 0))}</td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+        <div class="detail-card">
+            <div class="detail-card-head">
+                <span class="detail-card-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                <h3>Ticket History</h3>
+                <div class="detail-card-toolbar">
+                    <div class="detail-tabs" id="historyTypeTabs">
+                        <button type="button" class="detail-tab active" data-history-tab="all">All</button>
+                        <button type="button" class="detail-tab" data-history-tab="oneway">One-Way</button>
+                        <button type="button" class="detail-tab" data-history-tab="round">Round-Trip</button>
+                    </div>
+                    <select class="detail-year-select" id="historyYearSelect">
+                        <option value="">All years</option>
+                        ${years.map(y => `<option value="${y}">${y}</option>`).join('')}
+                    </select>
+                    <input type="text" class="detail-search-input" id="historySearchInput" placeholder="Search by PNR, route, airline…">
+                </div>
+            </div>
+            <div class="detail-table-wrap">
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th>Issued</th><th>PNR</th><th>Route</th><th>Travel Date</th>
+                            <th>Airline</th><th>Status</th><th>Net Amount</th><th>Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows || '<tr><td colspan="8" class="empty-row">No tickets on file.</td></tr>'}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function wireDetailActions(detail, client) {
+    detail.querySelectorAll('[data-detail-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const action = btn.dataset.detailAction;
+            if (action === 'sell') sellTicketForClient(client.client_key);
+            else if (action === 'booking') bookForClient(client.client_key);
+            else if (action === 'edit') sellTicketForClient(client.client_key);
+            else if (action === 'back') {
+                searchState.selectedClientKey = '';
+                refreshSearchView(false);
+            }
+        });
+    });
+
+    // History tabs / filters
+    const tabs = detail.querySelectorAll('[data-history-tab]');
+    const yearSelect = detail.querySelector('#historyYearSelect');
+    const searchInput = detail.querySelector('#historySearchInput');
+    const tbody = detail.querySelector('.detail-table tbody');
+    const filterRows = () => {
+        if (!tbody) return;
+        const tab = detail.querySelector('[data-history-tab].active')?.dataset.historyTab || 'all';
+        const year = yearSelect?.value || '';
+        const term = (searchInput?.value || '').toLowerCase();
+        tbody.querySelectorAll('tr').forEach(row => {
+            if (row.classList.contains('empty-row')) return;
+            const tt = row.dataset.tt;
+            const ry = row.dataset.year;
+            let visible = true;
+            if (tab === 'oneway' && tt !== 'oneway') visible = false;
+            if (tab === 'round' && tt !== 'round') visible = false;
+            if (year && ry !== year) visible = false;
+            if (term && !row.textContent.toLowerCase().includes(term)) visible = false;
+            row.style.display = visible ? '' : 'none';
+        });
+    };
+    tabs.forEach(t => t.addEventListener('click', () => {
+        tabs.forEach(x => x.classList.toggle('active', x === t));
+        filterRows();
+    }));
+    yearSelect?.addEventListener('change', filterRows);
+    searchInput?.addEventListener('input', debounce(filterRows, 120));
+}
+
+/* ----------------------- suggestions ----------------------------------- */
 
 function getResultId(result) {
     if (typeof result === 'string') return result;
@@ -904,7 +1350,6 @@ function buildSuggestions(query) {
         return { top: [], clients: [], tickets: [], accounts: [], recent };
     }
 
-    // PNR exact-match mode: only the exact PNR + associated clients
     if (isPnrQuery(q)) {
         const pnr = normalize(q).replace(/\s/g, '');
         const exactTickets = state.allTickets
@@ -916,8 +1361,8 @@ function buildSuggestions(query) {
 
         const associatedClientKeys = new Set();
         exactTickets.forEach(t => {
-            const client = getClientForTicket(t.data);
-            if (client) associatedClientKeys.add(client.client_key);
+            const c = getClientForTicket(t.data);
+            if (c) associatedClientKeys.add(c.client_key);
         });
         const clients = state.allClients
             .filter(c => associatedClientKeys.has(c.client_key))
@@ -927,29 +1372,33 @@ function buildSuggestions(query) {
         return { top, clients, tickets, accounts: [], recent: [] };
     }
 
-    const all = buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 8);
-    const top = all[0] ? [all[0]] : [];
+    // Only 'best' quality may be Top Match.
+    const all = buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 12);
+    const bestOnly = all.filter(r => r.quality === 'best');
+    const top = bestOnly[0] ? [bestOnly[0]] : [];
     const topIds = new Set(top.map(getResultId));
-    const clients = all.filter(r => r.kind === 'client' && !topIds.has(getResultId(r))).slice(0, 4);
-    const clientIds = new Set(clients.map(getResultId));
-    const tickets = all.filter(r => r.kind === 'ticket' && !topIds.has(getResultId(r)) && !clientIds.has(getResultId(r))).slice(0, 4);
 
-    // Account name suggestions
+    const clients = bestOnly
+        .filter(r => r.kind === 'client' && !topIds.has(getResultId(r)))
+        .slice(0, 4);
+    const clientIds = new Set(clients.map(getResultId));
+    const tickets = bestOnly
+        .filter(r => r.kind === 'ticket' && !topIds.has(getResultId(r)) && !clientIds.has(getResultId(r)))
+        .slice(0, 4);
+
+    // Account suggestions
     const accountSet = new Set();
     state.allClients.forEach(c => {
         if (c.account_name && normalize(c.account_name).includes(normalize(q))) {
             accountSet.add(c.account_name);
         }
     });
-    const accounts = [...accountSet].slice(0, 3).map(name => ({
-        kind: 'account',
-        label: name,
-        data: { account_name: name }
-    }));
-
-    // Suppress clients whose exact account_name matches a shown account
-    const accountNames = new Set(accounts.map(a => normalize(a.data.account_name)));
-    const filteredClients = clients.filter(c => !accountNames.has(normalize(c.data.account_name || '')));
+    const accountNamesShown = new Set();
+    const accounts = [...accountSet].slice(0, 3).map(name => {
+        accountNamesShown.add(normalize(name));
+        return { kind: 'account', label: name, data: { account_name: name } };
+    });
+    const filteredClients = clients.filter(c => !accountNamesShown.has(normalize(c.data.account_name || '')));
 
     const shownIds = new Set([...topIds, ...clientIds, ...tickets.map(getResultId)]);
     const recent = getRecentSearches()
@@ -972,11 +1421,11 @@ function suggestionItem(result) {
     }
 
     if (result.kind === 'client') {
-        const client = result.data;
+        const c = result.data;
         return `
-            <button type="button" class="suggestion-item" data-suggestion-kind="client" data-client-key="${escapeHtml(client.client_key)}">
-                <span class="suggestion-main">${escapeHtml(client.name || 'Unknown client')}</span>
-                <span class="suggestion-meta">Phone: ${escapeHtml(client.phone || '—')} · ${escapeHtml(client.account_type || 'Account')} · ${Number(client.ticket_count || 0)} tickets</span>
+            <button type="button" class="suggestion-item" data-suggestion-kind="client" data-client-key="${escapeHtml(c.client_key)}">
+                <span class="suggestion-main">${escapeHtml(c.name || 'Unknown client')}</span>
+                <span class="suggestion-meta">Phone: ${escapeHtml(c.phone || '—')} · ${escapeHtml(c.account_type || 'Account')} · ${Number(c.ticket_count || 0)} tickets</span>
                 <span class="suggestion-badge">Client</span>
             </button>
         `;
@@ -1047,12 +1496,16 @@ function closeSuggestions(input, panel) {
     input.closest('.global-search-box')?.classList.remove('is-open');
 }
 
+/* -------------------- public API --------------------------------------- */
+
 export function initGlobalSearch() {
     const input = document.getElementById('globalSearchInput');
     const submit = document.getElementById('globalSearchSubmit');
     const clear = document.getElementById('globalSearchClear');
     const panel = document.getElementById('globalSearchSuggestions');
     if (!input || !submit || !clear || !panel || input.dataset.globalSearchReady === 'true') return;
+
+    input.placeholder = 'Search client, phone, account, PNR…';
 
     const updateClear = () => { clear.hidden = !input.value.trim(); };
     const debouncedSuggest = debounce(() => renderSuggestions(input, panel), 120);
@@ -1086,15 +1539,16 @@ export function initGlobalSearch() {
     panel.addEventListener('click', (e) => {
         const item = e.target.closest('.suggestion-item');
         if (!item) return;
+        const currentQuery = input.value.trim();
         if (item.dataset.suggestionQuery) {
             input.value = item.dataset.suggestionQuery;
-            // do not navigate — user can press Enter or click search icon
+            navigateToSearch(item.dataset.suggestionQuery);
         } else if (item.dataset.suggestionKind === 'account') {
             navigateToAccount(item.dataset.accountName);
         } else if (item.dataset.suggestionKind === 'client') {
-            viewClientHistory(item.dataset.clientKey);
+            navigateToClient(item.dataset.clientKey, currentQuery);
         } else if (item.dataset.suggestionKind === 'ticket' && item.dataset.ticketId) {
-            showDetails(item.dataset.ticketId);
+            navigateToTicket(item.dataset.ticketId, currentQuery);
         }
         closeSuggestions(input, panel);
     });
@@ -1109,6 +1563,10 @@ export function initGlobalSearch() {
         }
     });
 
+    // Wire close button if present
+    const closeBtn = document.getElementById('searchCloseBtn');
+    closeBtn?.addEventListener('click', closeSearchView);
+
     input.dataset.globalSearchReady = 'true';
     updateClear();
 }
@@ -1119,6 +1577,14 @@ export function initSearchView() {
     if (input) input.value = searchState.query;
     const clear = document.getElementById('globalSearchClear');
     if (clear) clear.hidden = !searchState.query;
+
+    // ticket detail: no inline ticket detail panel — fall back to existing modal
+    if (searchState.selectedTicketId && !searchState.selectedClientKey) {
+        showDetails(searchState.selectedTicketId);
+        searchState.selectedTicketId = '';
+        updateSearchUrl(false);
+    }
+
     refreshSearchView();
 }
 
@@ -1139,4 +1605,4 @@ export function getSearchState() {
     return searchState;
 }
 
-export { searchState };
+export { searchState, navigateToClient, navigateToSearch };
