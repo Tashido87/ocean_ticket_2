@@ -47,8 +47,10 @@ export function buildClientList() {
         if (isFeeEntry(ticket)) return;
         const clientKey = `${ticket.name}|${ticket.phone}|${ticket.account_name}`;
         const lowerRemarks = ticket.remarks?.toLowerCase() || '';
-        const ticketNrc = ticket.nrc_no || (looksLikeNrc(ticket.id_no) ? ticket.id_no : '');
-        const ticketPassport = ticket.passport_no || (looksLikePassport(ticket.id_no) ? ticket.id_no : '');
+        const ticketNrc = looksLikeNrc(ticket.nrc_no) ? ticket.nrc_no : (looksLikeNrc(ticket.id_no) ? ticket.id_no : '');
+        const ticketPassport = ticket.passport_no
+            || (looksLikePassport(ticket.nrc_no) ? ticket.nrc_no : '')
+            || (looksLikePassport(ticket.id_no) ? ticket.id_no : '');
         if (!clients[clientKey]) {
             clients[clientKey] = {
                 client_key: clientKey,

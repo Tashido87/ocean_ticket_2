@@ -90,11 +90,13 @@ function looksLikePassport(value) {
 }
 
 function getClientNrc(c) {
-    return c.nrc_no || (looksLikeNrc(c.id_no) ? c.id_no : '');
+    return (looksLikeNrc(c.nrc_no) ? c.nrc_no : '') || (looksLikeNrc(c.id_no) ? c.id_no : '');
 }
 
 function getClientPassportNo(c) {
-    return c.passport_no || (looksLikePassport(c.id_no) ? c.id_no : '');
+    return c.passport_no
+        || (looksLikePassport(c.nrc_no) ? c.nrc_no : '')
+        || (looksLikePassport(c.id_no) ? c.id_no : '');
 }
 
 function clientKeyFromTicket(ticket) {
