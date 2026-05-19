@@ -1701,7 +1701,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 /* ---------- Sticky summary bar — VERTICAL right sidebar (trip.com-style) ---------- */
 .sticky-summary-bar {
     position: fixed;
-    top: 5rem;
+    top: calc(84px + 1.15rem);
     right: 1.25rem;
     bottom: 1.25rem;
     left: auto;
