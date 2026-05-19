@@ -226,92 +226,92 @@ function fmtDateOrDash(value) {
 
 /* --------------------------- ranking ----------------------------------- */
 
+function scoreTextField(value, query, tokens) {
+    const text = normalize(value);
+    if (!text || !query) return 0;
+    if (text === query) return 1000;
+    if (text.startsWith(query)) return 900;
+    if (text.includes(query)) return 820;
+    if (tokens.length && tokens.every(token => text.includes(token))) return 720;
+
+    const matched = tokens.filter(token => text.includes(token)).length;
+    if (!matched) return 0;
+    if (tokens.length > 1) return Math.round((matched / tokens.length) * 260);
+    return 220;
+}
+
+function qualityFromScore(score) {
+    if (score >= 500) return 'best';
+    if (score > 0) return 'related';
+    return 'none';
+}
+
 /**
- * Strict ranking. Quality is one of: 'best' | 'related' | 'none'.
- *  - 'best'    : strong, deterministic match (exact, prefix, full phrase, all tokens in same field).
- *  - 'related' : weaker hint (cross-field token spread, partial single-token).
- *  - 'none'    : no useful match.
- *
- * For multi-word queries, NO single-token partial may produce a 'best' result.
+ * Common search scoring used by suggestions and the Search Results page.
+ * Supports exact, prefix, phrase, all-token, and partial-token matches.
  */
 function rankRecord(record, type, query) {
     const q = normalize(query);
     if (!q) return { score: 40, quality: 'best', reasons: ['No query'] };
 
     const tokens = queryTokens(q);
-    const isMulti = tokens.length > 1;
-    const fields = type === 'client'
-        ? {
-            name: record.name,
-            phone: record.phone,
-            account: record.account_name,
-            accountType: record.account_type,
-            pnr: '',
-            route: '',
-            airline: ''
-        }
-        : {
-            name: record.name,
-            phone: record.phone,
-            account: record.account_name,
-            accountType: record.account_type,
-            pnr: record.booking_reference,
-            route: `${record.departure || ''} ${record.destination || ''}`,
-            airline: record.airline
-        };
-
-    const name = normalize(fields.name);
-    const account = normalize(fields.account);
-    const phone = digitsOnly(fields.phone);
-    const pnr = normalize(fields.pnr);
+    const phone = digitsOnly(record.phone);
     const qDigits = digitsOnly(q);
-    const haystack = Object.values(fields).map(normalize).join(' ');
-    const allAcrossFields = tokens.length > 0 && tokens.every(token => haystack.includes(token));
 
-    /* ---------- BEST ---------- */
-    if (pnr && pnr === q) return { score: 1000, quality: 'best', reasons: ['Exact PNR'] };
-    if (phone && qDigits && phone === qDigits) return { score: 950, quality: 'best', reasons: ['Exact phone'] };
-    if (name && name === q) return { score: 900, quality: 'best', reasons: ['Exact name'] };
-    if (account && account === q) return { score: 860, quality: 'best', reasons: ['Exact account'] };
+    let score = 0;
+    const reasons = [];
 
-    if (name.startsWith(q) && q.length >= 1) return { score: 820, quality: 'best', reasons: ['Name starts with query'] };
-    if (account.startsWith(q) && q.length >= 1) return { score: 780, quality: 'best', reasons: ['Account starts with query'] };
-    if (q.length >= 1 && name.includes(q)) return { score: 740, quality: 'best', reasons: ['Name contains phrase'] };
-    if (q.length >= 1 && account.includes(q)) return { score: 720, quality: 'best', reasons: ['Account contains phrase'] };
-    if (pnr && pnr.includes(q) && q.length >= 2) return { score: 700, quality: 'best', reasons: ['PNR contains query'] };
-
-    if (isMulti) {
-        if (hasAllTokensInField(name, tokens)) {
-            let score = 620;
-            if (name.startsWith(tokens[0])) score += 50;
-            return { score, quality: 'best', reasons: ['All words in name'] };
-        }
-        if (hasAllTokensInField(account, tokens)) {
-            let score = 580;
-            if (account.startsWith(tokens[0])) score += 50;
-            return { score, quality: 'best', reasons: ['All words in account'] };
+    if (type === 'ticket') {
+        const pnr = normalize(record.booking_reference);
+        if (pnr && pnr === q) return { score: 1400, quality: 'best', reasons: ['Exact PNR'] };
+        if (pnr && pnr.startsWith(q)) {
+            score = Math.max(score, 1250);
+            reasons.push('PNR starts with query');
+        } else if (pnr && pnr.includes(q)) {
+            score = Math.max(score, 1100);
+            reasons.push('PNR contains query');
         }
     }
 
-    /* ---------- RELATED ---------- */
-    if (isMulti && allAcrossFields) {
-        return { score: 220, quality: 'related', reasons: ['All words across fields'] };
+    if (phone && qDigits) {
+        if (phone === qDigits) {
+            score = Math.max(score, 1200);
+            reasons.push('Exact phone');
+        } else if (phone.includes(qDigits)) {
+            score = Math.max(score, 650);
+            reasons.push('Phone contains query');
+        }
     }
 
-    // Multi-word: must not promote single-token partial matches
-    if (isMulti) return { score: 0, quality: 'none', reasons: [] };
+    const weightedFields = type === 'client'
+        ? [
+            ['Name', record.name, 1.0],
+            ['Account', record.account_name, 0.82],
+            ['Account type', record.account_type, 0.35]
+        ]
+        : [
+            ['Passenger', record.name, 0.82],
+            ['Account', record.account_name, 0.55],
+            ['Route', `${record.departure || ''} ${record.destination || ''}`, 0.45],
+            ['Airline', record.airline, 0.42]
+        ];
 
-    // Single token: weak partials → 'related'
-    let partial = 0;
-    if (hasAnyTokenInField(name, tokens)) partial += 70;
-    if (hasAnyTokenInField(account, tokens)) partial += 45;
-    if (hasAnyTokenInField(fields.accountType, tokens)) partial += 18;
-    if (hasAnyTokenInField(fields.route, tokens)) partial += 25;
-    if (hasAnyTokenInField(fields.airline, tokens)) partial += 25;
-    if (qDigits && phone.includes(qDigits)) partial += 60;
+    weightedFields.forEach(([label, value, weight]) => {
+        const fieldScore = Math.round(scoreTextField(value, q, tokens) * weight);
+        if (fieldScore > score) {
+            score = fieldScore;
+            reasons.length = 0;
+            reasons.push(`${label} match`);
+        }
+    });
 
-    if (!partial) return { score: 0, quality: 'none', reasons: [] };
-    return { score: partial, quality: 'related', reasons: ['Partial match'] };
+    const haystack = weightedFields.map(([, value]) => normalize(value)).join(' ');
+    if (tokens.length > 1 && tokens.every(token => haystack.includes(token))) {
+        score = Math.max(score, type === 'client' ? 690 : 520);
+        reasons.push('All words across fields');
+    }
+
+    return { score, quality: qualityFromScore(score), reasons };
 }
 
 function buildClientResult(client, query = searchState.query) {
@@ -1796,7 +1796,10 @@ function getResultId(result) {
 }
 
 function isPnrQuery(q) {
-    return /^[A-Z0-9]{5,8}$/.test(normalize(q).replace(/\s/g, ''));
+    const raw = String(q || '').trim();
+    if (/\s/.test(raw)) return false;
+    const compact = normalize(raw);
+    return /^[A-Z0-9]{5,8}$/.test(compact) && /\d/.test(compact);
 }
 
 function buildSuggestions(query) {
@@ -1829,57 +1832,35 @@ function buildSuggestions(query) {
     }
 
     const tokens = queryTokens(normalize(q));
-
-    // Wider pool so partial middle-word matches survive slicing
-    const all = buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 20);
-    const bestOnly = all.filter(r => r.quality === 'best');
-    const relatedOnly = all.filter(r => r.quality === 'related');
-
-    // Top match: prefer best, fallback to related
-    const top = bestOnly[0] ? [bestOnly[0]] : (relatedOnly[0] ? [relatedOnly[0]] : []);
+    const all = buildAllRankedResults(q).filter(r => r.score > 0).slice(0, 40);
+    const top = all[0] ? [all[0]] : [];
     const topIds = new Set(top.map(getResultId));
 
-    // Clients: combine best + related, deduplicate
-    const clientBest = bestOnly.filter(r => r.kind === 'client' && !topIds.has(getResultId(r)));
-    const clientRelated = relatedOnly.filter(r => r.kind === 'client' && !topIds.has(getResultId(r)));
-    let clients = [...clientBest, ...clientRelated];
-
-    // Gather ALL clients whose names contain every query token
     let showMore = false;
-    const allNameMatches = state.allClients
+    const clientsFromRank = all.filter(r => r.kind === 'client' && !topIds.has(getResultId(r)));
+
+    const directClientMatches = state.allClients
         .filter(c => {
-            const n = normalize(c.name);
-            return tokens.every(t => n.includes(t)) && !topIds.has('client:' + c.client_key);
+            if (String(c.name || '').includes('(Fees)')) return false;
+            const text = [c.name, c.account_name, c.phone].map(normalize).join(' ');
+            return tokens.length ? tokens.every(token => text.includes(token)) : false;
         })
         .map(c => buildClientResult(c, q))
         .filter(Boolean)
         .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a));
 
-    if (tokens.length === 1) {
-        showMore = allNameMatches.length > 6;
-        clients = allNameMatches.slice(0, 6);
-    } else {
-        showMore = allNameMatches.length > 6;
-        const directMatches = allNameMatches.slice(0, 6);
-        const directIds = new Set(directMatches.map(getResultId));
-        const rankedClients = [...clientBest, ...clientRelated]
-            .filter(r => !directIds.has(getResultId(r)));
-        clients = [...directMatches, ...rankedClients].slice(0, 6);
-    }
-
-    if (tokens.length > 1 && !clients.length && !top.length) {
-        clients = state.allClients
-            .filter(c => {
-                const text = [c.name, c.account_name, c.phone].map(normalize).join(' ');
-                return tokens.every(token => text.includes(token));
-            })
-            .map(c => buildClientResult(c, q))
-            .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a))
-            .slice(0, 6);
-    }
+    const clientMap = new Map();
+    [...directClientMatches, ...clientsFromRank].forEach(result => {
+        const id = getResultId(result);
+        if (!topIds.has(id) && !clientMap.has(id)) clientMap.set(id, result);
+    });
+    showMore = directClientMatches.length > 6;
+    const clients = [...clientMap.values()]
+        .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a))
+        .slice(0, 6);
 
     const clientIds = new Set(clients.map(getResultId));
-    const tickets = bestOnly
+    const tickets = all
         .filter(r => r.kind === 'ticket' && !topIds.has(getResultId(r)) && !clientIds.has(getResultId(r)))
         .slice(0, 4);
 
