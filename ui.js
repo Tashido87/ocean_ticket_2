@@ -6,7 +6,7 @@
 
 import { CITIES } from './config.js';
 import { state } from './state.js';
-import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut } from './utils.js';
+import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate } from './utils.js';
 import { clearManageResults } from './manage.js';
 import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard, renderSettlementPage } from './settlement.js';
 import { showToast } from './utils.js';
@@ -1230,6 +1230,7 @@ function ageBucket(age) {
 function normalizePassportDateForInput(value, { isBirth = false } = {}) {
     const raw = String(value || '').trim();
     if (!raw) return '';
+    if (isPlaceholderDate(raw)) return '';
 
     const namedMonths = {
         JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
@@ -1848,11 +1849,11 @@ export function populatePassengerCardFromClient(formEl, client) {
 
     const passportNo = client.passport_no || (!parsed.region ? client.id_no : '');
     if (passportNo) formEl.querySelector('.passenger-passport-no').value = String(passportNo).toUpperCase();
-    if (client.passport_expiry) {
+    if (client.passport_expiry && !isPlaceholderDate(client.passport_expiry)) {
         formEl.querySelector('.passenger-passport-expiry').value = client.passport_expiry;
         checkPassportExpiryWarning(formEl);
     }
-    if (client.dob) formEl.querySelector('.passenger-dob').value = client.dob;
+    if (client.dob && !isPlaceholderDate(client.dob)) formEl.querySelector('.passenger-dob').value = client.dob;
     if (client.nationality) formEl.querySelector('.passenger-nationality').value = String(client.nationality).toUpperCase();
 
     if (client.passport_photo_url) {

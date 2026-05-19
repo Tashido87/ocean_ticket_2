@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, debounce, showToast } from './utils.js';
+import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast } from './utils.js';
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets } from './db.js';
@@ -1461,10 +1461,10 @@ function openTravelDocumentEditModal(client) {
             if (nationality) {
                 document.getElementById('editDocNationality').value = nationality;
             }
-            if (expiry) {
+            if (expiry && !isPlaceholderDate(expiry)) {
                 document.getElementById('editDocExpiry').value = expiry;
             }
-            if (dob) {
+            if (dob && !isPlaceholderDate(dob)) {
                 document.getElementById('editDocDob').value = dob;
             }
 

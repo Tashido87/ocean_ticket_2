@@ -54,6 +54,16 @@ export function formatDateToDDMMYYYY(date) {
 }
 
 /**
+ * Detects placeholder / default dates (e.g. 01/01/1970 epoch, 01/01/1900).
+ * @param {string} dateStr The date string to check.
+ * @returns {boolean} True if it looks like a placeholder.
+ */
+export function isPlaceholderDate(dateStr) {
+    const str = String(dateStr || '').replace(/[^\d]/g, '');
+    return str === '01011970' || str === '01011900' || str === '00000000' || str === '';
+}
+
+/**
  * Attaches auto-formatting to a date input so typing 11021987 produces 11/02/1987.
  * @param {HTMLInputElement} input The input element to attach to.
  */
