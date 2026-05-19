@@ -1842,8 +1842,6 @@ export function initSettlementView() {
     root.dataset.bound = 'true';
 
     document.getElementById('newSettlementBtn')?.addEventListener('click', () => openNewSettlementModal());
-    document.getElementById('generateStatementBtn')?.addEventListener('click', () => openStatementModal());
-    document.getElementById('exportSettlementPdfBtn')?.addEventListener('click', () => exportStatementPdf());
     document.getElementById('closeMonthBtn')?.addEventListener('click', () => openCloseMonthModal());
 
     document.querySelectorAll('#settlePeriodTabs .period-tab').forEach(btn => {

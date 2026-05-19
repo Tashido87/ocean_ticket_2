@@ -23,14 +23,32 @@ import {
 } from './ui.js';
 import { openPhotoLightbox } from './passport.js';
 
+function isFeeEntry(ticket) {
+    const name = String(ticket?.name || '');
+    const remarks = String(ticket?.remarks || '').toLowerCase();
+    return /\(fees\)\s*$/i.test(name) || remarks.includes('fee entry');
+}
+
+function looksLikeNrc(value) {
+    return /^\s*\d{1,2}\/[A-Z]+(?:\([A-Z]\))?\d{5,6}\s*$/i.test(String(value || ''));
+}
+
+function looksLikePassport(value) {
+    const v = String(value || '').trim().toUpperCase();
+    return /^[A-Z]{1,3}\d{5,9}$/.test(v) && !looksLikeNrc(v);
+}
+
 /**
  * Builds a comprehensive list of unique clients from the ticket data.
  */
 export function buildClientList() {
     const clients = {};
     state.allTickets.forEach(ticket => {
+        if (isFeeEntry(ticket)) return;
         const clientKey = `${ticket.name}|${ticket.phone}|${ticket.account_name}`;
         const lowerRemarks = ticket.remarks?.toLowerCase() || '';
+        const ticketNrc = ticket.nrc_no || (looksLikeNrc(ticket.id_no) ? ticket.id_no : '');
+        const ticketPassport = ticket.passport_no || (looksLikePassport(ticket.id_no) ? ticket.id_no : '');
         if (!clients[clientKey]) {
             clients[clientKey] = {
                 client_key: clientKey,
@@ -40,9 +58,9 @@ export function buildClientList() {
                 account_type: ticket.account_type,
                 account_link: ticket.account_link,
                 id_no: ticket.id_no,
-                nrc_no: ticket.nrc_no || ticket.id_no,
-                document_type: ticket.document_type || 'NRC',
-                passport_no: ticket.passport_no || '',
+                nrc_no: ticketNrc || '',
+                document_type: ticketPassport ? 'Passport' : 'NRC',
+                passport_no: ticketPassport || '',
                 passport_expiry: ticket.passport_expiry || '',
                 passport_photo_url: ticket.passport_photo_url || '',
                 passport_photo_path: ticket.passport_photo_path || '',
@@ -55,14 +73,14 @@ export function buildClientList() {
                 last_issued: new Date(0)
             };
         }
-        if (ticket.nrc_no) clients[clientKey].nrc_no = ticket.nrc_no;
-        if (ticket.id_no) clients[clientKey].id_no = ticket.id_no;
-        if (ticket.passport_no) clients[clientKey].passport_no = ticket.passport_no;
-        if (ticket.passport_expiry) clients[clientKey].passport_expiry = ticket.passport_expiry;
-        if (ticket.passport_photo_url) clients[clientKey].passport_photo_url = ticket.passport_photo_url;
-        if (ticket.passport_photo_path) clients[clientKey].passport_photo_path = ticket.passport_photo_path;
-        if (ticket.dob) clients[clientKey].dob = ticket.dob;
-        if (ticket.nationality) clients[clientKey].nationality = ticket.nationality;
+        if (!clients[clientKey].nrc_no && ticketNrc) clients[clientKey].nrc_no = ticketNrc;
+        if (!clients[clientKey].id_no && ticket.id_no) clients[clientKey].id_no = ticket.id_no;
+        if (!clients[clientKey].passport_no && ticketPassport) clients[clientKey].passport_no = ticketPassport;
+        if (!clients[clientKey].passport_expiry && ticket.passport_expiry) clients[clientKey].passport_expiry = ticket.passport_expiry;
+        if (!clients[clientKey].passport_photo_url && ticket.passport_photo_url) clients[clientKey].passport_photo_url = ticket.passport_photo_url;
+        if (!clients[clientKey].passport_photo_path && ticket.passport_photo_path) clients[clientKey].passport_photo_path = ticket.passport_photo_path;
+        if (!clients[clientKey].dob && ticket.dob) clients[clientKey].dob = ticket.dob;
+        if ((!clients[clientKey].nationality || clients[clientKey].nationality === 'MMR') && ticket.nationality) clients[clientKey].nationality = ticket.nationality;
 
         if (!lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund')) {
             clients[clientKey].ticket_count++;

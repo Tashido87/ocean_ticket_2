@@ -5,11 +5,13 @@
  */
 
 import { state } from './state.js';
-import { parseSheetDate, formatDateForSheet, formatDateToDMMMY, debounce } from './utils.js';
-import { showView } from './ui.js';
+import { parseSheetDate, formatDateForSheet, formatDateToDMMMY, debounce, showToast } from './utils.js';
+import { showView, openModal, closeModal } from './ui.js';
+import { batchUpdateTickets } from './db.js';
 import { sellTicketForClient, bookForClient } from './clients.js';
 import { showDetails } from './tickets.js';
 import { findTicketForManage } from './manage.js';
+import { openPhotoLightbox } from './passport.js';
 
 const RECENT_SEARCH_KEY = 'oceanRecentSearches';
 const RESULT_LIMIT = 120;
@@ -78,6 +80,23 @@ function isFeeEntry(ticket) {
     return /\(fees\)\s*$/i.test(name) || remarks.includes('fee entry');
 }
 
+function looksLikeNrc(value) {
+    return /^\s*\d{1,2}\/[A-Z]+(?:\([A-Z]\))?\d{5,6}\s*$/i.test(String(value || ''));
+}
+
+function looksLikePassport(value) {
+    const v = String(value || '').trim().toUpperCase();
+    return /^[A-Z]{1,3}\d{5,9}$/.test(v) && !looksLikeNrc(v);
+}
+
+function getClientNrc(c) {
+    return c.nrc_no || (looksLikeNrc(c.id_no) ? c.id_no : '');
+}
+
+function getClientPassportNo(c) {
+    return c.passport_no || (looksLikePassport(c.id_no) ? c.id_no : '');
+}
+
 function clientKeyFromTicket(ticket) {
     return `${ticket.name}|${ticket.phone}|${ticket.account_name}`;
 }
@@ -94,6 +113,7 @@ function getClientForTicket(ticket) {
 function ticketsForClient(clientKey) {
     return state.allTickets
         .filter(t => clientKeyFromTicket(t) === clientKey)
+        .filter(t => !isFeeEntry(t))
         .sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date));
 }
 
@@ -1084,7 +1104,6 @@ function renderClientDetailView() {
                 <div class="client-hero-actions">
                     <button class="btn btn-primary" data-detail-action="sell"><i class="fa-solid fa-ticket"></i> Sell New Ticket</button>
                     <button class="btn btn-secondary" data-detail-action="booking"><i class="fa-solid fa-calendar-plus"></i> Booking</button>
-                    <button class="btn btn-secondary" data-detail-action="edit"><i class="fa-solid fa-pen"></i> Edit Client</button>
                     <button class="btn btn-ghost" data-detail-action="back"><i class="fa-solid fa-arrow-left"></i> Back to results</button>
                 </div>
             </div>
@@ -1149,12 +1168,12 @@ function overviewCard(c, year) {
 }
 
 function documentsCard(c) {
-    const passportNo = c.passport_no || '';
-    const masked = passportNo ? passportNo.replace(/.(?=.{4})/g, '•') : '—';
+    const nrcNo = getClientNrc(c);
+    const passportNo = getClientPassportNo(c);
     const photo = c.passport_photo_url || '';
     const expiry = c.passport_expiry || '';
-    const verified = !!(c.passport_no || c.nrc_no);
-    const empty = !c.nrc_no && !c.passport_no;
+    const verified = !!(passportNo || nrcNo);
+    const empty = !nrcNo && !passportNo && !photo;
 
     if (empty) {
         return `
@@ -1162,11 +1181,11 @@ function documentsCard(c) {
                 <div class="detail-card-head">
                     <span class="detail-card-icon"><i class="fa-solid fa-passport"></i></span>
                     <h3>Travel Documents</h3>
+                    <button class="doc-edit-btn" data-doc-action="edit"><i class="fa-solid fa-pen"></i> Edit</button>
                 </div>
                 <div class="document-empty">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                     <p>No documents on file yet.</p>
-                    <button class="btn btn-secondary"><i class="fa-solid fa-upload"></i> Upload New</button>
                 </div>
             </div>
         `;
@@ -1178,18 +1197,19 @@ function documentsCard(c) {
                 <span class="detail-card-icon"><i class="fa-solid fa-passport"></i></span>
                 <h3>Travel Documents</h3>
                 ${verified ? '<span class="verified-pill"><i class="fa-solid fa-circle-check"></i> Verified</span>' : ''}
+                <button class="doc-edit-btn" data-doc-action="edit"><i class="fa-solid fa-pen"></i> Edit</button>
             </div>
             <div class="documents-grid">
-                ${c.nrc_no ? `<div class="doc-row"><span class="doc-label">NRC</span><strong>${escapeHtml(c.nrc_no)}</strong></div>` : ''}
-                ${passportNo ? `<div class="doc-row"><span class="doc-label">Passport</span><strong>${escapeHtml(masked)}</strong></div>` : ''}
-                ${expiry ? `<div class="doc-row"><span class="doc-label">Expiry</span><strong>${escapeHtml(expiry)}</strong></div>` : ''}
-                <div class="doc-row"><span class="doc-label">Country</span><strong>${escapeHtml(c.nationality || 'MMR')}</strong></div>
-                ${photo ? `<div class="doc-photo"><img src="${escapeHtml(photo)}" alt="Passport"></div>` : ''}
-            </div>
-            <div class="doc-actions">
-                ${photo ? '<button class="btn btn-ghost" data-doc-action="view"><i class="fa-regular fa-eye"></i> View</button>' : ''}
-                <button class="btn btn-ghost" data-doc-action="replace"><i class="fa-solid fa-rotate"></i> Replace</button>
-                <button class="btn btn-secondary" data-doc-action="upload"><i class="fa-solid fa-upload"></i> Upload New</button>
+                ${nrcNo ? `<div class="doc-row doc-row-nrc"><span class="doc-label">NRC</span><strong>${escapeHtml(nrcNo)}</strong></div>` : ''}
+                <div class="passport-doc-block ${photo ? 'has-photo' : ''}">
+                    ${photo ? `<button type="button" class="doc-photo" data-doc-action="view"><img src="${escapeHtml(photo)}" alt="Passport"></button>` : '<div class="doc-photo doc-photo-empty"><i class="fa-solid fa-passport"></i></div>'}
+                    <div class="passport-doc-info">
+                        <span class="doc-label">Passport</span>
+                        <strong>${escapeHtml(passportNo || '—')}</strong>
+                        <small>Expiry: ${escapeHtml(expiry || '—')}</small>
+                        <small>Country: ${escapeHtml(c.nationality || 'MMR')}</small>
+                    </div>
+                </div>
             </div>
         </div>
     `;
@@ -1292,11 +1312,18 @@ function wireDetailActions(detail, client) {
             const action = btn.dataset.detailAction;
             if (action === 'sell') sellTicketForClient(client.client_key);
             else if (action === 'booking') bookForClient(client.client_key);
-            else if (action === 'edit') sellTicketForClient(client.client_key);
             else if (action === 'back') {
                 searchState.selectedClientKey = '';
                 refreshSearchView(false);
             }
+        });
+    });
+
+    detail.querySelectorAll('[data-doc-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const action = btn.dataset.docAction;
+            if (action === 'view' && client.passport_photo_url) openPhotoLightbox(client.passport_photo_url);
+            if (action === 'edit') openTravelDocumentEditModal(client);
         });
     });
 
@@ -1328,6 +1355,106 @@ function wireDetailActions(detail, client) {
     }));
     yearSelect?.addEventListener('change', filterRows);
     searchInput?.addEventListener('input', debounce(filterRows, 120));
+}
+
+function openTravelDocumentEditModal(client) {
+    const nrcNo = getClientNrc(client);
+    const passportNo = getClientPassportNo(client);
+    openModal(`
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-passport"></i> Edit Travel Documents</h3>
+            <button class="modal-close-btn" data-close-modal>&times;</button>
+        </div>
+        <div class="modal-body-content">
+            <form id="clientDocsForm" class="client-doc-edit-form">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>NRC</label>
+                        <input type="text" id="editDocNrc" value="${escapeHtml(nrcNo)}" placeholder="12/MAGATA(N)000000" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Passport Number</label>
+                        <input type="text" id="editDocPassport" value="${escapeHtml(passportNo)}" placeholder="M1234567" autocomplete="off" style="text-transform:uppercase;">
+                    </div>
+                    <div class="form-group">
+                        <label>Passport Expiry</label>
+                        <input type="text" id="editDocExpiry" value="${escapeHtml(client.passport_expiry || '')}" placeholder="MM/DD/YYYY" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label>Nationality</label>
+                        <input type="text" id="editDocNationality" value="${escapeHtml(client.nationality || 'MMR')}" placeholder="MMR" autocomplete="off" style="text-transform:uppercase;">
+                    </div>
+                    <div class="form-group">
+                        <label>Date of Birth</label>
+                        <input type="text" id="editDocDob" value="${escapeHtml(client.dob || '')}" placeholder="MM/DD/YYYY" autocomplete="off">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Passport Photo URL</label>
+                        <input type="url" id="editDocPhoto" value="${escapeHtml(client.passport_photo_url || '')}" placeholder="https://...">
+                    </div>
+                </div>
+                <p class="settle-muted">Updates are saved to this client's non-fee ticket records so future client detail views show the corrected documents.</p>
+                <div class="form-actions" style="margin-top:1rem">
+                    <button type="button" class="btn btn-secondary" data-close-modal>Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Documents</button>
+                </div>
+            </form>
+        </div>
+    `, 'large-modal');
+
+    document.querySelectorAll('[data-close-modal]').forEach(btn => btn.addEventListener('click', closeModal));
+    document.getElementById('clientDocsForm')?.addEventListener('submit', (e) => saveTravelDocuments(e, client));
+}
+
+async function saveTravelDocuments(e, client) {
+    e.preventDefault();
+    const nrcNo = document.getElementById('editDocNrc')?.value.trim().toUpperCase() || '';
+    const passportNo = document.getElementById('editDocPassport')?.value.trim().toUpperCase() || '';
+    const passportExpiry = document.getElementById('editDocExpiry')?.value.trim() || '';
+    const nationality = document.getElementById('editDocNationality')?.value.trim().toUpperCase() || 'MMR';
+    const dob = document.getElementById('editDocDob')?.value.trim() || '';
+    const passportPhotoUrl = document.getElementById('editDocPhoto')?.value.trim() || '';
+
+    if (nrcNo && !looksLikeNrc(nrcNo)) {
+        showToast('NRC format should look like 12/MAGATA(N)000000.', 'error');
+        return;
+    }
+    if (passportNo && !looksLikePassport(passportNo)) {
+        showToast('Passport number looks invalid. Use letters/numbers like M1234567.', 'error');
+        return;
+    }
+
+    const targetTickets = state.allTickets.filter(t => clientKeyFromTicket(t) === client.client_key && !isFeeEntry(t) && t.id);
+    if (!targetTickets.length) {
+        showToast('No editable ticket records found for this client.', 'error');
+        return;
+    }
+
+    const data = {
+        nrc_no: nrcNo,
+        passport_no: passportNo,
+        passport_expiry: passportExpiry,
+        passport_photo_url: passportPhotoUrl,
+        passport_photo_path: '',
+        nationality,
+        dob,
+        id_no: nrcNo || passportNo,
+        document_type: passportNo ? 'Passport' : 'NRC'
+    };
+
+    try {
+        await batchUpdateTickets(targetTickets.map(t => ({ id: t.id, data })));
+        targetTickets.forEach(t => Object.assign(t, data));
+        const freshClient = Object.assign(client, data);
+        freshClient.nrc_no = nrcNo;
+        freshClient.passport_no = passportNo;
+        closeModal();
+        showToast('Travel documents updated.', 'success');
+        renderClientDetailView();
+    } catch (err) {
+        console.error('Failed to update travel documents', err);
+        showToast('Failed to update travel documents.', 'error');
+    }
 }
 
 /* ----------------------- suggestions ----------------------------------- */
