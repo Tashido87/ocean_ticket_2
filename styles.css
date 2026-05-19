@@ -7464,9 +7464,7 @@ body.material-theme .search-skeleton-row span {
     gap: 1.1rem;
 }
 #settle-view {
-    background:
-        radial-gradient(circle at top left, rgba(13, 148, 136, 0.08), transparent 30rem),
-        linear-gradient(180deg, #fbfaf5 0%, #f4f7f4 100%);
+    background: #ffffff;
 }
 
 /* Header */
@@ -7476,22 +7474,11 @@ body.material-theme .search-skeleton-row span {
     align-items: center;
     justify-content: space-between;
     gap: 1.25rem;
-    padding: 1.35rem 1.45rem;
-    background:
-        linear-gradient(90deg, rgba(13, 148, 136, 0.12), transparent 28%),
-        linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(250,249,242,0.94) 100%);
-    border: 1px solid rgba(13, 148, 136, 0.16);
-    border-radius: 18px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 16px 34px rgba(11,31,58,0.07);
-    position: relative;
-    overflow: hidden;
-}
-.settle-header::before {
-    content: "";
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 5px;
-    background: #0d9488;
+    padding: 1.25rem;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .settle-eyebrow {
     display: inline-flex;
@@ -7589,10 +7576,11 @@ body.material-theme .search-skeleton-row span {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.85rem 1.25rem;
+    padding: 1.25rem;
     background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.10);
-    border-radius: var(--liquid-radius);
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .settle-toolbar-group { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
 .settle-toolbar-label {
@@ -7661,11 +7649,11 @@ body.material-theme .search-skeleton-row span {
 
 /* Reconciliation */
 .settle-reconcile-card {
-    padding: 1rem 1.15rem;
+    padding: 1.25rem;
     background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.10);
-    border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .settle-reconcile-title {
     display: flex;
@@ -7733,19 +7721,19 @@ body.material-theme .search-skeleton-row span {
 .term-is-settled strong { color: #137052; }
 .settle-kpi-card {
     display: flex; align-items: center; gap: 0.85rem;
-    padding: 1rem 1.1rem;
+    padding: 1.25rem;
     background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.10);
-    border-radius: var(--liquid-radius);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.04);
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.settle-kpi-card:hover { transform: translateY(-1px); box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 12px 28px rgba(0,0,0,0.07); }
+.settle-kpi-card:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
 .settle-kpi-icon {
-    width: 44px; height: 44px;
-    border-radius: 14px;
-    display: grid; place-items: center;
-    font-size: 1.05rem;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem;
     flex-shrink: 0;
 }
 .kpi-teal  .settle-kpi-icon { background: rgba(13, 148, 136, 0.12); color: #0f766e; }
@@ -7778,10 +7766,11 @@ body.material-theme .search-skeleton-row span {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 1rem 1.5rem;
-    padding: 1.25rem 1.5rem;
+    padding: 1.25rem;
     background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.10);
-    border-radius: var(--liquid-radius);
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .settle-health-status {
     align-self: center;
@@ -7828,44 +7817,52 @@ body.material-theme .search-skeleton-row span {
 
 /* Section Cards */
 .settle-section {
-    padding: 1.2rem 1.4rem;
+    padding: 1.25rem;
     background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.10);
-    border-radius: var(--liquid-radius);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .settle-section-head {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.9rem;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid rgba(38, 37, 30, 0.06);
 }
 .settle-section-titles { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
 .settle-section-icon {
-    width: 36px; height: 36px;
+    width: 38px; height: 38px;
     border-radius: 10px;
-    display: grid; place-items: center;
-    background: rgba(13, 148, 136, 0.10);
-    color: var(--primary-accent);
-    font-size: 0.95rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.14), rgba(8, 145, 178, 0.10));
+    color: #0d9488;
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(13, 148, 136, 0.12);
 }
-.settle-section-icon.settle-warning { background: rgba(207, 45, 86, 0.10); color: #b43146; }
-.settle-section-titles h3 { margin: 0; font-size: 1rem; font-weight: 800; color: #0b1f3a; letter-spacing: -0.01em; }
-.settle-section-subtitle { margin: 2px 0 0; color: var(--text-secondary); font-size: 0.78rem; }
+.settle-section-icon.settle-warning { background: linear-gradient(135deg, rgba(207, 45, 86, 0.14), rgba(244, 63, 94, 0.10)); color: #b43146; box-shadow: inset 0 0 0 1px rgba(207, 45, 86, 0.12); }
+.settle-section-titles h3 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #26251e; letter-spacing: -0.01em; line-height: 1.3; }
+.settle-section-subtitle { margin: 0.15rem 0 0; color: rgba(38, 37, 30, 0.55); font-size: 0.78rem; line-height: 1.35; }
 .settle-section-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .settle-search-input, .settle-select {
-    height: 34px;
-    padding: 0 0.65rem;
-    border-radius: 8px;
-    border: 1px solid rgba(38, 37, 30, 0.12);
-    background: #fff;
+    padding: 0.6rem 0.85rem;
+    border-radius: 9px;
+    border: 1px solid rgba(38, 37, 30, 0.13);
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     color: var(--text-primary);
-    font-size: 0.82rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    height: auto;
 }
 .settle-search-input { min-width: 220px; }
+.settle-search-input:focus, .settle-select:focus {
+    border-color: var(--primary-accent, #0d9488);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+    outline: none;
+}
 
 /* Tables */
 .settle-table-wrap {
@@ -7977,11 +7974,12 @@ body.material-theme .search-skeleton-row span {
     gap: 0.75rem;
 }
 .settle-aging-card {
-    padding: 0.95rem 1.05rem;
+    padding: 1.25rem;
     background: #ffffff;
-    border: 1px solid rgba(38, 37, 30, 0.10);
+    border: 1px solid #ddd;
     border-radius: 12px;
     border-left: 4px solid transparent;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .aging-teal  { border-left-color: var(--primary-accent); }
 .aging-amber { border-left-color: #c08532; }
@@ -8010,10 +8008,10 @@ body.material-theme .search-skeleton-row span {
     grid-template-columns: auto 1fr auto;
     gap: 0.75rem;
     align-items: center;
-    padding: 0.7rem 0.95rem;
+    padding: 0.85rem 1rem;
     background: #fff;
-    border: 1px solid rgba(38, 37, 30, 0.08);
-    border-radius: 10px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
 }
 .settle-issue-icon {
     width: 32px; height: 32px;
@@ -8045,10 +8043,10 @@ body.material-theme .search-skeleton-row span {
 
 /* Statement preview */
 .settle-statement-preview {
-    border: 1px solid rgba(38, 37, 30, 0.10);
+    border: 1px solid #ddd;
     border-radius: 12px;
     background: #fffefa;
-    padding: 1rem;
+    padding: 1.25rem;
 }
 .settle-preview-brand {
     display: flex;
@@ -8086,10 +8084,11 @@ body.material-theme .search-skeleton-row span {
 /* Closed periods */
 .settle-closed-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 .settle-closed-card {
-    padding: 1rem 1.1rem;
+    padding: 1.25rem;
     background: #fff;
-    border: 1px solid rgba(38, 37, 30, 0.10);
+    border: 1px solid #ddd;
     border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .settle-closed-head { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; margin-bottom: 0.55rem; }
 .settle-closed-grid {
