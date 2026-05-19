@@ -344,10 +344,8 @@ body.sidebar-collapsed .app-body {
 }
 
 .actions-grid {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 1.5rem;
-    align-items: start;
+    display: block;
+    width: 100%;
 }
 
 /* --- DASHBOARD CARDS & CHARTS --- */
@@ -2793,7 +2791,7 @@ body.material-theme:not(.dark-theme) .datepicker-view .days .day.selected:nth-ch
     }
 
     .actions-grid {
-        grid-template-columns: 1fr;
+        width: 100%;
     }
 
     #home-view .search-inputs .date-range-presets,
