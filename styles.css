@@ -6820,7 +6820,7 @@ body.material-theme .search-skeleton-row span {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
     grid-template-rows: auto auto;
     gap: 1rem;
-    align-items: start;
+    align-items: stretch;
 }
 .overview-card { grid-column: 1; grid-row: 1; }
 .documents-card { grid-column: 2; grid-row: 1; }
@@ -6832,6 +6832,7 @@ body.material-theme .search-skeleton-row span {
     border-radius: var(--liquid-radius);
     padding: 1.1rem 1.25rem;
     box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+    height: 100%;
 }
 .detail-card-head {
     display: flex; align-items: center; gap: 0.65rem;
