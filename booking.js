@@ -660,7 +660,8 @@ export async function handleNewBookingSubmit(e) {
     const passengerData = Array.from(passengerForms).map(form => ({
         gender: form.querySelector('.booking-passenger-gender').value,
         name: form.querySelector('.booking-passenger-name').value.toUpperCase(),
-        id_no: form.querySelector('.booking-passenger-id').value.toUpperCase()
+        nrc_no: form.querySelector('.booking-passenger-nrc').value.toUpperCase(),
+        passport_no: form.querySelector('.booking-passenger-passport').value.toUpperCase()
     })).filter(p => p.name);
 
     if (passengerData.length === 0) {

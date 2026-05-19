@@ -799,12 +799,8 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
 .booking-passenger-grid {
     display: grid;
     align-items: end;
-    grid-template-columns: 80px 1fr 1fr;
+    grid-template-columns: 80px 1.5fr 1fr 1fr;
     gap: 1rem;
-}
-
-.booking-passenger-grid .passenger-name-group {
-    grid-column: span 2;
 }
 
 /* --- SELL TICKET PASSENGER FORM --- */

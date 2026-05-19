@@ -596,11 +596,13 @@ export function bookForClient(clientKey) {
     resetBookingPassengerForms();
     const passengerGenderSelect = document.querySelector('#booking-passenger-forms-container .booking-passenger-gender');
     const passengerNameInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-name');
-    const passengerIdInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-id');
+    const passengerNrcInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-nrc');
+    const passengerPassportInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-passport');
 
     if (passengerGenderSelect) passengerGenderSelect.value = client.gender || 'MR';
     if (passengerNameInput) passengerNameInput.value = client.name.toUpperCase();
-    if (passengerIdInput) passengerIdInput.value = client.id_no || '';
+    if (passengerNrcInput) passengerNrcInput.value = (client.nrc_no || '').toUpperCase();
+    if (passengerPassportInput) passengerPassportInput.value = (client.passport_no || '').toUpperCase();
 
     showToast(`Booking form pre-filled for ${client.name}.`, 'info');
 }

@@ -3142,8 +3142,12 @@ export function addBookingPassengerForm() {
                 <input type="text" class="booking-passenger-name" placeholder="PASSENGER FULL NAME" required>
             </div>
             <div class="form-group">
-                <label>NRC / Passport No.</label>
-                <input type="text" class="booking-passenger-id" placeholder="ID NUMBER">
+                <label>NRC No.</label>
+                <input type="text" class="booking-passenger-nrc" placeholder="NRC NUMBER">
+            </div>
+            <div class="form-group">
+                <label>Passport No.</label>
+                <input type="text" class="booking-passenger-passport" placeholder="PASSPORT NUMBER">
             </div>
         </div>
     `;
