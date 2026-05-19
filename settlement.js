@@ -642,7 +642,9 @@ export function displaySettlements() {
     if (!document.getElementById('settle-view')) return;
     renderToolbarState();
     renderPeriodLabel();
+    renderHeroSummary();
     renderKpis();
+    renderReconciliation();
     renderHealthCard();
     renderLedger();
     renderTickets();
@@ -688,6 +690,55 @@ function renderPeriodLabel() {
         <i class="fa-regular fa-calendar"></i>
         <span>${formatDateToDMMMY(formatDateForSheet(start))} – ${formatDateToDMMMY(formatDateForSheet(end))}</span>
         <span class="settle-basis-pill">Owner Ledger</span>
+    `;
+}
+
+function renderHeroSummary() {
+    const due = document.getElementById('settleHeroDue');
+    const status = document.getElementById('settleHeroStatus');
+    if (!due || !status) return;
+    const s = getSettlementSummary();
+    due.textContent = formatMMK(s.remainingDue);
+    due.classList.toggle('is-overpaid', s.remainingDue < 0);
+    if (Math.abs(s.remainingDue) < 1) {
+        status.textContent = 'Settled for selected period';
+    } else if (s.remainingDue > 0) {
+        status.textContent = 'Amount still payable to owner';
+    } else {
+        status.textContent = 'Overpaid against owner ledger';
+    }
+}
+
+function renderReconciliation() {
+    const card = document.getElementById('settleReconcileCard');
+    if (!card) return;
+    const s = getSettlementSummary();
+    const dueClass = s.remainingDue > 0 ? 'is-due' : s.remainingDue < 0 ? 'is-overpaid' : 'is-settled';
+    card.innerHTML = `
+        <div class="settle-reconcile-title">
+            <span><i class="fa-solid fa-calculator"></i> Owner Payable Reconciliation</span>
+            <small>${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.start)))} – ${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.end)))}</small>
+        </div>
+        <div class="settle-reconcile-equation">
+            ${reconcileTerm('Opening balance', s.opening, 'navy')}
+            <span class="settle-equation-op">+</span>
+            ${reconcileTerm('Owner payable', s.ownerPayable, 'teal')}
+            <span class="settle-equation-op">+</span>
+            ${reconcileTerm('Adjustments', s.adjustmentsTotal, 'amber')}
+            <span class="settle-equation-op">−</span>
+            ${reconcileTerm('Paid to owner', s.paidToOwner, 'teal')}
+            <span class="settle-equation-op">=</span>
+            ${reconcileTerm('Remaining due', s.remainingDue, dueClass)}
+        </div>
+    `;
+}
+
+function reconcileTerm(label, amount, tone) {
+    return `
+        <div class="settle-reconcile-term term-${tone}">
+            <span>${escapeHtml(label)}</span>
+            <strong>${formatMMK(amount)}</strong>
+        </div>
     `;
 }
 
