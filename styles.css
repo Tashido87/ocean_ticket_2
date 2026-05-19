@@ -3881,15 +3881,14 @@ body.material-theme.dark-theme .notification-count {
 /* ---------- Dashboard grid ---------- */
 #services-view {
     padding: 1.5rem 2rem;
-    max-width: 1400px;
+    max-width: 1000px;
     margin: 0 auto;
 }
 
 .services-dashboard {
-    display: grid;
-    grid-template-columns: 1fr 320px;
+    display: flex;
+    flex-direction: column;
     gap: 24px;
-    align-items: start;
 }
 
 .services-main {
@@ -4972,13 +4971,6 @@ body:not(.material-theme) #services-container .service-panel-icon {
 
 /* ---------- Responsive ---------- */
 @media screen and (max-width: 1100px) {
-    .services-dashboard {
-        grid-template-columns: 1fr;
-    }
-    .services-sidebar {
-        position: static;
-        order: -1;
-    }
     .sidebar-panel {
         margin-bottom: 0;
     }
