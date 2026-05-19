@@ -1066,10 +1066,6 @@ function renderClientDetailView() {
     const totalTicketCount = activeTickets.length;
     const lastIssuedTicket = tickets.find(t => parseSheetDate(t.issued_date)?.getTime?.());
     const lastBooking = lastIssuedTicket ? lastIssuedTicket.issued_date : null;
-    const customerSinceTicket = [...tickets].sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date))[0];
-    const customerSinceYear = customerSinceTicket ? (parseSheetDate(customerSinceTicket.issued_date)?.getFullYear?.() || '—') : '—';
-
-    const isVip = totalSpent >= 1500000 || totalTicketCount >= 10;
 
     // route insights
     const routeCounts = {};
@@ -1102,17 +1098,7 @@ function renderClientDetailView() {
             <div class="client-hero">
                 <div class="client-hero-avatar">${escapeHtml(initialsOf(client.name))}</div>
                 <div class="client-hero-info">
-                    <div class="client-hero-badges">
-                        <span class="status-badge status-active"><i class="fa-solid fa-circle-check"></i> Active Client</span>
-                        ${isVip ? '<span class="status-badge status-vip"><i class="fa-solid fa-crown"></i> VIP</span>' : ''}
-                        <span class="status-badge status-since"><i class="fa-solid fa-calendar"></i> Customer since ${escapeHtml(String(customerSinceYear))}</span>
-                    </div>
                     <h2 class="client-hero-name">${escapeHtml(client.name || 'Unknown')}</h2>
-                    <p class="client-hero-meta">
-                        <span><i class="fa-solid fa-phone"></i> ${escapeHtml(client.phone || '—')}</span>
-                        <span><i class="fa-solid fa-at"></i> ${escapeHtml(client.account_name || '—')}</span>
-                        <span><i class="fa-solid fa-tag"></i> ${escapeHtml(client.account_type || '—')}</span>
-                    </p>
                 </div>
                 <div class="client-hero-actions">
                     <button class="btn btn-primary" data-detail-action="sell"><i class="fa-solid fa-ticket"></i> Sell New Ticket</button>
@@ -1129,7 +1115,7 @@ function renderClientDetailView() {
             </div>
 
             <div class="client-detail-grid">
-                ${overviewCard(client, customerSinceYear)}
+                ${overviewCard(client)}
                 ${documentsCard(client)}
                 ${insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet)}
                 ${paymentCard(paidCount, unpaidTickets.length, outstanding, preferredPayment)}
@@ -1156,17 +1142,15 @@ function kpiCard(icon, color, label, value) {
     `;
 }
 
-function overviewCard(c, year) {
-    const fields = [
-        ['Nationality', c.nationality || '—'],
-        ['Customer Since', String(year || '—')],
-        ['Date of Birth', c.dob || '—'],
-        ['Account Type', c.account_type || '—'],
-        ['Account', c.account_name || '—'],
-        ['Account Link', c.account_link || '—'],
-        ['Frequent Flyer', c.frequent_flyer_no || '—'],
-        ['Preferred Contact', c.preferred_contact || c.account_type || 'Phone']
-    ];
+function overviewCard(c) {
+    const phone = c.phone || '';
+    const accountLink = c.account_link || '';
+    const phoneVal = phone
+        ? `<a href="tel:${escapeHtml(phone)}" class="kv-link"><i class="fa-solid fa-phone"></i> ${escapeHtml(phone)}</a>`
+        : '—';
+    const linkVal = accountLink
+        ? `<a href="${escapeHtml(accountLink)}" target="_blank" rel="noopener" class="kv-link"><i class="fa-solid fa-link"></i> ${escapeHtml(accountLink)}</a>`
+        : '—';
     return `
         <div class="detail-card">
             <div class="detail-card-head">
@@ -1174,7 +1158,10 @@ function overviewCard(c, year) {
                 <h3>Client Overview</h3>
             </div>
             <dl class="detail-kv">
-                ${fields.map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v || '—')}</dd></div>`).join('')}
+                <div><dt>Account Name</dt><dd>${escapeHtml(c.account_name || '—')}</dd></div>
+                <div><dt>Phone</dt><dd>${phoneVal}</dd></div>
+                <div><dt>Account Type</dt><dd>${escapeHtml(c.account_type || '—')}</dd></div>
+                <div><dt>Account Link</dt><dd>${linkVal}</dd></div>
             </dl>
         </div>
     `;
@@ -1207,8 +1194,15 @@ function documentsCard(c) {
                     </div>
                     ${nrcNo ? '<span class="verified-pill nrc-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>' : '<span class="nrc-missing">No NRC</span>'}
                 </div>
-                <div class="passport-doc-block">
+                <div class="passport-doc-block ${photo ? 'has-photo' : ''}">
                     <div class="travel-doc-title passport-title"><i class="fa-solid fa-passport"></i> Passport</div>
+                    ${photo ? `<button type="button" class="doc-photo" data-doc-action="view"><img src="${escapeHtml(photo)}" alt="Passport"></button>` : `
+                        <div class="doc-photo doc-photo-empty">
+                            <i class="fa-regular fa-address-card"></i>
+                            <strong>No passport uploaded</strong>
+                            <span>Upload a clear image of the passport information page.</span>
+                        </div>
+                    `}
                     <dl class="passport-doc-info">
                         <div><dt>Passport No.</dt><dd>${escapeHtml(passportNo || '—')}</dd></div>
                         <div><dt>Country</dt><dd>${escapeHtml(c.nationality || '—')}</dd></div>
@@ -1216,6 +1210,11 @@ function documentsCard(c) {
                         <div><dt>Date of Birth</dt><dd>${escapeHtml(dob || '—')}</dd></div>
                         <div><dt>Uploaded</dt><dd>${escapeHtml(uploadedLabel)}</dd></div>
                     </dl>
+                    <div class="passport-doc-actions">
+                        <button class="btn btn-ghost" data-doc-action="view" ${photo ? '' : 'disabled'}><i class="fa-regular fa-eye"></i> View</button>
+                        <button class="btn btn-ghost" data-doc-action="replace"><i class="fa-solid fa-rotate"></i> Replace</button>
+                        <button class="btn btn-primary" data-doc-action="upload"><i class="fa-solid fa-upload"></i> Upload Passport</button>
+                    </div>
                 </div>
             </div>
         </div>
