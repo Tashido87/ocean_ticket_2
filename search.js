@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { parseSheetDate, formatDateForSheet, formatDateToDMMMY, debounce, showToast } from './utils.js';
+import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, debounce, showToast } from './utils.js';
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets } from './db.js';
@@ -740,8 +740,8 @@ function renderMoreFilters() {
             ${filterSelect('departure', 'Departure', f.departure, locations)}
             ${filterSelect('destination', 'Destination', f.destination, locations)}
             ${filterSelect('airline', 'Airline', f.airline, airlines)}
-            ${filterInput('issuedDate', 'Issued date', f.issuedDate, 'MM/DD/YYYY')}
-            ${filterInput('travelDate', 'Travel date', f.travelDate, 'MM/DD/YYYY')}
+            ${filterInput('issuedDate', 'Issued date', f.issuedDate, 'DD/MM/YYYY')}
+            ${filterInput('travelDate', 'Travel date', f.travelDate, 'DD/MM/YYYY')}
             ${filterInput('ticketCount', 'Ticket count at least', f.ticketCount, '0', 'number')}
             <label>Upcoming
                 <select data-more-filter="upcomingWithin">
@@ -751,8 +751,8 @@ function renderMoreFilters() {
                     <option value="30" ${f.upcomingWithin === '30' ? 'selected' : ''}>Within 30 days</option>
                 </select>
             </label>
-            ${filterInput('startDate', 'Custom start', f.startDate, 'MM/DD/YYYY')}
-            ${filterInput('endDate', 'Custom end', f.endDate, 'MM/DD/YYYY')}
+            ${filterInput('startDate', 'Custom start', f.startDate, 'DD/MM/YYYY')}
+            ${filterInput('endDate', 'Custom end', f.endDate, 'DD/MM/YYYY')}
             <label class="search-toggle-filter">
                 <input type="checkbox" data-more-filter="unpaidOnly" ${f.unpaidOnly ? 'checked' : ''}>
                 <span>Unpaid only</span>
@@ -1173,8 +1173,8 @@ function documentsCard(c) {
     const nrcNo = getClientNrc(c);
     const passportNo = getClientPassportNo(c);
     const photo = c.passport_photo_url || '';
-    const expiry = c.passport_expiry || '';
-    const dob = c.dob || '';
+    const expiry = formatDateToDDMMYYYY(parseSheetDate(c.passport_expiry));
+    const dob = formatDateToDDMMYYYY(parseSheetDate(c.dob));
     const verified = !!(passportNo || nrcNo);
 
     return `
@@ -1387,7 +1387,7 @@ function openTravelDocumentEditModal(client) {
                     </div>
                     <div class="form-group">
                         <label>Passport Expiry</label>
-                        <input type="text" id="editDocExpiry" value="${escapeHtml(client.passport_expiry || '')}" placeholder="MM/DD/YYYY" autocomplete="off">
+                        <input type="text" id="editDocExpiry" value="${escapeHtml(formatDateToDDMMYYYY(parseSheetDate(client.passport_expiry)) || '')}" placeholder="DD/MM/YYYY" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Nationality</label>
@@ -1395,7 +1395,7 @@ function openTravelDocumentEditModal(client) {
                     </div>
                     <div class="form-group">
                         <label>Date of Birth</label>
-                        <input type="text" id="editDocDob" value="${escapeHtml(client.dob || '')}" placeholder="MM/DD/YYYY" autocomplete="off">
+                        <input type="text" id="editDocDob" value="${escapeHtml(formatDateToDDMMYYYY(parseSheetDate(client.dob)) || '')}" placeholder="DD/MM/YYYY" autocomplete="off">
                     </div>
                     <div class="form-group full-width">
                         <label>Passport Photo</label>
@@ -1414,6 +1414,9 @@ function openTravelDocumentEditModal(client) {
 
     document.querySelectorAll('[data-close-modal]').forEach(btn => btn.addEventListener('click', closeModal));
     document.getElementById('clientDocsForm')?.addEventListener('submit', (e) => saveTravelDocuments(e, client));
+
+    attachDateAutoFormat(document.getElementById('editDocExpiry'));
+    attachDateAutoFormat(document.getElementById('editDocDob'));
 
     const photoInput = document.getElementById('editDocPhotoFile');
     const ocrStatus = document.getElementById('editDocOcrStatus');

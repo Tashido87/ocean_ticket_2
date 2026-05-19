@@ -171,7 +171,7 @@
                                             <button type="button" class="preset-btn" data-range="30">Last 30 Days</button>
                                             <button type="button" class="preset-btn" data-range="month">This Month</button>
                                         </div>
-                                        <input type="text" id="searchTravelDate" placeholder="Travel Date (MM/DD/YYYY)" autocomplete="off">
+                                        <input type="text" id="searchTravelDate" placeholder="Travel Date (DD/MM/YYYY)" autocomplete="off">
                                         <select id="searchDeparture">
                                             <option value="" disabled selected>DEPARTURE</option>
                                         </select>
@@ -362,8 +362,8 @@
                         </select></div>
                            <div class="form-group"><label for="booking_destination">Destination</label><select id="booking_destination" required><option value="" disabled selected>Select Destination</option>
                         </select></div>
-                           <div class="form-group"><label for="booking_departing_on">Travel Date</label><input type="text" id="booking_departing_on" placeholder="MM/DD/YYYY" required autocomplete="off"></div>
-                           <div class="form-group"><label for="booking_end_date">Booking End Date</label><input type="text" id="booking_end_date" placeholder="MM/DD/YYYY" autocomplete="off"></div>
+                           <div class="form-group"><label for="booking_departing_on">Travel Date</label><input type="text" id="booking_departing_on" placeholder="DD/MM/YYYY" required autocomplete="off"></div>
+                           <div class="form-group"><label for="booking_end_date">Booking End Date</label><input type="text" id="booking_end_date" placeholder="DD/MM/YYYY" autocomplete="off"></div>
                            <div class="form-group">
                                 <label for="booking_end_time_hour">Booking End Time</label>
                                 <div class="time-picker-group">
@@ -445,7 +445,7 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="issued_date">Issued Date <span class="req">*</span></label>
-                                <input type="text" id="issued_date" placeholder="MM/DD/YYYY" required autocomplete="off">
+                                <input type="text" id="issued_date" placeholder="DD/MM/YYYY" required autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label for="booking_reference">PNR Code <span class="req">*</span></label>
@@ -453,7 +453,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="departing_on">Travel Date <span class="req">*</span></label>
-                                <input type="text" id="departing_on" placeholder="MM/DD/YYYY" required autocomplete="off">
+                                <input type="text" id="departing_on" placeholder="DD/MM/YYYY" required autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label for="airline">Airline <span class="req">*</span></label>
@@ -504,7 +504,7 @@
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="return_date">Return Date <span class="req">*</span></label>
-                                    <input type="text" id="return_date" placeholder="MM/DD/YYYY" autocomplete="off">
+                                    <input type="text" id="return_date" placeholder="DD/MM/YYYY" autocomplete="off">
                                 </div>
                                 <div class="form-group return-custom-field" hidden>
                                     <label for="return_airline">Return Airline</label>
@@ -736,7 +736,7 @@
 
                                 <div class="form-group">
                                     <label for="invoice_date">Date</label>
-                                    <input type="text" id="invoice_date" placeholder="MM/DD/YYYY" required autocomplete="off">
+                                    <input type="text" id="invoice_date" placeholder="DD/MM/YYYY" required autocomplete="off">
                                 </div>
                             </form>
 
@@ -1008,11 +1008,11 @@
                     <div class="form-grid">
                          <div class="form-group">
                             <label>Start Date</label>
-                            <input type="text" id="exportStartDate" placeholder="MM/DD/YYYY" autocomplete="off">
+                            <input type="text" id="exportStartDate" placeholder="DD/MM/YYYY" autocomplete="off">
                         </div>
                          <div class="form-group">
                             <label>End Date</label>
-                            <input type="text" id="exportEndDate" placeholder="MM/DD/YYYY" autocomplete="off">
+                            <input type="text" id="exportEndDate" placeholder="DD/MM/YYYY" autocomplete="off">
                         </div>
                     </div>
                     <div class="toggle-switch-container">

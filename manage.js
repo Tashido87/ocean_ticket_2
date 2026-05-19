@@ -208,7 +208,7 @@ function openFeeManageModal(docId) {
             <div class="form-grid">
                 <div class="form-group">
                     <label for="fee_issued_date">Date Added (Issued Date)</label>
-                    <input type="text" id="fee_issued_date" value="${issuedDateForInput}" placeholder="MM/DD/YYYY">
+                    <input type="text" id="fee_issued_date" value="${issuedDateForInput}" placeholder="DD/MM/YYYY">
                     <small style="color: rgba(255,255,255,0.5); font-size: 0.75rem;">Modify this to distinguish from other fees.</small>
                 </div>
             </div>
@@ -231,7 +231,7 @@ function openFeeManageModal(docId) {
                 </div>
                 <div class="form-group">
                     <label for="fee_paid_date">Paid Date</label>
-                    <input type="text" id="fee_paid_date" placeholder="MM/DD/YYYY" value="${paidDateForInput}">
+                    <input type="text" id="fee_paid_date" placeholder="DD/MM/YYYY" value="${paidDateForInput}">
                 </div>
             </div>
             
@@ -248,8 +248,8 @@ function openFeeManageModal(docId) {
     openModal(content, 'small-modal');
     
     // Init Datepickers
-    new Datepicker(document.getElementById('fee_paid_date'), { format: 'mm/dd/yyyy', autohide: true, todayHighlight: true });
-    new Datepicker(document.getElementById('fee_issued_date'), { format: 'mm/dd/yyyy', autohide: true, todayHighlight: true });
+    new Datepicker(document.getElementById('fee_paid_date'), { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true });
+    new Datepicker(document.getElementById('fee_issued_date'), { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true });
 
     const paidChk = document.getElementById('fee_paid');
     const methodSel = document.getElementById('fee_payment_method');
@@ -395,7 +395,7 @@ function openManageModal(docId) {
             </div>
 
             <div class="form-grid" style="margin-top: 1rem;">
-                <div class="form-group"><label>New Travel Date</label><input type="text" id="update_departing_on" placeholder="MM/DD/YYYY" value="${travelDateForInput}"></div>
+                <div class="form-group"><label>New Travel Date</label><input type="text" id="update_departing_on" placeholder="DD/MM/YYYY" value="${travelDateForInput}"></div>
                 <div class="form-group"><label>New Base Fare</label><input type="number" id="update_base_fare" placeholder="${(ticket.base_fare||0).toLocaleString()}"></div>
                 <div class="form-group"><label>New Net Amount</label><input type="number" id="update_net_amount" placeholder="${(ticket.net_amount||0).toLocaleString()}"></div>
                 <div class="form-group"><label>New Commission</label><input type="number" id="update_commission" placeholder="${(ticket.commission||0).toLocaleString()}"></div>
@@ -421,7 +421,7 @@ function openManageModal(docId) {
                 </div>
                 <div class="form-group">
                     <label for="update_paid_date">Paid Date</label>
-                    <input type="text" id="update_paid_date" name="update_paid_date" placeholder="MM/DD/YYYY" value="${paidDateForInput}">
+                    <input type="text" id="update_paid_date" name="update_paid_date" placeholder="DD/MM/YYYY" value="${paidDateForInput}">
                 </div>
             </div>
             <p style="margin: 0.75rem 0 0; color: rgba(255,255,255,0.75); font-size: 0.9rem;">
@@ -438,12 +438,12 @@ function openManageModal(docId) {
 
     openModal(content, 'large-modal');
     new Datepicker(document.getElementById('update_departing_on'), {
-        format: 'mm/dd/yyyy',
+        format: 'dd/mm/yyyy',
         autohide: true,
         todayHighlight: true
     });
     new Datepicker(document.getElementById('update_paid_date'), {
-        format: 'mm/dd/yyyy',
+        format: 'dd/mm/yyyy',
         autohide: true,
         todayHighlight: true
     });
@@ -529,7 +529,7 @@ function openPartialPaymentModal(docId) {
                 </div>
                 <div class="form-group">
                     <label for="partial_paid_date">Paid Date</label>
-                    <input type="text" id="partial_paid_date" placeholder="MM/DD/YYYY">
+                    <input type="text" id="partial_paid_date" placeholder="DD/MM/YYYY">
                 </div>
             </div>
 
@@ -555,11 +555,11 @@ function openPartialPaymentModal(docId) {
     openModal(content);
     
     // Init Datepicker
-    new Datepicker(document.getElementById('partial_paid_date'), { format: 'mm/dd/yyyy', autohide: true, todayHighlight: true });
+    new Datepicker(document.getElementById('partial_paid_date'), { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true });
     
     // Auto-set date to today
     const today = new Date();
-    document.getElementById('partial_paid_date').value = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
+    document.getElementById('partial_paid_date').value = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
     // Enhance Select
     enhanceMobileBankingSelect(document.getElementById('partial_payment_method'));

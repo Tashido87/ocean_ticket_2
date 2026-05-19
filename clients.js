@@ -316,7 +316,7 @@ export function renderClientsView(page) {
 }
 
 /**
- * Computes the status of a passport expiry date string (MM/DD/YYYY).
+ * Computes the status of a passport expiry date string (DD/MM/YYYY).
  * Returns { level: 'expired' | 'soon' | 'ok', formatted, daysAbs?, daysUntil? }
  * 'soon' = expires within 6 months from today.
  */
@@ -325,8 +325,8 @@ function computePassportExpiryStatus(expiryStr) {
     const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (!match) return { level: 'ok' };
 
-    const mm = Number(match[1]);
-    const dd = Number(match[2]);
+    const dd = Number(match[1]);
+    const mm = Number(match[2]);
     const yyyy = Number(match[3]);
     const expiry = new Date(yyyy, mm - 1, dd);
     if (isNaN(expiry.getTime())) return { level: 'ok' };

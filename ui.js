@@ -254,7 +254,7 @@ export function showInvoiceOptionModal(onConfirm) {
  */
 export function initializeDatepickers() {
     const defaultOptions = {
-        format: 'mm/dd/yyyy',
+        format: 'dd/mm/yyyy',
         autohide: true,
         todayHighlight: true
     };
@@ -1305,7 +1305,7 @@ function setDateInputFromOcr(input, rawValue, { isBirth = false } = {}) {
     // Recreate the datepicker so the calendar UI still works for manual edits
     try {
         if (window.Datepicker) {
-            const opts = { format: 'mm/dd/yyyy', autohide: true };
+            const opts = { format: 'dd/mm/yyyy', autohide: true };
             if (isBirth) {
                 opts.minDate = new Date(1900, 0, 1);
                 opts.maxDate = new Date();
@@ -1646,7 +1646,7 @@ function _buildPassengerCardHtml(idx, opts) {
                     </div>
                     <div class="form-group">
                         <label>Date of Birth <span class="age-badge" data-role="age-badge" style="display:none;"></span></label>
-                        <input type="text" class="passenger-dob" placeholder="MM/DD/YYYY" autocomplete="off">
+                        <input type="text" class="passenger-dob" placeholder="DD/MM/YYYY" autocomplete="off">
                     </div>
                     <div class="form-group intl-only" style="${intl ? '' : 'display:none;'}">
                         <label>Nationality</label>
@@ -1693,7 +1693,7 @@ function _buildPassengerCardHtml(idx, opts) {
                         </div>
                         <div class="form-group">
                             <label>Expiry Date</label>
-                            <input type="text" class="passenger-passport-expiry" placeholder="MM/DD/YYYY" value="${passport?.expiry || ''}" autocomplete="off">
+                            <input type="text" class="passenger-passport-expiry" placeholder="DD/MM/YYYY" value="${passport?.expiry || ''}" autocomplete="off">
                         </div>
                     </div>
                     <div class="passport-expiry-warning" data-role="expiry-warning" hidden></div>
@@ -1955,7 +1955,7 @@ function _attachPaxBehaviour(formEl, opts = {}) {
         try {
             if (window.Datepicker) {
                 new window.Datepicker(dobInput, {
-                    format: 'mm/dd/yyyy',
+                    format: 'dd/mm/yyyy',
                     autohide: true,
                     minDate: new Date(1900, 0, 1),   // Allow DOB as far back as 1900
                     maxDate: new Date(),               // Can't be born in the future
@@ -2007,7 +2007,7 @@ function _attachPaxBehaviour(formEl, opts = {}) {
     if (expiryInput) {
         try {
             if (window.Datepicker) {
-                new window.Datepicker(expiryInput, { format: 'mm/dd/yyyy', autohide: true });
+                new window.Datepicker(expiryInput, { format: 'dd/mm/yyyy', autohide: true });
             }
         } catch (_) {}
         expiryInput.addEventListener('change', () => {

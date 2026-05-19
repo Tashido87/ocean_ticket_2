@@ -48,8 +48,8 @@ Rules:
 - Do not include MR, MS, MSTR, MISS in fullName.
 - passportNo must be Myanmar passport format: two uppercase letters followed by six digits, e.g. MF971828.
 - The 6 characters after the two letters MUST be digits 0-9 only. Never write O, I, S, B, Z, G as letters in the digits portion. If the printed character looks like O write 0, like I write 1, like S write 5, like B write 8, like Z write 2, like G write 6.
-- dateOfBirth format: MM/DD/YYYY.
-- expiryDate format: MM/DD/YYYY.
+- dateOfBirth format: DD/MM/YYYY.
+- expiryDate format: DD/MM/YYYY.
 - nationality should be MMR for Myanmar passports.
 - sex must be M or F.
 - Prefer MRZ if readable.

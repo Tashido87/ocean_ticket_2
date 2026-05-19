@@ -33,14 +33,38 @@ export function showToast(message, type = 'info') {
 }
 
 /**
- * Formats a date string into MM/DD/YYYY format for Google Sheets.
+ * Formats a date string into DD/MM/YYYY format for Google Sheets.
  * @param {string} dateString The date string to format.
  * @returns {string} The formatted date string.
  */
 export function formatDateForSheet(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return isNaN(date.getTime()) ? dateString : `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`;
+    return isNaN(date.getTime()) ? dateString : `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+}
+
+/**
+ * Formats a Date object into DD/MM/YYYY format.
+ * @param {Date} date The Date object to format.
+ * @returns {string} The formatted date string.
+ */
+export function formatDateToDDMMYYYY(date) {
+    if (!date || isNaN(date.getTime())) return '';
+    return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+}
+
+/**
+ * Attaches auto-formatting to a date input so typing 11021987 produces 11/02/1987.
+ * @param {HTMLInputElement} input The input element to attach to.
+ */
+export function attachDateAutoFormat(input) {
+    if (!input) return;
+    input.addEventListener('input', (e) => {
+        let val = input.value.replace(/\D/g, '').slice(0, 8);
+        if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2);
+        if (val.length >= 5) val = val.slice(0, 5) + '/' + val.slice(5);
+        input.value = val;
+    });
 }
 
 /**
@@ -78,7 +102,7 @@ export function formatDateToDMMMY(dateString) {
 
 /**
  * Parses a date string from Google Sheets into a Date object.
- * Handles MM/DD/YYYY and DD-Mon-YYYY formats.
+ * Handles DD/MM/YYYY, old MM/DD/YYYY, and DD-Mon-YYYY formats.
  * @param {string} dateString The date string to parse.
  * @returns {Date} The parsed Date object.
  */
@@ -86,30 +110,34 @@ export function parseSheetDate(dateString) {
     if (!dateString) return new Date(0);
     const safeDateString = String(dateString).trim();
     const monthMap = {
-        'JAN': 0,
-        'FEB': 1,
-        'MAR': 2,
-        'APR': 3,
-        'MAY': 4,
-        'JUN': 5,
-        'JUL': 6,
-        'AUG': 7,
-        'SEP': 8,
-        'OCT': 9,
-        'NOV': 10,
-        'DEC': 11
+        'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5,
+        'JUL': 6, 'AUG': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11
     };
     const parts = safeDateString.split(/[-\/]/);
     if (parts.length === 3) {
         let day, month, year;
         if (isNaN(parseInt(parts[1], 10))) {
+            // DD-Mon-YYYY
             day = parseInt(parts[0], 10);
             month = monthMap[parts[1].toUpperCase()];
             year = parseInt(parts[2], 10);
         } else {
-            month = parseInt(parts[0], 10) - 1;
-            day = parseInt(parts[1], 10);
+            const p0 = parseInt(parts[0], 10);
+            const p1 = parseInt(parts[1], 10);
             year = parseInt(parts[2], 10);
+            if (p0 > 12) {
+                // First part > 12 => must be day => DD/MM/YYYY
+                day = p0;
+                month = p1 - 1;
+            } else if (p1 > 12) {
+                // Second part > 12 => old MM/DD/YYYY
+                month = p0 - 1;
+                day = p1;
+            } else {
+                // Both <= 12: ambiguous, default to DD/MM/YYYY as requested
+                day = p0;
+                month = p1 - 1;
+            }
         }
         if (!isNaN(day) && month !== undefined && !isNaN(year) && year > 1900 && day > 0 && day <= 31 && month >= 0 && month < 12) {
             const d = new Date(year, month, day);
