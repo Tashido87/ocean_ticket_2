@@ -2102,4 +2102,4 @@ export function getSearchState() {
     return searchState;
 }
 
-export { searchState, navigateToClient, navigateToSearch };
+export { searchState, navigateToSearch };
