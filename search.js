@@ -1832,6 +1832,7 @@ function buildSuggestions(query) {
             return tokens.every(t => n.includes(t)) && !topIds.has(c.client_key);
         })
         .map(c => buildClientResult(c, q))
+        .filter(Boolean)
         .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a));
 
     if (tokens.length === 1) {
