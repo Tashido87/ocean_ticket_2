@@ -6909,7 +6909,7 @@ body.material-theme .search-skeleton-row span {
 /* Documents */
 .travel-doc-layout {
     display: grid;
-    grid-template-columns: minmax(112px, 0.35fr) minmax(0, 1.65fr);
+    grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1.45fr);
     gap: 0.75rem;
     align-items: stretch;
 }

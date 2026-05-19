@@ -103,9 +103,9 @@ function splitNrcDisplay(value) {
     const raw = String(value || '').trim();
     if (!raw) return { prefix: '—', serial: '' };
     const match = raw.match(/^(.+\([A-Z]\))(\d{5,6})$/i);
-    if (match) return { prefix: match[1].toLowerCase(), serial: match[2] };
+    if (match) return { prefix: match[1].toUpperCase(), serial: match[2] };
     const tail = raw.match(/^(.+?)(\d{5,6})$/);
-    if (tail) return { prefix: tail[1].toLowerCase(), serial: tail[2] };
+    if (tail) return { prefix: tail[1].toUpperCase(), serial: tail[2] };
     return { prefix: raw, serial: '' };
 }
 
@@ -1219,7 +1219,7 @@ function documentsCard(c) {
                         <div><dt>Passport No.</dt><dd>${escapeHtml(passportNo || '—')}</dd></div>
                         <div><dt>Country</dt><dd>${escapeHtml(c.nationality || '—')}</dd></div>
                         <div><dt>Expiry Date</dt><dd>${escapeHtml(expiry || '—')}</dd></div>
-                        <div><dt>DOB</dt><dd>${escapeHtml(dob || '—')}</dd></div>
+                        <div><dt>Date of Birth</dt><dd>${escapeHtml(dob || '—')}</dd></div>
                         <div><dt>Uploaded</dt><dd>${escapeHtml(uploadedLabel)}</dd></div>
                     </dl>
                     <div class="passport-doc-actions">
@@ -1388,7 +1388,7 @@ function openTravelDocumentEditModal(client) {
                 <div class="form-grid">
                     <div class="form-group full-width">
                         <label>NRC</label>
-                        <input type="text" id="editDocNrc" value="${escapeHtml(nrcNo)}" placeholder="12/MAGATA(N)000000" autocomplete="off">
+                        <input type="text" id="editDocNrc" value="${escapeHtml(nrcNo)}" placeholder="12/MAGATA(N)000000" autocomplete="off" style="text-transform:uppercase;">
                     </div>
                     <div class="form-group">
                         <label>Passport Number</label>
@@ -1407,8 +1407,9 @@ function openTravelDocumentEditModal(client) {
                         <input type="text" id="editDocDob" value="${escapeHtml(client.dob || '')}" placeholder="MM/DD/YYYY" autocomplete="off">
                     </div>
                     <div class="form-group full-width">
-                        <label>Passport Photo URL</label>
-                        <input type="url" id="editDocPhoto" value="${escapeHtml(client.passport_photo_url || '')}" placeholder="https://...">
+                        <label>Passport Photo</label>
+                        <input type="file" id="editDocPhotoFile" accept="image/*,.pdf">
+                        ${client.passport_photo_url ? `<div class="settle-proof-existing"><a href="${escapeHtml(client.passport_photo_url)}" target="_blank" class="settle-link"><i class="fa-solid fa-paperclip"></i> View current photo</a></div>` : '<div class="settle-muted">No photo uploaded.</div>'}
                     </div>
                 </div>
                 <p class="settle-muted">Updates are saved to this client's non-fee ticket records so future client detail views show the corrected documents.</p>
@@ -1431,7 +1432,27 @@ async function saveTravelDocuments(e, client) {
     const passportExpiry = document.getElementById('editDocExpiry')?.value.trim() || '';
     const nationality = document.getElementById('editDocNationality')?.value.trim().toUpperCase() || 'MMR';
     const dob = document.getElementById('editDocDob')?.value.trim() || '';
-    const passportPhotoUrl = document.getElementById('editDocPhoto')?.value.trim() || '';
+    const fileInput = document.getElementById('editDocPhotoFile');
+    const file = fileInput?.files?.[0] || null;
+    let passportPhotoUrl = client.passport_photo_url || '';
+
+    if (file) {
+        if (file.size > 750 * 1024) {
+            showToast('Photo is too large. Max 750 KB.', 'error');
+            return;
+        }
+        try {
+            passportPhotoUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Could not read photo file.'));
+                reader.readAsDataURL(file);
+            });
+        } catch (err) {
+            showToast(err.message, 'error');
+            return;
+        }
+    }
 
     if (nrcNo && !looksLikeNrc(nrcNo)) {
         showToast('NRC format should look like 12/MAGATA(N)000000.', 'error');
