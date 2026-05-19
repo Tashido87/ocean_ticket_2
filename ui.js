@@ -1242,7 +1242,7 @@ function normalizePassportDateForInput(value, { isBirth = false } = {}) {
         const yy = parseInt(mrzDate[1], 10);
         const currentYear = new Date().getFullYear() % 100;
         const yyyy = isBirth && yy > currentYear ? 1900 + yy : 2000 + yy;
-        return `${mrzDate[2]}/${mrzDate[3]}/${yyyy}`;
+        return `${mrzDate[3]}/${mrzDate[2]}/${yyyy}`;
     }
 
     const named = raw.match(/(\d{1,2})\s+([A-Z]{3})[A-Z]*\.?\s+(\d{2,4})/i);
@@ -1255,11 +1255,11 @@ function normalizePassportDateForInput(value, { isBirth = false } = {}) {
             const currentYear = new Date().getFullYear() % 100;
             yyyy = String(isBirth && yy > currentYear ? 1900 + yy : 2000 + yy);
         }
-        return mm ? `${mm}/${dd}/${yyyy}` : raw;
+        return mm ? `${dd}/${mm}/${yyyy}` : raw;
     }
 
     const iso = raw.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
-    if (iso) return `${iso[2].padStart(2, '0')}/${iso[3].padStart(2, '0')}/${iso[1]}`;
+    if (iso) return `${iso[3].padStart(2, '0')}/${iso[2].padStart(2, '0')}/${iso[1]}`;
 
     const numeric = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
     if (numeric) {
@@ -1272,9 +1272,15 @@ function normalizePassportDateForInput(value, { isBirth = false } = {}) {
             yyyy = String(isBirth && yy > currentYear ? 1900 + yy : 2000 + yy);
         }
 
-        const mm = first > 12 ? numeric[2] : (second > 12 ? numeric[1] : numeric[1]);
-        const dd = first > 12 ? numeric[1] : (second > 12 ? numeric[2] : numeric[2]);
-        return `${String(mm).padStart(2, '0')}/${String(dd).padStart(2, '0')}/${yyyy}`;
+        let dd, mm;
+        if (first > 12) {
+            dd = first; mm = second;
+        } else if (second > 12) {
+            dd = second; mm = first;
+        } else {
+            dd = first; mm = second;
+        }
+        return `${String(dd).padStart(2, '0')}/${String(mm).padStart(2, '0')}/${yyyy}`;
     }
 
     return raw;
@@ -2199,7 +2205,7 @@ export async function scanPassportWithGemini(file, passengerIndex = 0) {
     console.log('[Gemini request] sending to /.netlify/functions/gemini-passport-ocr');
 
     const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 15000);
+    const abortTimer = setTimeout(() => controller.abort(), 60000); // Increased timeout to 60s
 
     const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
         method: 'POST',

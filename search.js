@@ -1206,8 +1206,8 @@ function documentsCard(c) {
     const nrcNo = getClientNrc(c);
     const passportNo = getClientPassportNo(c);
     const photo = c.passport_photo_url || '';
-    const expiry = formatDateToDDMMYYYY(parseSheetDate(c.passport_expiry));
-    const dob = formatDateToDDMMYYYY(parseSheetDate(c.dob));
+    const expiry = isPlaceholderDate(c.passport_expiry) ? '' : formatDateToDDMMYYYY(parseSheetDate(c.passport_expiry));
+    const dob = isPlaceholderDate(c.dob) ? '' : formatDateToDDMMYYYY(parseSheetDate(c.dob));
     const verified = !!(passportNo || nrcNo);
 
     return `
@@ -1420,7 +1420,7 @@ function openTravelDocumentEditModal(client) {
                     </div>
                     <div class="form-group">
                         <label>Passport Expiry</label>
-                        <input type="text" id="editDocExpiry" value="${escapeHtml(formatDateToDDMMYYYY(parseSheetDate(client.passport_expiry)) || '')}" placeholder="DD/MM/YYYY" autocomplete="off">
+                        <input type="text" id="editDocExpiry" value="${escapeHtml(isPlaceholderDate(client.passport_expiry) ? '' : formatDateToDDMMYYYY(parseSheetDate(client.passport_expiry)) || '')}" placeholder="DD/MM/YYYY" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Nationality</label>
@@ -1428,7 +1428,7 @@ function openTravelDocumentEditModal(client) {
                     </div>
                     <div class="form-group">
                         <label>Date of Birth</label>
-                        <input type="text" id="editDocDob" value="${escapeHtml(formatDateToDDMMYYYY(parseSheetDate(client.dob)) || '')}" placeholder="DD/MM/YYYY" autocomplete="off">
+                        <input type="text" id="editDocDob" value="${escapeHtml(isPlaceholderDate(client.dob) ? '' : formatDateToDDMMYYYY(parseSheetDate(client.dob)) || '')}" placeholder="DD/MM/YYYY" autocomplete="off">
                     </div>
                     <div class="form-group full-width">
                         <label>Passport Photo</label>

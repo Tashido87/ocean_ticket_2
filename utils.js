@@ -59,8 +59,9 @@ export function formatDateToDDMMYYYY(date) {
  * @returns {boolean} True if it looks like a placeholder.
  */
 export function isPlaceholderDate(dateStr) {
-    const str = String(dateStr || '').replace(/[^\d]/g, '');
-    return str === '01011970' || str === '01011900' || str === '00000000' || str === '';
+    const s = String(dateStr || '');
+    const str = s.replace(/[^\d]/g, '');
+    return str === '01011970' || str === '111970' || str === '01011900' || str === '111900' || str === '00000000' || str === '' || s.includes('1970') || s.includes('1900');
 }
 
 /**

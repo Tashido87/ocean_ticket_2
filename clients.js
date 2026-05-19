@@ -403,7 +403,13 @@ function _legacyViewClientHistory(clientKey) {
     const totalProfit = activeClientTickets.reduce((sum, t) => sum + (t.commission || 0) + (t.extra_fare || 0), 0);
     const primaryId = activeClient?.nrc_no || firstTicket.nrc_no || firstTicket.id_no || 'N/A';
     const passportNo = activeClient?.passport_no || firstTicket.passport_no || '';
-    const passportExpiry = activeClient?.passport_expiry || firstTicket.passport_expiry || '';
+    
+    // NOTE: Need to import isPlaceholderDate at top if we want it here, but actually we can just check '1970' directly for legacy
+    let passportExpiry = activeClient?.passport_expiry || firstTicket.passport_expiry || '';
+    if (passportExpiry && (passportExpiry.includes('1970') || passportExpiry.includes('1900') || passportExpiry === '00/00/0000')) {
+        passportExpiry = '';
+    }
+    
     const passportPhotoUrl = activeClient?.passport_photo_url || firstTicket.passport_photo_url || '';
 
     let historyHtml = '<div class="table-container"><table id="clientHistoryTable"><thead><tr><th>Issued</th><th>PNR</th><th>Route</th><th>Travel Date</th><th>Airline</th><th>Net Amount</th></tr></thead><tbody>';

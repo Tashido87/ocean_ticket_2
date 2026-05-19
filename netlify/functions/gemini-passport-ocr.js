@@ -227,19 +227,36 @@ function cleanSex(value) {
 
 function cleanDate(value) {
   const text = String(value || '').trim();
+  if (!text) return '';
 
+  // DD/MM/YYYY
   const ddmmyyyy = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!ddmmyyyy) return '';
+  if (ddmmyyyy) {
+    const dd = Number(ddmmyyyy[1]);
+    const mm = Number(ddmmyyyy[2]);
+    const yyyy = Number(ddmmyyyy[3]);
+    if (yyyy >= 1900 && yyyy <= 2100 && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+      return `${String(dd).padStart(2, '0')}/${String(mm).padStart(2, '0')}/${yyyy}`;
+    }
+  }
 
-  const dd = Number(ddmmyyyy[1]);
-  const mm = Number(ddmmyyyy[2]);
-  const yyyy = Number(ddmmyyyy[3]);
+  // Named month: "25 MAR 2000" or "12 FEB 2029"
+  const namedMonths = {
+    JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6,
+    JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12
+  };
+  const named = text.match(/^(\d{1,2})\s+([A-Za-z]{3,})\.?\s+(\d{4})$/);
+  if (named) {
+    const dd = Number(named[1]);
+    const monthKey = named[2].toUpperCase().slice(0, 3);
+    const mm = namedMonths[monthKey];
+    const yyyy = Number(named[3]);
+    if (mm && yyyy >= 1900 && yyyy <= 2100 && dd >= 1 && dd <= 31) {
+      return `${String(dd).padStart(2, '0')}/${String(mm).padStart(2, '0')}/${yyyy}`;
+    }
+  }
 
-  if (yyyy < 1900 || yyyy > 2100) return '';
-  if (mm < 1 || mm > 12) return '';
-  if (dd < 1 || dd > 31) return '';
-
-  return `${String(dd).padStart(2, '0')}/${String(mm).padStart(2, '0')}/${yyyy}`;
+  return '';
 }
 
 function inferTitle(sex, dob) {
