@@ -375,6 +375,8 @@
                                     </select>
                                 </div>
                             </div>
+                           <div class="form-group"><label for="booking_priority">Priority</label><select id="booking_priority"><option value="Normal">Normal</option><option value="Urgent">Urgent</option><option value="VIP">VIP</option><option value="Watch">Watch</option></select></div>
+                           <div class="form-group form-group-wide"><label for="booking_notes">Booking Notes</label><textarea id="booking_notes" rows="3" placeholder="Deadline reminder, fare hold rule, owner note, or follow-up detail"></textarea></div>
                         </div>
                         <hr style="border-color: rgba(255,255,255,0.2); margin: 1.5rem 0;">
                         <div id="booking-passenger-forms-container">
@@ -397,9 +399,28 @@
                            <button id="newBookingBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Booking</button>
                         </div>
                     </div>
+                    <div id="bookingKpiGrid" class="booking-kpi-grid"></div>
                     <div class="booking-search-section">
+                        <input type="search" id="bookingSearchText" placeholder="Search PNR, client, phone, route..." autocomplete="off">
                         <select id="bookingSearchRoute">
-                            <option value="">-- SEARCH BY ROUTE --</option>
+                            <option value="">All routes</option>
+                        </select>
+                        <select id="bookingStatusFilter">
+                            <option value="active">Active bookings</option>
+                            <option value="dueToday">Due today</option>
+                            <option value="dueSoon">Due soon</option>
+                            <option value="expired">Expired</option>
+                            <option value="noDeadline">No deadline</option>
+                            <option value="issued">Issued</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="all">All statuses</option>
+                        </select>
+                        <select id="bookingPriorityFilter">
+                            <option value="">All priorities</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Urgent">Urgent</option>
+                            <option value="VIP">VIP</option>
+                            <option value="Watch">Watch</option>
                         </select>
                         <button id="bookingSearchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i></button>
                         <button id="bookingClearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i></button>

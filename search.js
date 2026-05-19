@@ -553,7 +553,7 @@ function navigateToAccount(accountName) {
     initSearchView();
 }
 
-function navigateToClient(clientKey, query = '') {
+export function navigateToClient(clientKey, query = '') {
     if (!clientKey) return;
     if (query) {
         searchState.query = query.trim();
@@ -922,7 +922,7 @@ function renderRow(result) {
             <td class="strong-cell">
                 <div class="cell-with-avatar">
                     <span class="cell-avatar ticket-avatar"><i class="fa-solid fa-ticket"></i></span>
-                    <span>${highlightText(t.name || '—')}</span>
+                    <span class="${clientKey ? 'clickable-client-link' : ''}" data-client-key="${escapeHtml(clientKey)}" ${clientKey ? 'style="cursor:pointer; color:var(--primary-accent);"' : ''} title="${clientKey ? 'View Client' : ''}">${highlightText(t.name || '—')}</span>
                 </div>
             </td>
             <td>${highlightText(t.account_name || '—')}</td>
@@ -959,6 +959,13 @@ function wireResultActions(container) {
     container.querySelectorAll('.search-row').forEach(row => {
         row.addEventListener('click', (e) => {
             if (e.target.closest('button')) return;
+
+            const clientLink = e.target.closest('.clickable-client-link');
+            if (clientLink && clientLink.dataset.clientKey) {
+                navigateToClient(clientLink.dataset.clientKey);
+                return;
+            }
+
             if (row.dataset.kind === 'client') navigateToClient(row.dataset.clientKey);
             else if (row.dataset.ticketId) showDetails(row.dataset.ticketId);
         });

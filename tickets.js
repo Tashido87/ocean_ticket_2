@@ -216,10 +216,19 @@ export function showDetails(docId) {
         }
     }
 
+    let clientKey = '';
+    if (ticket.name) {
+        const c = state.allClients.find(c =>
+            String(c.name || '').toLowerCase() === String(ticket.name).toLowerCase() &&
+            !String(c.name || '').includes('(Fees)')
+        );
+        if (c) clientKey = c.client_key;
+    }
+
     const content = `
         <div class="details-header">
             <div>
-                <div class="client-name">${ticket.name || 'N/A'}</div>
+                <div class="client-name ${clientKey ? 'clickable-client-link' : ''}" data-client-key="${clientKey || ''}" ${clientKey ? 'style="cursor:pointer; color:var(--primary-accent); text-decoration:underline;" title="View Client"' : ''}>${ticket.name || 'N/A'}</div>
                 <div class="pnr-code">PNR: ${ticket.booking_reference || 'N/A'}</div>
             </div>
             <div class="details-status-badge ${statusClass}">${statusText}</div>
@@ -257,6 +266,18 @@ export function showDetails(docId) {
     `;
     openModal(content);
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+
+    const clientLink = document.querySelector('.clickable-client-link');
+    if (clientLink) {
+        clientLink.addEventListener('click', async (e) => {
+            const key = e.target.dataset.clientKey;
+            if (key) {
+                closeModal();
+                const { navigateToClient } = await import('./search.js');
+                navigateToClient(key);
+            }
+        });
+    }
 }
 
 /**

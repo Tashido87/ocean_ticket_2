@@ -985,13 +985,88 @@ td .action-checkbox {
 
 .booking-search-section {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     align-items: center;
 }
 
+.form-group-wide {
+    grid-column: 1 / -1;
+}
+
+.booking-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.85rem;
+    margin: 1rem 0 1.15rem;
+}
+
+.booking-kpi-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-height: 92px;
+    padding: 1rem;
+    border: 1px solid rgba(38, 37, 30, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.76);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.booking-kpi-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: var(--primary-accent);
+    background: rgba(13, 148, 136, 0.10);
+}
+
+.booking-kpi-card.coral .booking-kpi-icon {
+    color: var(--danger-accent);
+    background: rgba(220, 38, 38, 0.10);
+}
+
+.booking-kpi-card.amber .booking-kpi-icon {
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.13);
+}
+
+.booking-kpi-card.navy .booking-kpi-icon {
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.08);
+}
+
+.booking-kpi-label {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.booking-kpi-value {
+    color: var(--text-primary);
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-top: 0.25rem;
+}
+
+.booking-kpi-hint {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    margin-top: 0.2rem;
+}
+
+.booking-search-section input,
 .booking-search-section select {
-    width: 300px;
+    min-width: 180px;
+    flex: 1 1 180px;
     font-size: 0.85rem;
     padding: 0.5rem 0.7rem;
     border: 1px solid rgba(38, 37, 30, 0.12);
@@ -1009,6 +1084,12 @@ td .action-checkbox {
     background-size: 16px 12px;
 }
 
+.booking-search-section input {
+    max-width: 320px;
+    background-image: none;
+    text-transform: none;
+}
+
 .booking-search-section select:focus {
     outline: none;
     border-color: var(--primary-accent);
@@ -1017,9 +1098,14 @@ td .action-checkbox {
     transform: translateY(-1px);
 }
 
+.booking-search-section input:focus {
+    outline: none;
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+
 .deadline-warning {
-    background-color: rgba(38, 37, 30, 0.06) !important;
-    color: var(--danger-accent) !important;
+    background-color: rgba(254, 242, 242, 0.72) !important;
 }
 
 .deadline-warning:hover {
@@ -1028,6 +1114,131 @@ td .action-checkbox {
 
 .deadline-warning td {
     font-weight: 600;
+}
+
+.booking-table {
+    min-width: 1040px;
+}
+
+.booking-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.booking-client-cell {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.booking-meta-sub {
+    margin-top: 0.2rem;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 500;
+    text-transform: none;
+}
+
+.booking-status-badge,
+.booking-priority-badge,
+.booking-deadline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    border-radius: 999px;
+    padding: 0.32rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.booking-status-badge.active,
+.booking-deadline-badge.future {
+    color: #0f766e;
+    background: rgba(13, 148, 136, 0.12);
+}
+
+.booking-status-badge.issued,
+.booking-deadline-badge.none {
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.08);
+}
+
+.booking-status-badge.cancelled,
+.booking-status-badge.expired,
+.booking-deadline-badge.expired {
+    color: #be123c;
+    background: rgba(244, 63, 94, 0.12);
+}
+
+.booking-deadline-badge.due-soon,
+.booking-deadline-badge.due-today,
+.booking-priority-badge.urgent,
+.booking-priority-badge.watch {
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.14);
+}
+
+.booking-priority-badge.vip {
+    color: #0f766e;
+    background: rgba(13, 148, 136, 0.12);
+}
+
+.booking-priority-badge.normal {
+    color: #475569;
+    background: rgba(100, 116, 139, 0.10);
+}
+
+.booking-action-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+}
+
+.booking-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 32px;
+    border: 1px solid rgba(38, 37, 30, 0.10);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--text-primary);
+    padding: 0.42rem 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.18s var(--ease-smooth);
+}
+
+.booking-action-btn:hover:not(:disabled) {
+    border-color: rgba(13, 148, 136, 0.28);
+    color: var(--primary-accent);
+    transform: translateY(-1px);
+}
+
+.booking-action-btn.primary {
+    color: #ffffff;
+    border-color: var(--primary-accent);
+    background: var(--primary-accent);
+}
+
+.booking-action-btn.primary:hover:not(:disabled) {
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(13, 148, 136, 0.20);
+}
+
+.booking-action-btn.danger:hover:not(:disabled) {
+    border-color: rgba(244, 63, 94, 0.28);
+    color: #be123c;
+}
+
+.booking-action-btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
 }
 
 .time-picker-group {

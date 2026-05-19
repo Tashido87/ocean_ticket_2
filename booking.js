@@ -34,6 +34,20 @@ import {
     hideNewBookingForm
 } from './ui.js';
 
+const BOOKING_STATUS_LABELS = {
+    active: 'Active',
+    issued: 'Issued',
+    cancelled: 'Cancelled',
+    expired: 'Expired'
+};
+
+const PRIORITY_WEIGHT = {
+    VIP: 0,
+    Urgent: 1,
+    Watch: 2,
+    Normal: 3
+};
+
 /**
  * Loads booking data from Firestore.
  */
@@ -43,25 +57,247 @@ export async function loadBookingData() {
         state.allBookings = bookings;
         await handleExpiredBookings();
         populateBookingSearchOptions();
+        bindBookingFilters();
         displayBookings();
     } catch (error) {
         renderEmptyState('bookingTableContainer', 'fa-calendar-xmark', 'Failed to load bookings', 'Could not retrieve booking data. Please check permissions and try again.');
     }
 }
 
+function normalizeText(value) {
+    return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function normalizeBookingStatus(booking) {
+    const status = normalizeText(booking.status);
+    if (status) return status;
+
+    const remark = normalizeText(booking.remark);
+    if (remark === 'complete' || remark === 'issued' || remark === 'get ticket') return 'issued';
+    if (remark === 'cancel' || remark === 'cancelled' || remark === 'canceled') return 'cancelled';
+    if (remark === 'end' || remark === 'expired') return 'expired';
+    return 'active';
+}
+
+function isActiveBooking(booking) {
+    return normalizeBookingStatus(booking) === 'active';
+}
+
+function getBookingDeadline(booking) {
+    if (booking.deadlineAt) {
+        const parsed = new Date(booking.deadlineAt);
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    return parseDeadline(booking.enddate, booking.endtime);
+}
+
+function getDeadlineMeta(booking) {
+    const deadline = getBookingDeadline(booking);
+    if (!deadline) return { deadline: null, state: 'none', label: 'No deadline' };
+
+    const diff = deadline.getTime() - Date.now();
+    if (diff < 0) return { deadline, state: 'expired', label: 'Expired' };
+
+    const minutes = Math.ceil(diff / 60000);
+    if (minutes <= 24 * 60) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return {
+            deadline,
+            state: minutes <= 6 * 60 ? 'due-soon' : 'due-today',
+            label: `${hours}h ${mins}m left`
+        };
+    }
+
+    const days = Math.ceil(minutes / (24 * 60));
+    return { deadline, state: 'future', label: `${days}d left` };
+}
+
+function getGroupKey(booking) {
+    return booking.groupId || [
+        booking.pnr,
+        booking.departure,
+        booking.destination,
+        booking.departing_on,
+        booking.phone,
+        booking.account_name
+    ].map(value => normalizeText(value)).join('|') || booking.id;
+}
+
+function groupBookings(bookings) {
+    const grouped = bookings.reduce((acc, booking) => {
+        const key = getGroupKey(booking);
+        if (!acc[key]) {
+            acc[key] = {
+                ...booking,
+                groupId: key,
+                passengers: [],
+                docIds: []
+            };
+        }
+        acc[key].passengers.push({
+            name: booking.name,
+            id_no: booking.id_no,
+            docId: booking.id
+        });
+        acc[key].docIds.push(booking.id);
+        return acc;
+    }, {});
+
+    return Object.values(grouped).map(group => ({
+        ...group,
+        status: normalizeBookingStatus(group),
+        priority: group.priority || 'Normal',
+        deadlineMeta: getDeadlineMeta(group)
+    }));
+}
+
+function routeKey(booking) {
+    return `${booking.departure || ''}→${booking.destination || ''}`;
+}
+
+function compactPlace(value) {
+    return String(value || '').replace(/\s*\([^)]*\)/g, '').trim();
+}
+
+function routeLabel(group) {
+    return `${compactPlace(group.departure) || 'N/A'} → ${compactPlace(group.destination) || 'N/A'}`;
+}
+
+function statusBadge(status) {
+    const label = BOOKING_STATUS_LABELS[status] || BOOKING_STATUS_LABELS.active;
+    return `<span class="booking-status-badge ${status}">${label}</span>`;
+}
+
+function priorityBadge(priority) {
+    const safePriority = priority || 'Normal';
+    return `<span class="booking-priority-badge ${safePriority.toLowerCase()}">${safePriority}</span>`;
+}
+
+function deadlineBadge(group) {
+    const meta = group.deadlineMeta || getDeadlineMeta(group);
+    const detail = meta.deadline ? `${formatDateToDMMMY(group.enddate)} ${group.endtime || ''}`.trim() : '';
+    return `
+        <span class="booking-deadline-badge ${meta.state}">
+            <i class="fa-solid fa-clock"></i>
+            <span>${meta.label}</span>
+        </span>
+        ${detail ? `<div class="booking-meta-sub">${detail}</div>` : ''}
+    `;
+}
+
+function getAllBookingGroups() {
+    return groupBookings(state.allBookings || []);
+}
+
+function renderBookingDashboard(groups = getAllBookingGroups()) {
+    const container = document.getElementById('bookingKpiGrid');
+    if (!container) return;
+
+    const active = groups.filter(g => g.status === 'active');
+    const dueToday = active.filter(g => ['due-today', 'due-soon'].includes(g.deadlineMeta.state));
+    const dueSoon = active.filter(g => g.deadlineMeta.state === 'due-soon');
+    const expired = groups.filter(g => g.status === 'expired');
+    const issued = groups.filter(g => g.status === 'issued');
+    const noDeadline = active.filter(g => g.deadlineMeta.state === 'none');
+
+    const cards = [
+        { icon: 'fa-calendar-check', label: 'Active Bookings', value: active.length, tone: 'teal', hint: 'Open trips before issue' },
+        { icon: 'fa-bell', label: 'Due Today', value: dueToday.length, tone: dueToday.length ? 'coral' : 'teal', hint: 'Deadline within 24 hours' },
+        { icon: 'fa-hourglass-half', label: 'Due Soon', value: dueSoon.length, tone: dueSoon.length ? 'amber' : 'teal', hint: 'Less than 6 hours left' },
+        { icon: 'fa-triangle-exclamation', label: 'Expired', value: expired.length, tone: expired.length ? 'coral' : 'navy', hint: 'Needs action or clean-up' },
+        { icon: 'fa-ticket', label: 'Issued', value: issued.length, tone: 'navy', hint: 'Converted to ticket' },
+        { icon: 'fa-calendar-minus', label: 'No Deadline', value: noDeadline.length, tone: noDeadline.length ? 'amber' : 'navy', hint: 'Missing follow-up time' }
+    ];
+
+    container.innerHTML = cards.map(card => `
+        <div class="booking-kpi-card ${card.tone}">
+            <span class="booking-kpi-icon"><i class="fa-solid ${card.icon}"></i></span>
+            <div>
+                <div class="booking-kpi-label">${card.label}</div>
+                <div class="booking-kpi-value">${card.value}</div>
+                <div class="booking-kpi-hint">${card.hint}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function groupMatchesFilters(group) {
+    const textQuery = normalizeText(document.getElementById('bookingSearchText')?.value);
+    const routeFilter = document.getElementById('bookingSearchRoute')?.value || '';
+    const statusFilter = document.getElementById('bookingStatusFilter')?.value || 'active';
+    const priorityFilter = document.getElementById('bookingPriorityFilter')?.value || '';
+
+    if (routeFilter && routeKey(group) !== routeFilter) return false;
+    if (priorityFilter && group.priority !== priorityFilter) return false;
+
+    if (statusFilter === 'active' && group.status !== 'active') return false;
+    if (statusFilter === 'issued' && group.status !== 'issued') return false;
+    if (statusFilter === 'cancelled' && group.status !== 'cancelled') return false;
+    if (statusFilter === 'expired' && group.status !== 'expired') return false;
+    if (statusFilter === 'dueToday' && (group.status !== 'active' || !['due-today', 'due-soon'].includes(group.deadlineMeta.state))) return false;
+    if (statusFilter === 'dueSoon' && (group.status !== 'active' || group.deadlineMeta.state !== 'due-soon')) return false;
+    if (statusFilter === 'noDeadline' && (group.status !== 'active' || group.deadlineMeta.state !== 'none')) return false;
+
+    if (textQuery) {
+        const haystack = normalizeText([
+            group.pnr,
+            group.phone,
+            group.account_name,
+            group.account_type,
+            group.departure,
+            group.destination,
+            group.notes,
+            ...group.passengers.map(p => `${p.name} ${p.id_no || ''}`)
+        ].join(' '));
+        const terms = textQuery.split(' ').filter(Boolean);
+        if (!terms.every(term => haystack.includes(term))) return false;
+    }
+
+    return true;
+}
+
+function sortBookingGroups(a, b) {
+    const deadlineRank = { 'due-soon': 0, expired: 1, 'due-today': 2, none: 3, future: 4 };
+    const aRank = deadlineRank[a.deadlineMeta.state] ?? 5;
+    const bRank = deadlineRank[b.deadlineMeta.state] ?? 5;
+    if (aRank !== bRank) return aRank - bRank;
+
+    const aPriority = PRIORITY_WEIGHT[a.priority] ?? PRIORITY_WEIGHT.Normal;
+    const bPriority = PRIORITY_WEIGHT[b.priority] ?? PRIORITY_WEIGHT.Normal;
+    if (aPriority !== bPriority) return aPriority - bPriority;
+
+    const aDeadline = a.deadlineMeta.deadline ? a.deadlineMeta.deadline.getTime() : Number.MAX_SAFE_INTEGER;
+    const bDeadline = b.deadlineMeta.deadline ? b.deadlineMeta.deadline.getTime() : Number.MAX_SAFE_INTEGER;
+    if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+
+    return parseSheetDate(a.departing_on) - parseSheetDate(b.departing_on);
+}
+
+function bindBookingFilters() {
+    const ids = ['bookingSearchText', 'bookingSearchRoute', 'bookingStatusFilter', 'bookingPriorityFilter'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || el.dataset.bookingFilterBound === 'true') return;
+        el.dataset.bookingFilterBound = 'true';
+        el.addEventListener(id === 'bookingSearchText' ? 'input' : 'change', () => displayBookings());
+    });
+}
+
 /**
- * Finds expired bookings and updates their status to 'end' in Firestore.
+ * Finds expired active bookings and marks them as expired while keeping them
+ * visible through the Expired/All filters. The legacy remark field is preserved
+ * for old reports, but the booking page now reads the explicit status field.
  */
 async function handleExpiredBookings() {
     const now = new Date();
     const expiredBookings = [];
 
     state.allBookings.forEach(booking => {
-        const deadline = parseDeadline(booking.enddate, booking.endtime);
-        const hasNoAction = !booking.remark || String(booking.remark).trim() === '';
+        const deadline = getBookingDeadline(booking);
 
-        if (hasNoAction && deadline && deadline < now) {
-            expiredBookings.push({ ...booking, remark: 'end' });
+        if (isActiveBooking(booking) && deadline && deadline < now) {
+            expiredBookings.push(booking);
         }
     });
 
@@ -69,10 +305,20 @@ async function handleExpiredBookings() {
         console.log(`Found ${expiredBookings.length} expired bookings to update.`);
         try {
             for (const booking of expiredBookings) {
-                await updateBooking(booking.id, { remark: 'end' });
+                await updateBooking(booking.id, {
+                    status: 'expired',
+                    remark: 'end',
+                    expiredAt: new Date().toISOString()
+                });
             }
             console.log('Successfully updated expired bookings.');
-            state.allBookings = state.allBookings.filter(b => !expiredBookings.some(eb => eb.id === b.id));
+            const expiredIds = new Set(expiredBookings.map(b => b.id));
+            state.allBookings = state.allBookings.map(b => expiredIds.has(b.id) ? {
+                ...b,
+                status: 'expired',
+                remark: 'end',
+                expiredAt: new Date().toISOString()
+            } : b);
         } catch (error) {
             console.error('Failed to update expired bookings:', error);
             showToast('Could not update expired bookings automatically.', 'error');
@@ -88,51 +334,33 @@ export function displayBookings(bookingsToDisplay) {
     const container = document.getElementById('bookingTableContainer');
     container.innerHTML = '';
 
-    let bookings;
-    if (bookingsToDisplay) {
-        bookings = bookingsToDisplay;
-    } else {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+    const source = bookingsToDisplay || state.allBookings || [];
+    const allGroups = groupBookings(source);
+    renderBookingDashboard(getAllBookingGroups());
 
-        bookings = state.allBookings.filter(b => {
-            const hasNoAction = !b.remark || String(b.remark).trim() === '';
-            const travelDate = parseSheetDate(b.departing_on);
-            return hasNoAction && travelDate >= today;
-        });
-    }
-
-    const groupedBookings = bookings.reduce((acc, booking) => {
-        if (!acc[booking.groupId]) {
-            acc[booking.groupId] = { ...booking,
-                passengers: [],
-                docIds: []
-            };
-        }
-        acc[booking.groupId].passengers.push({
-            name: booking.name,
-            id_no: booking.id_no,
-            docId: booking.id
-        });
-        acc[booking.groupId].docIds.push(booking.id);
-        return acc;
-    }, {});
-
-    const displayableGroups = Object.values(groupedBookings);
-    displayableGroups.sort((a, b) => parseSheetDate(a.departing_on) - parseSheetDate(b.departing_on));
+    const displayableGroups = bookingsToDisplay ? allGroups : allGroups.filter(groupMatchesFilters);
+    displayableGroups.sort(sortBookingGroups);
     state.filteredBookings = displayableGroups;
 
     if (state.filteredBookings.length === 0) {
-        renderEmptyState('bookingTableContainer', 'fa-calendar-check', 'No Active Bookings', 'There are no current booking requests. Add one to get started!');
+        renderEmptyState('bookingTableContainer', 'fa-calendar-check', 'No Bookings Found', 'No booking requests match the selected filters.');
         setupBookingPagination([]);
         return;
     }
 
     const table = document.createElement('table');
+    table.className = 'booking-table';
     table.innerHTML = `
         <thead>
             <tr>
-                <th>Travel Date</th><th>Client Name</th><th>Route</th><th>PNR</th><th>Booking End date and time</th><th>Get Ticket</th><th>Cancel</th><th>Details</th><th>Sell</th>
+                <th>Deadline</th>
+                <th>Travel Date</th>
+                <th>Client</th>
+                <th>Route</th>
+                <th>PNR</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody id="bookingTableBody"></tbody>
@@ -159,31 +387,38 @@ export function renderBookingPage(page) {
         const docIdsStr = group.docIds.join(',');
         const firstPassengerName = group.passengers[0] ? group.passengers[0].name : 'N/A';
         const passengerCount = group.passengers.length;
-        const deadline = parseDeadline(group.enddate, group.endtime);
-        const isNearDeadline = deadline && (deadline.getTime() - Date.now()) < (6 * 60 * 60 * 1000) && deadline.getTime() > Date.now();
+        const isUrgent = ['due-soon', 'expired'].includes(group.deadlineMeta.state);
+        const isActive = group.status === 'active';
 
         const row = tbody.insertRow();
-        if (isNearDeadline) {
+        if (isUrgent) {
             row.classList.add('deadline-warning');
         }
 
         row.innerHTML = `
+            <td>${deadlineBadge(group)}</td>
             <td>${formatDateToDMMMY(group.departing_on) || ''}</td>
-            <td>${firstPassengerName}${passengerCount > 1 ? ` (+${passengerCount - 1})` : ''}</td>
-            <td>${(group.departure || '').split(' ')[0]}→${(group.destination || '').split(' ')[0]}</td>
+            <td>
+                <div class="booking-client-cell">${firstPassengerName}${passengerCount > 1 ? ` (+${passengerCount - 1})` : ''}</div>
+                <div class="booking-meta-sub">${group.phone || group.account_type || ''}</div>
+            </td>
+            <td>${routeLabel(group)}</td>
             <td>${group.pnr || 'N/A'}</td>
-            <td>${group.enddate && group.endtime ? `${formatDateToDMMMY(group.enddate)} ${group.endtime}` : 'N/A'}</td>
-            <td><input type="checkbox" class="action-checkbox"></td>
-            <td><input type="checkbox" class="action-checkbox"></td>
-            <td><button class="icon-btn icon-btn-table" title="View Details"><i class="fa-solid fa-eye"></i></button></td>
-            <td><button class="icon-btn icon-btn-table" title="Sell Ticket"><i class="fa-solid fa-ticket"></i></button></td>
+            <td>${statusBadge(group.status)}</td>
+            <td>${priorityBadge(group.priority)}</td>
+            <td>
+                <div class="booking-action-row">
+                    <button class="booking-action-btn primary" title="Issue / Sell Ticket" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-ticket"></i> Sell</button>
+                    <button class="booking-action-btn" title="Extend Deadline" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-clock-rotate-left"></i></button>
+                    <button class="booking-action-btn danger" title="Cancel Booking" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-ban"></i></button>
+                    <button class="booking-action-btn" title="View Details"><i class="fa-solid fa-eye"></i></button>
+                </div>
+            </td>
         `;
-        // Add event listeners
-        const checkboxes = row.querySelectorAll('.action-checkbox');
-        checkboxes[0].addEventListener('click', () => handleGetTicket(docIdsStr));
-        checkboxes[1].addEventListener('click', () => handleCancelBooking(docIdsStr));
+        row.querySelector('[title="Issue / Sell Ticket"]').addEventListener('click', () => sellTicketFromBooking(docIdsStr));
+        row.querySelector('[title="Extend Deadline"]').addEventListener('click', () => openExtendDeadlineModal(docIdsStr));
+        row.querySelector('[title="Cancel Booking"]').addEventListener('click', () => handleCancelBooking(docIdsStr));
         row.querySelector('[title="View Details"]').addEventListener('click', () => showBookingDetails(docIdsStr));
-        row.querySelector('[title="Sell Ticket"]').addEventListener('click', () => sellTicketFromBooking(docIdsStr));
     });
 
     setupBookingPagination(state.filteredBookings);
@@ -198,7 +433,7 @@ function handleGetTicket(docIdsStr) {
     const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
     const clientName = bookingGroup ? bookingGroup.passengers[0].name : 'this booking';
     const passengerCount = bookingGroup ? bookingGroup.passengers.length : 1;
-    const message = `Are you sure you want to mark the booking for <strong>${clientName} ${passengerCount > 1 ? `and ${passengerCount - 1} other(s)` : ''}</strong> as "Get Ticket"? This will remove it from the list.`;
+    const message = `Are you sure you want to mark the booking for <strong>${clientName} ${passengerCount > 1 ? `and ${passengerCount - 1} other(s)` : ''}</strong> as issued?`;
     showConfirmModal(message, async () => {
         closeModal();
         await updateBookingStatus(docIds, 'complete');
@@ -214,7 +449,7 @@ function handleCancelBooking(docIdsStr) {
     const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
     const clientName = bookingGroup ? bookingGroup.passengers[0].name : 'this booking';
     const passengerCount = bookingGroup ? bookingGroup.passengers.length : 1;
-    const message = `Are you sure you want to <strong>CANCEL</strong> the booking for <strong>${clientName} ${passengerCount > 1 ? `and ${passengerCount - 1} other(s)` : ''}</strong>? This will remove it from the list.`;
+    const message = `Are you sure you want to <strong>CANCEL</strong> the booking for <strong>${clientName} ${passengerCount > 1 ? `and ${passengerCount - 1} other(s)` : ''}</strong>?`;
     showConfirmModal(message, async () => {
         closeModal();
         await updateBookingStatus(docIds, 'cancel');
@@ -231,17 +466,35 @@ export async function updateBookingStatus(docIds, remarks) {
     state.isSubmitting = true;
     showToast('Updating booking status...', 'info');
 
+    const statusMap = {
+        complete: 'issued',
+        issued: 'issued',
+        cancel: 'cancelled',
+        cancelled: 'cancelled',
+        end: 'expired',
+        expired: 'expired'
+    };
+    const nextStatus = statusMap[remarks] || remarks || 'active';
+    const timestampField = nextStatus === 'issued' ? 'issuedAt' : nextStatus === 'cancelled' ? 'cancelledAt' : nextStatus === 'expired' ? 'expiredAt' : 'updatedAt';
     const bookingsToUpdate = docIds.map(id => state.allBookings.find(b => b.id === id)).filter(Boolean);
-
-    // Optimistic UI update
     const originalAllBookings = [...state.allBookings];
-    state.allBookings = state.allBookings.filter(b => !docIds.includes(b.id));
+    const nowIso = new Date().toISOString();
+    state.allBookings = state.allBookings.map(b => docIds.includes(b.id) ? {
+        ...b,
+        status: nextStatus,
+        remark: remarks,
+        [timestampField]: nowIso
+    } : b);
     displayBookings();
     updateNotifications();
 
     try {
         for (const booking of bookingsToUpdate) {
-            await updateBooking(booking.id, { remark: remarks });
+            await updateBooking(booking.id, {
+                status: nextStatus,
+                remark: remarks,
+                [timestampField]: nowIso
+            });
         }
         showToast('Booking updated successfully!', 'success');
     } catch (error) {
@@ -251,6 +504,87 @@ export async function updateBookingStatus(docIds, remarks) {
     } finally {
         state.isSubmitting = false;
     }
+}
+
+function toTimeParts(timeString) {
+    const match = String(timeString || '').match(/(\d+):(\d+)\s*(AM|PM)/i);
+    return {
+        hour: match ? String(parseInt(match[1], 10)).padStart(2, '0') : '09',
+        minute: match ? String(parseInt(match[2], 10)).padStart(2, '0') : '00',
+        ampm: match ? match[3].toUpperCase() : 'AM'
+    };
+}
+
+function openExtendDeadlineModal(docIdsStr) {
+    const docIds = docIdsStr.split(',');
+    const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
+    if (!bookingGroup) return;
+
+    const timeParts = toTimeParts(bookingGroup.endtime);
+    const hourOptions = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
+        .map(hour => `<option value="${hour}" ${hour === timeParts.hour ? 'selected' : ''}>${hour}</option>`).join('');
+    const minuteOptions = ['00', '15', '30', '45']
+        .map(minute => `<option value="${minute}" ${minute === timeParts.minute ? 'selected' : ''}>${minute}</option>`).join('');
+
+    openModal(`
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Extend Booking Deadline</h3>
+        <p class="modal-subtitle">Update the hold deadline for ${bookingGroup.passengers[0]?.name || 'this booking'}.</p>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="extendBookingDate">New Deadline Date</label>
+                <input type="text" id="extendBookingDate" value="${bookingGroup.enddate || ''}" placeholder="DD/MM/YYYY">
+            </div>
+            <div class="form-group">
+                <label>New Deadline Time</label>
+                <div class="time-picker-group">
+                    <select id="extendBookingHour">${hourOptions}</select>
+                    <select id="extendBookingMinute">${minuteOptions}</select>
+                    <select id="extendBookingAmpm">
+                        <option ${timeParts.ampm === 'AM' ? 'selected' : ''}>AM</option>
+                        <option ${timeParts.ampm === 'PM' ? 'selected' : ''}>PM</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group form-group-wide">
+                <label for="extendBookingNotes">Reason / Notes</label>
+                <textarea id="extendBookingNotes" rows="3" placeholder="Why the deadline changed">${bookingGroup.notes || ''}</textarea>
+            </div>
+        </div>
+        <div class="form-actions" style="margin-top: 1.5rem;">
+            <button class="btn btn-secondary" id="cancelExtendBookingBtn">Cancel</button>
+            <button class="btn btn-primary" id="saveExtendBookingBtn"><i class="fa-solid fa-check"></i> Save Deadline</button>
+        </div>
+    `);
+
+    document.getElementById('cancelExtendBookingBtn').addEventListener('click', closeModal);
+    document.getElementById('saveExtendBookingBtn').addEventListener('click', async () => {
+        const enddate = document.getElementById('extendBookingDate').value;
+        const endtime = `${document.getElementById('extendBookingHour').value}:${document.getElementById('extendBookingMinute').value} ${document.getElementById('extendBookingAmpm').value}`;
+        const deadline = parseDeadline(enddate, endtime);
+        if (!deadline) {
+            showToast('Please enter a valid deadline date and time.', 'error');
+            return;
+        }
+
+        const notes = document.getElementById('extendBookingNotes').value;
+        closeModal();
+        try {
+            await Promise.all(docIds.map(id => updateBooking(id, {
+                enddate,
+                endtime,
+                deadlineAt: deadline.toISOString(),
+                notes,
+                status: 'active',
+                remark: ''
+            })));
+            showToast('Booking deadline updated.', 'success');
+            await loadBookingData();
+            updateNotifications();
+        } catch (error) {
+            console.error('Failed to extend booking deadline:', error);
+            showToast('Could not update booking deadline.', 'error');
+        }
+    });
 }
 
 /**
@@ -266,6 +600,8 @@ function showBookingDetails(docIdsStr) {
         const content = `
             <h3>Booking Request Details</h3>
             ${bookingGroup.pnr ? `<p><strong>PNR Code:</strong> ${bookingGroup.pnr}</p>` : ''}
+            <p><strong>Status:</strong> ${BOOKING_STATUS_LABELS[bookingGroup.status] || 'Active'}</p>
+            <p><strong>Priority:</strong> ${bookingGroup.priority || 'Normal'}</p>
             <div class="details-section">
                 <div class="details-section-title">Passenger(s)</div>
                 <ul style="list-style: none; padding-left: 0;">${passengerListHtml}</ul>
@@ -280,6 +616,8 @@ function showBookingDetails(docIdsStr) {
             <p><strong>Route:</strong> ${bookingGroup.departure || 'N/A'} → ${bookingGroup.destination || 'N/A'}</p>
             <p><strong>Travel Date:</strong> ${formatDateToDMMMY(bookingGroup.departing_on) || 'N/A'}</p>
             <p><strong>Booking Deadline:</strong> ${bookingGroup.enddate && bookingGroup.endtime ? `${formatDateToDMMMY(bookingGroup.enddate)} ${bookingGroup.endtime}` : 'N/A'}</p>
+            <p><strong>Deadline Status:</strong> ${bookingGroup.deadlineMeta?.label || 'N/A'}</p>
+            <p><strong>Notes:</strong> ${bookingGroup.notes || 'N/A'}</p>
             <div class="form-actions" style="margin-top: 1.5rem;">
                 <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
             </div>
@@ -313,7 +651,9 @@ export async function handleNewBookingSubmit(e) {
         destination: document.getElementById('booking_destination').value,
         departing_on: document.getElementById('booking_departing_on').value,
         enddate: document.getElementById('booking_end_date').value,
-        endtime: hour && minute && ampm ? `${hour}:${String(minute).padStart(2, '0')} ${ampm}` : ''
+        endtime: hour && minute && ampm ? `${hour}:${String(minute).padStart(2, '0')} ${ampm}` : '',
+        priority: document.getElementById('booking_priority').value || 'Normal',
+        notes: document.getElementById('booking_notes').value.trim()
     };
 
     const passengerForms = document.querySelectorAll('#booking-passenger-forms-container .passenger-form');
@@ -332,6 +672,29 @@ export async function handleNewBookingSubmit(e) {
         return;
     }
 
+    const deadline = sharedData.enddate && sharedData.endtime ? parseDeadline(sharedData.enddate, sharedData.endtime) : null;
+    if (sharedData.enddate && sharedData.endtime && !deadline) {
+        showToast('Please enter a valid booking deadline date and time.', 'error');
+        return;
+    }
+    if (deadline && deadline.getTime() < Date.now()) {
+        showToast('Booking deadline cannot be in the past.', 'error');
+        return;
+    }
+
+    const activeBookings = (state.allBookings || []).filter(isActiveBooking);
+    const duplicateByPnr = sharedData.pnr && activeBookings.some(b => normalizeText(b.pnr) === normalizeText(sharedData.pnr));
+    const duplicateByTrip = activeBookings.some(b => {
+        const sameRoute = normalizeText(b.departure) === normalizeText(sharedData.departure) && normalizeText(b.destination) === normalizeText(sharedData.destination);
+        const sameDate = normalizeText(b.departing_on) === normalizeText(sharedData.departing_on);
+        const passengerNames = passengerData.map(p => normalizeText(p.name));
+        return sameRoute && sameDate && passengerNames.includes(normalizeText(String(b.name || '').replace(/^(MR|MS)\s+/i, '')));
+    });
+
+    if ((duplicateByPnr || duplicateByTrip) && !window.confirm('A similar active booking already exists. Continue saving this booking?')) {
+        return;
+    }
+
     const confirmationMessage = `
         <h3>Confirm New Booking</h3>
         <p>Please review the details before submitting:</p>
@@ -339,6 +702,8 @@ export async function handleNewBookingSubmit(e) {
             <li><strong>Client:</strong> ${passengerData.map(p => p.name).join(', ')}</li>
             <li><strong>Route:</strong> ${sharedData.departure.split('(')[0]} -> ${sharedData.destination.split('(')[0]}</li>
             <li><strong>Travel Date:</strong> ${sharedData.departing_on}</li>
+            <li><strong>Deadline:</strong> ${sharedData.enddate && sharedData.endtime ? `${sharedData.enddate} ${sharedData.endtime}` : 'No deadline'}</li>
+            <li><strong>Priority:</strong> ${sharedData.priority}</li>
             <li><strong>Total Passengers:</strong> ${passengerData.length}</li>
         </ul>
     `;
@@ -349,7 +714,9 @@ export async function handleNewBookingSubmit(e) {
         closeModal();
 
         try {
+            const groupId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `booking-${Date.now()}-${Math.random().toString(16).slice(2)}`;
             const bookingObjects = passengerData.map(passenger => ({
+                groupId,
                 name: `${passenger.gender} ${passenger.name}`,
                 id_no: passenger.id_no,
                 phone: sharedData.phone,
@@ -360,9 +727,13 @@ export async function handleNewBookingSubmit(e) {
                 destination: sharedData.destination,
                 departing_on: sharedData.departing_on,
                 pnr: sharedData.pnr,
+                status: 'active',
                 remark: '',
                 enddate: sharedData.enddate,
-                endtime: sharedData.endtime
+                endtime: sharedData.endtime,
+                deadlineAt: deadline ? deadline.toISOString() : '',
+                priority: sharedData.priority,
+                notes: sharedData.notes
             }));
 
             await addBookings(bookingObjects);
@@ -382,18 +753,12 @@ export async function handleNewBookingSubmit(e) {
  */
 function populateBookingSearchOptions() {
     const select = document.getElementById('bookingSearchRoute');
-    select.innerHTML = '<option value="">-- SEARCH BY ROUTE --</option>';
+    if (!select) return;
+    const previousValue = select.value;
+    select.innerHTML = '<option value="">All routes</option>';
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const activeBookings = state.allBookings.filter(b => {
-        const hasNoAction = !b.remark || String(b.remark).trim() === '';
-        const travelDate = parseSheetDate(b.departing_on);
-        return hasNoAction && travelDate >= today;
-    });
-
-    const routes = [...new Set(activeBookings.map(b => `${b.departure || ''}→${b.destination || ''}`))];
+    const activeBookings = state.allBookings.filter(isActiveBooking);
+    const routes = [...new Set(activeBookings.map(routeKey).filter(route => route !== '→'))];
 
     routes.sort().forEach(route => {
         const option = document.createElement('option');
@@ -401,37 +766,28 @@ function populateBookingSearchOptions() {
         option.textContent = route.replace(/ \([^)]*\)/g, '');
         select.appendChild(option);
     });
+    if (previousValue && routes.includes(previousValue)) select.value = previousValue;
 }
 
 /**
- * Performs a search for bookings based on the selected route.
+ * Applies booking search and filter controls.
  */
 export function performBookingSearch() {
-    const routeQuery = document.getElementById('bookingSearchRoute').value;
-    if (!routeQuery) {
-        showToast('Please select a route to search.', 'info');
-        return;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const searchResults = state.allBookings.filter(b => {
-        const route = `${b.departure || ''}→${b.destination || ''}`;
-        const hasNoAction = !b.remark || String(b.remark).trim() === '';
-        const travelDate = parseSheetDate(b.departing_on);
-
-        return hasNoAction && travelDate >= today && route === routeQuery;
-    });
-
-    displayBookings(searchResults);
+    displayBookings();
 }
 
 /**
  * Clears the booking search filters and displays all active bookings.
  */
 export function clearBookingSearch() {
-    document.getElementById('bookingSearchRoute').value = '';
+    const text = document.getElementById('bookingSearchText');
+    const route = document.getElementById('bookingSearchRoute');
+    const status = document.getElementById('bookingStatusFilter');
+    const priority = document.getElementById('bookingPriorityFilter');
+    if (text) text.value = '';
+    if (route) route.value = '';
+    if (status) status.value = 'active';
+    if (priority) priority.value = '';
     displayBookings();
 }
 
@@ -445,6 +801,10 @@ export function sellTicketFromBooking(docIdsStr) {
 
     if (!bookingGroup) {
         showToast('Could not find booking details.', 'error');
+        return;
+    }
+    if (bookingGroup.status !== 'active') {
+        showToast('Only active bookings can be converted to a ticket.', 'error');
         return;
     }
 
