@@ -587,7 +587,7 @@ export function getSettlementDiscrepancies() {
 function getTicketSettlementStatus(t, summary) {
     if (isFeeEntry(t)) return { key: 'excluded', label: 'Excluded' };
     if (isCanceled(t)) return { key: 'excluded', label: 'Refunded / Canceled' };
-    if (n(t.net_amount) === 0) return { key: 'review', label: 'Needs Review' };
+    if (n(t.net_amount) === 0) return { key: 'review', label: 'Review' };
 
     // Determine if a settlement covers this ticket via allocations OR FIFO best-effort
     const allocated = state.allSettlements.some(s => Array.isArray(s.allocations) && s.allocations.some(a => a.ticketId === t.id));
@@ -646,12 +646,7 @@ export function displaySettlements() {
     renderKpis();
     renderReconciliation();
     renderHealthCard();
-    renderLedger();
-    renderTickets();
     renderRecords();
-    renderStatementPreview();
-    renderAging();
-    renderDiscrepancies();
     renderClosedPeriods();
 }
 
@@ -689,7 +684,7 @@ function renderPeriodLabel() {
     label.innerHTML = `
         <i class="fa-regular fa-calendar"></i>
         <span>${formatDateToDMMMY(formatDateForSheet(start))} – ${formatDateToDMMMY(formatDateForSheet(end))}</span>
-        <span class="settle-basis-pill">Owner Ledger</span>
+        <span class="settle-basis-pill">Owner Settlement</span>
     `;
 }
 
@@ -804,7 +799,7 @@ function renderHealthCard() {
         statusKey = 'overpaid'; statusLabel = 'Overpaid'; statusIcon = 'fa-circle-info';
     }
     if (s.pendingSettlements.length) {
-        statusKey = 'review'; statusLabel = 'Needs Review'; statusIcon = 'fa-clipboard-question';
+        statusKey = 'review'; statusLabel = 'Review Required'; statusIcon = 'fa-clipboard-question';
     }
 
     const suggestedAmount = Math.max(0, s.remainingDue);
@@ -1138,7 +1133,7 @@ function renderClosedPeriods() {
             <div class="settle-closed-head">
                 <span class="status-pill settle-status-locked"><i class="fa-solid fa-lock"></i> Locked</span>
                 <strong>${escapeHtml(p.periodKey || '—')}</strong>
-                <span class="settle-muted">Owner Ledger</span>
+                <span class="settle-muted">Owner Settlement</span>
             </div>
             <div class="settle-closed-grid">
                 <div><span>Opening</span><strong>${formatMMK(p.openingBalance)}</strong></div>
@@ -1644,7 +1639,7 @@ function renderClosePreview(periodKey) {
     const snap = buildCloseSnapshot(periodKey);
     if (!snap) { wrap.innerHTML = ''; return; }
     wrap.innerHTML = `
-        <h4>Statement Preview · ${escapeHtml(periodKey)}</h4>
+        <h4>Month Close Summary · ${escapeHtml(periodKey)}</h4>
         <div class="settle-close-grid">
             <div><span>Opening</span><strong>${formatMMK(snap.openingBalance)}</strong></div>
             <div><span>Ticket Sales</span><strong>${formatMMK(snap.ticketSalesTotal)}</strong></div>
@@ -1702,7 +1697,7 @@ export function openStatementModal() {
             <header class="statement-header">
                 <h2>Ocean Travel</h2>
                 <p>Owner Settlement Statement</p>
-                <p class="settle-muted">${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.start)))} – ${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.end)))} · Owner Ledger</p>
+                <p class="settle-muted">${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.start)))} – ${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.end)))} · Owner Settlement</p>
             </header>
             <section class="statement-summary">
                 <div><span>Opening Balance</span><strong>${formatMMK(s.opening)}</strong></div>
@@ -1774,7 +1769,7 @@ export function exportStatementPdf() {
     doc.setFontSize(16); doc.setFont('helvetica', 'bold');
     doc.text('Ocean Travel — Owner Settlement Statement', 105, 16, { align: 'center' });
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-    doc.text(`${formatDateToDMMMY(formatDateForSheet(s.start))}  –  ${formatDateToDMMMY(formatDateForSheet(s.end))}  ·  Owner Ledger`, 105, 22, { align: 'center' });
+    doc.text(`${formatDateToDMMMY(formatDateForSheet(s.start))}  –  ${formatDateToDMMMY(formatDateForSheet(s.end))}  ·  Owner Settlement`, 105, 22, { align: 'center' });
 
     const summaryRows = [
         ['Opening Balance', formatMMK(s.opening)],
@@ -1848,10 +1843,8 @@ export function initSettlementView() {
 
     document.getElementById('newSettlementBtn')?.addEventListener('click', () => openNewSettlementModal());
     document.getElementById('generateStatementBtn')?.addEventListener('click', () => openStatementModal());
-    document.getElementById('openStatementPreviewBtn')?.addEventListener('click', () => openStatementModal());
     document.getElementById('exportSettlementPdfBtn')?.addEventListener('click', () => exportStatementPdf());
     document.getElementById('closeMonthBtn')?.addEventListener('click', () => openCloseMonthModal());
-    document.getElementById('addAdjustmentBtn')?.addEventListener('click', () => openAdjustmentModal());
 
     document.querySelectorAll('#settlePeriodTabs .period-tab').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1879,13 +1872,4 @@ export function initSettlementView() {
         displaySettlements();
     });
 
-    document.getElementById('settleLedgerSearch')?.addEventListener('input', (e) => {
-        ui.ledgerSearch = e.target.value;
-        renderLedger();
-    });
-
-    document.getElementById('settleTicketStatusFilter')?.addEventListener('change', (e) => {
-        ui.ticketStatusFilter = e.target.value;
-        renderTickets();
-    });
 }

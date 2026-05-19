@@ -260,7 +260,7 @@
                     <!-- Premium Header -->
                     <header class="settle-header">
                         <div class="settle-header-text">
-                            <span class="settle-eyebrow"><i class="fa-solid fa-book-open"></i> Owner Payable Ledger</span>
+                            <span class="settle-eyebrow"><i class="fa-solid fa-book-open"></i> Owner Payable</span>
                             <h2><i class="fa-solid fa-handshake"></i> Owner Settlement</h2>
                             <p>Track ticket owner payable, paid settlements, profit, and remaining due</p>
                             <div class="settle-header-chips">
@@ -313,62 +313,6 @@
                     <!-- Health Panel -->
                     <div class="settle-health-card glass-card" id="settleHealthCard"></div>
 
-                    <!-- Owner Ledger -->
-                    <section class="settle-section glass-card">
-                        <div class="settle-section-head">
-                            <div class="settle-section-titles">
-                                <span class="settle-section-icon"><i class="fa-solid fa-book"></i></span>
-                                <div>
-                                    <h3>Owner Ledger</h3>
-                                    <p class="settle-section-subtitle">Running balance of owner payable, settlements, and adjustments</p>
-                                </div>
-                            </div>
-                            <div class="settle-section-actions">
-                                <input type="text" id="settleLedgerSearch" class="settle-search-input" placeholder="Search by PNR, client, type…">
-                                <button id="addAdjustmentBtn" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i> Adjustment</button>
-                            </div>
-                        </div>
-                        <div class="settle-table-wrap"><table class="settle-table" id="settleLedgerTable">
-                            <thead><tr>
-                                <th>Date</th><th>Type</th><th>PNR / Ref</th><th>Client</th><th>Description</th>
-                                <th class="num">Ticket Amount</th><th class="num">My Profit</th><th class="num">Owner Payable</th><th class="num">Paid to Owner</th><th class="num">Running Balance</th>
-                            </tr></thead>
-                            <tbody id="settleLedgerBody"></tbody>
-                        </table></div>
-                    </section>
-
-                    <!-- Ticket Breakdown -->
-                    <section class="settle-section glass-card">
-                        <div class="settle-section-head">
-                            <div class="settle-section-titles">
-                                <span class="settle-section-icon"><i class="fa-solid fa-ticket"></i></span>
-                                <div>
-                                    <h3>Ticket Breakdown</h3>
-                                    <p class="settle-section-subtitle">Tickets that contribute to the current settlement period</p>
-                                </div>
-                            </div>
-                            <div class="settle-section-actions">
-                                <select id="settleTicketStatusFilter" class="settle-select">
-                                    <option value="all">All statuses</option>
-                                    <option value="paid_owner">Settled</option>
-                                    <option value="partial">Partially Settled</option>
-                                    <option value="unsettled">Unsettled</option>
-                                    <option value="excluded">Excluded</option>
-                                    <option value="review">Needs Review</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="settle-table-wrap"><table class="settle-table" id="settleTicketsTable">
-                            <thead><tr>
-                                <th>Issued</th><th>PNR</th><th>Client</th><th>Route</th><th>Airline</th>
-                                <th>Travel</th>
-                                <th class="num">Ticket Amount</th><th class="num">Comm.</th><th class="num">Extra</th>
-                                <th class="num">Owner Payable</th><th>Settlement</th>
-                            </tr></thead>
-                            <tbody id="settleTicketsBody"></tbody>
-                        </table></div>
-                    </section>
-
                     <!-- Settlement Records -->
                     <section class="settle-section glass-card">
                         <div class="settle-section-head">
@@ -388,51 +332,6 @@
                             <tbody id="settleRecordsBody"></tbody>
                         </table></div>
                         <div id="settlementPagination" class="pagination-container"></div>
-                    </section>
-
-                    <!-- Statement Preview -->
-                    <section class="settle-section glass-card">
-                        <div class="settle-section-head">
-                            <div class="settle-section-titles">
-                                <span class="settle-section-icon"><i class="fa-solid fa-file-lines"></i></span>
-                                <div>
-                                    <h3>Statement Preview</h3>
-                                    <p class="settle-section-subtitle">Owner settlement statement totals for the selected period</p>
-                                </div>
-                            </div>
-                            <div class="settle-section-actions">
-                                <button id="openStatementPreviewBtn" class="btn btn-ghost btn-sm"><i class="fa-solid fa-up-right-from-square"></i> Open</button>
-                            </div>
-                        </div>
-                        <div id="settleStatementPreview" class="settle-statement-preview"></div>
-                    </section>
-
-                    <!-- Aging Report -->
-                    <section class="settle-section glass-card">
-                        <div class="settle-section-head">
-                            <div class="settle-section-titles">
-                                <span class="settle-section-icon"><i class="fa-solid fa-hourglass-half"></i></span>
-                                <div>
-                                    <h3>Aging Report</h3>
-                                    <p class="settle-section-subtitle">Unsettled owner payable by age</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="settleAgingGrid" class="settle-aging-grid"></div>
-                    </section>
-
-                    <!-- Discrepancy / Needs Review -->
-                    <section class="settle-section glass-card">
-                        <div class="settle-section-head">
-                            <div class="settle-section-titles">
-                                <span class="settle-section-icon settle-warning"><i class="fa-solid fa-triangle-exclamation"></i></span>
-                                <div>
-                                    <h3>Needs Review</h3>
-                                    <p class="settle-section-subtitle">Discrepancies and anomalies that need attention</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="settleDiscrepancyList" class="settle-discrepancy-list"></div>
                     </section>
 
                     <!-- Closed Periods -->
