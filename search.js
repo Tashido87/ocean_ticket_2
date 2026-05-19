@@ -1103,7 +1103,7 @@ function renderClientDetailView() {
             <div class="client-hero">
                 <div class="client-hero-avatar">${escapeHtml(initialsOf(client.name))}</div>
                 <div class="client-hero-info">
-                    <h2 class="client-hero-name">${escapeHtml(client.name || 'Unknown')}</h2>
+                    <h2 class="client-hero-name">${escapeHtml(client.name || 'Unknown')}${passportExpiryBadge(client)}</h2>
                 </div>
                 <div class="client-hero-actions">
                     <button class="btn btn-primary" data-detail-action="sell"><i class="fa-solid fa-ticket"></i> Sell New Ticket</button>
@@ -1147,6 +1147,39 @@ function kpiCard(icon, color, label, value) {
     `;
 }
 
+function passportExpiryBadge(client) {
+    const expiry = client.passport_expiry || '';
+    if (!expiry) return '';
+    const status = computePassportExpiryStatus(expiry);
+    if (status.level === 'ok') return '';
+    if (status.level === 'expired') {
+        return `<span class="passport-hero-badge is-expired"><i class="fa-solid fa-circle-xmark"></i> Expired ${status.daysAbs} days ago</span>`;
+    }
+    return `<span class="passport-hero-badge is-soon"><i class="fa-solid fa-triangle-exclamation"></i> Expires in ${status.daysUntil} days</span>`;
+}
+
+function computePassportExpiryStatus(expiryStr) {
+    const raw = String(expiryStr || '').trim();
+    const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return { level: 'ok' };
+
+    const dd = Number(match[1]);
+    const mm = Number(match[2]);
+    const yyyy = Number(match[3]);
+    const expiry = new Date(yyyy, mm - 1, dd);
+    if (isNaN(expiry.getTime())) return { level: 'ok' };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sixMonthsFromNow = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
+    const daysDiff = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
+    const formatted = expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    if (expiry < today) return { level: 'expired', formatted, daysAbs: Math.abs(daysDiff) };
+    if (expiry < sixMonthsFromNow) return { level: 'soon', formatted, daysUntil: daysDiff };
+    return { level: 'ok', formatted };
+}
+
 function overviewCard(c) {
     const phone = c.phone || '';
     const accountLink = c.account_link || '';
@@ -1168,7 +1201,7 @@ function overviewCard(c) {
                 <div><dt>Phone</dt><dd>${phoneVal}</dd></div>
                 <div><dt>Account Type</dt><dd>${escapeHtml(c.account_type || '—')}</dd></div>
                 <div><dt>Account Link</dt><dd>${linkVal}</dd></div>
-                <div><dt>Frequent Flyer</dt><dd>${escapeHtml(c.frequent_flyer_no || '—')}</dd></div>
+                <div><dt>Frequent Flyer</dt><dd>${c.frequent_flyer_no ? escapeHtml(`${c.member_airline || 'Airline'}: ${c.frequent_flyer_no}`) : '—'}</dd></div>
             </dl>
         </div>
     `;
@@ -1795,20 +1828,27 @@ function buildSuggestions(query) {
     const clientRelated = relatedOnly.filter(r => r.kind === 'client' && !topIds.has(getResultId(r)));
     let clients = [...clientBest, ...clientRelated];
 
-    // Single-word query: gather ALL clients whose names contain the token
+    // Gather ALL clients whose names contain every query token
     const tokens = queryTokens(normalize(q));
     let showMore = false;
+    const allNameMatches = state.allClients
+        .filter(c => {
+            const n = normalize(c.name);
+            return tokens.every(t => n.includes(t)) && !topIds.has(c.client_key);
+        })
+        .map(c => buildClientResult(c, q))
+        .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a));
+
     if (tokens.length === 1) {
-        const token = tokens[0];
-        const allNameMatches = state.allClients
-            .filter(c => normalize(c.name).includes(token) && !topIds.has(c.client_key))
-            .map(c => buildClientResult(c, q))
-            .filter(r => r.score > 0)
-            .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a));
         showMore = allNameMatches.length > 6;
         clients = allNameMatches.slice(0, 6);
     } else {
-        clients = clients.slice(0, 6);
+        showMore = allNameMatches.length > 6;
+        const directMatches = allNameMatches.slice(0, 6);
+        const directIds = new Set(directMatches.map(getResultId));
+        const rankedClients = [...clientBest, ...clientRelated]
+            .filter(r => !directIds.has(getResultId(r)));
+        clients = [...directMatches, ...rankedClients].slice(0, 6);
     }
 
     const clientIds = new Set(clients.map(getResultId));

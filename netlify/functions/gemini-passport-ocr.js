@@ -59,7 +59,7 @@ Rules:
 `;
 
     const generatePromise = ai.models.generateContent({
-      model: 'gemini-flash-latest',
+      model: 'gemini-2.5-flash-lite',
       contents: [
         {
           role: 'user',
@@ -228,18 +228,18 @@ function cleanSex(value) {
 function cleanDate(value) {
   const text = String(value || '').trim();
 
-  const mmddyyyy = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!mmddyyyy) return '';
+  const ddmmyyyy = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!ddmmyyyy) return '';
 
-  const mm = Number(mmddyyyy[1]);
-  const dd = Number(mmddyyyy[2]);
-  const yyyy = Number(mmddyyyy[3]);
+  const dd = Number(ddmmyyyy[1]);
+  const mm = Number(ddmmyyyy[2]);
+  const yyyy = Number(ddmmyyyy[3]);
 
   if (yyyy < 1900 || yyyy > 2100) return '';
   if (mm < 1 || mm > 12) return '';
   if (dd < 1 || dd > 31) return '';
 
-  return `${String(mm).padStart(2, '0')}/${String(dd).padStart(2, '0')}/${yyyy}`;
+  return `${String(dd).padStart(2, '0')}/${String(mm).padStart(2, '0')}/${yyyy}`;
 }
 
 function inferTitle(sex, dob) {
@@ -253,12 +253,12 @@ function inferTitle(sex, dob) {
   return '';
 }
 
-function calculateAge(mmddyyyy) {
-  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(mmddyyyy)) {
+function calculateAge(ddmmyyyy) {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(ddmmyyyy)) {
     return 99;
   }
 
-  const [mm, dd, yyyy] = mmddyyyy.split('/').map(Number);
+  const [dd, mm, yyyy] = ddmmyyyy.split('/').map(Number);
   const birth = new Date(yyyy, mm - 1, dd);
   const today = new Date();
 
