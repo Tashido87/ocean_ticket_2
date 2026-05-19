@@ -29,34 +29,34 @@ input, button, select, textarea {
 }
 
 :root {
-    /* Cursor Design System — Warm Cream Palette */
-    --bg-color: #f2f1ed;
-    --primary-accent: #0d9488;
-    --primary-accent-dark: #0f766e;
-    --secondary-accent: #1f8a65;
-    --success-accent: #1f8a65;
-    --danger-accent: #cf2d56;
-    --warning-accent: #c08532;
-    --text-primary: #26251e;
-    --text-secondary: rgba(38, 37, 30, 0.55);
-    --border-color: rgba(38, 37, 30, 0.10);
-    --glass-bg: #e6e5e0;
-    --glass-bg-hover: #e1e0db;
-    --glass-border: 1px solid rgba(38, 37, 30, 0.10);
-    --shadow: rgba(0, 0, 0, 0.14);
-    --blur-amount: 20px;
-    --blur-amount-hover: 30px;
-    --liquid-radius: 8px;
-    --liquid-border: 1px solid rgba(38, 37, 30, 0.10);
-    --liquid-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 10px 30px rgba(0, 0, 0, 0.06);
-    --overlay-opacity: 0;
+    /* Clean Aesthetic Theme */
+    --bg-color: #f8fafc;
+    --primary-accent: #0ea5e9; /* Cute light blue */
+    --primary-accent-dark: #0284c7;
+    --secondary-accent: #8b5cf6; /* Cute purple */
+    --success-accent: #10b981;
+    --danger-accent: #f43f5e;
+    --warning-accent: #f59e0b;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --glass-bg: #ffffff;
+    --glass-bg-hover: #f1f5f9;
+    --glass-border: 1px solid #e2e8f0;
+    --shadow: rgba(0, 0, 0, 0.05);
+    --blur-amount: 10px;
+    --blur-amount-hover: 15px;
+    --liquid-radius: 12px;
+    --liquid-border: 1px solid #e2e8f0;
+    --liquid-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --overlay-opacity: 0.4;
 
-    /* Cursor Surface Scale */
-    --surface-100: #f7f7f4;
-    --surface-200: #f2f1ed;
-    --surface-300: #ebeae5;
-    --surface-400: #e6e5e0;
-    --surface-500: #e1e0db;
+    /* Surface Scale */
+    --surface-100: #ffffff;
+    --surface-200: #f8fafc;
+    --surface-300: #f1f5f9;
+    --surface-400: #e2e8f0;
+    --surface-500: #cbd5e1;
 
     --ease-smooth: cubic-bezier(0.2, 0, 0, 1);
     --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
@@ -105,8 +105,8 @@ body::before {
 .glass-card {
     background-color: #ffffff;
     border-radius: var(--liquid-radius);
-    border: 1px solid rgba(38, 37, 30, 0.10);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 10px 30px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--liquid-shadow);
     padding: 1.25rem;
     position: relative;
     transition: transform 0.2s var(--ease-smooth), box-shadow 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth);
@@ -117,9 +117,9 @@ body::before {
 }
 
 .glass-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10), 0 24px 60px rgba(0, 0, 0, 0.10);
-    border-color: rgba(38, 37, 30, 0.20);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    border-color: #cbd5e1;
     background-color: #ffffff;
 }
 
@@ -137,7 +137,7 @@ body::before {
     width: 240px;
     min-width: 240px;
     background: #ffffff;
-    border-right: 1px solid #e8e8e3;
+    border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     padding: 1.25rem 0.75rem;

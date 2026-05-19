@@ -290,11 +290,6 @@ function rankRecord(record, type, query) {
         return { score: 220, quality: 'related', reasons: ['All words across fields'] };
     }
 
-    // Fallback: at least one token in the name → related
-    if (isMulti && tokens.some(token => name.includes(token))) {
-        return { score: 180, quality: 'related', reasons: ['Some words in name'] };
-    }
-
     // Multi-word: must not promote single-token partial matches
     if (isMulti) return { score: 0, quality: 'none', reasons: [] };
 
@@ -312,6 +307,7 @@ function rankRecord(record, type, query) {
 }
 
 function buildClientResult(client, query = searchState.query) {
+    if (String(client.name || '').includes('(Fees)')) return null;
     const rank = rankRecord(client, 'client', query);
     return {
         kind: 'client',
@@ -339,7 +335,7 @@ function buildTicketResult(ticket, query = searchState.query) {
 }
 
 function buildAllRankedResults(query = searchState.query) {
-    const clients = state.allClients.map(c => buildClientResult(c, query));
+    const clients = state.allClients.map(c => buildClientResult(c, query)).filter(Boolean);
     const tickets = state.allTickets.map(t => buildTicketResult(t, query)).filter(Boolean);
     return [...clients, ...tickets]
         .filter(result => {
@@ -876,8 +872,7 @@ function renderResults(results) {
 function renderTableHead() {
     return `
         <thead><tr>
-            <th>Client / PNR</th><th>Phone</th><th>Account</th>
-            <th>Type</th><th>Tickets</th><th>Last Booking</th><th>Actions</th>
+            <th>Issue Date</th><th>Client Name</th><th>Account</th><th>Booking Ref/PNR</th><th>Route/Type</th><th>Status/Tickets</th><th>Actions</th>
         </tr></thead>
     `;
 }
@@ -895,17 +890,17 @@ function renderRow(result) {
         const c = result.data;
         return `
             <tr class="search-row" data-kind="client" data-client-key="${escapeHtml(c.client_key)}">
+                <td>${fmtDateOrDash(c.last_issued)}</td>
                 <td class="strong-cell">
                     <div class="cell-with-avatar">
                         <span class="cell-avatar">${escapeHtml(initialsOf(c.name))}</span>
                         <span>${highlightText(c.name)}</span>
                     </div>
                 </td>
-                <td>${highlightText(c.phone || '—')}</td>
                 <td>${highlightText(c.account_name || '—')}</td>
-                <td>${escapeHtml(c.account_type || '—')}</td>
-                <td>${Number(c.ticket_count || 0)}</td>
-                <td>${fmtDateOrDash(c.last_issued)}</td>
+                <td>—</td>
+                <td>Client (${escapeHtml(c.account_type || '—')})</td>
+                <td>${Number(c.ticket_count || 0)} tickets</td>
                 <td>${clientActions(c.client_key)}</td>
             </tr>
         `;
@@ -915,17 +910,17 @@ function renderRow(result) {
     const clientKey = getTicketClientKey(t);
     return `
         <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(t.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(t.booking_reference || '')}">
+            <td>${fmtDateOrDash(t.issued_date)}</td>
             <td class="strong-cell">
                 <div class="cell-with-avatar">
                     <span class="cell-avatar ticket-avatar"><i class="fa-solid fa-ticket"></i></span>
-                    <span>${highlightText(t.booking_reference || t.name || '—')}<small class="cell-sub">${escapeHtml(t.name || '')}</small></span>
+                    <span>${highlightText(t.name || '—')}</span>
                 </div>
             </td>
-            <td>${highlightText(t.phone || '—')}</td>
             <td>${highlightText(t.account_name || '—')}</td>
+            <td><strong>${highlightText(t.booking_reference || '—')}</strong></td>
             <td>${escapeHtml(routeShort(t))}</td>
             <td>${paymentBadge(result.payment)}</td>
-            <td>${fmtDateOrDash(t.issued_date)}</td>
             <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid')}</td>
         </tr>
     `;
