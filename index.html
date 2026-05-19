@@ -261,7 +261,7 @@
                     <header class="settle-header">
                         <div class="settle-header-text">
                             <h2><i class="fa-solid fa-handshake"></i> Owner Settlement</h2>
-                            <p>Track owner payable, paid settlements, profit, and outstanding balances</p>
+                            <p>Track ticket owner payable, paid settlements, profit, and remaining due</p>
                         </div>
                         <div class="settle-header-actions">
                             <button id="newSettlementBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Settlement</button>
@@ -286,13 +286,6 @@
                                 <span>to</span>
                                 <input type="date" id="settleEndDate" aria-label="End date">
                                 <button type="button" id="settleApplyCustom" class="btn btn-ghost btn-sm">Apply</button>
-                            </div>
-                        </div>
-                        <div class="settle-toolbar-group">
-                            <span class="settle-toolbar-label">Basis</span>
-                            <div class="basis-toggle" id="settleBasisToggle" role="tablist">
-                                <button type="button" class="basis-option active" data-basis="cash" role="tab" aria-selected="true">Cash Basis</button>
-                                <button type="button" class="basis-option" data-basis="issued" role="tab" aria-selected="false">Issued Basis</button>
                             </div>
                         </div>
                         <div class="settle-toolbar-meta" id="settlePeriodLabel"></div>
@@ -322,7 +315,7 @@
                         <div class="settle-table-wrap"><table class="settle-table" id="settleLedgerTable">
                             <thead><tr>
                                 <th>Date</th><th>Type</th><th>PNR / Ref</th><th>Client</th><th>Description</th>
-                                <th class="num">Owner Payable</th><th class="num">Paid to Owner</th><th class="num">Agent Profit</th><th class="num">Balance</th>
+                                <th class="num">Ticket Amount</th><th class="num">My Profit</th><th class="num">Owner Payable</th><th class="num">Paid to Owner</th><th class="num">Running Balance</th>
                             </tr></thead>
                             <tbody id="settleLedgerBody"></tbody>
                         </table></div>
@@ -341,8 +334,8 @@
                             <div class="settle-section-actions">
                                 <select id="settleTicketStatusFilter" class="settle-select">
                                     <option value="all">All statuses</option>
-                                    <option value="included">Included</option>
-                                    <option value="paid_owner">Paid to Owner</option>
+                                    <option value="paid_owner">Settled</option>
+                                    <option value="partial">Partially Settled</option>
                                     <option value="unsettled">Unsettled</option>
                                     <option value="excluded">Excluded</option>
                                     <option value="review">Needs Review</option>
@@ -352,8 +345,8 @@
                         <div class="settle-table-wrap"><table class="settle-table" id="settleTicketsTable">
                             <thead><tr>
                                 <th>Issued</th><th>PNR</th><th>Client</th><th>Route</th><th>Airline</th>
-                                <th>Travel</th><th>Payment</th>
-                                <th class="num">Net</th><th class="num">Comm.</th><th class="num">Extra</th>
+                                <th>Travel</th>
+                                <th class="num">Ticket Amount</th><th class="num">Comm.</th><th class="num">Extra</th>
                                 <th class="num">Owner Payable</th><th>Settlement</th>
                             </tr></thead>
                             <tbody id="settleTicketsBody"></tbody>
@@ -379,6 +372,23 @@
                             <tbody id="settleRecordsBody"></tbody>
                         </table></div>
                         <div id="settlementPagination" class="pagination-container"></div>
+                    </section>
+
+                    <!-- Statement Preview -->
+                    <section class="settle-section glass-card">
+                        <div class="settle-section-head">
+                            <div class="settle-section-titles">
+                                <span class="settle-section-icon"><i class="fa-solid fa-file-lines"></i></span>
+                                <div>
+                                    <h3>Statement Preview</h3>
+                                    <p class="settle-section-subtitle">Owner settlement statement totals for the selected period</p>
+                                </div>
+                            </div>
+                            <div class="settle-section-actions">
+                                <button id="openStatementPreviewBtn" class="btn btn-ghost btn-sm"><i class="fa-solid fa-up-right-from-square"></i> Open</button>
+                            </div>
+                        </div>
+                        <div id="settleStatementPreview" class="settle-statement-preview"></div>
                     </section>
 
                     <!-- Aging Report -->

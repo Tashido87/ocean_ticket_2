@@ -6,13 +6,14 @@
  *   - `commission`     : agent's commission (already calculated as agent-cut via calculateAgentCut)
  *   - `extra_fare`     : extra mark-up agent keeps (agent profit, not owner's)
  *   - `date_change`    : date-change fee charged to customer (belongs to owner)
- *   - `paid` (bool)    : whether customer has paid for the ticket
+ *   - `paid` (bool)    : retained on ticket records but not used as a client receivable metric here
  *
  * Helpers (single source of truth — do NOT scatter formulas):
- *   - getTicketCustomerCharge(t) = net_amount + date_change + extra_fare   (what customer pays in total)
+ *   - getTicketGrossAmount(t)    = net_amount + date_change + extra_fare   (ticket sale value)
  *   - getTicketOwnerPayable(t)   = (net_amount + date_change) - commission (owner's share)
+ *   - getMyCommission(t)         = commission                              (agent commission)
+ *   - getExtraProfit(t)          = extra_fare                              (assumed agent profit)
  *   - getTicketAgentProfit(t)    = commission + extra_fare                 (agent's share)
- *   - getTicketCollectedAmount(t)= paid ? getTicketCustomerCharge(t) : 0   (cash basis)
  *
  * Refund/cancel tickets (remarks contain "cancel" or "refund") are treated as Excluded.
  * Fee-entry rows (name endsWith "(Fees)" or remarks contains "fee entry") are excluded.
@@ -20,8 +21,7 @@
  * Settlement closing balance:
  *   closing = opening + ownerPayable(period) + adjustmentsNet(period) - paidToOwner(period)
  *
- * Cash Basis (default): only paid tickets count toward owner payable for the period
- * Issued Basis        : all issued tickets count toward owner payable for the period
+ * Owner payable is based on tickets sold/issued from the owner, not client receivables.
  */
 
 import { state } from './state.js';
@@ -53,7 +53,7 @@ import { openModal, closeModal, setupGenericPagination } from './ui.js';
    ============================================================ */
 
 const ui = {
-    basis: 'cash',          // 'cash' | 'issued'
+    basis: 'issued',        // legacy UI preference; owner payable is calculated on issued/sold tickets
     period: 'month',        // 'today' | 'month' | 'lastMonth' | 'custom'
     customStart: null,
     customEnd: null,
@@ -72,7 +72,7 @@ function persistUiState() {
 function loadUiState() {
     try {
         const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-        if (raw.basis === 'issued' || raw.basis === 'cash') ui.basis = raw.basis;
+        if (raw.basis === 'issued' || raw.basis === 'cash') ui.basis = 'issued';
         if (['today', 'month', 'lastMonth', 'custom'].includes(raw.period)) ui.period = raw.period;
     } catch {}
 }
@@ -114,20 +114,31 @@ function n(v) { return Number(v || 0); }
    TICKET FINANCIAL HELPERS
    ============================================================ */
 
-export function getTicketCustomerCharge(t) {
+export function getTicketGrossAmount(t) {
     return n(t.net_amount) + n(t.date_change) + n(t.extra_fare);
 }
 
+export const getTicketCustomerCharge = getTicketGrossAmount;
+
+export function getMyCommission(t) {
+    return n(t.commission);
+}
+
+export function getExtraProfit(t) {
+    return n(t.extra_fare);
+}
+
 export function getTicketOwnerPayable(t) {
-    return (n(t.net_amount) + n(t.date_change)) - n(t.commission);
+    // Assumption: extra_fare is retained as agent profit; date_change belongs to owner.
+    return (n(t.net_amount) + n(t.date_change)) - getMyCommission(t);
 }
 
 export function getTicketAgentProfit(t) {
-    return n(t.commission) + n(t.extra_fare);
+    return getMyCommission(t) + getExtraProfit(t);
 }
 
 export function getTicketCollectedAmount(t) {
-    return t.paid ? getTicketCustomerCharge(t) : 0;
+    return getTicketGrossAmount(t);
 }
 
 /* ============================================================
@@ -188,7 +199,6 @@ export function getOpeningBalance(start) {
     tickets.forEach(t => {
         const d = parseSheetDate(t.issued_date);
         if (!d.getTime() || d.getTime() >= start.getTime()) return;
-        if (ui.basis === 'cash' && !t.paid) return;
         ownerPayable += getTicketOwnerPayable(t);
     });
 
@@ -223,10 +233,10 @@ export function getSettlementSummary() {
     const { start, end } = getSettlementPeriodRange();
     const tickets = state.allTickets.filter(t => !isExcluded(t));
 
-    let totalCollected = 0;
+    let ticketSalesTotal = 0;
     let ownerPayable = 0;
-    let myProfit = 0;
-    let unpaidClientBalance = 0;
+    let myCommission = 0;
+    let extraProfit = 0;
     const periodTickets = [];
 
     tickets.forEach(t => {
@@ -237,16 +247,10 @@ export function getSettlementSummary() {
 
         periodTickets.push(t);
 
-        if (t.paid) totalCollected += getTicketCustomerCharge(t);
-        else unpaidClientBalance += getTicketCustomerCharge(t);
-
-        if (ui.basis === 'cash') {
-            if (t.paid) ownerPayable += getTicketOwnerPayable(t);
-        } else {
-            ownerPayable += getTicketOwnerPayable(t);
-        }
-
-        myProfit += getTicketAgentProfit(t);
+        ticketSalesTotal += getTicketGrossAmount(t);
+        ownerPayable += getTicketOwnerPayable(t);
+        myCommission += getMyCommission(t);
+        extraProfit += getExtraProfit(t);
     });
 
     const periodSettlements = state.allSettlements.filter(s => inRange(parseSheetDate(s.settlement_date), start, end));
@@ -264,12 +268,13 @@ export function getSettlementSummary() {
         start, end,
         basis: ui.basis,
         opening,
-        totalCollected,
+        ticketSalesTotal,
         ownerPayable,
         paidToOwner,
         remainingDue: opening + ownerPayable + adjustmentsTotal - paidToOwner,
-        myProfit,
-        unpaidClientBalance,
+        myCommission,
+        extraProfit,
+        myProfit: myCommission + extraProfit,
         adjustmentsTotal,
         closing,
         periodTickets,
@@ -293,19 +298,18 @@ export function getOwnerLedgerRows() {
         if (!issued.getTime() || !inRange(issued, start, end)) return;
 
         const canceled = isCanceled(t);
-        const ownerPayable = canceled ? -getTicketOwnerPayable(t) : getTicketOwnerPayable(t);
-        const includeOwnerPayable = canceled
-            ? true
-            : (ui.basis === 'cash' ? !!t.paid : true);
+        const ticketOwnerPayable = n(t.net_amount) - n(t.commission);
+        const ownerPayable = canceled ? -getTicketOwnerPayable(t) : ticketOwnerPayable;
 
         if (n(t.net_amount) > 0) {
             rows.push({
                 date: issued,
-                type: canceled ? 'Refund / Cancel' : 'Ticket',
+                type: canceled ? 'Refund / Cancel' : 'Ticket Sale',
                 ref: t.booking_reference || '—',
                 client: t.name || '—',
                 description: `${(t.departure || '').split(' ')[0]} → ${(t.destination || '').split(' ')[0]} · ${t.airline || ''}`,
-                ownerPayable: includeOwnerPayable ? ownerPayable : 0,
+                ticketAmount: canceled ? -getTicketGrossAmount(t) : n(t.net_amount),
+                ownerPayable,
                 paidToOwner: 0,
                 agentProfit: canceled ? -getTicketAgentProfit(t) : getTicketAgentProfit(t),
                 meta: { kind: 'ticket', ticketId: t.id, pnr: t.booking_reference }
@@ -318,7 +322,8 @@ export function getOwnerLedgerRows() {
                 ref: t.booking_reference || '—',
                 client: t.name || '—',
                 description: 'Date change fee',
-                ownerPayable: ui.basis === 'cash' && !t.paid ? 0 : n(t.date_change),
+                ticketAmount: n(t.date_change),
+                ownerPayable: n(t.date_change),
                 paidToOwner: 0,
                 agentProfit: 0,
                 meta: { kind: 'date_change', ticketId: t.id }
@@ -331,6 +336,7 @@ export function getOwnerLedgerRows() {
                 ref: t.booking_reference || '—',
                 client: t.name || '—',
                 description: 'Agent extra fare (profit)',
+                ticketAmount: n(t.extra_fare),
                 ownerPayable: 0,
                 paidToOwner: 0,
                 agentProfit: n(t.extra_fare),
@@ -348,6 +354,7 @@ export function getOwnerLedgerRows() {
             ref: s.transaction_id || s.id?.slice(0, 6) || '—',
             client: '— (Owner)',
             description: `Paid via ${s.payment_method || '—'}`,
+            ticketAmount: 0,
             ownerPayable: 0,
             paidToOwner: n(s.amount_paid),
             agentProfit: 0,
@@ -365,6 +372,7 @@ export function getOwnerLedgerRows() {
             ref: a.id?.slice(0, 6) || '—',
             client: a.reason || '—',
             description: a.notes || '',
+            ticketAmount: 0,
             ownerPayable: signed,
             paidToOwner: 0,
             agentProfit: 0,
@@ -404,7 +412,6 @@ export function getSettlementAging() {
     // Sort unsettled tickets oldest first; allocate paidToOwnerTotal against them in FIFO.
     const eligible = state.allTickets
         .filter(t => !isExcluded(t))
-        .filter(t => ui.basis === 'cash' ? !!t.paid : true)
         .map(t => ({ t, d: parseSheetDate(t.issued_date) }))
         .filter(x => x.d.getTime())
         .sort((a, b) => a.d - b.d);
@@ -446,14 +453,6 @@ export function getSettlementDiscrepancies() {
                 client: t.name, pnr: t.booking_reference, ticketId: t.id
             });
         }
-        if (t.paid && !t.payment_method) {
-            issues.push({
-                severity: 'warning',
-                title: 'Paid ticket missing payment method',
-                description: `Ticket ${t.booking_reference || ''} is marked paid but has no payment method.`,
-                client: t.name, pnr: t.booking_reference, ticketId: t.id
-            });
-        }
         if (n(t.net_amount) === 0 && !isCanceled(t) && !isFeeEntry(t)) {
             issues.push({
                 severity: 'info',
@@ -462,9 +461,25 @@ export function getSettlementDiscrepancies() {
                 client: t.name, pnr: t.booking_reference, ticketId: t.id
             });
         }
+        if (getTicketOwnerPayable(t) < 0 && !isCanceled(t)) {
+            issues.push({
+                severity: 'critical',
+                title: 'Negative owner payable',
+                description: `Ticket ${t.booking_reference || ''} has owner payable below zero.`,
+                client: t.name, pnr: t.booking_reference, ticketId: t.id
+            });
+        }
+        if (isCanceled(t) && !String(t.settlement_ref || t.refund_ref || '').trim()) {
+            issues.push({
+                severity: 'warning',
+                title: 'Refund/cancel needs settlement review',
+                description: `Ticket ${t.booking_reference || ''} is marked refund/cancel but has no settlement reference.`,
+                client: t.name, pnr: t.booking_reference, ticketId: t.id
+            });
+        }
     });
 
-    // PNRs with mixed paid/unpaid
+    // Duplicate PNR rows that may be legitimate multi-passenger PNRs, but should be checked when amounts repeat.
     const byPnr = {};
     tickets.forEach(t => {
         const pnr = t.booking_reference;
@@ -473,13 +488,16 @@ export function getSettlementDiscrepancies() {
         byPnr[pnr].push(t);
     });
     Object.entries(byPnr).forEach(([pnr, list]) => {
-        const paid = list.filter(t => t.paid).length;
-        const unpaid = list.filter(t => !t.paid).length;
-        if (paid > 0 && unpaid > 0) {
+        const amountSignatures = new Map();
+        list.forEach(t => {
+            const key = [t.name, t.net_amount, t.commission, t.extra_fare, t.date_change].join('|');
+            amountSignatures.set(key, (amountSignatures.get(key) || 0) + 1);
+        });
+        if (list.length > 1 && [...amountSignatures.values()].some(count => count > 1)) {
             issues.push({
-                severity: 'info',
-                title: 'PNR has mixed paid/unpaid status',
-                description: `PNR ${pnr}: ${paid} paid, ${unpaid} unpaid.`,
+                severity: 'warning',
+                title: 'Suspicious duplicate PNR rows',
+                description: `PNR ${pnr} has repeated passenger/amount patterns. Confirm it is not duplicated.`,
                 pnr, client: list[0].name
             });
         }
@@ -540,6 +558,25 @@ export function getSettlementDiscrepancies() {
         });
     }
 
+    const aging = getSettlementAging();
+    if (aging['15+'].amount > 0) {
+        issues.push({
+            severity: 'warning',
+            title: 'Old unsettled owner payable',
+            description: `${formatMMK(aging['15+'].amount)} remains unsettled for 15+ days.`
+        });
+    }
+
+    state.allAdjustments.forEach(a => {
+        if (!String(a.notes || '').trim()) {
+            issues.push({
+                severity: 'info',
+                title: 'Adjustment missing notes',
+                description: `Manual adjustment ${a.reason || a.id?.slice(0, 6) || ''} has no notes.`
+            });
+        }
+    });
+
     return issues;
 }
 
@@ -552,17 +589,14 @@ function getTicketSettlementStatus(t, summary) {
     if (isCanceled(t)) return { key: 'excluded', label: 'Refunded / Canceled' };
     if (n(t.net_amount) === 0) return { key: 'review', label: 'Needs Review' };
 
-    if (ui.basis === 'cash' && !t.paid) return { key: 'unsettled', label: 'Awaiting customer' };
-
     // Determine if a settlement covers this ticket via allocations OR FIFO best-effort
     const allocated = state.allSettlements.some(s => Array.isArray(s.allocations) && s.allocations.some(a => a.ticketId === t.id));
-    if (allocated) return { key: 'paid_owner', label: 'Paid to Owner' };
+    if (allocated) return { key: 'paid_owner', label: 'Settled' };
 
     // FIFO fallback: tickets up to cumulative paid amount are considered paid
     if (!summary._fifoMap) {
         const eligibleTickets = state.allTickets
             .filter(x => !isExcluded(x))
-            .filter(x => ui.basis === 'cash' ? !!x.paid : true)
             .map(x => ({ id: x.id, payable: getTicketOwnerPayable(x), d: parseSheetDate(x.issued_date) }))
             .filter(x => x.d.getTime() && x.payable > 0)
             .sort((a, b) => a.d - b.d);
@@ -577,7 +611,7 @@ function getTicketSettlementStatus(t, summary) {
         summary._fifoMap = map;
     }
     const fifo = summary._fifoMap.get(t.id);
-    if (fifo === 'full') return { key: 'paid_owner', label: 'Paid to Owner' };
+    if (fifo === 'full') return { key: 'paid_owner', label: 'Settled' };
     if (fifo === 'partial') return { key: 'partial', label: 'Partially Settled' };
     return { key: 'unsettled', label: 'Unsettled' };
 }
@@ -613,6 +647,7 @@ export function displaySettlements() {
     renderLedger();
     renderTickets();
     renderRecords();
+    renderStatementPreview();
     renderAging();
     renderDiscrepancies();
     renderClosedPeriods();
@@ -652,7 +687,7 @@ function renderPeriodLabel() {
     label.innerHTML = `
         <i class="fa-regular fa-calendar"></i>
         <span>${formatDateToDMMMY(formatDateForSheet(start))} – ${formatDateToDMMMY(formatDateForSheet(end))}</span>
-        <span class="settle-basis-pill">${ui.basis === 'cash' ? 'Cash Basis' : 'Issued Basis'}</span>
+        <span class="settle-basis-pill">Owner Ledger</span>
     `;
 }
 
@@ -667,13 +702,13 @@ function renderKpis() {
 
     const cards = [
         kpi('fa-money-bill-wave', 'navy', 'Opening Balance', formatMMK(s.opening), 'Carried from prior period'),
-        kpi('fa-coins', 'teal', 'Total Collected', formatMMK(s.totalCollected), 'Customer payments received'),
-        kpi('fa-file-invoice-dollar', 'navy', 'Owner Payable', formatMMK(s.ownerPayable), `${s.basis === 'cash' ? 'Cash basis' : 'Issued basis'} · period`),
+        kpi('fa-ticket', 'navy', 'Ticket Sales Total', formatMMK(s.ticketSalesTotal), 'Gross ticket value in period'),
+        kpi('fa-file-invoice-dollar', 'navy', 'Owner Payable', formatMMK(s.ownerPayable), 'Ticket value owed to owner'),
         kpi('fa-handshake', 'teal', 'Paid to Owner', formatMMK(s.paidToOwner), `${s.periodSettlements.length} settlements`),
-        kpi('fa-scale-balanced', s.remainingDue > 0 ? 'coral' : 'teal', 'Remaining Due', formatMMK(s.remainingDue), s.remainingDue > 0 ? 'Outstanding to owner' : 'All caught up'),
-        kpi('fa-chart-line', 'teal', 'My Profit', formatMMK(s.myProfit), 'Commission + extra fare'),
-        kpi('fa-user-clock', 'coral', 'Unpaid Client Balance', formatMMK(s.unpaidClientBalance), 'Customers still owe you'),
-        kpi('fa-circle-exclamation', s.pendingSettlements.length ? 'amber' : 'teal', 'Pending Settlements', String(s.pendingSettlements.length), 'Unverified entries')
+        kpi('fa-scale-balanced', s.remainingDue > 0 ? 'coral' : 'teal', 'Remaining Due to Owner', formatMMK(s.remainingDue), s.remainingDue > 0 ? 'Outstanding owner payable' : 'No owner balance due'),
+        kpi('fa-percent', 'teal', 'My Commission', formatMMK(s.myCommission), 'Commission retained'),
+        kpi('fa-arrow-trend-up', 'amber', 'Extra Profit', formatMMK(s.extraProfit), 'Extra fare retained'),
+        kpi('fa-chart-line', 'teal', 'Total My Profit', formatMMK(s.myProfit), 'Commission + extra fare')
     ];
 
     grid.innerHTML = cards.join('');
@@ -711,9 +746,9 @@ function renderHealthCard() {
 
     let statusKey, statusLabel, statusIcon;
     if (Math.abs(s.remainingDue) < 1) {
-        statusKey = 'balanced'; statusLabel = 'Balanced'; statusIcon = 'fa-circle-check';
+        statusKey = 'balanced'; statusLabel = 'Settled'; statusIcon = 'fa-circle-check';
     } else if (s.remainingDue > 0) {
-        statusKey = 'due'; statusLabel = 'Owner Due'; statusIcon = 'fa-triangle-exclamation';
+        statusKey = 'due'; statusLabel = 'Due'; statusIcon = 'fa-triangle-exclamation';
     } else {
         statusKey = 'overpaid'; statusLabel = 'Overpaid'; statusIcon = 'fa-circle-info';
     }
@@ -772,12 +807,12 @@ function renderLedger() {
     );
 
     const openingRow = `
-        <tr class="ledger-opening"><td colspan="8"><strong>Opening Balance</strong></td>
+        <tr class="ledger-opening"><td colspan="9"><strong>Opening Balance</strong></td>
         <td class="num"><strong>${formatMMK(opening)}</strong></td></tr>
     `;
 
     if (!filtered.length) {
-        body.innerHTML = `${openingRow}<tr><td colspan="9" class="settle-empty">No transactions in this period.</td></tr>`;
+        body.innerHTML = `${openingRow}<tr><td colspan="10" class="settle-empty">No transactions in this period.</td></tr>`;
         return;
     }
 
@@ -788,9 +823,10 @@ function renderLedger() {
             <td>${escapeHtml(r.ref)}</td>
             <td>${escapeHtml(r.client)}</td>
             <td>${escapeHtml(r.description)}</td>
+            <td class="num">${r.ticketAmount ? formatMMK(r.ticketAmount) : '—'}</td>
+            <td class="num">${r.agentProfit ? formatMMK(r.agentProfit) : '—'}</td>
             <td class="num">${r.ownerPayable ? formatMMK(r.ownerPayable) : '—'}</td>
             <td class="num">${r.paidToOwner ? formatMMK(r.paidToOwner) : '—'}</td>
-            <td class="num">${r.agentProfit ? formatMMK(r.agentProfit) : '—'}</td>
             <td class="num"><strong>${formatMMK(r.balance)}</strong></td>
         </tr>
     `).join('');
@@ -818,16 +854,15 @@ function renderTickets() {
 
     const rows = summary.periodTickets.map(t => {
         const status = getTicketSettlementStatus(t, summary);
-        const payment = t.paid ? 'paid' : 'unpaid';
-        return { t, status, payment };
+        return { t, status };
     }).filter(r => filter === 'all' ? true : r.status.key === filter);
 
     if (!rows.length) {
-        body.innerHTML = `<tr><td colspan="12" class="settle-empty">No tickets match the current filter.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="11" class="settle-empty">No tickets match the current filter.</td></tr>`;
         return;
     }
 
-    body.innerHTML = rows.map(({ t, status, payment }) => `
+    body.innerHTML = rows.map(({ t, status }) => `
         <tr>
             <td>${escapeHtml(formatDateToDMMMY(t.issued_date))}</td>
             <td><strong>${escapeHtml(t.booking_reference || '—')}</strong></td>
@@ -835,8 +870,7 @@ function renderTickets() {
             <td>${escapeHtml(`${(t.departure || '').split(' ')[0]} → ${(t.destination || '').split(' ')[0]}`)}</td>
             <td>${escapeHtml(t.airline || '—')}</td>
             <td>${escapeHtml(formatDateToDMMMY(t.departing_on) || '—')}</td>
-            <td><span class="status-pill status-${payment}">${payment === 'paid' ? 'Paid' : 'Unpaid'}</span></td>
-            <td class="num">${formatMMK(n(t.net_amount))}</td>
+            <td class="num">${formatMMK(getTicketGrossAmount(t))}</td>
             <td class="num">${formatMMK(n(t.commission))}</td>
             <td class="num">${formatMMK(n(t.extra_fare))}</td>
             <td class="num"><strong>${formatMMK(getTicketOwnerPayable(t))}</strong></td>
@@ -906,6 +940,27 @@ function renderRecords() {
             });
         });
     });
+}
+
+function renderStatementPreview() {
+    const wrap = document.getElementById('settleStatementPreview');
+    if (!wrap) return;
+    const s = getSettlementSummary();
+    wrap.innerHTML = `
+        <div class="settle-preview-brand">
+            <strong>Ocean Travel</strong>
+            <span>Owner Settlement Statement</span>
+        </div>
+        <div class="settle-preview-grid">
+            <div><span>Opening</span><strong>${formatMMK(s.opening)}</strong></div>
+            <div><span>Ticket Sales</span><strong>${formatMMK(s.ticketSalesTotal)}</strong></div>
+            <div><span>Owner Payable</span><strong>${formatMMK(s.ownerPayable)}</strong></div>
+            <div><span>My Profit</span><strong>${formatMMK(s.myProfit)}</strong></div>
+            <div><span>Paid to Owner</span><strong>${formatMMK(s.paidToOwner)}</strong></div>
+            <div><span>Closing Balance</span><strong>${formatMMK(s.closing)}</strong></div>
+        </div>
+        <div class="settle-preview-footer">All amounts in MMK · Owner Settlement · Private · Confidential</div>
+    `;
 }
 
 function handleRecordAction(action, id) {
@@ -1032,11 +1087,13 @@ function renderClosedPeriods() {
             <div class="settle-closed-head">
                 <span class="status-pill settle-status-locked"><i class="fa-solid fa-lock"></i> Locked</span>
                 <strong>${escapeHtml(p.periodKey || '—')}</strong>
-                <span class="settle-muted">${escapeHtml(p.basis === 'cash' ? 'Cash Basis' : 'Issued Basis')}</span>
+                <span class="settle-muted">Owner Ledger</span>
             </div>
             <div class="settle-closed-grid">
                 <div><span>Opening</span><strong>${formatMMK(p.openingBalance)}</strong></div>
+                <div><span>Ticket Sales</span><strong>${formatMMK(p.ticketSalesTotal)}</strong></div>
                 <div><span>Owner Payable</span><strong>${formatMMK(p.ownerPayable)}</strong></div>
+                <div><span>My Profit</span><strong>${formatMMK(n(p.myCommission) + n(p.extraProfit))}</strong></div>
                 <div><span>Paid</span><strong>${formatMMK(p.paidToOwner)}</strong></div>
                 <div><span>Adjustments</span><strong>${formatMMK(p.adjustments)}</strong></div>
                 <div><span>Closing</span><strong>${formatMMK(p.closingBalance)}</strong></div>
@@ -1066,15 +1123,21 @@ function renderClosedPeriods() {
 export function openNewSettlementModal(existing = null) {
     const isEdit = !!existing;
     const { method, bank } = parsePaymentMethod(existing?.payment_method);
+    const existingAllocations = Array.isArray(existing?.allocations) ? existing.allocations : [];
+    const checkedSet = new Set(existingAllocations.map(a => a.ticketId));
+    const allocatedElsewhere = new Set();
+    state.allSettlements.forEach(s => {
+        if (existing?.id && s.id === existing.id) return;
+        (Array.isArray(s.allocations) ? s.allocations : []).forEach(a => {
+            if (a.ticketId) allocatedElsewhere.add(a.ticketId);
+        });
+    });
 
     const unpaidTickets = state.allTickets
         .filter(t => !isExcluded(t))
-        .filter(t => ui.basis === 'cash' ? !!t.paid : true)
+        .filter(t => !allocatedElsewhere.has(t.id))
         .filter(t => getTicketOwnerPayable(t) > 0)
         .sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date));
-
-    const existingAllocations = Array.isArray(existing?.allocations) ? existing.allocations : [];
-    const checkedSet = new Set(existingAllocations.map(a => a.ticketId));
 
     openModal(`
         <div class="modal-header">
@@ -1120,8 +1183,12 @@ export function openNewSettlementModal(existing = null) {
                             <option ${existing?.status === 'Verified' ? 'selected' : ''}>Verified</option>
                         </select>
                     </div>
-                    <div class="form-group full-width"><label>Proof URL (image/PDF link)</label>
-                        <input type="url" id="set_proof_url" placeholder="https://…" value="${escapeHtml(existing?.proofUrl || '')}">
+                    <div class="form-group full-width"><label>Proof upload screenshot/photo/PDF</label>
+                        <input type="file" id="set_proof_file" accept="image/*,.pdf">
+                        ${existing?.proofUrl ? `<div class="settle-proof-existing"><a href="${escapeHtml(existing.proofUrl)}" target="_blank" class="settle-link"><i class="fa-solid fa-paperclip"></i> View current proof</a><label><input type="checkbox" id="set_remove_proof"> Remove proof</label></div>` : '<div class="settle-muted">No proof attached.</div>'}
+                    </div>
+                    <div class="form-group full-width"><label>Proof URL (optional link)</label>
+                        <input type="url" id="set_proof_url" placeholder="https://..." value="${escapeHtml(existing?.proofUrl?.startsWith('data:') ? '' : existing?.proofUrl || '')}">
                     </div>
                     <div class="form-group"><label>Proof Name</label>
                         <input type="text" id="set_proof_name" placeholder="e.g. KBZ Receipt 12 Nov" value="${escapeHtml(existing?.proofName || '')}">
@@ -1221,6 +1288,64 @@ function todayIso() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function getPeriodKeyFromDate(dateLike) {
+    const d = dateLike instanceof Date ? dateLike : parseSheetDate(dateLike);
+    if (!d.getTime()) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function isDateInLockedPeriod(dateLike) {
+    const key = getPeriodKeyFromDate(dateLike);
+    return !!key && state.allClosedPeriods.some(p => p.periodKey === key);
+}
+
+function readProofFile(file) {
+    return new Promise((resolve, reject) => {
+        if (!file) return resolve(null);
+        if (file.size > 750 * 1024) {
+            return reject(new Error('Proof file is too large for inline storage. Use a proof URL for files over 750 KB.'));
+        }
+        const reader = new FileReader();
+        reader.onload = () => resolve({
+            proofUrl: reader.result,
+            proofName: file.name,
+            proofType: file.type?.includes('pdf') ? 'pdf' : file.type?.startsWith('image/') ? 'image' : 'other',
+            proofUploadedAt: new Date().toISOString()
+        });
+        reader.onerror = () => reject(new Error('Could not read proof file.'));
+        reader.readAsDataURL(file);
+    });
+}
+
+function buildAutoAllocations(amount, existingId = null) {
+    let remaining = Number(amount || 0);
+    const alreadyAllocated = new Set();
+    state.allSettlements.forEach(s => {
+        if (existingId && s.id === existingId) return;
+        (Array.isArray(s.allocations) ? s.allocations : []).forEach(a => {
+            if (a.ticketId) alreadyAllocated.add(a.ticketId);
+        });
+    });
+
+    return state.allTickets
+        .filter(t => !isExcluded(t) && !alreadyAllocated.has(t.id) && getTicketOwnerPayable(t) > 0)
+        .sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date))
+        .reduce((allocations, t) => {
+            if (remaining <= 0) return allocations;
+            const payable = getTicketOwnerPayable(t);
+            const amountForTicket = Math.min(remaining, payable);
+            remaining -= amountForTicket;
+            allocations.push({
+                ticketId: t.id,
+                pnr: t.booking_reference || '',
+                clientName: t.name || '',
+                passengerName: t.name || '',
+                amount: amountForTicket
+            });
+            return allocations;
+        }, []);
+}
+
 async function handleSettlementSubmit(e, existing) {
     e.preventDefault();
     if (state.isSubmitting) return;
@@ -1238,14 +1363,22 @@ async function handleSettlementSubmit(e, existing) {
         if (!dateIso || amount <= 0 || !method) {
             throw new Error('Date, amount, and payment method are required.');
         }
+        if (isDateInLockedPeriod(dateIso)) {
+            throw new Error('This settlement date is in a locked month. Unlock the period before changing it.');
+        }
 
         let allocations = [];
+        if (allocMode === 'auto') {
+            allocations = buildAutoAllocations(amount, existing?.id);
+        }
+
         if (allocMode === 'manual') {
             document.querySelectorAll('[data-alloc-ticket]:checked').forEach(cb => {
                 allocations.push({
                     ticketId: cb.dataset.allocTicket,
                     pnr: cb.dataset.allocPnr,
                     clientName: cb.dataset.allocName,
+                    passengerName: cb.dataset.allocName,
                     amount: Number(cb.dataset.allocPayable || 0)
                 });
             });
@@ -1255,6 +1388,24 @@ async function handleSettlementSubmit(e, existing) {
                 throw new Error(`Allocation (${formatMMK(total)}) exceeds payment (${formatMMK(amount)}). Enable override to save anyway.`);
             }
         }
+
+        const proofFile = document.getElementById('set_proof_file')?.files?.[0] || null;
+        const uploadedProof = await readProofFile(proofFile);
+        const removeProof = document.getElementById('set_remove_proof')?.checked;
+        const proofUrlInput = document.getElementById('set_proof_url').value || '';
+        const proofNameInput = document.getElementById('set_proof_name').value || '';
+        const proofTypeInput = document.getElementById('set_proof_type').value || '';
+        const proofPayload = uploadedProof || (removeProof ? {
+            proofUrl: '',
+            proofName: '',
+            proofType: '',
+            proofUploadedAt: ''
+        } : {
+            proofUrl: proofUrlInput || existing?.proofUrl || '',
+            proofName: proofNameInput || existing?.proofName || '',
+            proofType: proofTypeInput || existing?.proofType || '',
+            proofUploadedAt: (proofUrlInput && proofUrlInput !== existing?.proofUrl) ? new Date().toISOString() : (existing?.proofUploadedAt || '')
+        });
 
         const payload = {
             settlement_date: formatDateToDDMMMYYYY(dateIso),
@@ -1267,10 +1418,7 @@ async function handleSettlementSubmit(e, existing) {
             verifiedBy: document.getElementById('set_verified_by').value || '',
             verifiedAt: document.getElementById('set_status').value === 'Verified' ? new Date().toISOString() : (existing?.verifiedAt || ''),
             notes: document.getElementById('set_notes').value || '',
-            proofUrl: document.getElementById('set_proof_url').value || '',
-            proofName: document.getElementById('set_proof_name').value || '',
-            proofType: document.getElementById('set_proof_type').value || '',
-            proofUploadedAt: document.getElementById('set_proof_url').value ? new Date().toISOString() : (existing?.proofUploadedAt || ''),
+            ...proofPayload,
             allocationMode: allocMode,
             allocations
         };
@@ -1339,6 +1487,9 @@ export function openAdjustmentModal() {
         e.preventDefault();
         try {
             const dateIso = document.getElementById('adj_date').value;
+            if (isDateInLockedPeriod(dateIso)) {
+                throw new Error('This adjustment date is in a locked month. Unlock the period before changing it.');
+            }
             const data = {
                 adjustment_date: formatDateToDDMMMYYYY(dateIso),
                 type: document.getElementById('adj_type').value,
@@ -1426,7 +1577,10 @@ function buildCloseSnapshot(periodKey) {
         endDate: formatDateToDDMMMYYYY(end.toISOString().slice(0, 10)),
         basis: ui.basis,
         openingBalance: Math.round(s.opening),
+        ticketSalesTotal: Math.round(s.ticketSalesTotal),
         ownerPayable: Math.round(s.ownerPayable),
+        myCommission: Math.round(s.myCommission),
+        extraProfit: Math.round(s.extraProfit),
         paidToOwner: Math.round(s.paidToOwner),
         adjustments: Math.round(s.adjustmentsTotal),
         closingBalance: Math.round(s.closing)
@@ -1442,6 +1596,7 @@ function renderClosePreview(periodKey) {
         <h4>Statement Preview · ${escapeHtml(periodKey)}</h4>
         <div class="settle-close-grid">
             <div><span>Opening</span><strong>${formatMMK(snap.openingBalance)}</strong></div>
+            <div><span>Ticket Sales</span><strong>${formatMMK(snap.ticketSalesTotal)}</strong></div>
             <div><span>Owner Payable</span><strong>${formatMMK(snap.ownerPayable)}</strong></div>
             <div><span>Paid to Owner</span><strong>${formatMMK(snap.paidToOwner)}</strong></div>
             <div><span>Adjustments</span><strong>${formatMMK(snap.adjustments)}</strong></div>
@@ -1462,9 +1617,9 @@ export function openStatementModal() {
             <td>${escapeHtml(formatDateToDMMMY(t.issued_date))}</td>
             <td>${escapeHtml(t.booking_reference || '—')}</td>
             <td>${escapeHtml(t.name || '—')}</td>
-            <td class="num">${formatMMK(n(t.net_amount))}</td>
-            <td class="num">${formatMMK(n(t.date_change))}</td>
+            <td class="num">${formatMMK(getTicketGrossAmount(t))}</td>
             <td class="num">${formatMMK(n(t.commission))}</td>
+            <td class="num">${formatMMK(n(t.extra_fare))}</td>
             <td class="num"><strong>${formatMMK(getTicketOwnerPayable(t))}</strong></td>
         </tr>
     `).join('') || '<tr><td colspan="7" class="settle-empty">No tickets in this period.</td></tr>';
@@ -1496,22 +1651,30 @@ export function openStatementModal() {
             <header class="statement-header">
                 <h2>Ocean Travel</h2>
                 <p>Owner Settlement Statement</p>
-                <p class="settle-muted">${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.start)))} – ${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.end)))} · ${s.basis === 'cash' ? 'Cash Basis' : 'Issued Basis'}</p>
+                <p class="settle-muted">${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.start)))} – ${escapeHtml(formatDateToDMMMY(formatDateForSheet(s.end)))} · Owner Ledger</p>
             </header>
             <section class="statement-summary">
                 <div><span>Opening Balance</span><strong>${formatMMK(s.opening)}</strong></div>
+                <div><span>Ticket Sales Total</span><strong>${formatMMK(s.ticketSalesTotal)}</strong></div>
                 <div><span>Owner Payable (Tickets)</span><strong>${formatMMK(s.ownerPayable)}</strong></div>
+                <div><span>My Commission</span><strong>${formatMMK(s.myCommission)}</strong></div>
+                <div><span>Extra Profit</span><strong>${formatMMK(s.extraProfit)}</strong></div>
+                <div><span>Total My Profit</span><strong>${formatMMK(s.myProfit)}</strong></div>
                 <div><span>Adjustments</span><strong>${formatMMK(s.adjustmentsTotal)}</strong></div>
                 <div><span>Settlements Paid</span><strong>${formatMMK(s.paidToOwner)}</strong></div>
                 <div class="statement-closing"><span>Closing Balance</span><strong>${formatMMK(s.closing)}</strong></div>
             </section>
             <h4>Ticket Line Items</h4>
-            <table class="settle-table"><thead><tr><th>Date</th><th>PNR</th><th>Client</th><th class="num">Net</th><th class="num">Date Chg</th><th class="num">Comm.</th><th class="num">Owner Payable</th></tr></thead><tbody>${lineItems}</tbody></table>
+            <table class="settle-table"><thead><tr><th>Date</th><th>PNR</th><th>Client</th><th class="num">Ticket Amount</th><th class="num">Comm.</th><th class="num">Extra</th><th class="num">Owner Payable</th></tr></thead><tbody>${lineItems}</tbody></table>
             <h4>Settlement Payments</h4>
             <table class="settle-table"><thead><tr><th>Date</th><th>Method</th><th>Txn</th><th class="num">Amount</th></tr></thead><tbody>${settlementRows}</tbody></table>
             <h4>Adjustments</h4>
             <table class="settle-table"><thead><tr><th>Date</th><th>Type</th><th>Reason</th><th class="num">Amount</th></tr></thead><tbody>${adjRows}</tbody></table>
-            <footer class="statement-footer">All amounts in MMK · Private · Owner Settlement Statement</footer>
+            <section class="statement-signatures">
+                <div><span>Prepared By</span></div>
+                <div><span>Owner Confirmation</span></div>
+            </section>
+            <footer class="statement-footer">All amounts in MMK · Owner Settlement · Private · Confidential</footer>
         </div>
         <div class="form-actions" style="padding: 0.5rem 1.5rem 1.25rem">
             <button class="btn btn-secondary" id="statementPrintBtn"><i class="fa-solid fa-print"></i> Print</button>
@@ -1560,11 +1723,15 @@ export function exportStatementPdf() {
     doc.setFontSize(16); doc.setFont('helvetica', 'bold');
     doc.text('Ocean Travel — Owner Settlement Statement', 105, 16, { align: 'center' });
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-    doc.text(`${formatDateToDMMMY(formatDateForSheet(s.start))}  –  ${formatDateToDMMMY(formatDateForSheet(s.end))}  ·  ${s.basis === 'cash' ? 'Cash Basis' : 'Issued Basis'}`, 105, 22, { align: 'center' });
+    doc.text(`${formatDateToDMMMY(formatDateForSheet(s.start))}  –  ${formatDateToDMMMY(formatDateForSheet(s.end))}  ·  Owner Ledger`, 105, 22, { align: 'center' });
 
     const summaryRows = [
         ['Opening Balance', formatMMK(s.opening)],
+        ['Ticket Sales Total', formatMMK(s.ticketSalesTotal)],
         ['Owner Payable (Tickets)', formatMMK(s.ownerPayable)],
+        ['My Commission', formatMMK(s.myCommission)],
+        ['Extra Profit', formatMMK(s.extraProfit)],
+        ['Total My Profit', formatMMK(s.myProfit)],
         ['Adjustments', formatMMK(s.adjustmentsTotal)],
         ['Settlements Paid', formatMMK(s.paidToOwner)],
         ['Closing Balance', formatMMK(s.closing)]
@@ -1582,13 +1749,13 @@ export function exportStatementPdf() {
             formatDateToDMMMY(t.issued_date),
             t.booking_reference || '—',
             t.name || '—',
-            n(t.net_amount).toLocaleString(),
-            n(t.date_change).toLocaleString(),
+            Math.round(getTicketGrossAmount(t)).toLocaleString(),
             n(t.commission).toLocaleString(),
+            n(t.extra_fare).toLocaleString(),
             Math.round(getTicketOwnerPayable(t)).toLocaleString()
         ]);
         doc.autoTable({
-            head: [['Issued', 'PNR', 'Client', 'Net', 'Date Chg', 'Comm.', 'Owner Payable']],
+            head: [['Issued', 'PNR', 'Client', 'Ticket Amount', 'Comm.', 'Extra', 'Owner Payable']],
             body: ticketBody.length ? ticketBody : [['—', '—', '—', '—', '—', '—', '—']],
             startY: doc.lastAutoTable.finalY + 6,
             styles: { fontSize: 8 },
@@ -1614,7 +1781,8 @@ export function exportStatementPdf() {
     }
 
     doc.setFontSize(8);
-    doc.text('All amounts in MMK · Private · Owner Settlement Statement', 105, 290, { align: 'center' });
+    doc.text('Prepared By ____________________        Owner Confirmation ____________________', 105, 282, { align: 'center' });
+    doc.text('All amounts in MMK · Owner Settlement · Private · Confidential', 105, 290, { align: 'center' });
     doc.save(`owner_statement_${Date.now()}.pdf`);
 }
 
@@ -1629,6 +1797,7 @@ export function initSettlementView() {
 
     document.getElementById('newSettlementBtn')?.addEventListener('click', () => openNewSettlementModal());
     document.getElementById('generateStatementBtn')?.addEventListener('click', () => openStatementModal());
+    document.getElementById('openStatementPreviewBtn')?.addEventListener('click', () => openStatementModal());
     document.getElementById('exportSettlementPdfBtn')?.addEventListener('click', () => exportStatementPdf());
     document.getElementById('closeMonthBtn')?.addEventListener('click', () => openCloseMonthModal());
     document.getElementById('addAdjustmentBtn')?.addEventListener('click', () => openAdjustmentModal());
