@@ -1411,6 +1411,10 @@ function openTravelDocumentEditModal(client) {
             <form id="clientDocsForm" class="client-doc-edit-form">
                 <div class="form-grid">
                     <div class="form-group full-width">
+                        <label>Full Name</label>
+                        <input type="text" id="editDocName" value="${escapeHtml(client.name || '')}" placeholder="e.g. JOHN DOE" autocomplete="off" style="text-transform:uppercase;">
+                    </div>
+                    <div class="form-group full-width">
                         <label>NRC</label>
                         <input type="text" id="editDocNrc" value="${escapeHtml(nrcNo)}" placeholder="12/MAGATA(N)000000" autocomplete="off" style="text-transform:uppercase;">
                     </div>
@@ -1478,11 +1482,16 @@ function openTravelDocumentEditModal(client) {
         }
 
         if (ocrResult) {
+            const fullName = ocrResult.fullName || ocrResult.name || '';
             const passportNo = ocrResult.passportNo || ocrResult.passportNumber || '';
             const dob = ocrResult.dob || ocrResult.dateOfBirth || '';
             const expiry = ocrResult.expiry || ocrResult.expiryDate || '';
             const nationality = ocrResult.nationality || '';
 
+            if (fullName) {
+                const nameInput = document.getElementById('editDocName');
+                if (nameInput) nameInput.value = fullName;
+            }
             if (passportNo) {
                 document.getElementById('editDocPassport').value = passportNo;
             }
@@ -1508,6 +1517,7 @@ function openTravelDocumentEditModal(client) {
 
 async function saveTravelDocuments(e, client) {
     e.preventDefault();
+    const name = document.getElementById('editDocName')?.value.trim().toUpperCase() || '';
     const nrcNo = document.getElementById('editDocNrc')?.value.trim().toUpperCase() || '';
     const passportNo = document.getElementById('editDocPassport')?.value.trim().toUpperCase() || '';
     const passportExpiry = document.getElementById('editDocExpiry')?.value.trim() || '';
@@ -1551,6 +1561,7 @@ async function saveTravelDocuments(e, client) {
     }
 
     const data = {
+        name: name || client.name || '',
         nrc_no: nrcNo,
         passport_no: passportNo,
         passport_expiry: passportExpiry,
