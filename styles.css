@@ -3895,6 +3895,7 @@ body.material-theme.dark-theme .notification-count {
     color: var(--text-primary);
     text-transform: none;
     letter-spacing: 0;
+    white-space: nowrap;
 }
 
 /* ---------- Service actions (format + generate + clear) ---------- */
