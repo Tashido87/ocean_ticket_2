@@ -25,7 +25,7 @@ import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, format
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
-import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview } from './ui.js';
+import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, openModal, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview } from './ui.js';
 
 function syncGroupToggleState() {
     const start = document.getElementById('searchStartDate')?.value;
@@ -70,7 +70,10 @@ document.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         const pnr = actionBtn.dataset.dashboardPnr;
-        if (pnr && pnr !== 'No PNR' && pnr !== '—') {
+        if (!pnr || pnr === 'No PNR' || pnr === '—') return;
+        if (actionBtn.closest('.travel-schedule-list')) {
+            showTripPlanDetail(pnr);
+        } else {
             showView('manage');
             findTicketForManage(pnr);
         }
@@ -1021,6 +1024,91 @@ export function updateDashboardData() {
 
 function wireDashboardPnrButtons(container) {
     // Buttons removed in favor of global .clickable-pnr listener
+}
+
+function showTripPlanDetail(pnr) {
+    const allRows = (state.allTickets || []).filter(t =>
+        String(t.booking_reference || '').trim().toUpperCase() === pnr.toUpperCase() &&
+        !isCanceledTicket(t)
+    );
+    if (!allRows.length) return;
+
+    const passengerRows = allRows.filter(t => !isFeeEntryRow(t));
+    const feeRows = allRows.filter(t => isFeeEntryRow(t));
+    const lead = passengerRows[0] || allRows[0];
+
+    const passengerList = passengerRows.map(t => {
+        const paid = isTicketPaid(t);
+        const amount = ticketSalesAmount(t);
+        return `
+            <div class="details-item" style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
+                <div>
+                    <div style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(t.name || 'Passenger')}</div>
+                    <div style="font-size:0.72rem;color:var(--muted)">Ticket: ${dashboardEscapeHtml(t.ticket_number || 'N/A')}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-weight:700">${formatDashboardAmount(amount)} MMK</div>
+                    <span class="dashboard-status ${paid ? 'success' : 'danger'}" style="font-size:0.65rem">${paid ? 'Paid' : 'Unpaid'}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const feeList = feeRows.length ? feeRows.map(t => {
+        const paid = isTicketPaid(t);
+        const amount = ticketSalesAmount(t);
+        return `
+            <div class="details-item" style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
+                <div>
+                    <div style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(t.name || 'Fee')}</div>
+                    <div style="font-size:0.72rem;color:var(--muted)">${dashboardEscapeHtml(t.remarks || 'Date/Extra Change')}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-weight:700">${formatDashboardAmount(amount)} MMK</div>
+                    <span class="dashboard-status ${paid ? 'success' : 'danger'}" style="font-size:0.65rem">${paid ? 'Paid' : 'Unpaid'}</span>
+                </div>
+            </div>
+        `;
+    }).join('') : '';
+
+    const totalUnpaid = allRows.filter(t => !isTicketPaid(t)).reduce((s, t) => s + ticketSalesAmount(t), 0);
+    const totalAmount = allRows.reduce((s, t) => s + ticketSalesAmount(t), 0);
+
+    const content = `
+        <div class="details-header">
+            <div>
+                <div class="client-name">${dashboardEscapeHtml(lead.name?.replace(/\(fees\)\s*$/i, '').trim() || 'Trip Plan')}</div>
+                <div class="pnr-code">PNR: ${dashboardEscapeHtml(pnr)}</div>
+            </div>
+            <div class="details-status-badge confirmed">${dashboardEscapeHtml(lead.airline || 'Airline')}</div>
+        </div>
+        <div class="details-section">
+            <div class="details-section-title">Trip Overview</div>
+            <div class="details-grid">
+                <div class="details-item"><i class="fa-solid fa-plane-departure"></i><div class="details-item-content"><div class="label">From</div><div class="value">${dashboardEscapeHtml(lead.departure || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-plane-arrival"></i><div class="details-item-content"><div class="label">To</div><div class="value">${dashboardEscapeHtml(lead.destination || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-calendar-days"></i><div class="details-item-content"><div class="label">Travel Date</div><div class="value">${dashboardEscapeHtml(lead.departing_on || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-ticket"></i><div class="details-item-content"><div class="label">Passengers</div><div class="value">${passengerRows.length}</div></div></div>
+            </div>
+        </div>
+        <div class="details-section">
+            <div class="details-section-title">Passengers</div>
+            ${passengerList || '<div style="color:var(--muted);padding:0.5rem 0">No passenger tickets found.</div>'}
+        </div>
+        ${feeList ? `<div class="details-section"><div class="details-section-title">Fees & Changes</div>${feeList}</div>` : ''}
+        <div class="details-section">
+            <div class="details-section-title">Financial Summary</div>
+            <div class="details-grid">
+                <div class="details-item"><i class="fa-solid fa-receipt"></i><div class="details-item-content"><div class="label">Total Amount</div><div class="value">${formatDashboardAmount(totalAmount)} MMK</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-hand-holding-dollar"></i><div class="details-item-content"><div class="label">Total Unpaid</div><div class="value ${totalUnpaid > 0 ? 'text-risk' : 'text-success'}">${formatDashboardAmount(totalUnpaid)} MMK</div></div></div>
+            </div>
+        </div>
+        <div class="form-actions" style="margin-top:1rem">
+            <button class="btn btn-secondary" id="tripPlanCloseBtn">Close</button>
+        </div>
+    `;
+    openModal(content, 'large-modal');
+    document.getElementById('tripPlanCloseBtn').addEventListener('click', closeModal);
 }
 
 function renderDashboardTravelSchedule(groups) {
