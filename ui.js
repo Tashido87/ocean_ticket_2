@@ -169,9 +169,13 @@ export function openModal(content, sizeClass = '') {
     const modalBody = document.getElementById('modalBody');
     modalBody.innerHTML = content;
     const modalContent = modal.querySelector('.modal-content');
-    modalContent.className = 'modal-content glass-card'; // Reset classes
-    if (sizeClass) {
-        modalContent.classList.add(sizeClass);
+    if (sizeClass === 'solid-modal') {
+        modalContent.className = 'modal-content solid-modal';
+    } else {
+        modalContent.className = 'modal-content glass-card'; // Reset classes
+        if (sizeClass) {
+            modalContent.classList.add(sizeClass);
+        }
     }
     modal.classList.add('show');
     document.body.classList.add('modal-open');
