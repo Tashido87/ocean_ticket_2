@@ -17,7 +17,9 @@ import {
     formatDateForSheet,
     formatDateToDMMMY,
     parsePaymentMethod,
-    formatPaymentMethod
+    formatPaymentMethod,
+    isCanceledTicket,
+    isFeeEntryRow
 } from './utils.js';
 import {
     openModal,
@@ -56,11 +58,7 @@ function ticketTotal(ticket) {
     return (Number(ticket.net_amount) || 0) + (Number(ticket.extra_fare) || 0) + (Number(ticket.date_change) || 0);
 }
 
-function isCanceledTicket(ticket) {
-    const remarks = String(ticket?.remarks || '').toLowerCase();
-    const status = String(ticket?.status || '').toLowerCase();
-    return status.includes('cancel') || remarks.includes('refund') || remarks.includes('cancel');
-}
+
 
 function ownerPayable(ticket) {
     if (isCanceledTicket(ticket)) return 0;
@@ -75,7 +73,7 @@ function profitAmount(ticket) {
 
 function getFinancialStatus(ticket) {
     if (isCanceledTicket(ticket)) return { key: 'cancelled', label: 'Cancelled' };
-    if (isFeeRow(ticket)) return { key: 'fee', label: 'Fee / Balance' };
+    if (isFeeEntryRow(ticket)) return { key: 'fee', label: 'Fee / Balance' };
     const stored = String(ticket.financial_status || '').trim();
     if (stored) return { key: stored.toLowerCase().replace(/\s+/g, '-'), label: stored };
     if (!(Number(ticket.net_amount) > 0)) return { key: 'pending', label: 'Missing Net' };
@@ -90,8 +88,8 @@ function paymentStatus(ticket) {
 
 function getPnrSummary(tickets) {
     const active = tickets.filter(t => !isCanceledTicket(t));
-    const originals = active.filter(t => !isFeeRow(t));
-    const fees = active.filter(isFeeRow);
+    const originals = active.filter(t => !isFeeEntryRow(t));
+    const fees = active.filter(isFeeEntryRow);
     const totalValue = active.reduce((sum, t) => sum + ticketTotal(t), 0);
     const paidValue = active.filter(t => t.paid).reduce((sum, t) => sum + ticketTotal(t), 0);
     const unpaidValue = totalValue - paidValue;
@@ -120,7 +118,7 @@ function getPnrSummary(tickets) {
 function getManageIssues(tickets) {
     const issues = [];
     tickets.forEach(ticket => {
-        if (isCanceledTicket(ticket) || isFeeRow(ticket)) return;
+        if (isCanceledTicket(ticket) || isFeeEntryRow(ticket)) return;
         const ref = `${ticket.name || 'Ticket'}${ticket.booking_reference ? ` · ${ticket.booking_reference}` : ''}`;
         if (!(Number(ticket.net_amount) > 0)) issues.push({ tone: 'danger', text: `${ref}: net amount is missing or zero.` });
         if (!(Number(ticket.commission) > 0)) issues.push({ tone: 'warning', text: `${ref}: commission still needs review.` });
@@ -177,16 +175,7 @@ export function clearManageResults() {
     displayHistory(1, state.history); // Reset to show all history
 }
 
-/**
- * Helper to identify if a row is a Fee Entry.
- * @param {Object} t Ticket object
- */
-function isFeeRow(t) {
-    const name = String(t.name || '').toLowerCase();
-    const remarks = String(t.remarks || '').toLowerCase();
-    // Check for "(Fees)" suffix or specific remark
-    return name.includes('(fees)') || remarks.includes('fee entry') || remarks.includes('balance');
-}
+
 
 /**
  * Displays the tickets found for a specific PNR.
@@ -248,7 +237,7 @@ function displayManageResults(tickets) {
     `;
 
     tickets.forEach(t => {
-        const isFee = isFeeRow(t);
+        const isFee = isFeeEntryRow(t);
         const canceled = isCanceledTicket(t);
         const pay = paymentStatus(t);
         const fin = getFinancialStatus(t);
@@ -1181,7 +1170,7 @@ async function handleUpdateTicket(e) {
     if (applyToAll) {
         ticketsToUpdate = state.allTickets.filter(t =>
             normalizePnr(t.booking_reference) === normalizePnr(pnr) &&
-            !isFeeRow(t) &&
+            !isFeeEntryRow(t) &&
             !isCanceledTicket(t)
         );
     } else {
@@ -1265,9 +1254,9 @@ async function handleUpdateTicket(e) {
             
             const updateData = {};
             if (dateChanged) updateData.departing_on = formatDateForSheet(newTravelDateVal);
-            if (baseFareChanged && !isFeeRow(ticket)) updateData.base_fare = newBaseFare;
-            if (netAmountChanged && !isFeeRow(ticket)) updateData.net_amount = newNetAmount;
-            if (commissionChanged && !isFeeRow(ticket)) updateData.commission = newCommission;
+            if (baseFareChanged && !isFeeEntryRow(ticket)) updateData.base_fare = newBaseFare;
+            if (netAmountChanged && !isFeeEntryRow(ticket)) updateData.net_amount = newNetAmount;
+            if (commissionChanged && !isFeeEntryRow(ticket)) updateData.commission = newCommission;
             if (paidChanged || hasNewFees) updateData.paid = rowPaid;
             if (methodChanged || hasNewFees) updateData.payment_method = rowMethod;
             if (paidDateChanged || hasNewFees) updateData.paid_date = rowPaidDate;

@@ -3,7 +3,7 @@
  * Supports shared invoice logic with switchable branding.
  */
 
-import { formatDateToDMMMY, parseSheetDate, showToast } from './utils.js';
+import { formatDateToDMMMY, parseSheetDate, showToast, isFeeEntryRow } from './utils.js';
 import { state } from './state.js';
 
 const INVOICE_THEME = {
@@ -381,9 +381,7 @@ function getInvoiceCSS() {
     `;
 }
 
-function isFeeRow(ticket) {
-   return String(ticket.remarks || '').toLowerCase().includes('fee entry') || String(ticket.name || '').toLowerCase().includes('(fees)');
-}
+
 
 function getOriginalTravelDate(pnr) {
     if (!state.history || !Array.isArray(state.history)) return null;
@@ -430,7 +428,7 @@ function buildInvoiceGroups(tickets, mode) {
 
 function buildInvoiceLineItems(groupTickets, mode) {
     const processTicket = (ticket) => {
-        const isFee = isFeeRow(ticket);
+        const isFee = isFeeEntryRow(ticket);
         const route = `${(ticket.departure || '').split(' ')[0]}-${(ticket.destination || '').split(' ')[0]}`;
         const airline = ticket.airline || '';
         const price = (ticket.net_amount || 0) + (ticket.extra_fare || 0);
@@ -441,7 +439,7 @@ function buildInvoiceLineItems(groupTickets, mode) {
         if (isFee) {
             prefix = 'Date Change Fee: ';
         } else {
-            const hasFeeInGroup = groupTickets.some(t => t.booking_reference === ticket.booking_reference && isFeeRow(t));
+            const hasFeeInGroup = groupTickets.some(t => t.booking_reference === ticket.booking_reference && isFeeEntryRow(t));
             if (hasFeeInGroup) {
                 const oldDate = getOriginalTravelDate(ticket.booking_reference);
                 if (oldDate) displayDate = oldDate;

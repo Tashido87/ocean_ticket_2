@@ -6,7 +6,7 @@
 
 import { state } from './state.js';
 import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument } from './db.js';
-import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod } from './utils.js';
+import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
 import { updateDashboardData } from './main.js';
@@ -879,7 +879,7 @@ export function populateSearchAirlines() {
  * Updates the unpaid ticket count badge in the search form.
  */
 export function updateUnpaidCount() {
-    const unpaidTickets = state.allTickets.filter(t => !t.paid);
+    const unpaidTickets = state.allTickets.filter(t => !isTicketPaid(t));
     const count = unpaidTickets.length;
     const label = document.getElementById('unpaid-only-label');
     if (!label) return;

@@ -370,3 +370,52 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+/**
+ * Checks if a ticket is paid, handling various field types (boolean, number, string like "false", "no", etc.).
+ * @param {Object} ticket The ticket object.
+ * @returns {boolean} True if the ticket is paid, false otherwise.
+ */
+export function isTicketPaid(ticket) {
+    const rawPaid = ticket?.paid;
+    if (typeof rawPaid === 'boolean') return rawPaid;
+    if (typeof rawPaid === 'number') return rawPaid === 1;
+
+    const paidValue = String(rawPaid ?? '').trim().toLowerCase();
+    const hasExplicitPaidValue = rawPaid !== undefined && rawPaid !== null && paidValue !== '';
+    const explicitPaid = ['true', 'yes', 'y', 'paid', '1', 'complete', 'completed', 'settled'].includes(paidValue);
+    const explicitUnpaid = hasExplicitPaidValue && ['false', 'no', 'n', 'unpaid', 'not paid', '0', 'pending', 'partial'].includes(paidValue);
+    const paymentText = [
+        ticket?.payment_status,
+        ticket?.paid_status,
+        ticket?.remarks,
+        ticket?.split_status
+    ].map(v => String(v || '').toLowerCase()).join(' ');
+    if (paymentText.includes('unpaid') || paymentText.includes('partial') || paymentText.includes('balance')) return false;
+    if (explicitPaid) return true;
+    if (paymentText.includes('paid') || paymentText.includes('settled') || paymentText.includes('complete')) return true;
+    if (explicitUnpaid) return false;
+    return Boolean(ticket?.paid_date || ticket?.payment_method || ticket?.payment_transaction_id);
+}
+
+/**
+ * Identifies special rows that represent fee entries (not real passengers).
+ * @param {Object} ticket The ticket object.
+ * @returns {boolean} True if it's a fee entry row, false otherwise.
+ */
+export function isFeeEntryRow(ticket) {
+    const name = String(ticket?.name || '');
+    const remarks = String(ticket?.remarks || '').toLowerCase();
+    return /\(fees\)\s*$/i.test(name) || remarks.includes('fee entry');
+}
+
+/**
+ * Checks if a ticket is canceled or refunded.
+ * @param {Object} ticket The ticket object.
+ * @returns {boolean} True if canceled/refunded, false otherwise.
+ */
+export function isCanceledTicket(ticket) {
+    const remarks = String(ticket?.remarks || '').toLowerCase();
+    const status = String(ticket?.status || '').toLowerCase();
+    return status.includes('cancel') || remarks.includes('cancel') || remarks.includes('refund');
+}

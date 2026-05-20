@@ -8,7 +8,7 @@
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
 import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange } from './db.js';
-import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity } from './utils.js';
+import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket } from './utils.js';
 
 // Feature Modules
 import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
@@ -691,15 +691,6 @@ function inDashboardRange(date, range) {
     return date && date.getTime && date.getTime() >= range.start.getTime() && date.getTime() <= range.end.getTime();
 }
 
-function isFeeEntryRow(t) {
-    return /\(fees\)\s*$/i.test(String(t?.name || '')) || String(t?.remarks || '').toLowerCase().includes('fee entry') || String(t?.remarks || '').toLowerCase().includes('balance');
-}
-
-function isCanceledTicket(t) {
-    const remarks = String(t?.remarks || '').toLowerCase();
-    const status = String(t?.status || '').toLowerCase();
-    return status.includes('cancel') || remarks.includes('cancel') || remarks.includes('refund');
-}
 
 function ticketSalesAmount(t) {
     return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0) + (Number(t.extra_fare) || 0);
@@ -810,27 +801,7 @@ function daysBetween(from, to) {
     return Math.round((end - start) / (24 * 60 * 60 * 1000));
 }
 
-function isTicketPaid(ticket) {
-    const rawPaid = ticket?.paid;
-    if (typeof rawPaid === 'boolean') return rawPaid;
-    if (typeof rawPaid === 'number') return rawPaid === 1;
 
-    const paidValue = String(rawPaid ?? '').trim().toLowerCase();
-    const hasExplicitPaidValue = rawPaid !== undefined && rawPaid !== null && paidValue !== '';
-    const explicitPaid = ['true', 'yes', 'y', 'paid', '1', 'complete', 'completed', 'settled'].includes(paidValue);
-    const explicitUnpaid = hasExplicitPaidValue && ['false', 'no', 'n', 'unpaid', 'not paid', '0', 'pending', 'partial'].includes(paidValue);
-    const paymentText = [
-        ticket?.payment_status,
-        ticket?.paid_status,
-        ticket?.remarks,
-        ticket?.split_status
-    ].map(v => String(v || '').toLowerCase()).join(' ');
-    if (paymentText.includes('unpaid') || paymentText.includes('partial') || paymentText.includes('balance')) return false;
-    if (explicitPaid) return true;
-    if (paymentText.includes('paid') || paymentText.includes('settled') || paymentText.includes('complete')) return true;
-    if (explicitUnpaid) return false;
-    return Boolean(ticket?.paid_date || ticket?.payment_method || ticket?.payment_transaction_id);
-}
 
 function activeClientRows() {
     return (state.allClients || []).filter(client => !/\(fees\)\s*$/i.test(String(client?.name || '')));

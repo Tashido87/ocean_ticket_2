@@ -6,7 +6,7 @@
 
 import { CITIES } from './config.js';
 import { state } from './state.js';
-import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate } from './utils.js';
+import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate, isTicketPaid, isFeeEntryRow } from './utils.js';
 import { clearManageResults } from './manage.js';
 import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard, renderSettlementPage } from './settlement.js';
 import { showToast } from './utils.js';
@@ -26,14 +26,7 @@ function normalizePassengerName(name) {
     return raw.replace(/\s*\(fees\)\s*$/i, '').trim();
 }
 
-/**
- * Identifies special rows that represent fee entries (not real passengers).
- */
-function isFeeEntryRow(ticket) {
-    const name = String(ticket?.name || '');
-    const remarks = String(ticket?.remarks || '').toLowerCase();
-    return /\(fees\)\s*$/i.test(name) || remarks.includes('fee entry');
-}
+
 
 
 
@@ -472,7 +465,7 @@ export function updateNotifications() {
     let grandTotalUnpaid = 0; // ADDED: Variable for total
 
     state.allTickets.forEach(t => {
-        if (t.paid) return;
+        if (isTicketPaid(t)) return;
         const lowerRemarks = String(t.remarks || '').toLowerCase();
         if (lowerRemarks.includes('cancel') || lowerRemarks.includes('refund')) return;
 
@@ -752,12 +745,12 @@ function showUpcomingPnrsModal() {
 
         const amt = (t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0);
         groups[key].totalAmount += amt;
-        if (!t.paid) groups[key].amountDue += amt;
+        if (!isTicketPaid(t)) groups[key].amountDue += amt;
 
         if (!isFeeEntryRow(t)) {
             groups[key].pax += 1;
             groups[key].passengers.add(normalizePassengerName(t.name) || 'N/A');
-            if (t.paid) groups[key].paidPax += 1;
+            if (isTicketPaid(t)) groups[key].paidPax += 1;
             else groups[key].unpaidPax += 1;
         }
     });
@@ -997,7 +990,7 @@ export function showNotificationModal() {
     // - Excludes cancelled/refund
     // - Fee-entry rows count toward totals but do not inflate passenger names
     const unpaidTickets = state.allTickets.filter(t => {
-        if (t.paid) return false;
+        if (isTicketPaid(t)) return false;
         const r = String(t.remarks || '').toLowerCase();
         if (r.includes('cancel') || r.includes('refund')) return false;
         return true;
