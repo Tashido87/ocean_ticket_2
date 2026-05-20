@@ -3488,59 +3488,92 @@ body.material-theme .main-content {
     font-size: 0.85rem;
 }
 
-/* --- Dashboard grid (compact KPIs + tall panels) --- */
-/*
-   Layout goal (desktop):
-   - Left KPI area uses 4 / 12 columns (≈ 1/3 width) as a 2x2 grid.
-   - Notifications + Upcoming PNR each use 4 / 12 columns (≈ 1/3 width) and span both rows (taller, less wide).
-*/
-.dashboard-grid {
+/* --- Redesigned KPI Row & Panels Layout --- */
+.dashboard-kpis {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-rows: repeat(2, 164px);
-    gap: 1.25rem; /* CHANGED: Increased gap */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
     align-items: stretch;
 }
 
-/* KPI 2x2 (left) */
-#total-tickets-box { grid-column: 1 / span 2; grid-row: 1; }
-#monthly-revenue-box { grid-column: 3 / span 2; grid-row: 1; }
-#monthly-commission-box { grid-column: 1 / span 2; grid-row: 2; }
-#monthly-extra-fare-box { grid-column: 3 / span 2; grid-row: 2; }
-
-/* Tall panels (right) */
-#notification-panel-box { grid-column: 5 / span 4; grid-row: 1 / span 2; }
-#upcoming-pnr-box { grid-column: 9 / span 4; grid-row: 1 / span 2; }
-
-/* KPI accents (Cursor: warm, tidy) */
-#total-tickets-box { --kpi-accent: #7c3aed; }
-#monthly-revenue-box { --kpi-accent: var(--primary-accent); }
-#monthly-commission-box { --kpi-accent: var(--secondary-accent); }
-#monthly-extra-fare-box { --kpi-accent: var(--info-accent); }
-#notification-panel-box { --kpi-accent: #0d9488; }
-#upcoming-pnr-box { --kpi-accent: #1f8a65; }
-
-.dashboard-grid .info-card,
-.dashboard-grid .dashboard-panel {
-    border: 1px solid var(--border-color) !important;
-    border-left-width: 3px !important;
-    border-left-color: var(--kpi-accent, var(--border-color-strong)) !important;
-    box-shadow: var(--shadow-1) !important;
+.dashboard-panels-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+    align-items: stretch;
 }
 
-.dashboard-grid .info-card:hover,
-.dashboard-grid .dashboard-panel:hover {
+/* Responsive adjust */
+@media (max-width: 1024px) {
+    .dashboard-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .dashboard-panels-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-kpis {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-panels-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* KPI accents */
+#total-tickets-box { --kpi-accent: #7c3aed; }
+#monthly-revenue-box { --kpi-accent: var(--primary-accent); }
+#monthly-profit-box { --kpi-accent: var(--secondary-accent); }
+#active-bookings-box { --kpi-accent: var(--info-accent); }
+#notification-panel-box { --kpi-accent: #0d9488; }
+#upcoming-pnr-box { --kpi-accent: #1f8a65; }
+#airline-share-box { --kpi-accent: #3b82f6; }
+
+.dashboard-kpis .info-card,
+.dashboard-panels-row .dashboard-panel {
+    border: 1px solid var(--border-color) !important;
+    border-left-width: 4px !important;
+    border-left-color: var(--kpi-accent, var(--border-color-strong)) !important;
+    box-shadow: var(--shadow-1) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-kpis .info-card:hover,
+.dashboard-panels-row .dashboard-panel:hover {
     box-shadow: var(--shadow-2) !important;
+    transform: translateY(-2px);
+    border-left-color: var(--kpi-accent) !important;
 }
 
 /* KPI cards */
-.dashboard-grid .info-card {
+.dashboard-kpis .info-card {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding: 0.9rem 1rem;
+    padding: 1.1rem 1.25rem;
+    position: relative;
+    overflow: hidden;
 }
 
+/* Background gradient effect for KPI hover */
+.dashboard-kpis .info-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+.dashboard-kpis .info-card:hover::before {
+    opacity: 1;
+}
+
+/* Stat head */
 .stat-head {
     display: flex;
     justify-content: space-between;
@@ -3623,66 +3656,7 @@ body.material-theme.dark-theme .date-selectors.date-selectors--mini {
 .date-selectors--dashboard #dashboard-month { flex: 1 1 auto; }
 .date-selectors--dashboard #dashboard-year  { flex: 0 0 92px; }
 
-.dashboard-grid .info-card .icon {
-    position: static !important;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    font-size: 1rem;
-    color: var(--kpi-accent, var(--primary-accent));
-    background: rgba(55, 53, 47, 0.06);
-    border: 1px solid var(--border-color);
-    flex: 0 0 auto;
-    margin-left: auto;
-}
-
-/* Give icons breathing room so they never look "stuck" to the edge */
-.dashboard-grid .info-card .stat-head {
-    align-items: flex-start;
-}
-
-.dashboard-grid .info-card .stat-head .icon {
-    margin-top: 0.05rem;
-}
-.dashboard-grid .info-card .stat-head .icon {
-    margin-left: auto;
-    margin-top: 0.05rem;
-}
-
-.dashboard-grid .main-value {
-    font-size: 1.55rem;
-    font-weight: 850;
-    letter-spacing: -0.03em;
-    line-height: 1.05;
-}
-
-.stat-foot {
-    margin-top: auto;
-}
-
-.dashboard-grid .sub-value {
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-/* Subtle dashboard entrance animation */
-@keyframes dashboardFadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-body.material-theme .dashboard-grid > * {
-    animation: dashboardFadeUp 0.55s var(--ease) both;
-}
-
-body.material-theme .dashboard-grid > *:nth-child(1) { animation-delay: 0.00s; }
-body.material-theme .dashboard-grid > *:nth-child(2) { animation-delay: 0.04s; }
-body.material-theme .dashboard-grid > *:nth-child(3) { animation-delay: 0.08s; }
-body.material-theme .dashboard-grid > *:nth-child(4) { animation-delay: 0.12s; }
-body.material-theme .dashboard-grid > *:nth-child(5) { animation-delay: 0.16s; }
-body.material-theme .dashboard-grid > *:nth-child(6) { animation-delay: 0.20s; }
+/* --- End of Redesigned Dashboard KPI Layout --- */
 
 /* Panels */
 .dashboard-panel {

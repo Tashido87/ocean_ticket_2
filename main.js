@@ -8,7 +8,7 @@
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
 import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange } from './db.js';
-import { showToast, parseSheetDate, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity } from './utils.js';
+import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity } from './utils.js';
 
 // Feature Modules
 import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
@@ -597,7 +597,10 @@ function setupEventListeners() {
     });
 
     // Theme change listener for chart redraw
-    document.body.addEventListener('themeChanged', updateComparisonChart);
+    document.body.addEventListener('themeChanged', () => {
+        updateComparisonChart();
+        updateAirlineChart();
+    });
 }
 
 /**
@@ -611,38 +614,206 @@ function initializeDashboardSelectors() {
  * Updates the main dashboard cards with the latest data.
  */
 export function updateDashboardData() {
-    // Month/year selector removed: use current month & year
     const now = new Date();
     const selectedMonth = now.getMonth();
     const selectedYear = now.getFullYear();
     const isFeeEntryRow = (t) => /\(fees\)\s*$/i.test(String(t?.name || '')) || String(t?.remarks || '').toLowerCase().includes('fee entry');
 
+    // 1. Current Month Calculation
     const ticketsInPeriod = state.allTickets.filter(t => {
         const ticketDate = parseSheetDate(t.issued_date);
         const lowerRemarks = t.remarks?.toLowerCase() || '';
         return ticketDate.getMonth() === selectedMonth && ticketDate.getFullYear() === selectedYear && !lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund');
     });
 
-    // Total Tickets should represent real passenger tickets (exclude internal fee-entry rows).
     const passengerTicketsInPeriod = ticketsInPeriod.filter(t => !isFeeEntryRow(t));
-    document.getElementById('total-tickets-value').textContent = passengerTicketsInPeriod.length;
-    const revenueTickets = ticketsInPeriod; // Already filtered
-    const totalRevenue = revenueTickets.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
-    const revenueBox = document.getElementById('monthly-revenue-box');
-    revenueBox.querySelector('.main-value').textContent = totalRevenue.toLocaleString();
+    const curPassengerTickets = passengerTicketsInPeriod.length;
 
-    const totalCommission = revenueTickets.reduce((sum, t) => sum + (t.commission || 0), 0);
-    const commissionBox = document.getElementById('monthly-commission-box');
-    commissionBox.querySelector('.main-value').textContent = totalCommission.toLocaleString();
+    const totalRevenue = ticketsInPeriod.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
+    const totalCommission = ticketsInPeriod.reduce((sum, t) => sum + (t.commission || 0), 0);
+    const totalExtraFare = ticketsInPeriod.reduce((sum, t) => sum + (t.extra_fare || 0), 0);
+    const curRevenue = totalRevenue;
+    const curProfit = totalCommission + totalExtraFare;
 
-    const totalExtraFare = revenueTickets.reduce((sum, t) => sum + (t.extra_fare || 0), 0);
-    const extraFareBox = document.getElementById('monthly-extra-fare-box');
-    extraFareBox.querySelector('.main-value').textContent = totalExtraFare.toLocaleString();
+    // 2. Previous Month Calculation
+    const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+    const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
 
+    const prevTicketsInPeriod = state.allTickets.filter(t => {
+        const ticketDate = parseSheetDate(t.issued_date);
+        const lowerRemarks = t.remarks?.toLowerCase() || '';
+        return ticketDate.getMonth() === prevMonth && ticketDate.getFullYear() === prevYear && !lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund');
+    });
+
+    const prevPassengerTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t)).length;
+    const prevRevenue = prevTicketsInPeriod.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
+    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + (t.commission || 0) + (t.extra_fare || 0), 0);
+
+    // 3. Trend Badge HTML Generator
+    const getTrendBadgeHtml = (current, previous) => {
+        if (!previous) return `<span class="trend-badge neutral">0% vs last mo.</span>`;
+        const pct = (((current - previous) / previous) * 100).toFixed(1);
+        const absPct = Math.abs(pct) + '%';
+        if (current > previous) {
+            return `<span class="trend-badge positive"><i class="fa-solid fa-arrow-up"></i> ${absPct}</span>`;
+        } else if (current < previous) {
+            return `<span class="trend-badge negative"><i class="fa-solid fa-arrow-down"></i> ${absPct}</span>`;
+        } else {
+            return `<span class="trend-badge neutral">0%</span>`;
+        }
+    };
+
+    // 4. Update DOM Elements for Tickets, Revenue, Profit
+    document.getElementById('total-tickets-value').textContent = curPassengerTickets;
+    document.getElementById('tickets-trend-wrapper').innerHTML = getTrendBadgeHtml(curPassengerTickets, prevPassengerTickets);
+
+    document.getElementById('monthly-revenue-value').textContent = curRevenue.toLocaleString();
+    document.getElementById('revenue-trend-wrapper').innerHTML = getTrendBadgeHtml(curRevenue, prevRevenue);
+
+    document.getElementById('monthly-profit-value').textContent = curProfit.toLocaleString();
+    document.getElementById('profit-trend-wrapper').innerHTML = getTrendBadgeHtml(curProfit, prevProfit);
+    document.getElementById('profit-breakdown-label').textContent = `Comm: ${totalCommission.toLocaleString()} | Extra: ${totalExtraFare.toLocaleString()}`;
+
+    // 5. Active Bookings Card
+    const isActiveBooking = (b) => {
+        const status = String(b.status || '').toLowerCase().trim();
+        if (status) return status === 'active';
+        const remark = String(b.remark || '').toLowerCase().trim();
+        if (['complete', 'issued', 'get ticket', 'cancel', 'cancelled', 'canceled', 'end', 'expired'].includes(remark)) {
+            return false;
+        }
+        return true;
+    };
+    const getBookingDeadline = (b) => {
+        if (b.deadlineAt) {
+            const parsed = new Date(b.deadlineAt);
+            if (!isNaN(parsed.getTime())) return parsed;
+        }
+        return parseDeadline(b.enddate, b.endtime);
+    };
+
+    const activeBookings = (state.allBookings || []).filter(isActiveBooking);
+    const dueToday = activeBookings.filter(b => {
+        const deadline = getBookingDeadline(b);
+        if (!deadline) return false;
+        const diff = deadline.getTime() - Date.now();
+        return diff <= 24 * 60 * 60 * 1000; // Less than 24h, or expired
+    });
+
+    document.getElementById('active-bookings-value').textContent = activeBookings.length;
+    document.getElementById('bookings-due-wrapper').innerHTML = dueToday.length > 0
+        ? `<span class="trend-badge negative"><i class="fa-solid fa-triangle-exclamation"></i> ${dueToday.length} due</span>`
+        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> On Track</span>`;
+
+    // 6. Refresh components and charts
     updateNotifications();
     updateUpcomingPnrs();
     updateSettlementDashboard();
     updateComparisonChart();
+    updateAirlineChart();
+}
+
+/**
+ * Renders the Airline Distribution Doughnut Chart based on current month's ticket sales.
+ */
+export function updateAirlineChart() {
+    const now = new Date();
+    const selectedMonth = now.getMonth();
+    const selectedYear = now.getFullYear();
+    const isFeeEntryRow = (t) => /\(fees\)\s*$/i.test(String(t?.name || '')) || String(t?.remarks || '').toLowerCase().includes('fee entry');
+
+    // Filter tickets for this month
+    const ticketsInPeriod = state.allTickets.filter(t => {
+        const ticketDate = parseSheetDate(t.issued_date);
+        const lowerRemarks = t.remarks?.toLowerCase() || '';
+        return ticketDate.getMonth() === selectedMonth && ticketDate.getFullYear() === selectedYear && !lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund');
+    });
+
+    const airlineCounts = {};
+    ticketsInPeriod.forEach(t => {
+        if (isFeeEntryRow(t)) return;
+        let airline = (t.airline || 'UNKNOWN').toUpperCase().trim();
+        if (!airline) airline = 'UNKNOWN';
+        airlineCounts[airline] = (airlineCounts[airline] || 0) + 1;
+    });
+
+    // Sort by passenger ticket counts descending
+    const sortedAirlines = Object.entries(airlineCounts)
+        .sort((a, b) => b[1] - a[1]);
+
+    const labels = sortedAirlines.map(entry => entry[0]);
+    const data = sortedAirlines.map(entry => entry[1]);
+
+    const canvas = document.getElementById('airlineChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (state.charts.airlineChart) {
+        state.charts.airlineChart.destroy();
+    }
+
+    if (labels.length === 0) {
+        labels.push("No Data");
+        data.push(1);
+    }
+
+    const computed = getComputedStyle(document.body);
+    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#333333';
+
+    // Tailored palette of airline chart slices
+    const colors = [
+        '#0d9488', // Teal
+        '#3b82f6', // Blue
+        '#8b5cf6', // Purple
+        '#f59e0b', // Amber-orange
+        '#10b981', // Green
+        '#ec4899', // Pink
+        '#6366f1'  // Indigo
+    ];
+
+    state.charts.airlineChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: labels[0] === "No Data" ? ['#e2e8f0'] : colors.slice(0, labels.length),
+                borderWidth: 2,
+                borderColor: computed.getPropertyValue('--surface') || '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: textColor,
+                        boxWidth: 10,
+                        padding: 10,
+                        font: {
+                            size: 11,
+                            family: 'Inter',
+                            weight: '600'
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.label === "No Data") return " No tickets sold this month";
+                            const val = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((val / total) * 100).toFixed(1);
+                            return ` ${context.label}: ${val} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '72%'
+        }
+    });
 }
 
 

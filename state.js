@@ -15,7 +15,8 @@ export const state = {
     featuredClients: [], // For starred clients
     history: [],
     charts: {
-        comparisonChart: null
+        comparisonChart: null,
+        airlineChart: null
     },
     isSubmitting: false,
     rowsPerPage: 10,

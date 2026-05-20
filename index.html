@@ -96,14 +96,17 @@
                 
                 <div class="dashboard-content-wrapper" id="dashboard-content" style="display: none;">
 
-                    <div class="info-grid dashboard-grid">
+                    <div class="dashboard-kpis">
                         <div id="total-tickets-box" class="info-card glass-card">
                             <div class="stat-head">
-                                <h3>Total Tickets</h3>
+                                <h3>Tickets Sold</h3>
                                 <i class="icon fa-solid fa-ticket-simple" aria-hidden="true"></i>
                             </div>
-                            <div class="main-value" id="total-tickets-value"></div>
-                            <div class="stat-foot"><span class="sub-value">Tickets</span></div>
+                            <div class="main-value" id="total-tickets-value">0</div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="tickets-trend-wrapper"></span>
+                                <span class="sub-value">this month</span>
+                            </div>
                         </div>
 
                         <div id="monthly-revenue-box" class="info-card glass-card">
@@ -111,10 +114,45 @@
                                 <h3>Total Revenue</h3>
                                 <i class="icon fa-solid fa-sack-dollar" aria-hidden="true"></i>
                             </div>
-                            <div class="main-value" id="monthly-revenue-value"></div>
-                            <div class="stat-foot"><span class="sub-value">MMK</span></div>
+                            <div class="main-value-wrap">
+                                <span class="main-value" id="monthly-revenue-value">0</span>
+                                <span class="currency-label">MMK</span>
+                            </div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="revenue-trend-wrapper"></span>
+                                <span class="sub-value">this month</span>
+                            </div>
                         </div>
 
+                        <div id="monthly-profit-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Net Profit</h3>
+                                <i class="icon fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value-wrap">
+                                <span class="main-value" id="monthly-profit-value">0</span>
+                                <span class="currency-label">MMK</span>
+                            </div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="profit-trend-wrapper"></span>
+                                <span class="sub-value" id="profit-breakdown-label">Comm / Extra</span>
+                            </div>
+                        </div>
+
+                        <div id="active-bookings-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Active Bookings</h3>
+                                <i class="icon fa-solid fa-calendar-check" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value" id="active-bookings-value">0</div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="bookings-due-wrapper"></span>
+                                <span class="sub-value">pending issuance</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-panels-row">
                         <div id="notification-panel-box" class="glass-card dashboard-panel notification-panel">
                             <div class="panel-header">
                                 <a href="#" id="notification-title-link" class="panel-title-link">
@@ -125,24 +163,6 @@
                             <div id="notification-list" class="notification-list panel-list"></div>
                         </div>
 
-                        <div id="monthly-commission-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Total Commission</h3>
-                                <i class="icon fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value" id="monthly-commission-value"></div>
-                            <div class="stat-foot"><span class="sub-value">MMK</span></div>
-                        </div>
-
-                        <div id="monthly-extra-fare-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Total Extra Fare</h3>
-                                <i class="icon fa-solid fa-dollar-sign" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value" id="monthly-extra-fare-value"></div>
-                            <div class="stat-foot"><span class="sub-value">MMK</span></div>
-                        </div>
-
                         <div id="upcoming-pnr-box" class="glass-card dashboard-panel upcoming-panel">
                             <div class="panel-header">
                                 <a href="#" id="upcoming-title-link" class="panel-title-link">
@@ -151,6 +171,16 @@
                                 <span class="panel-hint">Next 14 days</span>
                             </div>
                             <div id="upcoming-pnr-list" class="upcoming-list panel-list"></div>
+                        </div>
+
+                        <div id="airline-share-box" class="glass-card dashboard-panel airline-share-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Airline Share</h3>
+                                <span class="panel-hint hint-neutral">This Month</span>
+                            </div>
+                            <div class="airline-chart-container">
+                                <canvas id="airlineChart"></canvas>
+                            </div>
                         </div>
                     </div>
 
