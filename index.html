@@ -96,6 +96,46 @@
                 
                 <div class="dashboard-content-wrapper" id="dashboard-content" style="display: none;">
 
+                    <section class="dashboard-hero glass-card">
+                        <div class="dashboard-hero-copy">
+                            <span class="dashboard-eyebrow">Ocean Travel Operations</span>
+                            <h1>Ocean Travel Dashboard</h1>
+                            <p>Ticket sales, bookings, payments, owner payable, and travel reminders in one calm workspace.</p>
+                            <div class="dashboard-period-controls" aria-label="Dashboard period">
+                                <button type="button" class="dashboard-period-btn active" data-dashboard-period="month">This Month</button>
+                                <button type="button" class="dashboard-period-btn" data-dashboard-period="today">Today</button>
+                                <button type="button" class="dashboard-period-btn" data-dashboard-period="last-month">Last Month</button>
+                                <button type="button" class="dashboard-period-btn" data-dashboard-period="custom">Custom</button>
+                                <span class="dashboard-custom-range" id="dashboardCustomRange" hidden>
+                                    <input type="date" id="dashboardCustomStart" aria-label="Dashboard start date">
+                                    <input type="date" id="dashboardCustomEnd" aria-label="Dashboard end date">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="dashboard-hero-actions">
+                            <button type="button" class="btn btn-primary dashboard-action-btn" data-dashboard-view="sell"><i class="fa-solid fa-ticket"></i> Sell Ticket</button>
+                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="booking"><i class="fa-solid fa-calendar-plus"></i> New Booking</button>
+                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="manage"><i class="fa-solid fa-magnifying-glass"></i> Manage PNR</button>
+                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="settle"><i class="fa-solid fa-handshake"></i> Owner Settlement</button>
+                        </div>
+                        <div class="app-illustration panel-illustration dashboard-hero-illustration" aria-hidden="true">
+                            <svg viewBox="0 0 260 190" role="img">
+                                <path class="illus-soft" d="M34 144c30 28 113 31 166 6 39-18 45-62 22-91-30-38-118-48-166-20-36 21-51 76-22 105z"/>
+                                <path class="illus-line" d="M68 87h101c11 0 20 9 20 20v37H58v-47c0-6 4-10 10-10z"/>
+                                <path class="illus-fill-coral" d="M74 100h103v33H74z"/>
+                                <path class="illus-line" d="M78 101l18 18 18-18 18 18 18-18 22 22"/>
+                                <path class="illus-fill-mint" d="M48 56c19-10 44-4 57 12-20 14-44 11-57-12z"/>
+                                <path class="illus-line" d="M48 56c19-10 44-4 57 12-20 14-44 11-57-12zM68 58l-13-18M87 62l8-21"/>
+                                <path class="illus-fill-butter" d="M180 49l33-14-10 34z"/>
+                                <path class="illus-line" d="M180 49l33-14-10 34-9-15zM194 54l-17 23"/>
+                                <path class="illus-line" d="M38 124c-12 3-20 11-24 24M209 91c17-4 30 1 39 13M127 39c6-9 14-16 24-21"/>
+                                <circle class="illus-dot" cx="46" cy="94" r="4"/>
+                                <circle class="illus-dot" cx="218" cy="123" r="3"/>
+                                <circle class="illus-dot" cx="151" cy="58" r="3"/>
+                            </svg>
+                        </div>
+                    </section>
+
                     <div class="dashboard-kpis">
                         <div id="total-tickets-box" class="info-card glass-card">
                             <div class="stat-head">
@@ -111,7 +151,7 @@
 
                         <div id="monthly-revenue-box" class="info-card glass-card">
                             <div class="stat-head">
-                                <h3>Total Revenue</h3>
+                                <h3>Ticket Sales Total</h3>
                                 <i class="icon fa-solid fa-sack-dollar" aria-hidden="true"></i>
                             </div>
                             <div class="main-value-wrap">
@@ -139,6 +179,36 @@
                             </div>
                         </div>
 
+                        <div id="owner-payable-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Owner Payable</h3>
+                                <i class="icon fa-solid fa-handshake" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value-wrap">
+                                <span class="main-value" id="owner-payable-value">0</span>
+                                <span class="currency-label">MMK</span>
+                            </div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="owner-payable-trend-wrapper"></span>
+                                <span class="sub-value">settlement basis</span>
+                            </div>
+                        </div>
+
+                        <div id="unpaid-amount-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Unpaid Amount</h3>
+                                <i class="icon fa-solid fa-wallet" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value-wrap">
+                                <span class="main-value" id="unpaid-amount-value">0</span>
+                                <span class="currency-label">MMK</span>
+                            </div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="unpaid-trend-wrapper"></span>
+                                <span class="sub-value">client collection risk</span>
+                            </div>
+                        </div>
+
                         <div id="active-bookings-box" class="info-card glass-card">
                             <div class="stat-head">
                                 <h3>Active Bookings</h3>
@@ -150,9 +220,49 @@
                                 <span class="sub-value">pending issuance</span>
                             </div>
                         </div>
+
+                        <div id="booking-deadlines-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Booking Deadlines</h3>
+                                <i class="icon fa-solid fa-bell" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value" id="booking-deadlines-value">0</div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="deadline-health-wrapper"></span>
+                                <span class="sub-value">due within 24h</span>
+                            </div>
+                        </div>
+
+                        <div id="financial-pending-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Financial Pending</h3>
+                                <i class="icon fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value" id="financial-pending-value">0</div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="financial-pending-wrapper"></span>
+                                <span class="sub-value">needs review</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="dashboard-panels-row">
+                        <div id="needs-attention-box" class="glass-card dashboard-panel attention-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Needs Attention</h3>
+                                <span class="panel-hint hint-warning" id="attention-count-hint">0 items</span>
+                            </div>
+                            <div id="needsAttentionList" class="panel-list attention-list"></div>
+                        </div>
+
+                        <div id="settlement-snapshot-box" class="glass-card dashboard-panel settlement-snapshot-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i> Owner Settlement</h3>
+                                <span class="panel-hint hint-neutral">This Period</span>
+                            </div>
+                            <div id="ownerSettlementSnapshot" class="settlement-snapshot-list"></div>
+                        </div>
+
                         <div id="notification-panel-box" class="glass-card dashboard-panel notification-panel">
                             <div class="panel-header">
                                 <a href="#" id="notification-title-link" class="panel-title-link">
@@ -173,6 +283,26 @@
                             <div id="upcoming-pnr-list" class="upcoming-list panel-list"></div>
                         </div>
 
+                        <div id="payment-status-box" class="glass-card dashboard-panel chart-panel payment-status-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Payment Status</h3>
+                                <span class="panel-hint hint-neutral">Amount</span>
+                            </div>
+                            <div class="mini-chart-container">
+                                <canvas id="paymentStatusChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="route-performance-box" class="glass-card dashboard-panel chart-panel route-performance-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-route" aria-hidden="true"></i> Route Performance</h3>
+                                <span class="panel-hint hint-neutral">Top Routes</span>
+                            </div>
+                            <div class="mini-chart-container">
+                                <canvas id="routePerformanceChart"></canvas>
+                            </div>
+                        </div>
+
                         <div id="airline-share-box" class="glass-card dashboard-panel airline-share-panel">
                             <div class="panel-header">
                                 <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Airline Share</h3>
@@ -181,6 +311,14 @@
                             <div class="airline-chart-container">
                                 <canvas id="airlineChart"></canvas>
                             </div>
+                        </div>
+
+                        <div id="recent-activity-box" class="glass-card dashboard-panel recent-activity-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Recent Activity</h3>
+                                <span class="panel-hint hint-neutral">Local</span>
+                            </div>
+                            <div id="recentActivityList" class="recent-activity-list panel-list"></div>
                         </div>
                     </div>
 
@@ -245,10 +383,18 @@
                             <div id="pagination" class="pagination-container"></div>
                         </div>
                     </div>
-                    <div class="comparison-section glass-card">
-                        <h3><i class="fa-solid fa-chart-line"></i> Yearly Overview</h3>
-                        <div class="chart-container">
-                            <canvas id="comparisonChart"></canvas>
+                    <div class="dashboard-chart-grid">
+                        <div class="comparison-section glass-card">
+                            <h3><i class="fa-solid fa-chart-line"></i> Sales & Profit Trend</h3>
+                            <div class="chart-container">
+                                <canvas id="comparisonChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="comparison-section glass-card">
+                            <h3><i class="fa-solid fa-scale-balanced"></i> Owner Payable vs Paid</h3>
+                            <div class="chart-container">
+                                <canvas id="ownerPayableChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>

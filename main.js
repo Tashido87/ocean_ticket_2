@@ -168,6 +168,35 @@ function setupEventListeners() {
 
     initGlobalSearch();
 
+    document.querySelectorAll('[data-dashboard-view]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const view = e.currentTarget.dataset.dashboardView;
+            showView(view);
+            if (view === 'booking') showNewBookingForm();
+            if (view === 'manage') setTimeout(() => document.getElementById('managePnr')?.focus(), 80);
+        });
+    });
+
+    document.querySelectorAll('.dashboard-period-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.dashboard-period-btn').forEach(b => b.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            dashboardPeriodState.period = e.currentTarget.dataset.dashboardPeriod || 'month';
+            const custom = document.getElementById('dashboardCustomRange');
+            if (custom) custom.hidden = dashboardPeriodState.period !== 'custom';
+            updateDashboardData();
+        });
+    });
+    ['dashboardCustomStart', 'dashboardCustomEnd'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('change', () => {
+            dashboardPeriodState.customStart = document.getElementById('dashboardCustomStart')?.value || '';
+            dashboardPeriodState.customEnd = document.getElementById('dashboardCustomEnd')?.value || '';
+            updateDashboardData();
+        });
+    });
+
     // Records Search Panel
     const debouncedSearch = debounce(performSearch, 300);
     document.getElementById('searchName').addEventListener('input', debouncedSearch);
@@ -600,13 +629,159 @@ function setupEventListeners() {
     document.body.addEventListener('themeChanged', () => {
         updateComparisonChart();
         updateAirlineChart();
+        updatePaymentStatusChart();
+        updateRoutePerformanceChart();
+        updateOwnerPayableChart();
     });
+}
+
+const dashboardPeriodState = {
+    period: 'month',
+    customStart: '',
+    customEnd: ''
+};
+
+function startOfDay(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function endOfDay(date) {
+    const d = new Date(date);
+    d.setHours(23, 59, 59, 999);
+    return d;
+}
+
+function getDashboardDateRange(period = dashboardPeriodState.period) {
+    const now = new Date();
+    if (period === 'today') {
+        return { start: startOfDay(now), end: endOfDay(now), label: 'Today' };
+    }
+    if (period === 'last-month') {
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        return { start, end, label: 'Last Month' };
+    }
+    if (period === 'custom' && dashboardPeriodState.customStart && dashboardPeriodState.customEnd) {
+        return {
+            start: startOfDay(new Date(dashboardPeriodState.customStart)),
+            end: endOfDay(new Date(dashboardPeriodState.customEnd)),
+            label: 'Custom'
+        };
+    }
+    return {
+        start: new Date(now.getFullYear(), now.getMonth(), 1),
+        end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
+        label: 'This Month'
+    };
+}
+
+function getPreviousDashboardRange(range) {
+    const days = Math.max(1, Math.round((range.end - range.start) / (24 * 60 * 60 * 1000)) + 1);
+    const end = new Date(range.start);
+    end.setDate(end.getDate() - 1);
+    end.setHours(23, 59, 59, 999);
+    const start = new Date(end);
+    start.setDate(start.getDate() - days + 1);
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+}
+
+function inDashboardRange(date, range) {
+    return date && date.getTime && date.getTime() >= range.start.getTime() && date.getTime() <= range.end.getTime();
+}
+
+function isFeeEntryRow(t) {
+    return /\(fees\)\s*$/i.test(String(t?.name || '')) || String(t?.remarks || '').toLowerCase().includes('fee entry') || String(t?.remarks || '').toLowerCase().includes('balance');
+}
+
+function isCanceledTicket(t) {
+    const remarks = String(t?.remarks || '').toLowerCase();
+    const status = String(t?.status || '').toLowerCase();
+    return status.includes('cancel') || remarks.includes('cancel') || remarks.includes('refund');
+}
+
+function ticketSalesAmount(t) {
+    return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0) + (Number(t.extra_fare) || 0);
+}
+
+function ticketProfitAmount(t) {
+    return (Number(t.commission) || 0) + (Number(t.extra_fare) || 0);
+}
+
+function ticketOwnerPayableAmount(t) {
+    if (isCanceledTicket(t)) return 0;
+    // Owner payable follows settlement assumptions: net + date change owed to owner, commission retained by us.
+    return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0) - (Number(t.commission) || 0);
+}
+
+function isFinancialPendingTicket(t) {
+    if (isCanceledTicket(t) || isFeeEntryRow(t)) return false;
+    const status = String(t.financial_status || '').toLowerCase();
+    return status.includes('pending') || status.includes('review') || !(Number(t.net_amount) > 0) || !(Number(t.commission) > 0);
+}
+
+function activeTicketRowsInRange(range) {
+    return (state.allTickets || []).filter(t => {
+        const ticketDate = parseSheetDate(t.issued_date);
+        return inDashboardRange(ticketDate, range) && !isCanceledTicket(t);
+    });
+}
+
+function formatDashboardAmount(value) {
+    return Math.round(Number(value) || 0).toLocaleString();
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function setHtml(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = value;
+}
+
+function getTrendBadgeHtml(current, previous, inverse = false) {
+    if (!previous) return `<span class="trend-badge neutral">new period</span>`;
+    const pct = (((current - previous) / previous) * 100).toFixed(1);
+    const absPct = Math.abs(pct) + '%';
+    const improved = inverse ? current < previous : current > previous;
+    if (current === previous) return `<span class="trend-badge neutral">0%</span>`;
+    return improved
+        ? `<span class="trend-badge positive"><i class="fa-solid fa-arrow-up"></i> ${absPct}</span>`
+        : `<span class="trend-badge negative"><i class="fa-solid fa-arrow-down"></i> ${absPct}</span>`;
+}
+
+function getActiveBookings() {
+    return (state.allBookings || []).filter(b => {
+        const status = String(b.status || '').toLowerCase().trim();
+        if (status) return status === 'active';
+        const remark = String(b.remark || '').toLowerCase().trim();
+        return !['complete', 'issued', 'get ticket', 'cancel', 'cancelled', 'canceled', 'end', 'expired'].includes(remark);
+    });
+}
+
+function getBookingDeadline(b) {
+    if (b.deadlineAt) {
+        const parsed = new Date(b.deadlineAt);
+        if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return parseDeadline(b.enddate, b.endtime);
 }
 
 /**
  * Initializes dashboard-specific UI elements like date selectors.
  */
 function initializeDashboardSelectors() {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const startInput = document.getElementById('dashboardCustomStart');
+    const endInput = document.getElementById('dashboardCustomEnd');
+    if (startInput && !startInput.value) startInput.value = todayIso;
+    if (endInput && !endInput.value) endInput.value = todayIso;
+    dashboardPeriodState.customStart = startInput?.value || todayIso;
+    dashboardPeriodState.customEnd = endInput?.value || todayIso;
     updateDashboardData();
 }
 
@@ -614,120 +789,355 @@ function initializeDashboardSelectors() {
  * Updates the main dashboard cards with the latest data.
  */
 export function updateDashboardData() {
-    const now = new Date();
-    const selectedMonth = now.getMonth();
-    const selectedYear = now.getFullYear();
-    const isFeeEntryRow = (t) => /\(fees\)\s*$/i.test(String(t?.name || '')) || String(t?.remarks || '').toLowerCase().includes('fee entry');
-
-    // 1. Current Month Calculation
-    const ticketsInPeriod = state.allTickets.filter(t => {
-        const ticketDate = parseSheetDate(t.issued_date);
-        const lowerRemarks = t.remarks?.toLowerCase() || '';
-        return ticketDate.getMonth() === selectedMonth && ticketDate.getFullYear() === selectedYear && !lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund');
-    });
+    const range = getDashboardDateRange();
+    const prevRange = getPreviousDashboardRange(range);
+    const ticketsInPeriod = activeTicketRowsInRange(range);
+    const prevTicketsInPeriod = activeTicketRowsInRange(prevRange);
 
     const passengerTicketsInPeriod = ticketsInPeriod.filter(t => !isFeeEntryRow(t));
     const curPassengerTickets = passengerTicketsInPeriod.length;
 
-    const totalRevenue = ticketsInPeriod.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
-    const totalCommission = ticketsInPeriod.reduce((sum, t) => sum + (t.commission || 0), 0);
-    const totalExtraFare = ticketsInPeriod.reduce((sum, t) => sum + (t.extra_fare || 0), 0);
-    const curRevenue = totalRevenue;
+    const curRevenue = ticketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+    const totalCommission = ticketsInPeriod.reduce((sum, t) => sum + (Number(t.commission) || 0), 0);
+    const totalExtraFare = ticketsInPeriod.reduce((sum, t) => sum + (Number(t.extra_fare) || 0), 0);
     const curProfit = totalCommission + totalExtraFare;
-
-    // 2. Previous Month Calculation
-    const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
-    const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
-
-    const prevTicketsInPeriod = state.allTickets.filter(t => {
-        const ticketDate = parseSheetDate(t.issued_date);
-        const lowerRemarks = t.remarks?.toLowerCase() || '';
-        return ticketDate.getMonth() === prevMonth && ticketDate.getFullYear() === prevYear && !lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund');
-    });
+    const curOwnerPayable = ticketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
+    const curUnpaid = ticketsInPeriod.filter(t => !t.paid).reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+    const curFinancialPending = ticketsInPeriod.filter(isFinancialPendingTicket).length;
 
     const prevPassengerTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t)).length;
-    const prevRevenue = prevTicketsInPeriod.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
-    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + (t.commission || 0) + (t.extra_fare || 0), 0);
+    const prevRevenue = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
+    const prevOwnerPayable = prevTicketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
+    const prevUnpaid = prevTicketsInPeriod.filter(t => !t.paid).reduce((sum, t) => sum + ticketSalesAmount(t), 0);
 
-    // 3. Trend Badge HTML Generator
-    const getTrendBadgeHtml = (current, previous) => {
-        if (!previous) return `<span class="trend-badge neutral">0% vs last mo.</span>`;
-        const pct = (((current - previous) / previous) * 100).toFixed(1);
-        const absPct = Math.abs(pct) + '%';
-        if (current > previous) {
-            return `<span class="trend-badge positive"><i class="fa-solid fa-arrow-up"></i> ${absPct}</span>`;
-        } else if (current < previous) {
-            return `<span class="trend-badge negative"><i class="fa-solid fa-arrow-down"></i> ${absPct}</span>`;
-        } else {
-            return `<span class="trend-badge neutral">0%</span>`;
-        }
-    };
+    setText('total-tickets-value', curPassengerTickets);
+    setHtml('tickets-trend-wrapper', getTrendBadgeHtml(curPassengerTickets, prevPassengerTickets));
 
-    // 4. Update DOM Elements for Tickets, Revenue, Profit
-    document.getElementById('total-tickets-value').textContent = curPassengerTickets;
-    document.getElementById('tickets-trend-wrapper').innerHTML = getTrendBadgeHtml(curPassengerTickets, prevPassengerTickets);
+    setText('monthly-revenue-value', formatDashboardAmount(curRevenue));
+    setHtml('revenue-trend-wrapper', getTrendBadgeHtml(curRevenue, prevRevenue));
 
-    document.getElementById('monthly-revenue-value').textContent = curRevenue.toLocaleString();
-    document.getElementById('revenue-trend-wrapper').innerHTML = getTrendBadgeHtml(curRevenue, prevRevenue);
+    setText('monthly-profit-value', formatDashboardAmount(curProfit));
+    setHtml('profit-trend-wrapper', getTrendBadgeHtml(curProfit, prevProfit));
+    setText('profit-breakdown-label', `Comm: ${formatDashboardAmount(totalCommission)} | Extra: ${formatDashboardAmount(totalExtraFare)}`);
 
-    document.getElementById('monthly-profit-value').textContent = curProfit.toLocaleString();
-    document.getElementById('profit-trend-wrapper').innerHTML = getTrendBadgeHtml(curProfit, prevProfit);
-    document.getElementById('profit-breakdown-label').textContent = `Comm: ${totalCommission.toLocaleString()} | Extra: ${totalExtraFare.toLocaleString()}`;
+    setText('owner-payable-value', formatDashboardAmount(curOwnerPayable));
+    setHtml('owner-payable-trend-wrapper', getTrendBadgeHtml(curOwnerPayable, prevOwnerPayable));
 
-    // 5. Active Bookings Card
-    const isActiveBooking = (b) => {
-        const status = String(b.status || '').toLowerCase().trim();
-        if (status) return status === 'active';
-        const remark = String(b.remark || '').toLowerCase().trim();
-        if (['complete', 'issued', 'get ticket', 'cancel', 'cancelled', 'canceled', 'end', 'expired'].includes(remark)) {
-            return false;
-        }
-        return true;
-    };
-    const getBookingDeadline = (b) => {
-        if (b.deadlineAt) {
-            const parsed = new Date(b.deadlineAt);
-            if (!isNaN(parsed.getTime())) return parsed;
-        }
-        return parseDeadline(b.enddate, b.endtime);
-    };
+    setText('unpaid-amount-value', formatDashboardAmount(curUnpaid));
+    setHtml('unpaid-trend-wrapper', getTrendBadgeHtml(curUnpaid, prevUnpaid, true));
 
-    const activeBookings = (state.allBookings || []).filter(isActiveBooking);
+    const activeBookings = getActiveBookings();
     const dueToday = activeBookings.filter(b => {
         const deadline = getBookingDeadline(b);
         if (!deadline) return false;
         const diff = deadline.getTime() - Date.now();
-        return diff <= 24 * 60 * 60 * 1000; // Less than 24h, or expired
+        return diff <= 24 * 60 * 60 * 1000;
     });
 
-    document.getElementById('active-bookings-value').textContent = activeBookings.length;
-    document.getElementById('bookings-due-wrapper').innerHTML = dueToday.length > 0
+    setText('active-bookings-value', activeBookings.length);
+    setHtml('bookings-due-wrapper', dueToday.length > 0
         ? `<span class="trend-badge negative"><i class="fa-solid fa-triangle-exclamation"></i> ${dueToday.length} due</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> On Track</span>`;
+        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> On Track</span>`);
 
-    // 6. Refresh components and charts
+    setText('booking-deadlines-value', dueToday.length);
+    setHtml('deadline-health-wrapper', dueToday.length > 0
+        ? `<span class="trend-badge negative"><i class="fa-solid fa-bell"></i> review</span>`
+        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> clear</span>`);
+
+    setText('financial-pending-value', curFinancialPending);
+    setHtml('financial-pending-wrapper', curFinancialPending > 0
+        ? `<span class="trend-badge negative"><i class="fa-solid fa-clipboard-list"></i> action</span>`
+        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> confirmed</span>`);
+
+    renderNeedsAttentionPanel(ticketsInPeriod, activeBookings, dueToday, curUnpaid, curFinancialPending);
+    renderOwnerSettlementSnapshot(ticketsInPeriod, range);
     updateNotifications();
     updateUpcomingPnrs();
     updateSettlementDashboard();
     updateComparisonChart();
     updateAirlineChart();
+    updatePaymentStatusChart();
+    updateRoutePerformanceChart();
+    updateOwnerPayableChart();
+}
+
+function renderNeedsAttentionPanel(ticketsInPeriod, activeBookings, dueBookings, unpaidAmount, financialPendingCount) {
+    const container = document.getElementById('needsAttentionList');
+    const hint = document.getElementById('attention-count-hint');
+    if (!container) return;
+
+    const items = [];
+    if (unpaidAmount > 0) {
+        items.push({
+            tone: 'danger',
+            icon: 'fa-wallet',
+            title: 'Unpaid collection risk',
+            meta: `${formatDashboardAmount(unpaidAmount)} MMK still unpaid in this period`
+        });
+    }
+    if (dueBookings.length > 0) {
+        items.push({
+            tone: 'warning',
+            icon: 'fa-bell',
+            title: 'Booking deadlines need attention',
+            meta: `${dueBookings.length} active booking${dueBookings.length === 1 ? '' : 's'} due within 24 hours or overdue`
+        });
+    }
+    if (financialPendingCount > 0) {
+        items.push({
+            tone: 'warning',
+            icon: 'fa-clipboard-check',
+            title: 'Financial review pending',
+            meta: `${financialPendingCount} ticket${financialPendingCount === 1 ? '' : 's'} missing confirmed net or commission`
+        });
+    }
+    const missingPaidDates = ticketsInPeriod.filter(t => t.paid && !t.paid_date && !isCanceledTicket(t)).length;
+    if (missingPaidDates > 0) {
+        items.push({
+            tone: 'warning',
+            icon: 'fa-calendar-xmark',
+            title: 'Payment dates missing',
+            meta: `${missingPaidDates} paid ticket${missingPaidDates === 1 ? '' : 's'} without paid date`
+        });
+    }
+    const oldBookings = activeBookings.filter(b => {
+        const deadline = getBookingDeadline(b);
+        return deadline && deadline.getTime() < Date.now();
+    }).length;
+    if (oldBookings > 0) {
+        items.push({
+            tone: 'danger',
+            icon: 'fa-hourglass-end',
+            title: 'Expired booking holds',
+            meta: `${oldBookings} booking${oldBookings === 1 ? '' : 's'} may need cancellation or issue follow-up`
+        });
+    }
+
+    if (hint) hint.textContent = `${items.length} item${items.length === 1 ? '' : 's'}`;
+
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="attention-empty app-empty-mini">
+                <span class="mini-illustration mini-illustration-check" aria-hidden="true"></span>
+                <strong>Everything looks calm.</strong>
+                <span>No unpaid, deadline, or financial-review alerts for this period.</span>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = items.slice(0, 6).map(item => `
+        <div class="attention-item ${item.tone}">
+            <span class="attention-icon"><i class="fa-solid ${item.icon}"></i></span>
+            <div>
+                <strong>${item.title}</strong>
+                <span>${item.meta}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderOwnerSettlementSnapshot(ticketsInPeriod, range) {
+    const container = document.getElementById('ownerSettlementSnapshot');
+    if (!container) return;
+
+    const ownerPayable = ticketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
+    const paidToOwner = (state.allSettlements || []).filter(s => inDashboardRange(parseSheetDate(s.settlement_date), range))
+        .reduce((sum, s) => sum + (Number(s.amount_paid) || 0), 0);
+    const remaining = ownerPayable - paidToOwner;
+    const lastSettlement = [...(state.allSettlements || [])]
+        .map(s => ({ ...s, date: parseSheetDate(s.settlement_date) }))
+        .filter(s => s.date && s.date.getTime())
+        .sort((a, b) => b.date - a.date)[0];
+
+    container.innerHTML = `
+        <div class="settlement-snapshot-card ${remaining > 0 ? 'is-due' : 'is-settled'}">
+            <span>Remaining Due</span>
+            <strong>${formatDashboardAmount(remaining)} MMK</strong>
+            <small>${remaining > 0 ? 'Owner payable still open' : 'No period balance due'}</small>
+        </div>
+        <div class="settlement-snapshot-grid">
+            <div><span>Owner Payable</span><strong>${formatDashboardAmount(ownerPayable)} MMK</strong></div>
+            <div><span>Paid to Owner</span><strong>${formatDashboardAmount(paidToOwner)} MMK</strong></div>
+            <div><span>Last Settlement</span><strong>${lastSettlement ? (lastSettlement.settlement_date || '—') : '—'}</strong></div>
+        </div>
+    `;
+}
+
+function dashboardChartPalette() {
+    const computed = getComputedStyle(document.body);
+    return {
+        text: (computed.getPropertyValue('--chart-text') || '').trim() || '#24242b',
+        grid: (computed.getPropertyValue('--chart-grid') || '').trim() || 'rgba(36,36,43,0.10)',
+        coral: (computed.getPropertyValue('--coral') || '').trim() || '#ff6f5e',
+        mint: (computed.getPropertyValue('--mint-strong') || '').trim() || '#9fca6b',
+        butter: (computed.getPropertyValue('--butter') || '').trim() || '#ffe4a8',
+        lavender: (computed.getPropertyValue('--lavender-strong') || '').trim() || '#9b7bea',
+        ink: (computed.getPropertyValue('--ink') || '').trim() || '#24242b',
+        surface: (computed.getPropertyValue('--surface') || '').trim() || '#ffffff'
+    };
+}
+
+export function updatePaymentStatusChart() {
+    const canvas = document.getElementById('paymentStatusChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const range = getDashboardDateRange();
+    const rows = activeTicketRowsInRange(range);
+    const buckets = {
+        Paid: 0,
+        Unpaid: 0,
+        Partial: 0,
+        Pending: 0
+    };
+
+    rows.forEach(t => {
+        const amount = ticketSalesAmount(t);
+        const remarks = String(t.remarks || '').toLowerCase();
+        const split = String(t.split_status || '').toLowerCase();
+        if (isFinancialPendingTicket(t)) buckets.Pending += amount;
+        else if (remarks.includes('partial') || remarks.includes('balance') || split.includes('partial') || split.includes('balance')) buckets.Partial += amount;
+        else if (t.paid) buckets.Paid += amount;
+        else buckets.Unpaid += amount;
+    });
+
+    const labels = Object.keys(buckets);
+    let data = Object.values(buckets);
+    const hasData = data.some(v => v > 0);
+    if (!hasData) data = [1, 0, 0, 0];
+
+    if (state.charts.paymentStatusChart) state.charts.paymentStatusChart.destroy();
+    const p = dashboardChartPalette();
+    state.charts.paymentStatusChart = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{
+                data,
+                backgroundColor: hasData ? [p.mint, p.coral, p.butter, p.lavender] : ['#f1eee9', '#f1eee9', '#f1eee9', '#f1eee9'],
+                borderColor: p.surface,
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '68%',
+            plugins: {
+                legend: { position: 'bottom', labels: { color: p.text, boxWidth: 10, font: { size: 11, weight: '700' } } },
+                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatDashboardAmount(hasData ? ctx.raw : 0)} MMK` } }
+            }
+        }
+    });
+}
+
+export function updateRoutePerformanceChart() {
+    const canvas = document.getElementById('routePerformanceChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const range = getDashboardDateRange();
+    const groups = {};
+    activeTicketRowsInRange(range).forEach(t => {
+        if (isFeeEntryRow(t)) return;
+        const route = t.departure && t.destination ? `${t.departure.split(' ')[0]} → ${t.destination.split(' ')[0]}` : 'Unknown route';
+        if (!groups[route]) groups[route] = { profit: 0, tickets: 0 };
+        groups[route].profit += ticketProfitAmount(t);
+        groups[route].tickets += 1;
+    });
+
+    let rows = Object.entries(groups).sort((a, b) => b[1].profit - a[1].profit).slice(0, 5);
+    if (rows.length === 0) rows = [['No route data', { profit: 0, tickets: 0 }]];
+
+    if (state.charts.routePerformanceChart) state.charts.routePerformanceChart.destroy();
+    const p = dashboardChartPalette();
+    state.charts.routePerformanceChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: rows.map(r => r[0]),
+            datasets: [{
+                label: 'Profit',
+                data: rows.map(r => r[1].profit),
+                backgroundColor: p.mint,
+                borderColor: p.ink,
+                borderWidth: 1,
+                borderRadius: 10
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => `${formatDashboardAmount(ctx.raw)} MMK · ${rows[ctx.dataIndex][1].tickets} tickets` } }
+            },
+            scales: {
+                x: { ticks: { color: p.text, callback: value => Number(value).toLocaleString() }, grid: { color: p.grid } },
+                y: { ticks: { color: p.text }, grid: { display: false } }
+            }
+        }
+    });
+}
+
+export function updateOwnerPayableChart() {
+    const canvas = document.getElementById('ownerPayableChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const currentYear = new Date().getFullYear();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const ownerPayable = Array(12).fill(0);
+    const paidToOwner = Array(12).fill(0);
+
+    (state.allTickets || []).forEach(t => {
+        const d = parseSheetDate(t.issued_date);
+        if (!d.getTime() || d.getFullYear() !== currentYear || isCanceledTicket(t)) return;
+        ownerPayable[d.getMonth()] += ticketOwnerPayableAmount(t);
+    });
+    (state.allSettlements || []).forEach(s => {
+        const d = parseSheetDate(s.settlement_date);
+        if (!d.getTime() || d.getFullYear() !== currentYear) return;
+        paidToOwner[d.getMonth()] += Number(s.amount_paid) || 0;
+    });
+
+    if (state.charts.ownerPayableChart) state.charts.ownerPayableChart.destroy();
+    const p = dashboardChartPalette();
+    state.charts.ownerPayableChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Owner Payable',
+                data: ownerPayable,
+                backgroundColor: p.butter,
+                borderColor: '#d59f39',
+                borderWidth: 1,
+                borderRadius: 8
+            }, {
+                label: 'Paid to Owner',
+                data: paidToOwner,
+                type: 'line',
+                borderColor: p.coral,
+                backgroundColor: p.coral,
+                tension: 0.35,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: p.text } } },
+            scales: {
+                x: { ticks: { color: p.text }, grid: { color: p.grid } },
+                y: { ticks: { color: p.text, callback: value => Number(value).toLocaleString() }, grid: { color: p.grid } }
+            }
+        }
+    });
 }
 
 /**
  * Renders the Airline Distribution Doughnut Chart based on current month's ticket sales.
  */
 export function updateAirlineChart() {
-    const now = new Date();
-    const selectedMonth = now.getMonth();
-    const selectedYear = now.getFullYear();
-    const isFeeEntryRow = (t) => /\(fees\)\s*$/i.test(String(t?.name || '')) || String(t?.remarks || '').toLowerCase().includes('fee entry');
-
-    // Filter tickets for this month
-    const ticketsInPeriod = state.allTickets.filter(t => {
-        const ticketDate = parseSheetDate(t.issued_date);
-        const lowerRemarks = t.remarks?.toLowerCase() || '';
-        return ticketDate.getMonth() === selectedMonth && ticketDate.getFullYear() === selectedYear && !lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund');
-    });
+    const range = getDashboardDateRange();
+    const ticketsInPeriod = activeTicketRowsInRange(range);
 
     const airlineCounts = {};
     ticketsInPeriod.forEach(t => {
@@ -757,18 +1167,17 @@ export function updateAirlineChart() {
         data.push(1);
     }
 
-    const computed = getComputedStyle(document.body);
-    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#333333';
+    const palette = dashboardChartPalette();
+    const textColor = palette.text;
 
-    // Tailored palette of airline chart slices
     const colors = [
-        '#0d9488', // Teal
-        '#3b82f6', // Blue
-        '#8b5cf6', // Purple
-        '#f59e0b', // Amber-orange
-        '#10b981', // Green
-        '#ec4899', // Pink
-        '#6366f1'  // Indigo
+        palette.coral,
+        palette.mint,
+        palette.butter,
+        palette.lavender,
+        '#ffd9aa',
+        '#f8c9cb',
+        '#9fca6b'
     ];
 
     state.charts.airlineChart = new Chart(ctx, {
@@ -779,7 +1188,7 @@ export function updateAirlineChart() {
                 data: data,
                 backgroundColor: labels[0] === "No Data" ? ['#e2e8f0'] : colors.slice(0, labels.length),
                 borderWidth: 2,
-                borderColor: computed.getPropertyValue('--surface') || '#ffffff'
+                borderColor: palette.surface
             }]
         },
         options: {
