@@ -14,7 +14,7 @@ import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, s
 import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import { loadHistory } from './history.js';
-import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView } from './settlement.js';
+import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
 import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
@@ -932,9 +932,9 @@ export function updateDashboardData() {
     const curProfit = ticketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
     const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
 
-    // 4. Owner Payable
-    const curPayable = ticketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
-    const prevPayable = prevTicketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
+    // 4. Remaining Due to Owner (from settlement module — global, not period-scoped)
+    const settleSummary = getSettlementSummary();
+    const curRemainingDue = settleSummary.remainingDue;
 
     // Also gather data for side panels
     const unpaidGroups = groupUnpaidTickets(state.allTickets || []);
@@ -960,8 +960,10 @@ export function updateDashboardData() {
     setText('total-profit-value', formatDashboardAmount(curProfit));
     setHtml('profit-trend-wrapper', getTrendBadgeHtml(curProfit, prevProfit));
 
-    setText('owner-payable-value', formatDashboardAmount(curPayable));
-    setHtml('owner-payable-trend-wrapper', getTrendBadgeHtml(curPayable, prevPayable));
+    setText('owner-payable-value', formatDashboardAmount(curRemainingDue));
+    setHtml('owner-payable-trend-wrapper', curRemainingDue > 0
+        ? `<span class="trend-badge negative"><i class="fa-solid fa-circle-exclamation"></i> outstanding</span>`
+        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> settled</span>`);
 
     setText('bookingRevenuePeriodHint', range.label || 'This Month');
     setText('dashboardUnpaidHint', `${formatDashboardAmount(curUnpaid)} MMK`);
@@ -1580,7 +1582,7 @@ export function updateComparisonChart() {
                 key: bucketKey(cursor),
                 label: `${String(cursor.getDate()).padStart(2, '0')} ${monthNames[cursor.getMonth()]}`,
                 revenue: 0,
-                bookings: 0,
+                profit: 0,
                 cancellations: 0
             });
             cursor.setDate(cursor.getDate() + 1);
@@ -1593,7 +1595,7 @@ export function updateComparisonChart() {
                 key: bucketKey(cursor),
                 label: `${monthNames[cursor.getMonth()]} ${cursor.getFullYear()}`,
                 revenue: 0,
-                bookings: 0,
+                profit: 0,
                 cancellations: 0
             });
             cursor.setMonth(cursor.getMonth() + 1);
@@ -1611,14 +1613,7 @@ export function updateComparisonChart() {
             return;
         }
         bucket.revenue += ticketSalesAmount(ticket);
-        if (!isFeeEntryRow(ticket)) bucket.bookings += 1;
-    });
-
-    (state.allBookings || []).forEach(booking => {
-        const date = parseSheetDate(booking.departing_on || booking.enddate);
-        if (!inDashboardRange(date, range)) return;
-        const bucket = bucketMap.get(bucketKey(date));
-        if (bucket) bucket.bookings += 1;
+        if (!isFeeEntryRow(ticket)) bucket.profit += ticketProfitAmount(ticket);
     });
 
     if (state.charts.comparisonChart) {
@@ -1629,7 +1624,7 @@ export function updateComparisonChart() {
     const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#24242b';
     const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || 'rgba(36,36,43,0.10)';
     const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#22b8b2';
-    const bookingsBase = (computed.getPropertyValue('--chart-tickets') || '').trim() || '#4d8df7';
+    const profitBase = (computed.getPropertyValue('--chart-tickets') || '').trim() || '#4d8df7';
     const cancelBase = (computed.getPropertyValue('--coral') || '').trim() || '#ff6f5e';
 
     const withAlpha = (color, alpha) => {
@@ -1657,9 +1652,9 @@ export function updateComparisonChart() {
     revenueFill.addColorStop(0, withAlpha(revenueBase, 0.35));
     revenueFill.addColorStop(1, withAlpha(revenueBase, 0.01));
 
-    const bookingsFill = ctx.createLinearGradient(0, 0, 0, 300);
-    bookingsFill.addColorStop(0, withAlpha(bookingsBase, 0.35));
-    bookingsFill.addColorStop(1, withAlpha(bookingsBase, 0.01));
+    const profitFill = ctx.createLinearGradient(0, 0, 0, 300);
+    profitFill.addColorStop(0, withAlpha(profitBase, 0.35));
+    profitFill.addColorStop(1, withAlpha(profitBase, 0.01));
 
     const hasCancellations = buckets.some(b => b.cancellations > 0);
     const datasets = [{
@@ -1677,16 +1672,16 @@ export function updateComparisonChart() {
         fill: true,
         yAxisID: 'y'
     }, {
-        label: 'Bookings',
-        data: buckets.map(bucket => bucket.bookings),
+        label: 'Profit',
+        data: buckets.map(bucket => bucket.profit),
         type: 'line',
-        borderColor: bookingsBase,
-        backgroundColor: bookingsFill,
+        borderColor: profitBase,
+        backgroundColor: profitFill,
         borderWidth: 3,
         pointRadius: 0,
         pointHoverRadius: 6,
         pointHoverBackgroundColor: '#ffffff',
-        pointHoverBorderColor: bookingsBase,
+        pointHoverBorderColor: profitBase,
         pointHoverBorderWidth: 2,
         tension: 0.45,
         fill: true,
@@ -1763,6 +1758,11 @@ export function updateComparisonChart() {
                     ticks: {
                         color: withAlpha(textColor, 0.6),
                         maxTicksLimit: 5,
+                        callback: value => {
+                            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                            if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+                            return Number(value).toLocaleString();
+                        },
                         font: { size: 11, family: "'Inter', sans-serif" }
                     },
                     beginAtZero: true
@@ -1793,10 +1793,7 @@ export function updateComparisonChart() {
                     usePointStyle: true,
                     callbacks: {
                         label: context => {
-                            if (context.dataset.yAxisID === 'y') {
-                                return `${context.dataset.label}: ${formatDashboardAmount(context.raw)} MMK`;
-                            }
-                            return `${context.dataset.label}: ${context.raw}`;
+                            return `${context.dataset.label}: ${formatDashboardAmount(context.raw)} MMK`;
                         }
                     }
                 }
