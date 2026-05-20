@@ -722,7 +722,7 @@ function openAddFeeModal(docId) {
             </div>
             <div class="form-actions" style="margin-top: 1.5rem;">
                 <button type="button" class="btn btn-secondary" id="addFeeCancelBtn">Cancel</button>
-                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Fee Row</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Update Ticket</button>
             </div>
         </form>
     `;
@@ -763,40 +763,32 @@ function openAddFeeModal(docId) {
         const today = formatDateForSheet(new Date());
 
         try {
-            showToast('Adding fee row...', 'info');
-            await addTickets([{
-                issued_date: today,
-                name: `${ticket.name} (Fees)`,
-                id_no: ticket.id_no,
-                phone: ticket.phone,
-                account_name: ticket.account_name,
-                account_type: ticket.account_type,
-                account_link: ticket.account_link,
-                departure: ticket.departure,
-                destination: ticket.destination,
-                departing_on: ticket.departing_on,
-                airline: ticket.airline,
-                base_fare: 0,
-                booking_reference: ticket.booking_reference,
-                net_amount: amount,
-                paid,
-                payment_method: paymentMethod,
-                paid_date: paidDate,
-                commission: isExtraFare ? amount : 0,
-                remarks: `Fee Entry - ${feeType}: ${note}`,
-                fee_type: feeType,
-                fee_note: note,
-                extra_fare: 0,
-                date_change: 0,
-                gender: ticket.gender
-            }]);
+            showToast('Updating ticket...', 'info');
+            const updateData = {};
+            if (feeType === 'Date Change') {
+                updateData.date_change = (Number(ticket.date_change) || 0) + amount;
+            } else {
+                updateData.extra_fare = (Number(ticket.extra_fare) || 0) + amount;
+            }
+            // If the new fee is unpaid, mark the whole ticket as unpaid
+            if (!paid) {
+                updateData.paid = false;
+                updateData.paid_date = '';
+                updateData.payment_method = '';
+            }
+            // Append fee note to existing remarks
+            const existingRemarks = ticket.remarks || '';
+            const feeNote = `${feeType}: ${amount.toLocaleString()} MMK - ${note}`;
+            updateData.remarks = existingRemarks ? `${existingRemarks} | ${feeNote}` : feeNote;
+
+            await updateTicket(docId, updateData);
             await saveHistory(ticket, `FEE ADDED: ${feeType} ${amount.toLocaleString()} MMK. Reason: ${note}`);
-            showToast('Fee row added.', 'success');
+            showToast('Ticket updated with fee.', 'success');
             closeModal();
             await reloadManagePnr(ticket.booking_reference);
         } catch (error) {
             console.error(error);
-            showToast('Failed to add fee row.', 'error');
+            showToast('Failed to update ticket.', 'error');
         }
     });
 }

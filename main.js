@@ -1107,7 +1107,7 @@ function showTripPlanDetail(pnr) {
             <button class="btn btn-secondary" id="tripPlanCloseBtn">Close</button>
         </div>
     `;
-    openModal(content, 'large-modal');
+    openModal(content, 'solid-modal');
     document.getElementById('tripPlanCloseBtn').addEventListener('click', closeModal);
 }
 
