@@ -172,7 +172,9 @@ export function openModal(content, sizeClass = '') {
     modalBody.innerHTML = content;
     const modalContent = modal.querySelector('.modal-content');
     const classes = String(sizeClass || '').split(/\s+/).filter(Boolean);
-    if (classes.includes('solid-modal')) {
+    const isSolidModal = classes.includes('solid-modal');
+    modal.classList.toggle('solid-modal-open', isSolidModal);
+    if (isSolidModal) {
         modalContent.className = 'modal-content solid-modal';
         classes.filter(cls => cls !== 'solid-modal').forEach(cls => modalContent.classList.add(cls));
     } else {
@@ -189,6 +191,7 @@ export function openModal(content, sizeClass = '') {
 export function closeModal() {
     const modal = document.getElementById('modal');
     modal.classList.remove('show');
+    modal.classList.remove('solid-modal-open');
     document.getElementById('modalBody').innerHTML = '';
     document.body.classList.remove('modal-open');
 }
