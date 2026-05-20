@@ -388,11 +388,10 @@ export function isTicketPaid(ticket) {
     if (['true', 'yes', 'y', '1', 'paid', 'settled', 'complete', 'completed'].includes(paidStr)) return true;
     if (['false', 'no', 'n', '0', 'unpaid', 'pending', 'partial', 'not paid'].includes(paidStr)) return false;
 
-    // If paid field is falsy/empty/undefined → unpaid.
-    // Do NOT check secondary fields (remarks, paid_status, etc.) because they
-    // often contain the word "paid" in unrelated context (e.g. "Paid via KBZ")
-    // which causes false positives for partially-paid tickets.
-    return !!rawPaid;
+    // If paid field is a non-empty string but not a recognized status keyword
+    // (e.g. "500000", "300000", a date string, etc.), do NOT treat it as paid.
+    // Only explicitly marked statuses count as paid.
+    return false;
 }
 
 /**

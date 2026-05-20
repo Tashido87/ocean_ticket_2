@@ -852,31 +852,13 @@ function getUpcomingTripGroups(days = 14) {
 function groupUnpaidTickets(rows) {
     const groups = new Map();
 
-    // ── DIAGNOSTIC: dump paid field for target PNRs ──
-    const targetPnrs = ['1KC8OZ', '1KC80Z', '1KCBOZ', '1KCB0Z', '1KB5S4'];
-    rows.forEach(ticket => {
-        const pnr = String(ticket.booking_reference || '').trim().toUpperCase();
-        if (targetPnrs.includes(pnr)) {
-            console.log(`[DIAG] PNR=${pnr} name=${ticket.name} | paid=${JSON.stringify(ticket.paid)} (type=${typeof ticket.paid}) | paid_date=${ticket.paid_date} | payment_status=${ticket.payment_status} | paid_status=${ticket.paid_status} | remarks=${ticket.remarks} | split_status=${ticket.split_status}`);
-        }
-    });
-    // Also dump first 3 tickets' paid field for reference
-    rows.slice(0, 3).forEach((ticket, i) => {
-        console.log(`[DIAG] Sample ticket #${i}: paid=${JSON.stringify(ticket.paid)} (type=${typeof ticket.paid}), pnr=${ticket.booking_reference}`);
-    });
-    // ── END DIAGNOSTIC ──
-
-    const debugUnpaid = rows.filter(ticket => {
+    const unpaidTickets = rows.filter(ticket => {
         if (isFeeEntryRow(ticket) || isCanceledTicket(ticket)) return false;
-        const paid = isTicketPaid(ticket);
-        if (!paid) {
-            console.log('Unpaid ticket found:', ticket.booking_reference, ticket.name, 'paid field:', ticket.paid, 'paid_date:', ticket.paid_date);
-        }
-        return !paid;
+        return !isTicketPaid(ticket);
     });
-    console.log('Total rows:', rows.length, 'Unpaid count:', debugUnpaid.length);
-    
-    debugUnpaid.forEach(ticket => {
+    console.log(`[Unpaid Tickets] Total tickets: ${rows.length}, Unpaid: ${unpaidTickets.length}`);
+
+    unpaidTickets.forEach(ticket => {
         const pnr = String(ticket.booking_reference || '').trim() || ticket.id || 'No PNR';
         const key = pnr;
         if (!groups.has(key)) {
