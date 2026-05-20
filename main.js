@@ -7,7 +7,7 @@
 // Core Modules
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
-import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange } from './db.js';
+import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask } from './db.js';
 import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket } from './utils.js';
 
 // Feature Modules
@@ -37,6 +37,70 @@ function syncGroupToggleState() {
     if (!hasRange) {
         toggle.checked = false;
     }
+}
+
+const DASHBOARD_TASKS_STORAGE_KEY = 'oceanDashboardTasks';
+
+function taskTimestampValue(value) {
+    if (!value) return 0;
+    if (typeof value === 'string') return new Date(value).getTime() || 0;
+    if (typeof value === 'number') return value;
+    if (typeof value.toDate === 'function') return value.toDate().getTime() || 0;
+    if (typeof value.seconds === 'number') return value.seconds * 1000;
+    return 0;
+}
+
+function normalizeDashboardTask(task) {
+    return {
+        id: task.id || `local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        title: String(task.title || '').trim(),
+        notes: String(task.notes || '').trim(),
+        dueDate: task.dueDate || '',
+        dueTime: task.dueTime || '',
+        priority: task.priority || 'normal',
+        done: Boolean(task.done),
+        source: task.source || 'manual',
+        localOnly: Boolean(task.localOnly),
+        createdAt: task.createdAt || new Date().toISOString(),
+        updatedAt: task.updatedAt || new Date().toISOString()
+    };
+}
+
+function loadDashboardTasksFromStorage() {
+    try {
+        const raw = localStorage.getItem(DASHBOARD_TASKS_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        state.dashboardTasks = Array.isArray(parsed) ? parsed.map(normalizeDashboardTask) : [];
+    } catch (error) {
+        console.warn('Could not load local dashboard tasks:', error);
+        state.dashboardTasks = [];
+    }
+}
+
+function saveDashboardTasksToStorage() {
+    try {
+        localStorage.setItem(DASHBOARD_TASKS_STORAGE_KEY, JSON.stringify(state.dashboardTasks || []));
+    } catch (error) {
+        console.warn('Could not save local dashboard tasks:', error);
+    }
+}
+
+function upsertLocalDashboardTask(task) {
+    const normalized = normalizeDashboardTask(task);
+    const tasks = state.dashboardTasks || [];
+    const index = tasks.findIndex(item => item.id === normalized.id);
+    if (index >= 0) tasks[index] = { ...tasks[index], ...normalized };
+    else tasks.unshift(normalized);
+    state.dashboardTasks = tasks;
+    saveDashboardTasksToStorage();
+    updateDashboardData();
+    return normalized;
+}
+
+function removeLocalDashboardTask(id) {
+    state.dashboardTasks = (state.dashboardTasks || []).filter(task => task.id !== id);
+    saveDashboardTasksToStorage();
+    updateDashboardData();
 }
 
 // Global PNR Click Handler
@@ -86,6 +150,7 @@ document.addEventListener('click', (e) => {
 export async function initializeApp() {
     try {
         loadFeaturedClients();
+        loadDashboardTasksFromStorage();
 
         // Unsubscribe from any existing listeners
         state.unsubscribers.forEach(unsub => unsub && unsub());
@@ -107,8 +172,13 @@ export async function initializeApp() {
         setDateRangePreset('this-month');
         syncGroupToggleState();
 
-        // Hash-based routing (for search page)
+        // Hash-based routing for all views + back/forward support
         window.addEventListener('hashchange', handleHashRoute);
+        window.addEventListener('popstate', handlePopState);
+        // Set default hash if none present
+        if (!window.location.hash) {
+            history.replaceState({ view: 'home' }, '', '#/home');
+        }
         handleHashRoute();
 
         // Set up real-time listeners
@@ -155,6 +225,20 @@ export async function initializeApp() {
             })
         );
 
+        state.unsubscribers.push(
+            onDashboardTasksChange((tasks) => {
+                const localOnlyTasks = (state.dashboardTasks || []).filter(task => task.localOnly);
+                state.dashboardTasks = [
+                    ...tasks.map(task => normalizeDashboardTask({ ...task, localOnly: false })),
+                    ...localOnlyTasks
+                ];
+                saveDashboardTasksToStorage();
+                updateDashboardData();
+            }, (error) => {
+                console.warn('Dashboard tasks will use local storage only:', error);
+            })
+        );
+
         initSettlementView();
 
         state.unsubscribers.push(
@@ -175,13 +259,33 @@ export async function initializeApp() {
 }
 
 /**
- * Handle URL hash routing for the search page.
+ * Handle URL hash routing for all views.
  */
 function handleHashRoute() {
     const hash = window.location.hash;
-    if (hash.startsWith('#/search')) {
-        showView('search');
-        initSearchView();
+    const viewMatch = hash.match(/^#\/(\w+)$/);
+    if (viewMatch) {
+        const viewName = viewMatch[1];
+        // Set flag so showView doesn't pushState again
+        window._skipHashUpdate = true;
+        showView(viewName);
+        if (viewName === 'search') initSearchView();
+    }
+}
+
+/**
+ * Handle browser back/forward buttons (popstate).
+ */
+function handlePopState(e) {
+    const hash = window.location.hash;
+    const viewMatch = hash.match(/^#\/(\w+)$/);
+    if (viewMatch) {
+        window._skipHashUpdate = true;
+        showView(viewMatch[1]);
+        if (viewMatch[1] === 'search') initSearchView();
+    } else {
+        window._skipHashUpdate = true;
+        showView('home');
     }
 }
 

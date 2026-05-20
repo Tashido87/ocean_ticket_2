@@ -107,10 +107,12 @@ export function showView(viewName) {
     // Stagger entrance animations for key blocks
     runIntroAnimations(targetView);
 
-    // Clear search hash when navigating away from search
-    if (viewName !== 'search' && window.location.hash.startsWith('#/search')) {
-        history.replaceState(null, '', window.location.pathname + window.location.search);
+    // Update URL hash for routing (skip if triggered by popstate)
+    const expectedHash = `#/${viewName}`;
+    if (!window._skipHashUpdate && window.location.hash !== expectedHash) {
+        history.pushState({ view: viewName }, '', expectedHash);
     }
+    window._skipHashUpdate = false;
 
     // View-specific cleanup and setup
     if (viewName === 'sell') {

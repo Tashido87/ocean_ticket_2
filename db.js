@@ -29,6 +29,7 @@ const settlementsCol = collection(db, 'settlements');
 const historyCol = collection(db, 'history');
 const closedPeriodsCol = collection(db, 'closedPeriods');
 const adjustmentsCol = collection(db, 'settlementAdjustments');
+const dashboardTasksCol = collection(db, 'dashboardTasks');
 
 // --- TICKETS ---
 
@@ -136,6 +137,35 @@ export async function batchUpdateBookings(updates) {
         batch.update(docRef, { ...data, updatedAt: serverTimestamp() });
     });
     await batch.commit();
+}
+
+// --- DASHBOARD TASKS & REMINDERS ---
+
+export function onDashboardTasksChange(callback, errorCallback) {
+    const q = query(dashboardTasksCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, errorCallback);
+}
+
+export async function addDashboardTask(data) {
+    const ref = await addDoc(dashboardTasksCol, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return ref.id;
+}
+
+export async function updateDashboardTask(id, data) {
+    await updateDoc(doc(db, 'dashboardTasks', id), {
+        ...data,
+        updatedAt: serverTimestamp()
+    });
+}
+
+export async function deleteDashboardTask(id) {
+    await deleteDoc(doc(db, 'dashboardTasks', id));
 }
 
 // --- SETTLEMENTS ---

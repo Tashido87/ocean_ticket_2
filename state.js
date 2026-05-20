@@ -12,6 +12,7 @@ export const state = {
     allSettlements: [],
     allClosedPeriods: [],
     allAdjustments: [],
+    dashboardTasks: [],
     featuredClients: [], // For starred clients
     history: [],
     charts: {
