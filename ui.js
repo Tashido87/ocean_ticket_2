@@ -110,7 +110,9 @@ export function showView(viewName) {
 
     // Update URL hash for routing (skip if triggered by popstate)
     const expectedHash = `#/${viewName}`;
-    if (!window._skipHashUpdate && window.location.hash !== expectedHash) {
+    const currentHash = window.location.hash;
+    const alreadyOnView = currentHash === expectedHash || currentHash.startsWith(`${expectedHash}?`);
+    if (!window._skipHashUpdate && !alreadyOnView) {
         history.pushState({ view: viewName }, '', expectedHash);
     }
     window._skipHashUpdate = false;
