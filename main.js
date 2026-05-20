@@ -1816,6 +1816,14 @@ window.onload = async () => {
     initializeTimePicker();
     setupEventListeners();
     initializeUISettings();
+    // Show today's date in the header
+    const headerDateEl = document.getElementById('headerTodayDateText');
+    if (headerDateEl) {
+        const now = new Date();
+        headerDateEl.textContent = now.toLocaleDateString('en-GB', {
+            weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
+        });
+    }
     initializeCityDropdowns();
     updateToggleLabels();
     resetPassengerForms();
