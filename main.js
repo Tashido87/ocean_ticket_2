@@ -1018,13 +1018,13 @@ function renderDashboardTravelSchedule(groups) {
                 </div>
                 <div class="travel-schedule-main">
                     <strong>${dashboardEscapeHtml(group.lead)}${group.passengers > 1 ? ` +${group.passengers - 1}` : ''}</strong>
-                    <span>${dashboardEscapeHtml(group.route)} · ${dashboardEscapeHtml(group.airline)}</span>
+                    <span>${dashboardEscapeHtml(group.route)}</span>
                     <small>${dashboardEscapeHtml(group.pnr)}</small>
                 </div>
                 <div class="travel-progress">
                     <span>${progress}% paid</span>
                     <div class="progress-track"><i style="width:${progress}%"></i></div>
-                    <small class="${hasUnpaid ? 'text-risk' : 'text-success'}">${hasUnpaid ? `${formatDashboardAmount(group.unpaidAmount)} MMK due` : 'Paid'}</small>
+                    <small class="${hasUnpaid ? 'text-risk' : 'text-success'}">${dashboardEscapeHtml(group.airline)} · ${hasUnpaid ? `${formatDashboardAmount(group.unpaidAmount)} MMK due` : 'Paid'}</small>
                 </div>
                 <button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button>
             </div>

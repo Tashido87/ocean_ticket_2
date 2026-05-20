@@ -377,6 +377,17 @@ function escapeHtml(text) {
  * @returns {boolean} True if the ticket is paid, false otherwise.
  */
 export function isTicketPaid(ticket) {
+    // 1. Check explicit paid field first (boolean / number)
+    const rawPaid = ticket?.paid;
+    if (typeof rawPaid === 'boolean') return rawPaid;
+    if (typeof rawPaid === 'number') return rawPaid === 1;
+
+    // 2. Check paid field as string
+    const paidStr = String(rawPaid ?? '').trim().toLowerCase();
+    if (['true', 'yes', 'y', '1', 'paid', 'settled', 'complete', 'completed'].includes(paidStr)) return true;
+    if (['false', 'no', 'n', '0', 'unpaid', 'pending', 'partial', 'not paid'].includes(paidStr)) return false;
+
+    // 3. Check secondary text fields for payment signals
     const paymentText = [
         ticket?.payment_status,
         ticket?.paid_status,
@@ -384,22 +395,18 @@ export function isTicketPaid(ticket) {
         ticket?.split_status
     ].map(v => String(v || '').toLowerCase()).join(' ');
 
-    if (paymentText.includes('unpaid') || paymentText.includes('partial') || paymentText.includes('balance')) return false;
+    if (paymentText.includes('unpaid') || paymentText.includes('not paid') || paymentText.includes('partial') || paymentText.includes('balance') || paymentText.includes('pending')) {
+        return false;
+    }
 
-    const rawPaid = ticket?.paid;
-    if (typeof rawPaid === 'boolean') return rawPaid;
-    if (typeof rawPaid === 'number') return rawPaid === 1;
+    if (paymentText.includes('paid') || paymentText.includes('settled') || paymentText.includes('complete')) {
+        return true;
+    }
 
-    const paidValue = String(rawPaid ?? '').trim().toLowerCase();
-    const hasExplicitPaidValue = rawPaid !== undefined && rawPaid !== null && paidValue !== '';
-    const explicitPaid = ['true', 'yes', 'y', 'paid', '1', 'complete', 'completed', 'settled'].includes(paidValue);
-    const explicitUnpaid = hasExplicitPaidValue && ['false', 'no', 'n', 'unpaid', 'not paid', '0', 'pending', 'partial'].includes(paidValue);
-    
-    if (explicitPaid) return true;
-    if (paymentText.includes('paid') || paymentText.includes('settled') || paymentText.includes('complete')) return true;
-    if (explicitUnpaid) return false;
-    
-    return Boolean(ticket?.paid_date);
+    // 4. If paid field is falsy (empty, undefined, null) → treat as unpaid.
+    //    Do NOT use paid_date as a fallback, because partial payments
+    //    can also have a paid_date recorded for the instalment.
+    return !!rawPaid;
 }
 
 /**
