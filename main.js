@@ -62,6 +62,18 @@ document.addEventListener('click', (e) => {
             showView('manage');
             findTicketForManage(pnr);
         }
+        return;
+    }
+
+    const actionBtn = e.target.closest('.dashboard-row-action');
+    if (actionBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const pnr = actionBtn.dataset.dashboardPnr;
+        if (pnr && pnr !== 'No PNR' && pnr !== '—') {
+            showView('manage');
+            findTicketForManage(pnr);
+        }
     }
 });
 
@@ -1044,6 +1056,7 @@ function renderDashboardTravelSchedule(groups) {
                 <div class="travel-progress">
                     <small>${dashboardEscapeHtml(group.airline)}</small>
                 </div>
+                <button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button>
             </div>
         `;
     }).join('');
@@ -1089,7 +1102,7 @@ function renderDashboardUnpaidTickets(groups) {
                 <td class="num">${formatDashboardAmount(group.amount)} MMK</td>
                 <td>${age}d</td>
                 <td><span class="dashboard-status ${status.cls}">${status.label}</span></td>
-                <td></td>
+                <td><button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}"><i class="fa-solid fa-eye"></i></button></td>
             </tr>
         `;
     }).join('');

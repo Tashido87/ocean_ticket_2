@@ -77,7 +77,7 @@ export function displayHistory(page, historyToShow = state.history) {
     const paginated = historyToShow.slice((page - 1) * state.rowsPerPage, page * state.rowsPerPage);
     paginated.forEach(entry => {
         const row = container.insertRow();
-        row.innerHTML = `<td>${entry.date}</td><td>${entry.name}</td><td>${entry.pnr}</td><td>${entry.details}</td>`;
+        row.innerHTML = `<td>${entry.date}</td><td>${entry.name}</td><td>${entry.pnr ? `<a href="#" class="clickable-pnr" data-pnr="${entry.pnr}">${entry.pnr}</a>` : ''}</td><td>${entry.details}</td>`;
     });
 
     setupGenericPagination(historyToShow, 'modificationHistoryPagination', (p) => displayHistory(p, historyToShow), page);

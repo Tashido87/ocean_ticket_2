@@ -403,7 +403,7 @@ export function renderBookingPage(page) {
                 <div class="booking-meta-sub">${group.phone || group.account_type || ''}</div>
             </td>
             <td>${routeLabel(group)}</td>
-            <td>${group.pnr || 'N/A'}</td>
+            <td>${group.pnr ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(group.pnr)}">${escapeHtml(group.pnr)}</a>` : 'N/A'}</td>
             <td>${statusBadge(group.status)}</td>
             <td>${priorityBadge(group.priority)}</td>
             <td>
