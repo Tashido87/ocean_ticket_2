@@ -852,46 +852,35 @@ function getUpcomingTripGroups(days = 14) {
 function groupUnpaidTickets(rows) {
     const groups = new Map();
 
-    // ── DIAGNOSTIC: dump every row for target PNRs ──
-    const targetPnrs = ['1KC8OZ', '1KC80Z', '1KCBOZ', '1KCB0Z', '1KB5S4'];
-    rows.forEach(ticket => {
-        const pnr = String(ticket.booking_reference || '').trim().toUpperCase();
-        if (targetPnrs.includes(pnr)) {
-            console.log(`[DIAG PNR=${pnr}] name=${ticket.name} | paid=${JSON.stringify(ticket.paid)} (type=${typeof ticket.paid}) | isFee=${isFeeEntryRow(ticket)} | isCanceled=${isCanceledTicket(ticket)} | isTicketPaid=${isTicketPaid(ticket)} | net=${ticket.net_amount} | paid_date=${ticket.paid_date}`);
-        }
-    });
-    // ── END DIAGNOSTIC ──
+    // Include ALL non-canceled rows (including fees) so unpaid fees are counted
+    const activeTickets = rows.filter(ticket => !isCanceledTicket(ticket));
 
-    const unpaidTickets = rows.filter(ticket => {
-        if (isFeeEntryRow(ticket) || isCanceledTicket(ticket)) return false;
-        return !isTicketPaid(ticket);
-    });
-    console.log(`[Unpaid Tickets] Total tickets: ${rows.length}, Unpaid: ${unpaidTickets.length}`);
-
-    unpaidTickets.forEach(ticket => {
+    // Group by PNR first
+    const pnrGroups = new Map();
+    activeTickets.forEach(ticket => {
         const pnr = String(ticket.booking_reference || '').trim() || ticket.id || 'No PNR';
-        const key = pnr;
-        if (!groups.has(key)) {
-            groups.set(key, {
+        if (!pnrGroups.has(pnr)) pnrGroups.set(pnr, []);
+        pnrGroups.get(pnr).push(ticket);
+    });
+
+    // For each PNR, compute total unpaid amount across ALL rows (passenger + fees)
+    pnrGroups.forEach((tickets, pnr) => {
+        const unpaidAmount = tickets
+            .filter(t => !isTicketPaid(t))
+            .reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+
+        if (unpaidAmount > 0) {
+            // Use the passenger row (non-fee) for display name/route/dates
+            const passengerTicket = tickets.find(t => !isFeeEntryRow(t)) || tickets[0];
+            groups.set(pnr, {
                 pnr,
-                client: ticket.name || 'Passenger',
-                route: dashboardRouteLabel(ticket),
-                dueDate: parseSheetDate(ticket.departing_on),
-                issuedDate: parseSheetDate(ticket.issued_date),
-                amount: 0,
-                tickets: 0
+                client: passengerTicket.name || 'Passenger',
+                route: dashboardRouteLabel(passengerTicket),
+                dueDate: parseSheetDate(passengerTicket.departing_on),
+                issuedDate: parseSheetDate(passengerTicket.issued_date),
+                amount: unpaidAmount,
+                tickets: tickets.filter(t => !isFeeEntryRow(t)).length
             });
-        }
-        const group = groups.get(key);
-        group.amount += ticketSalesAmount(ticket);
-        group.tickets += 1;
-        const travelDate = parseSheetDate(ticket.departing_on);
-        if (travelDate && travelDate.getTime() && (!group.dueDate?.getTime?.() || travelDate < group.dueDate)) {
-            group.dueDate = travelDate;
-        }
-        const issuedDate = parseSheetDate(ticket.issued_date);
-        if (issuedDate && issuedDate.getTime() && (!group.issuedDate?.getTime?.() || issuedDate < group.issuedDate)) {
-            group.issuedDate = issuedDate;
         }
     });
 
