@@ -811,6 +811,14 @@ function daysBetween(from, to) {
 }
 
 function isTicketPaid(ticket) {
+    const rawPaid = ticket?.paid;
+    if (typeof rawPaid === 'boolean') return rawPaid;
+    if (typeof rawPaid === 'number') return rawPaid === 1;
+
+    const paidValue = String(rawPaid ?? '').trim().toLowerCase();
+    const hasExplicitPaidValue = rawPaid !== undefined && rawPaid !== null && paidValue !== '';
+    const explicitPaid = ['true', 'yes', 'y', 'paid', '1', 'complete', 'completed', 'settled'].includes(paidValue);
+    const explicitUnpaid = hasExplicitPaidValue && ['false', 'no', 'n', 'unpaid', 'not paid', '0', 'pending', 'partial'].includes(paidValue);
     const paymentText = [
         ticket?.payment_status,
         ticket?.paid_status,
@@ -818,7 +826,10 @@ function isTicketPaid(ticket) {
         ticket?.split_status
     ].map(v => String(v || '').toLowerCase()).join(' ');
     if (paymentText.includes('unpaid') || paymentText.includes('partial') || paymentText.includes('balance')) return false;
-    return Boolean(ticket?.paid) || paymentText.includes('paid');
+    if (explicitPaid) return true;
+    if (paymentText.includes('paid') || paymentText.includes('settled') || paymentText.includes('complete')) return true;
+    if (explicitUnpaid) return false;
+    return Boolean(ticket?.paid_date || ticket?.payment_method || ticket?.payment_transaction_id);
 }
 
 function activeClientRows() {
@@ -920,10 +931,10 @@ export function updateDashboardData() {
 
     const curRevenue = ticketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
     const prevRevenue = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    const unpaidGroups = groupUnpaidTickets(ticketsInPeriod);
-    const prevUnpaidGroups = groupUnpaidTickets(prevTicketsInPeriod);
+    // Unpaid tickets are an operational follow-up queue, not a period report.
+    // Keep them global so older unpaid PNRs never disappear when the dashboard period changes.
+    const unpaidGroups = groupUnpaidTickets(state.allTickets || []);
     const curUnpaid = unpaidGroups.reduce((sum, group) => sum + group.amount, 0);
-    const prevUnpaid = prevUnpaidGroups.reduce((sum, group) => sum + group.amount, 0);
     const upcomingTrips = getUpcomingTripGroups(14);
     const customers = activeClientRows();
     const newCustomersThisPeriod = customers.filter(client => inDashboardRange(parseSheetDate(client.last_issued), range)).length;
@@ -940,7 +951,9 @@ export function updateDashboardData() {
 
     setText('unpaid-ticket-count-value', unpaidGroups.length);
     setText('unpaid-amount-value', `${formatDashboardAmount(curUnpaid)} MMK`);
-    setHtml('unpaid-trend-wrapper', getTrendBadgeHtml(curUnpaid, prevUnpaid, true));
+    setHtml('unpaid-trend-wrapper', unpaidGroups.length > 0
+        ? `<span class="trend-badge negative"><i class="fa-solid fa-circle-exclamation"></i> all open</span>`
+        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> clear</span>`);
 
     setText('upcoming-trips-value', upcomingTrips.length);
     setHtml('upcoming-trips-wrapper', upcomingTrips.length > 0
@@ -1038,7 +1051,7 @@ function renderDashboardUnpaidTickets(groups) {
             <div class="dashboard-empty-panel">
                 <span class="mini-wallet-illustration" aria-hidden="true"></span>
                 <strong>No unpaid tickets</strong>
-                <span>All tickets in this period are marked paid.</span>
+                <span>All tickets are marked paid.</span>
             </div>
         `;
         return;
