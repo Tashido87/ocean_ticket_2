@@ -111,7 +111,8 @@ function splitNrcDisplay(value) {
 }
 
 function clientKeyFromTicket(ticket) {
-    return `${ticket.name}|${ticket.phone}|${ticket.account_name}`;
+    const baseName = String(ticket.name || '').replace(/\(fees\)\s*$/i, '').trim();
+    return `${baseName}|${ticket.phone}|${ticket.account_name}`;
 }
 
 function getClientForTicket(ticket) {
@@ -126,8 +127,11 @@ function getClientForTicket(ticket) {
 function ticketsForClient(clientKey) {
     return state.allTickets
         .filter(t => clientKeyFromTicket(t) === clientKey)
-        .filter(t => !isFeeEntry(t))
-        .sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date));
+        .sort((a, b) => {
+            const dateA = parseSheetDate(a.departing_on || a.issued_date);
+            const dateB = parseSheetDate(b.departing_on || b.issued_date);
+            return dateB - dateA;
+        });
 }
 
 function isCanceled(ticket) {
@@ -1075,11 +1079,13 @@ function renderClientDetailView() {
     if (headerEl) headerEl.classList.add('is-detail');
 
     const tickets = ticketsForClient(client.client_key);
-    const activeTickets = tickets.filter(t => !isCanceled(t) && !isFeeEntry(t));
+    const activeTickets = tickets.filter(t => !isCanceled(t));
     const totalSpent = activeTickets.reduce((sum, t) => sum + getTicketAmount(t), 0);
     const totalProfit = activeTickets.reduce((sum, t) => sum + Number(t.commission || 0) + Number(t.extra_fare || 0), 0);
     const totalTicketCount = activeTickets.length;
-    const lastIssuedTicket = tickets.find(t => parseSheetDate(t.issued_date)?.getTime?.());
+    const lastIssuedTicket = [...tickets]
+        .sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date))
+        .find(t => parseSheetDate(t.issued_date)?.getTime?.());
     const lastBooking = lastIssuedTicket ? lastIssuedTicket.issued_date : null;
 
     // route insights
@@ -1306,6 +1312,7 @@ function ticketHistorySection(client, tickets) {
         const status = getPaymentStatus(t);
         const upcoming = isUpcoming(t) ? 'upcoming' : (parseSheetDate(t.departing_on) < new Date() ? 'completed' : 'scheduled');
         const canceled = isCanceled(t);
+        const outstanding = status !== 'paid' && !canceled ? getTicketAmount(t) : 0;
         return `
             <tr data-pnr="${escapeHtml(t.booking_reference || '')}" data-tt="${escapeHtml(String(t.ticket_type || '').toUpperCase().includes('ROUND') ? 'round' : 'oneway')}" data-year="${escapeHtml(String(parseSheetDate(t.issued_date)?.getFullYear?.() || ''))}" class="${canceled ? 'canceled-row' : ''}">
                 <td>${fmtDateOrDash(t.issued_date)}</td>
@@ -1317,6 +1324,7 @@ function ticketHistorySection(client, tickets) {
                     ${canceled ? '<span class="payment-badge payment-unpaid">Canceled</span>' : `<span class="payment-badge payment-${upcoming === 'upcoming' ? 'partial' : 'paid'}">${upcoming === 'upcoming' ? 'Upcoming' : 'Completed'}</span>`}
                     ${paymentBadge(status)}
                 </td>
+                <td class="num-cell">${outstanding ? fmtMmk(outstanding) : '—'}</td>
                 <td>${fmtMmk(getTicketAmount(t))}</td>
                 <td>${fmtMmk(Number(t.commission || 0) + Number(t.extra_fare || 0))}</td>
             </tr>
@@ -1346,10 +1354,10 @@ function ticketHistorySection(client, tickets) {
                     <thead>
                         <tr>
                             <th>Issued</th><th>PNR</th><th>Route</th><th>Travel Date</th>
-                            <th>Airline</th><th>Status</th><th>Net Amount</th><th>Profit</th>
+                            <th>Airline</th><th>Status</th><th class="num-header">Outstanding</th><th>Net Amount</th><th>Profit</th>
                         </tr>
                     </thead>
-                    <tbody>${rows || '<tr><td colspan="8" class="empty-row">No tickets on file.</td></tr>'}</tbody>
+                    <tbody>${rows || '<tr><td colspan="9" class="empty-row">No tickets on file.</td></tr>'}</tbody>
                 </table>
             </div>
         </div>
