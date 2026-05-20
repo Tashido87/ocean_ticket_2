@@ -974,6 +974,304 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
     font-size: 1rem;
 }
 
+.manage-pnr-dashboard {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(38, 37, 30, 0.08);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+}
+
+.manage-pnr-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid rgba(38, 37, 30, 0.08);
+}
+
+.manage-eyebrow {
+    color: var(--primary-accent);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.manage-pnr-header h3 {
+    margin: 0.2rem 0;
+    color: var(--text-primary);
+    font-size: 1.55rem;
+}
+
+.manage-pnr-header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.manage-header-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.45rem;
+}
+
+.manage-header-stats span {
+    border-radius: 999px;
+    padding: 0.35rem 0.65rem;
+    background: rgba(13, 148, 136, 0.10);
+    color: var(--primary-accent);
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.manage-header-stats .is-danger {
+    background: rgba(244, 63, 94, 0.12);
+    color: #be123c;
+}
+
+.manage-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.95rem;
+}
+
+.manage-kpi {
+    min-height: 94px;
+    padding: 0.9rem;
+    border: 1px solid rgba(38, 37, 30, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.82);
+}
+
+.manage-kpi span {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.manage-kpi strong {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-primary);
+    font-size: 1.18rem;
+}
+
+.manage-kpi small {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-secondary);
+}
+
+.manage-kpi.positive strong { color: var(--primary-accent); }
+.manage-kpi.warning strong { color: #b45309; }
+.manage-kpi.navy strong { color: #0f172a; }
+
+.manage-issue-list {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+}
+
+.manage-issue {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.manage-issue.ok {
+    background: rgba(13, 148, 136, 0.10);
+    color: #0f766e;
+}
+
+.manage-issue.warning {
+    background: rgba(245, 158, 11, 0.13);
+    color: #92400e;
+}
+
+.manage-issue.danger {
+    background: rgba(244, 63, 94, 0.12);
+    color: #be123c;
+}
+
+.manage-ticket-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1rem 0 0.55rem;
+    color: var(--text-primary);
+}
+
+.manage-ticket-toolbar span {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+.manage-table-wrap {
+    border: 1px solid rgba(38, 37, 30, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.manage-table {
+    min-width: 1120px;
+}
+
+.manage-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.manage-table td strong,
+.manage-table td small {
+    display: block;
+}
+
+.manage-table td small {
+    margin-top: 0.22rem;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
+.manage-table tr.is-cancelled td {
+    opacity: 0.58;
+}
+
+.manage-row-type,
+.manage-status {
+    display: inline-flex;
+    align-items: center;
+    width: max-content;
+    border-radius: 999px;
+    padding: 0.28rem 0.55rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.manage-row-type {
+    color: var(--primary-accent);
+    background: rgba(13, 148, 136, 0.10);
+}
+
+.manage-row-type.fee {
+    color: #92400e;
+    background: rgba(245, 158, 11, 0.13);
+}
+
+.manage-status.paid,
+.manage-status.confirmed,
+.manage-status.financial-confirmed {
+    color: #0f766e;
+    background: rgba(13, 148, 136, 0.12);
+}
+
+.manage-status.unpaid,
+.manage-status.pending,
+.manage-status.review,
+.manage-status.needs-review {
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.14);
+}
+
+.manage-status.cancelled {
+    color: #be123c;
+    background: rgba(244, 63, 94, 0.12);
+}
+
+.manage-status.fee {
+    color: #475569;
+    background: rgba(100, 116, 139, 0.10);
+}
+
+.manage-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.manage-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 31px;
+    border: 1px solid rgba(38, 37, 30, 0.10);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--text-primary);
+    padding: 0.38rem 0.52rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.18s var(--ease-smooth);
+}
+
+.manage-action-btn:hover {
+    border-color: rgba(13, 148, 136, 0.32);
+    color: var(--primary-accent);
+    transform: translateY(-1px);
+}
+
+.manage-action-btn.primary {
+    border-color: var(--primary-accent);
+    background: var(--primary-accent);
+    color: #ffffff;
+}
+
+.manage-action-btn.danger:hover {
+    border-color: rgba(244, 63, 94, 0.35);
+    color: #be123c;
+}
+
+.manage-preview-card,
+.manage-impact-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.manage-preview-card div,
+.manage-impact-preview div {
+    padding: 0.8rem;
+    border: 1px solid rgba(38, 37, 30, 0.08);
+    border-radius: 10px;
+    background: rgba(13, 148, 136, 0.06);
+}
+
+.manage-preview-card span,
+.manage-impact-preview span {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.manage-preview-card strong,
+.manage-impact-preview strong {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-primary);
+}
+
 /* --- BOOKING VIEW SPECIFIC STYLES --- */
 .booking-passenger-grid {
     display: grid;

@@ -44,8 +44,8 @@ function looksLikePassport(value) {
 export function buildClientList() {
     const clients = {};
     state.allTickets.forEach(ticket => {
-        if (isFeeEntry(ticket)) return;
-        const clientKey = `${ticket.name}|${ticket.phone}|${ticket.account_name}`;
+        const baseName = String(ticket.name || '').replace(/\(fees\)\s*$/i, '').trim();
+        const clientKey = `${baseName}|${ticket.phone}|${ticket.account_name}`;
         const lowerRemarks = ticket.remarks?.toLowerCase() || '';
         const ticketNrc = looksLikeNrc(ticket.nrc_no) ? ticket.nrc_no : (looksLikeNrc(ticket.id_no) ? ticket.id_no : '');
         const ticketPassport = ticket.passport_no
@@ -54,7 +54,7 @@ export function buildClientList() {
         if (!clients[clientKey]) {
             clients[clientKey] = {
                 client_key: clientKey,
-                name: ticket.name,
+                name: baseName,
                 phone: ticket.phone,
                 account_name: ticket.account_name,
                 account_type: ticket.account_type,
@@ -95,7 +95,9 @@ export function buildClientList() {
         }
 
         if (!lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund')) {
-            clients[clientKey].ticket_count++;
+            if (!isFeeEntry(ticket)) {
+                clients[clientKey].ticket_count++;
+            }
             clients[clientKey].total_spent += (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
         }
         const travelDate = parseSheetDate(ticket.departing_on);

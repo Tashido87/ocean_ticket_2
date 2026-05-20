@@ -945,13 +945,6 @@ function renderRecords() {
     const paged = sorted.slice((page - 1) * size, page * size);
 
     body.innerHTML = paged.map(s => {
-        const allocations = Array.isArray(s.allocations) ? s.allocations : [];
-        const allocSummary = allocations.length
-            ? `${allocations.length} PNR${allocations.length > 1 ? 's' : ''}`
-            : (s.allocationMode === 'unallocated' ? 'Unallocated' : 'Auto (FIFO)');
-        const proofCell = s.proofUrl
-            ? `<a class="settle-link" href="${escapeHtml(s.proofUrl)}" target="_blank" rel="noopener"><i class="fa-solid fa-paperclip"></i> ${escapeHtml(s.proofName || 'View')}</a>`
-            : '<span class="settle-muted">No proof</span>';
         const statusKey = (s.status || 'Paid').toLowerCase();
         return `
             <tr data-settlement-id="${escapeHtml(s.id)}">
@@ -959,15 +952,11 @@ function renderRecords() {
                 <td class="num"><strong>${formatMMK(n(s.amount_paid))}</strong></td>
                 <td>${escapeHtml(s.payment_method || '—')}</td>
                 <td>${escapeHtml(s.transaction_id || '—')}</td>
-                <td>${proofCell}</td>
-                <td>${escapeHtml(allocSummary)}</td>
                 <td><span class="status-pill settle-status-${statusKey}">${escapeHtml(s.status || 'Paid')}</span></td>
                 <td>${escapeHtml(s.notes || '—')}</td>
                 <td>
                     <div class="settle-row-actions">
-                        <button class="settle-row-btn" data-settle-action="view"><i class="fa-solid fa-eye"></i></button>
                         <button class="settle-row-btn" data-settle-action="edit"><i class="fa-solid fa-pen"></i></button>
-                        <button class="settle-row-btn" data-settle-action="verify" title="Verify"><i class="fa-solid fa-circle-check"></i></button>
                         <button class="settle-row-btn settle-danger" data-settle-action="delete"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 </td>

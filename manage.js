@@ -37,23 +37,128 @@ function getTimestampMs(ts) {
     return 0;
 }
 
+function normalizePnr(value) {
+    return String(value || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function money(value) {
+    return `MMK ${(Number(value) || 0).toLocaleString()}`;
+}
+
+function dateForInput(value) {
+    if (!value) return '';
+    const d = parseSheetDate(value);
+    if (isNaN(d.getTime()) || d.getTime() === 0) return value;
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+function ticketTotal(ticket) {
+    return (Number(ticket.net_amount) || 0) + (Number(ticket.extra_fare) || 0) + (Number(ticket.date_change) || 0);
+}
+
+function isCanceledTicket(ticket) {
+    const remarks = String(ticket?.remarks || '').toLowerCase();
+    const status = String(ticket?.status || '').toLowerCase();
+    return status.includes('cancel') || remarks.includes('refund') || remarks.includes('cancel');
+}
+
+function ownerPayable(ticket) {
+    if (isCanceledTicket(ticket)) return 0;
+    // Owner payable assumption used in settlement: net/date-change owed owner, commission retained by us.
+    return (Number(ticket.net_amount) || 0) + (Number(ticket.date_change) || 0) - (Number(ticket.commission) || 0);
+}
+
+function profitAmount(ticket) {
+    if (isCanceledTicket(ticket)) return 0;
+    return (Number(ticket.commission) || 0) + (Number(ticket.extra_fare) || 0);
+}
+
+function getFinancialStatus(ticket) {
+    if (isCanceledTicket(ticket)) return { key: 'cancelled', label: 'Cancelled' };
+    if (isFeeRow(ticket)) return { key: 'fee', label: 'Fee / Balance' };
+    const stored = String(ticket.financial_status || '').trim();
+    if (stored) return { key: stored.toLowerCase().replace(/\s+/g, '-'), label: stored };
+    if (!(Number(ticket.net_amount) > 0)) return { key: 'pending', label: 'Missing Net' };
+    if (!(Number(ticket.commission) > 0)) return { key: 'review', label: 'Need Commission' };
+    return { key: 'confirmed', label: 'Financial Confirmed' };
+}
+
+function paymentStatus(ticket) {
+    if (isCanceledTicket(ticket)) return { key: 'cancelled', label: 'Cancelled' };
+    return ticket.paid ? { key: 'paid', label: `Paid${ticket.payment_method ? ` · ${ticket.payment_method}` : ''}` } : { key: 'unpaid', label: 'Unpaid' };
+}
+
+function getPnrSummary(tickets) {
+    const active = tickets.filter(t => !isCanceledTicket(t));
+    const originals = active.filter(t => !isFeeRow(t));
+    const fees = active.filter(isFeeRow);
+    const totalValue = active.reduce((sum, t) => sum + ticketTotal(t), 0);
+    const paidValue = active.filter(t => t.paid).reduce((sum, t) => sum + ticketTotal(t), 0);
+    const unpaidValue = totalValue - paidValue;
+    const totalProfit = active.reduce((sum, t) => sum + profitAmount(t), 0);
+    const totalOwnerPayable = active.reduce((sum, t) => sum + ownerPayable(t), 0);
+    const first = originals[0] || active[0] || tickets[0] || {};
+    const issues = getManageIssues(tickets);
+
+    return {
+        pnr: first.booking_reference || document.getElementById('managePnr')?.value || '',
+        route: first.departure && first.destination ? `${first.departure.split(' ')[0]} → ${first.destination.split(' ')[0]}` : '—',
+        airline: first.airline || '—',
+        travelDate: first.departing_on || '—',
+        passengers: originals.length,
+        fees: fees.length,
+        cancelled: tickets.filter(isCanceledTicket).length,
+        totalValue,
+        paidValue,
+        unpaidValue,
+        totalProfit,
+        totalOwnerPayable,
+        issues
+    };
+}
+
+function getManageIssues(tickets) {
+    const issues = [];
+    tickets.forEach(ticket => {
+        if (isCanceledTicket(ticket) || isFeeRow(ticket)) return;
+        const ref = `${ticket.name || 'Ticket'}${ticket.booking_reference ? ` · ${ticket.booking_reference}` : ''}`;
+        if (!(Number(ticket.net_amount) > 0)) issues.push({ tone: 'danger', text: `${ref}: net amount is missing or zero.` });
+        if (!(Number(ticket.commission) > 0)) issues.push({ tone: 'warning', text: `${ref}: commission still needs review.` });
+        if (ticket.paid && !ticket.paid_date) issues.push({ tone: 'warning', text: `${ref}: marked paid but paid date is missing.` });
+        if (ticket.paid && !ticket.payment_method) issues.push({ tone: 'warning', text: `${ref}: marked paid but payment method is missing.` });
+        if (ownerPayable(ticket) < 0) issues.push({ tone: 'danger', text: `${ref}: owner payable is negative.` });
+    });
+    return issues;
+}
+
+async function reloadManagePnr(pnr) {
+    state.cache = {};
+    const { loadTicketData } = await import('./tickets.js');
+    const { updateDashboardData } = await import('./main.js');
+    const { loadHistory } = await import('./history.js');
+    const { updateNotifications } = await import('./ui.js');
+
+    await Promise.all([loadTicketData(), loadHistory()]);
+    updateDashboardData();
+    updateNotifications();
+    findTicketForManage(pnr);
+}
+
 /**
  * Finds tickets by PNR and displays them in the manage view.
  * @param {string|null} [pnrFromClick=null] Optional PNR passed from a button click.
  */
 export function findTicketForManage(pnrFromClick = null) {
     const pnrInput = document.getElementById('managePnr');
-    const pnr = pnrFromClick || pnrInput.value.toUpperCase();
+    const pnr = normalizePnr(pnrFromClick || pnrInput.value);
     if (!pnr) {
         showToast('Please enter a PNR code.', 'error');
         return;
     }
 
-    if (pnrFromClick) {
-        pnrInput.value = pnr;
-    }
+    pnrInput.value = pnr;
 
-    const found = state.allTickets.filter(t => t.booking_reference === pnr);
+    const found = state.allTickets.filter(t => normalizePnr(t.booking_reference) === pnr);
     // Sort by createdAt DESCENDING so the newest fees/splits appear at the top
     found.sort((a, b) => getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt));
     
@@ -94,76 +199,112 @@ function displayManageResults(tickets) {
         return;
     }
 
-    let html = `<div class="table-container"><table><thead><tr><th>Type / Name</th><th>Detail / Amount</th><th>Date Info</th><th>Status / Action</th></tr></thead><tbody>`;
+    const summary = getPnrSummary(tickets);
+    const issueHtml = summary.issues.length
+        ? `<div class="manage-issue-list">${summary.issues.slice(0, 5).map(issue => `<div class="manage-issue ${issue.tone}"><i class="fa-solid fa-triangle-exclamation"></i>${issue.text}</div>`).join('')}</div>`
+        : `<div class="manage-issue-list"><div class="manage-issue ok"><i class="fa-solid fa-circle-check"></i>No obvious financial review issue for this PNR.</div></div>`;
 
-    const remarkCheck = (r) => {
-        if (!r) return false;
-        const lowerRemark = r.toLowerCase();
-        return lowerRemark.includes('refund') || lowerRemark.includes('cancel');
-    };
+    let html = `
+        <div class="manage-pnr-dashboard">
+            <div class="manage-pnr-header">
+                <div>
+                    <div class="manage-eyebrow">PNR Control Center</div>
+                    <h3>${summary.pnr}</h3>
+                    <p>${summary.route} · ${summary.airline} · Travel ${formatDateToDMMMY(summary.travelDate) || summary.travelDate}</p>
+                </div>
+                <div class="manage-header-stats">
+                    <span>${summary.passengers} passenger${summary.passengers === 1 ? '' : 's'}</span>
+                    <span>${summary.fees} fee/balance row${summary.fees === 1 ? '' : 's'}</span>
+                    ${summary.cancelled ? `<span class="is-danger">${summary.cancelled} cancelled</span>` : ''}
+                </div>
+            </div>
+            <div class="manage-kpi-grid">
+                <div class="manage-kpi"><span>Total Value</span><strong>${money(summary.totalValue)}</strong><small>Active ticket + fee rows</small></div>
+                <div class="manage-kpi ${summary.unpaidValue > 0 ? 'warning' : 'positive'}"><span>Unpaid Balance</span><strong>${money(summary.unpaidValue)}</strong><small>${summary.unpaidValue > 0 ? 'Needs collection' : 'Fully paid'}</small></div>
+                <div class="manage-kpi positive"><span>My Profit</span><strong>${money(summary.totalProfit)}</strong><small>Commission + extra fare</small></div>
+                <div class="manage-kpi navy"><span>Owner Payable</span><strong>${money(summary.totalOwnerPayable)}</strong><small>Settlement impact</small></div>
+            </div>
+            ${issueHtml}
+        </div>
+        <div class="manage-ticket-toolbar">
+            <div>
+                <strong>Ticket Rows</strong>
+                <span>Use focused actions to avoid mixing payment, financial, and refund changes.</span>
+            </div>
+        </div>
+        <div class="table-container manage-table-wrap">
+            <table class="manage-table">
+                <thead>
+                    <tr>
+                        <th>Type / Passenger</th>
+                        <th>Trip</th>
+                        <th>Amount</th>
+                        <th>Payment</th>
+                        <th>Financial</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
 
     tickets.forEach(t => {
-        let actionButton = '';
-        let typeLabel = '';
-        let detailLabel = '';
-        let dateLabel = '';
-        let rowClass = '';
-
         const isFee = isFeeRow(t);
-        
-        // Calculate the specific amount for this row
-        const rowValue = (t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0);
+        const canceled = isCanceledTicket(t);
+        const pay = paymentStatus(t);
+        const fin = getFinancialStatus(t);
+        const route = t.departure && t.destination ? `${t.departure.split(' ')[0]} → ${t.destination.split(' ')[0]}` : '—';
+        const rowType = canceled ? 'Cancelled' : isFee ? 'Fee / Balance' : 'Original Ticket';
+        const actions = canceled
+            ? `<button class="manage-action-btn" data-action="details" data-id="${t.id}"><i class="fa-solid fa-eye"></i> View</button>`
+            : isFee
+                ? `<button class="manage-action-btn primary manage-btn" data-action="fee" data-id="${t.id}"><i class="fa-solid fa-receipt"></i> Update Fee</button>
+                   <button class="manage-action-btn" data-action="payment" data-id="${t.id}"><i class="fa-solid fa-credit-card"></i> Payment</button>`
+                : `<button class="manage-action-btn primary" data-action="financial" data-id="${t.id}"><i class="fa-solid fa-sliders"></i> Financials</button>
+                   <button class="manage-action-btn" data-action="payment" data-id="${t.id}"><i class="fa-solid fa-credit-card"></i> Payment</button>
+                   <button class="manage-action-btn" data-action="add-fee" data-id="${t.id}"><i class="fa-solid fa-plus"></i> Fee</button>
+                   <button class="manage-action-btn danger" data-action="cancel" data-id="${t.id}"><i class="fa-solid fa-ban"></i></button>
+                   <button class="manage-action-btn" data-action="advanced" data-id="${t.id}"><i class="fa-solid fa-gear"></i></button>`;
 
-        if (remarkCheck(t.remarks)) {
-            actionButton = `<button class="btn btn-secondary" disabled>Refunded</button>`;
-            rowClass = 'style="opacity: 0.6;"';
-        } else {
-            const btnText = isFee ? 'Update Fee' : 'Manage';
-            const btnClass = isFee ? 'btn-secondary' : 'btn-primary';
-            actionButton = `<button class="btn ${btnClass} manage-btn" data-id="${t.id}">${btnText}</button>`;
-        }
-
-        // --- TYPE & NAME COLUMN ---
-        if (isFee) {
-            typeLabel = `<span style="color: var(--warning-accent); font-weight: bold;"><i class="fa-solid fa-receipt"></i> Fee / Balance</span><br><span style="font-size: 0.85em; opacity: 0.8;">${t.name}</span>`;
-            detailLabel = `<span style="font-weight: bold;">${rowValue.toLocaleString()} MMK</span>`;
-            
-            // For FEES: Show "Added On" date primarily
-            dateLabel = `<span style="font-weight:bold; color:var(--text-secondary);"><i class="fa-solid fa-calendar-plus"></i> Added: ${t.issued_date}</span><br><span style="font-size:0.8em; opacity:0.6;">Travel: ${t.departing_on}</span>`;
-        } else {
-            typeLabel = `<span style="font-weight: bold; color: var(--primary-accent);"><i class="fa-solid fa-ticket"></i> Original Ticket</span><br><span style="font-size: 0.85em;">${t.name}</span>`;
-            const route = `${t.departure.split(' ')[0]}→${t.destination.split(' ')[0]}`;
-            detailLabel = `${route}`;
-            
-            // For ORIGINAL: Show Travel Date primarily
-            dateLabel = `<span style="font-weight: bold;">${t.departing_on}</span>`;
-        }
-        
-        // --- PAYMENT BADGE ---
-        const paymentBadge = t.paid 
-            ? `<span style="color: var(--success-accent); font-size: 0.8em; display: inline-block; margin-top: 4px;"><i class="fa-solid fa-check"></i> Paid</span>`
-            : `<span style="color: var(--danger-accent); font-size: 0.8em; display: inline-block; margin-top: 4px;"><i class="fa-solid fa-xmark"></i> Unpaid</span>`;
-
-        html += `<tr ${rowClass}>
-            <td>${typeLabel}</td>
-            <td>${detailLabel}</td>
-            <td>${dateLabel}<br>${paymentBadge}</td>
-            <td>${actionButton}</td>
+        html += `<tr class="${canceled ? 'is-cancelled' : ''}">
+            <td>
+                <span class="manage-row-type ${isFee ? 'fee' : ''}">${rowType}</span>
+                <strong>${t.name || '—'}</strong>
+                <small>${t.id_no || ''}</small>
+            </td>
+            <td>
+                <strong>${route}</strong>
+                <small>Travel: ${formatDateToDMMMY(t.departing_on) || t.departing_on || '—'} · Issued: ${formatDateToDMMMY(t.issued_date) || t.issued_date || '—'}</small>
+            </td>
+            <td>
+                <strong>${money(ticketTotal(t))}</strong>
+                <small>Net ${money(t.net_amount)} · Profit ${money(profitAmount(t))}</small>
+            </td>
+            <td>
+                <span class="manage-status ${pay.key}">${pay.label}</span>
+                <small>${t.paid_date ? `Paid date: ${formatDateToDMMMY(t.paid_date) || t.paid_date}` : ''}</small>
+            </td>
+            <td>
+                <span class="manage-status ${fin.key}">${fin.label}</span>
+                <small>Owner payable ${money(ownerPayable(t))}</small>
+            </td>
+            <td><div class="manage-action-row">${actions}</div></td>
         </tr>`;
     });
     container.innerHTML = html + '</tbody></table></div>';
 
     // Add event listeners after rendering
-    container.querySelectorAll('.manage-btn').forEach(btn => {
+    container.querySelectorAll('[data-action]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const docId = e.currentTarget.dataset.id;
-            const ticket = state.allTickets.find(t => t.id === docId);
-            
-            if (isFeeRow(ticket)) {
-                openFeeManageModal(docId);
-            } else {
-                openManageModal(docId);
-            }
+            const action = e.currentTarget.dataset.action;
+
+            if (action === 'fee') openFeeManageModal(docId);
+            if (action === 'financial') openFinancialModal(docId);
+            if (action === 'payment') openPaymentModal(docId);
+            if (action === 'add-fee') openAddFeeModal(docId);
+            if (action === 'cancel') openCancelSubModal(docId);
+            if (action === 'details') openManageDetailsModal(docId);
+            if (action === 'advanced') openManageModal(docId);
         });
     });
 }
@@ -346,6 +487,329 @@ async function handleUpdateFeeRow(e) {
         console.error(error);
         showToast('Failed to update.', 'error');
     }
+}
+
+function openManageDetailsModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
+    if (!ticket) return;
+    const pay = paymentStatus(ticket);
+    const fin = getFinancialStatus(ticket);
+
+    openModal(`
+        <h2>Ticket Snapshot</h2>
+        <p class="modal-subtitle">${ticket.name} · PNR ${ticket.booking_reference}</p>
+        <div class="manage-preview-card">
+            <div><span>Status</span><strong>${fin.label}</strong></div>
+            <div><span>Payment</span><strong>${pay.label}</strong></div>
+            <div><span>Ticket Value</span><strong>${money(ticketTotal(ticket))}</strong></div>
+            <div><span>Owner Payable</span><strong>${money(ownerPayable(ticket))}</strong></div>
+        </div>
+        <div class="details-section">
+            <div class="details-section-title">Record Details</div>
+            <p><strong>Route:</strong> ${ticket.departure || '—'} → ${ticket.destination || '—'}</p>
+            <p><strong>Issued Date:</strong> ${formatDateToDMMMY(ticket.issued_date) || ticket.issued_date || '—'}</p>
+            <p><strong>Travel Date:</strong> ${formatDateToDMMMY(ticket.departing_on) || ticket.departing_on || '—'}</p>
+            <p><strong>Remarks:</strong> ${ticket.remarks || '—'}</p>
+            ${ticket.refund_amount ? `<p><strong>Refund:</strong> ${money(ticket.refund_amount)} via ${ticket.refund_payment_method || '—'}</p>` : ''}
+            ${ticket.original_net_amount ? `<p><strong>Original Net:</strong> ${money(ticket.original_net_amount)}</p>` : ''}
+        </div>
+        <div class="form-actions" style="margin-top: 1.5rem;">
+            <button class="btn btn-secondary" id="manageDetailsCloseBtn">Close</button>
+        </div>
+    `, 'large-modal');
+    document.getElementById('manageDetailsCloseBtn').addEventListener('click', closeModal);
+}
+
+function openFinancialModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
+    if (!ticket) return;
+
+    const currentOwnerPayable = ownerPayable(ticket);
+    const currentProfit = profitAmount(ticket);
+    const defaultFinancialStatus = ticket.financial_status || (!(Number(ticket.net_amount) > 0) ? 'Financial Pending' : !(Number(ticket.commission) > 0) ? 'Needs Review' : 'Financial Confirmed');
+    const content = `
+        <h2>Update Financials</h2>
+        <p class="modal-subtitle">${ticket.name} · PNR ${ticket.booking_reference}</p>
+        <div class="manage-preview-card">
+            <div><span>Current Profit</span><strong>${money(currentProfit)}</strong></div>
+            <div><span>Current Owner Payable</span><strong>${money(currentOwnerPayable)}</strong></div>
+        </div>
+        <form id="financialUpdateForm" data-id="${docId}">
+            <div class="form-grid">
+                <div class="form-group"><label for="financial_base_fare">Base Fare</label><input type="number" id="financial_base_fare" value="${Number(ticket.base_fare) || 0}"></div>
+                <div class="form-group"><label for="financial_net_amount">Net Amount</label><input type="number" id="financial_net_amount" value="${Number(ticket.net_amount) || 0}"></div>
+                <div class="form-group"><label for="financial_commission">Commission</label><input type="number" id="financial_commission" value="${Number(ticket.commission) || 0}"></div>
+                <div class="form-group">
+                    <label for="financial_status">Financial Status</label>
+                    <select id="financial_status">
+                        <option value="Financial Pending" ${defaultFinancialStatus === 'Financial Pending' ? 'selected' : ''}>Financial Pending</option>
+                        <option value="Needs Review" ${defaultFinancialStatus === 'Needs Review' ? 'selected' : ''}>Needs Review</option>
+                        <option value="Financial Confirmed" ${defaultFinancialStatus === 'Financial Confirmed' ? 'selected' : ''}>Financial Confirmed</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label for="financial_reason">Reason / Note <span class="req">*</span></label>
+                    <textarea id="financial_reason" rows="3" placeholder="Example: commission confirmed by owner, corrected net amount, fare recalculated" required></textarea>
+                </div>
+            </div>
+            <div id="financialImpactPreview" class="manage-impact-preview"></div>
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" id="financialCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Financials</button>
+            </div>
+        </form>
+    `;
+
+    openModal(content, 'large-modal');
+    const preview = () => {
+        const next = {
+            ...ticket,
+            base_fare: Number(document.getElementById('financial_base_fare').value) || 0,
+            net_amount: Number(document.getElementById('financial_net_amount').value) || 0,
+            commission: Number(document.getElementById('financial_commission').value) || 0
+        };
+        document.getElementById('financialImpactPreview').innerHTML = `
+            <div><span>Profit</span><strong>${money(currentProfit)} → ${money(profitAmount(next))}</strong></div>
+            <div><span>Owner Payable</span><strong>${money(currentOwnerPayable)} → ${money(ownerPayable(next))}</strong></div>
+        `;
+    };
+    ['financial_base_fare', 'financial_net_amount', 'financial_commission'].forEach(id => {
+        document.getElementById(id).addEventListener('input', preview);
+    });
+    preview();
+
+    document.getElementById('financialCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('financialUpdateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const reason = document.getElementById('financial_reason').value.trim();
+        if (!reason) {
+            showToast('Please add a reason for the financial change.', 'error');
+            return;
+        }
+
+        const updateData = {
+            base_fare: Number(document.getElementById('financial_base_fare').value) || 0,
+            net_amount: Number(document.getElementById('financial_net_amount').value) || 0,
+            commission: Number(document.getElementById('financial_commission').value) || 0,
+            financial_status: document.getElementById('financial_status').value,
+            financial_note: reason
+        };
+
+        const changes = [];
+        if (updateData.base_fare !== (Number(ticket.base_fare) || 0)) changes.push(`Base Fare: ${ticket.base_fare || 0} to ${updateData.base_fare}`);
+        if (updateData.net_amount !== (Number(ticket.net_amount) || 0)) changes.push(`Net Amount: ${ticket.net_amount || 0} to ${updateData.net_amount}`);
+        if (updateData.commission !== (Number(ticket.commission) || 0)) changes.push(`Commission: ${ticket.commission || 0} to ${updateData.commission}`);
+        if (updateData.financial_status !== defaultFinancialStatus) changes.push(`Financial Status: ${defaultFinancialStatus} to ${updateData.financial_status}`);
+        if (changes.length === 0) {
+            showToast('No financial changes were made.', 'info');
+            return;
+        }
+
+        try {
+            showToast('Updating financials...', 'info');
+            await updateTicket(ticket.id, updateData);
+            await saveHistory(ticket, `FINANCIAL UPDATE: ${changes.join('; ')}. Reason: ${reason}`);
+            showToast('Financials updated.', 'success');
+            closeModal();
+            await reloadManagePnr(ticket.booking_reference);
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to update financials.', 'error');
+        }
+    });
+}
+
+function openPaymentModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
+    if (!ticket) return;
+    const { method: pmBase, bank: pmBank } = parsePaymentMethod(ticket.payment_method);
+
+    const content = `
+        <h2>Record Payment</h2>
+        <p class="modal-subtitle">${ticket.name} · ${money(ticketTotal(ticket))} · PNR ${ticket.booking_reference}</p>
+        <form id="paymentUpdateForm" data-id="${docId}">
+            <div class="form-grid">
+                <div class="form-group checkbox-group" style="padding-top: 1.5rem;">
+                    <label for="payment_paid">Paid</label>
+                    <input type="checkbox" id="payment_paid" ${ticket.paid ? 'checked' : ''} style="width: 20px; height: 20px;">
+                </div>
+                <div class="form-group">
+                    <label for="payment_method">Payment Method</label>
+                    <select id="payment_method">
+                        <option value="">Select</option>
+                        <option value="KBZ Pay" ${pmBase === 'KBZ Pay' ? 'selected' : ''}>KBZ Pay</option>
+                        <option value="Mobile Banking" ${pmBase === 'Mobile Banking' ? 'selected' : ''}>Mobile Banking</option>
+                        <option value="Aya Pay" ${pmBase === 'Aya Pay' ? 'selected' : ''}>Aya Pay</option>
+                        <option value="Cash" ${pmBase === 'Cash' ? 'selected' : ''}>Cash</option>
+                    </select>
+                </div>
+                <div class="form-group"><label for="payment_paid_date">Paid Date</label><input type="text" id="payment_paid_date" value="${dateForInput(ticket.paid_date)}" placeholder="DD/MM/YYYY"></div>
+                <div class="form-group"><label for="payment_transaction_id">Transaction ID</label><input type="text" id="payment_transaction_id" value="${ticket.payment_transaction_id || ''}"></div>
+                <div class="form-group full-width"><label for="payment_note">Payment Note</label><textarea id="payment_note" rows="3">${ticket.payment_note || ''}</textarea></div>
+            </div>
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" id="paymentCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Payment</button>
+            </div>
+        </form>
+    `;
+
+    openModal(content, 'large-modal');
+    new Datepicker(document.getElementById('payment_paid_date'), { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true });
+    const paidChk = document.getElementById('payment_paid');
+    const methodSel = document.getElementById('payment_method');
+    const bankSel = enhanceMobileBankingSelect(methodSel, { defaultBank: pmBank });
+    const paidDateIn = document.getElementById('payment_paid_date');
+    const sync = () => {
+        const enabled = paidChk.checked;
+        methodSel.disabled = !enabled;
+        if (bankSel) bankSel.disabled = !enabled;
+        paidDateIn.disabled = !enabled;
+        if (enabled && !paidDateIn.value) paidDateIn.value = dateForInput(formatDateForSheet(new Date()));
+    };
+    paidChk.addEventListener('change', sync);
+    sync();
+    document.getElementById('paymentCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('paymentUpdateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const paid = paidChk.checked;
+        const updateData = {
+            paid,
+            payment_method: paid ? formatPaymentMethod(methodSel.value, document.getElementById('payment_method_bank')?.value || '') : '',
+            paid_date: paid ? formatDateForSheet(paidDateIn.value || new Date()) : '',
+            payment_transaction_id: paid ? document.getElementById('payment_transaction_id').value.trim() : '',
+            payment_note: document.getElementById('payment_note').value.trim()
+        };
+
+        try {
+            showToast('Saving payment status...', 'info');
+            await updateTicket(ticket.id, updateData);
+            await saveHistory(ticket, `PAYMENT UPDATE: ${paid ? `Paid via ${updateData.payment_method || '—'} on ${updateData.paid_date}` : 'Marked unpaid'}`);
+            showToast('Payment updated.', 'success');
+            closeModal();
+            await reloadManagePnr(ticket.booking_reference);
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to update payment.', 'error');
+        }
+    });
+}
+
+function openAddFeeModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
+    if (!ticket) return;
+
+    const content = `
+        <h2>Add Fee / Extra Fare</h2>
+        <p class="modal-subtitle">${ticket.name} · PNR ${ticket.booking_reference}</p>
+        <form id="addFeeForm" data-id="${docId}">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="new_fee_type">Type</label>
+                    <select id="new_fee_type">
+                        <option value="Extra Fare">Extra Fare / Profit</option>
+                        <option value="Date Change">Date Change Fee</option>
+                        <option value="Correction">Correction</option>
+                        <option value="Other">Other Fee</option>
+                    </select>
+                </div>
+                <div class="form-group"><label for="new_fee_amount">Amount</label><input type="number" id="new_fee_amount" required></div>
+                <div class="form-group checkbox-group" style="padding-top: 1.5rem;">
+                    <label for="new_fee_paid">Paid</label>
+                    <input type="checkbox" id="new_fee_paid" style="width: 20px; height: 20px;">
+                </div>
+                <div class="form-group">
+                    <label for="new_fee_payment_method">Payment Method</label>
+                    <select id="new_fee_payment_method">
+                        <option value="">Select</option>
+                        <option value="KBZ Pay">KBZ Pay</option>
+                        <option value="Mobile Banking">Mobile Banking</option>
+                        <option value="Aya Pay">Aya Pay</option>
+                        <option value="Cash">Cash</option>
+                    </select>
+                </div>
+                <div class="form-group"><label for="new_fee_paid_date">Paid Date</label><input type="text" id="new_fee_paid_date" placeholder="DD/MM/YYYY"></div>
+                <div class="form-group full-width"><label for="new_fee_note">Reason / Note <span class="req">*</span></label><textarea id="new_fee_note" rows="3" required></textarea></div>
+            </div>
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" id="addFeeCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Fee Row</button>
+            </div>
+        </form>
+    `;
+
+    openModal(content, 'large-modal');
+    new Datepicker(document.getElementById('new_fee_paid_date'), { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true });
+    const methodSel = document.getElementById('new_fee_payment_method');
+    const bankSel = enhanceMobileBankingSelect(methodSel);
+    const paidChk = document.getElementById('new_fee_paid');
+    const paidDateIn = document.getElementById('new_fee_paid_date');
+    const sync = () => {
+        methodSel.disabled = !paidChk.checked;
+        if (bankSel) bankSel.disabled = !paidChk.checked;
+        paidDateIn.disabled = !paidChk.checked;
+        if (paidChk.checked && !paidDateIn.value) paidDateIn.value = dateForInput(formatDateForSheet(new Date()));
+    };
+    paidChk.addEventListener('change', sync);
+    sync();
+    document.getElementById('addFeeCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('addFeeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const feeType = document.getElementById('new_fee_type').value;
+        const amount = Number(document.getElementById('new_fee_amount').value) || 0;
+        const note = document.getElementById('new_fee_note').value.trim();
+        const paid = paidChk.checked;
+        if (amount <= 0) {
+            showToast('Fee amount must be greater than zero.', 'error');
+            return;
+        }
+        if (!note) {
+            showToast('Please add a reason for this fee.', 'error');
+            return;
+        }
+
+        const paymentMethod = paid ? formatPaymentMethod(methodSel.value, document.getElementById('new_fee_payment_method_bank')?.value || '') : '';
+        const paidDate = paid ? formatDateForSheet(paidDateIn.value || new Date()) : '';
+        const isExtraFare = feeType === 'Extra Fare';
+        const today = formatDateForSheet(new Date());
+
+        try {
+            showToast('Adding fee row...', 'info');
+            await addTickets([{
+                issued_date: today,
+                name: `${ticket.name} (Fees)`,
+                id_no: ticket.id_no,
+                phone: ticket.phone,
+                account_name: ticket.account_name,
+                account_type: ticket.account_type,
+                account_link: ticket.account_link,
+                departure: ticket.departure,
+                destination: ticket.destination,
+                departing_on: ticket.departing_on,
+                airline: ticket.airline,
+                base_fare: 0,
+                booking_reference: ticket.booking_reference,
+                net_amount: amount,
+                paid,
+                payment_method: paymentMethod,
+                paid_date: paidDate,
+                commission: isExtraFare ? amount : 0,
+                remarks: `Fee Entry - ${feeType}: ${note}`,
+                fee_type: feeType,
+                fee_note: note,
+                extra_fare: 0,
+                date_change: 0,
+                gender: ticket.gender
+            }]);
+            await saveHistory(ticket, `FEE ADDED: ${feeType} ${amount.toLocaleString()} MMK. Reason: ${note}`);
+            showToast('Fee row added.', 'success');
+            closeModal();
+            await reloadManagePnr(ticket.booking_reference);
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to add fee row.', 'error');
+        }
+    });
 }
 
 
@@ -638,9 +1102,11 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
                     paid: true,
                     payment_method: payMethod,
                     paid_date: payDate,
+                    payment_note: `Partial payment split from ${ticketTotal(ticket).toLocaleString()} MMK`,
                     remarks: `Partial Pmt (${payAmount.toLocaleString()}) - ${ticket.remarks}`,
                     extra_fare: 0,
-                    date_change: 0
+                    date_change: 0,
+                    split_status: 'partial-paid'
                 }));
 
                 newRows.push({
@@ -663,6 +1129,8 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
                     paid_date: '',
                     commission: part2_Comm,
                     remarks: `Balance Due (${remainder.toLocaleString()})`,
+                    split_parent_ticket_id: ticket.id,
+                    split_status: 'balance-due',
                     extra_fare: 0,
                     date_change: 0,
                     gender: ticket.gender
@@ -711,7 +1179,11 @@ async function handleUpdateTicket(e) {
     // Determine which tickets we are updating
     let ticketsToUpdate = [];
     if (applyToAll) {
-        ticketsToUpdate = state.allTickets.filter(t => t.booking_reference === pnr);
+        ticketsToUpdate = state.allTickets.filter(t =>
+            normalizePnr(t.booking_reference) === normalizePnr(pnr) &&
+            !isFeeRow(t) &&
+            !isCanceledTicket(t)
+        );
     } else {
         // Only the specific row we opened the modal for
         const single = state.allTickets.find(t => t.id === masterId);
@@ -920,15 +1392,38 @@ async function handleCancelTicket(docId, type, details = {}) {
             
             if (type === 'refund') {
                 await updateTicket(docId, {
+                    status: 'cancelled',
+                    cancellation_type: 'Full Refund',
+                    cancelled_at: new Date().toISOString(),
+                    original_base_fare: ticket.base_fare || 0,
+                    original_net_amount: ticket.net_amount || 0,
+                    original_commission: ticket.commission || 0,
+                    original_extra_fare: ticket.extra_fare || 0,
+                    original_date_change: ticket.date_change || 0,
                     base_fare: 0,
                     net_amount: 0,
                     commission: 0,
+                    extra_fare: 0,
+                    date_change: 0,
+                    paid: true,
                     remarks: `Full Refund on ${dateStr}`
                 });
                 historyDetails = "CANCELED: Full Refund processed.";
             } else {
                 await updateTicket(docId, {
+                    status: 'cancelled',
+                    cancellation_type: 'Partial Cancellation',
+                    cancelled_at: new Date().toISOString(),
+                    original_base_fare: ticket.base_fare || 0,
+                    original_net_amount: ticket.net_amount || 0,
+                    original_commission: ticket.commission || 0,
+                    original_extra_fare: ticket.extra_fare || 0,
+                    original_date_change: ticket.date_change || 0,
                     net_amount: details.cancellationFee,
+                    refund_amount: details.refundAmount,
+                    refund_payment_method: details.paymentMethod,
+                    refund_transaction_id: details.transactionId,
+                    refund_date: dateStr,
                     remarks: `Canceled on ${dateStr} with ${details.refundAmount.toLocaleString()} refund`
                 });
                 historyDetails = `CANCELED: Partial. Refunded: ${details.refundAmount.toLocaleString()} MMK.`;
@@ -938,16 +1433,7 @@ async function handleCancelTicket(docId, type, details = {}) {
             
             showToast('Ticket canceled successfully!', 'success');
             closeModal();
-            clearManageResults();
-
-            const { loadTicketData } = await import('./tickets.js');
-            const { updateDashboardData } = await import('./main.js');
-            const { loadHistory } = await import('./history.js');
-            const { updateNotifications } = await import('./ui.js');
-
-            await Promise.all([loadTicketData(), loadHistory()]);
-            updateDashboardData();
-            updateNotifications();
+            await reloadManagePnr(ticket.booking_reference);
         } catch (error) {
             console.error('Cancel error:', error);
             showToast('Error canceling ticket: ' + error.message, 'error');
