@@ -835,16 +835,7 @@ function renderResults(results) {
     const container = document.getElementById('searchResultsContainer');
     if (!container) return;
 
-    if (!searchState.query && !hasActiveFilters()) {
-        container.innerHTML = `
-            <div class="search-empty-state search-empty-shell">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <h3>Search clients, tickets, PNR, or accounts</h3>
-                <p>Use the search box in the header to find records quickly.</p>
-            </div>
-        `;
-        return;
-    }
+    // Removed empty state when no query is present. It now defaults to showing recent records.
 
     if (results.all.length === 0) {
         container.innerHTML = `

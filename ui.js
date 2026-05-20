@@ -11,6 +11,7 @@ import { clearManageResults } from './manage.js';
 import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard, renderSettlementPage } from './settlement.js';
 import { showToast } from './utils.js';
 import { displayTickets } from './tickets.js';
+import { renderClientsView } from './clients.js';
 import { renderBookingPage } from './booking.js';
 import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox } from './passport.js';
 import { ocrPassport } from './passport-ocr.js';
@@ -145,6 +146,9 @@ export function showView(viewName) {
     }
     if (viewName === 'manage') {
         clearManageResults();
+    }
+    if (viewName === 'clients') {
+        renderClientsView();
     }
 
     // Services View Setup

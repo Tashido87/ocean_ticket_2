@@ -15,7 +15,7 @@ import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handl
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import {  } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
-import { buildClientList, loadFeaturedClients } from './clients.js';
+import { buildClientList, loadFeaturedClients, renderClientsView } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
@@ -264,7 +264,7 @@ export async function initializeApp() {
  */
 function handleHashRoute() {
     const hash = window.location.hash;
-    const viewMatch = hash.match(/^#\/(\w+)$/);
+    const viewMatch = hash.match(/^#\/(\w+)/);
     if (viewMatch) {
         const viewName = viewMatch[1];
         // Set flag so showView doesn't pushState again
@@ -279,7 +279,7 @@ function handleHashRoute() {
  */
 function handlePopState(e) {
     const hash = window.location.hash;
-    const viewMatch = hash.match(/^#\/(\w+)$/);
+    const viewMatch = hash.match(/^#\/(\w+)/);
     if (viewMatch) {
         window._skipHashUpdate = true;
         showView(viewMatch[1]);
