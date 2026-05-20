@@ -116,6 +116,12 @@ export async function loadTicketData() {
  * MODIFICATION: Removed the .slice(0, 50) limit to allow navigating through all tickets.
  */
 export function displayInitialTickets() {
+    const startDate = document.getElementById('searchStartDate')?.value;
+    const endDate = document.getElementById('searchEndDate')?.value;
+    if (startDate || endDate) {
+        performSearch();
+        return;
+    }
     const sorted = [...state.allTickets].sort((a, b) => {
         const dateDiff = parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date);
         if (dateDiff !== 0) return dateDiff;

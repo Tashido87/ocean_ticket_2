@@ -762,7 +762,7 @@ function renderKpis() {
 
 function kpi(icon, color, label, value, support) {
     return `
-        <div class="settle-kpi-card kpi-${color}">
+        <div class="settle-kpi-card glass-card kpi-${color}">
             <div class="settle-kpi-icon"><i class="fa-solid ${icon}"></i></div>
             <div class="settle-kpi-body">
                 <div class="settle-kpi-label">${escapeHtml(label)}</div>

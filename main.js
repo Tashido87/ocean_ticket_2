@@ -221,6 +221,15 @@ function setupEventListeners() {
             syncGroupToggleState();
         });
     });
+
+    // Set today's date badge beside records search buttons
+    const recordsTodayEl = document.getElementById('recordsTodayDate');
+    if (recordsTodayEl) {
+        const today = new Date();
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        recordsTodayEl.textContent = `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+    }
+
     document.getElementById('recordsFilterToggle').addEventListener('click', () => {
         const panel = document.getElementById('recordsFilters');
         if (panel) panel.hidden = !panel.hidden;
@@ -990,9 +999,9 @@ function renderDashboardTravelSchedule(groups) {
                     <span>${dashboardEscapeHtml(date.month)}</span>
                 </div>
                 <div class="travel-schedule-main">
-                    <strong>${dashboardEscapeHtml(group.pnr)}</strong>
+                    <strong>${dashboardEscapeHtml(group.lead)}${group.passengers > 1 ? ` +${group.passengers - 1}` : ''}</strong>
                     <span>${dashboardEscapeHtml(group.route)} · ${dashboardEscapeHtml(group.airline)}</span>
-                    <small>${dashboardEscapeHtml(group.lead)}${group.passengers > 1 ? ` +${group.passengers - 1}` : ''}</small>
+                    <small>${dashboardEscapeHtml(group.pnr)}</small>
                 </div>
                 <div class="travel-progress">
                     <span>${progress}% paid</span>
@@ -1628,41 +1637,50 @@ export function updateComparisonChart() {
     const revenueFill = withAlpha(revenueBase, 0.22);
     const bookingsFill = withAlpha(bookingsBase, 0.22);
 
+    const hasCancellations = buckets.some(b => b.cancellations > 0);
+    const datasets = [{
+        label: 'Revenue',
+        data: buckets.map(bucket => bucket.revenue),
+        borderColor: revenueBase,
+        backgroundColor: revenueFill,
+        borderWidth: 3,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        tension: 0.4,
+        fill: true,
+        yAxisID: 'y'
+    }, {
+        label: 'Bookings',
+        data: buckets.map(bucket => bucket.bookings),
+        type: 'bar',
+        backgroundColor: bookingsFill,
+        borderColor: bookingsBase,
+        borderWidth: 1,
+        borderRadius: 8,
+        barThickness: 'flex',
+        maxBarThickness: 28,
+        yAxisID: 'y1'
+    }];
+    if (hasCancellations) {
+        datasets.push({
+            label: 'Cancellations',
+            data: buckets.map(bucket => bucket.cancellations),
+            borderColor: cancelBase,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            yAxisID: 'y1',
+            tension: 0.3
+        });
+    }
+
     const chartConfig = {
         type: 'line',
         data: {
             labels: buckets.map(bucket => bucket.label),
-            datasets: [{
-                label: 'Revenue',
-                data: buckets.map(bucket => bucket.revenue),
-                borderColor: revenueBase,
-                backgroundColor: revenueFill,
-                borderWidth: 3,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                tension: 0.36,
-                fill: true,
-                yAxisID: 'y'
-            }, {
-                label: 'Bookings',
-                data: buckets.map(bucket => bucket.bookings),
-                type: 'bar',
-                backgroundColor: bookingsFill,
-                borderColor: bookingsBase,
-                borderWidth: 1,
-                borderRadius: 10,
-                yAxisID: 'y1'
-            }, {
-                label: 'Cancellations',
-                data: buckets.map(bucket => bucket.cancellations),
-                borderColor: cancelBase,
-                backgroundColor: cancelBase,
-                borderWidth: 2,
-                pointRadius: 2,
-                pointHoverRadius: 4,
-                yAxisID: 'y1',
-                tension: 0.3
-            }]
+            datasets
         },
         options: {
             responsive: true,
@@ -1671,54 +1689,78 @@ export function updateComparisonChart() {
                 mode: 'index',
                 intersect: false,
             },
+            layout: {
+                padding: { left: 4, right: 12, top: 8, bottom: 4 }
+            },
             scales: {
                 x: {
-                    ticks: { color: textColor },
-                    grid: { color: gridColor }
+                    ticks: {
+                        color: textColor,
+                        autoSkip: true,
+                        maxRotation: 0,
+                        maxTicksLimit: 8,
+                        font: { size: 11 }
+                    },
+                    grid: { color: gridColor, drawBorder: false, tickLength: 6 }
                 },
                 y: {
                     type: 'linear',
                     display: true,
                     position: 'left',
                     title: {
-                        display: true,
-                        text: 'Amount (MMK)',
-                        color: textColor
+                        display: false
                     },
                     ticks: {
                         color: textColor,
-                        callback: value => Number(value).toLocaleString()
+                        maxTicksLimit: 6,
+                        callback: value => {
+                            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                            if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+                            return Number(value).toLocaleString();
+                        },
+                        font: { size: 11 }
                     },
-                    grid: { color: gridColor }
+                    grid: { color: gridColor, drawBorder: false },
+                    beginAtZero: true
                 },
                 y1: {
                     type: 'linear',
                     display: true,
                     position: 'right',
                     title: {
-                        display: true,
-                        text: 'Count',
-                        color: textColor
+                        display: false
                     },
                     grid: {
-                        color: gridColor,
                         drawOnChartArea: false,
+                        drawBorder: false
                     },
                     ticks: {
-                        color: textColor
-                    }
+                        color: textColor,
+                        maxTicksLimit: 5,
+                        font: { size: 11 }
+                    },
+                    beginAtZero: true
                 }
             },
             plugins: {
                 legend: {
+                    align: 'end',
                     labels: {
                         color: textColor,
                         usePointStyle: true,
-                        boxWidth: 8,
+                        pointStyle: 'circle',
+                        boxWidth: 6,
+                        padding: 16,
                         font: { size: 11, weight: '700' }
                     }
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(255,255,255,0.96)',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: gridColor,
+                    borderWidth: 1,
+                    padding: 10,
                     callbacks: {
                         label: context => {
                             if (context.dataset.yAxisID === 'y') {

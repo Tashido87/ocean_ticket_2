@@ -395,7 +395,9 @@ export function isTicketPaid(ticket) {
     if (explicitPaid) return true;
     if (paymentText.includes('paid') || paymentText.includes('settled') || paymentText.includes('complete')) return true;
     if (explicitUnpaid) return false;
-    return Boolean(ticket?.paid_date || ticket?.payment_method || ticket?.payment_transaction_id);
+    // Only consider paid if there's an explicit paid date or explicit paid signal.
+    // Having a payment_method recorded doesn't mean the ticket is paid.
+    return Boolean(ticket?.paid_date);
 }
 
 /**
