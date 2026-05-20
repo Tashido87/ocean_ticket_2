@@ -15,7 +15,7 @@ import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handl
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import {  } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
-import { buildClientList, loadFeaturedClients, renderClientsView } from './clients.js';
+import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
@@ -103,7 +103,7 @@ function removeLocalDashboardTask(id) {
     updateDashboardData();
 }
 
-// Global PNR Click Handler
+// Global PNR Click Handler — opens trip plan detail modal
 document.addEventListener('click', (e) => {
     const pnrEl = e.target.closest('.clickable-pnr');
     if (pnrEl) {
@@ -111,8 +111,7 @@ document.addEventListener('click', (e) => {
         e.stopPropagation();
         const pnr = pnrEl.dataset.pnr;
         if (pnr && pnr !== 'No PNR' && pnr !== '—') {
-            showView('manage');
-            findTicketForManage(pnr);
+            showTripPlanDetail(pnr);
         }
         return;
     }
@@ -1144,10 +1143,16 @@ function showTripPlanDetail(pnr) {
     const passengerList = passengerRows.map(t => {
         const paid = isTicketPaid(t);
         const amount = ticketSalesAmount(t);
+        const baseName = String(t.name || '').replace(/\s*\(fees\)\s*$/i, '').trim();
+        const matchedClient = state.allClients.find(c => String(c.name || '').toLowerCase() === baseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
+        const ck = matchedClient?.client_key || '';
+        const nameHtml = ck
+            ? `<a href="#" class="clickable-client-link" data-client-key="${dashboardEscapeHtml(ck)}" style="color:var(--teal-dark);text-decoration:underline;font-weight:700">${dashboardEscapeHtml(t.name || 'Passenger')}</a>`
+            : `<span style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(t.name || 'Passenger')}</span>`;
         return `
             <div class="details-item" style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
                 <div>
-                    <div style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(t.name || 'Passenger')}</div>
+                    <div>${nameHtml}</div>
                     <div style="font-size:0.72rem;color:var(--muted)">Ticket: ${dashboardEscapeHtml(t.ticket_number || 'N/A')}</div>
                 </div>
                 <div style="text-align:right">
@@ -1161,10 +1166,16 @@ function showTripPlanDetail(pnr) {
     const feeList = feeRows.length ? feeRows.map(t => {
         const paid = isTicketPaid(t);
         const amount = ticketSalesAmount(t);
+        const baseName = String(t.name || '').replace(/\s*\(fees\)\s*$/i, '').trim();
+        const matchedClient = state.allClients.find(c => String(c.name || '').toLowerCase() === baseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
+        const ck = matchedClient?.client_key || '';
+        const nameHtml = ck
+            ? `<a href="#" class="clickable-client-link" data-client-key="${dashboardEscapeHtml(ck)}" style="color:var(--teal-dark);text-decoration:underline;font-weight:700">${dashboardEscapeHtml(t.name || 'Fee')}</a>`
+            : `<span style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(t.name || 'Fee')}</span>`;
         return `
             <div class="details-item" style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
                 <div>
-                    <div style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(t.name || 'Fee')}</div>
+                    <div>${nameHtml}</div>
                     <div style="font-size:0.72rem;color:var(--muted)">${dashboardEscapeHtml(t.remarks || 'Date/Extra Change')}</div>
                 </div>
                 <div style="text-align:right">
@@ -1178,10 +1189,16 @@ function showTripPlanDetail(pnr) {
     const totalUnpaid = allRows.filter(t => !isTicketPaid(t)).reduce((s, t) => s + ticketSalesAmount(t), 0);
     const totalAmount = allRows.reduce((s, t) => s + ticketSalesAmount(t), 0);
 
+    const leadBaseName = String(lead.name || '').replace(/\s*\(fees\)\s*$/i, '').trim();
+    const leadClient = state.allClients.find(c => String(c.name || '').toLowerCase() === leadBaseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
+    const leadClientKey = leadClient?.client_key || '';
+    const leadNameHtml = leadClientKey
+        ? `<a href="#" class="clickable-client-link client-name" data-client-key="${dashboardEscapeHtml(leadClientKey)}" style="cursor:pointer;color:var(--teal-dark);text-decoration:underline">${dashboardEscapeHtml(leadBaseName || 'Trip Plan')}</a>`
+        : `<div class="client-name">${dashboardEscapeHtml(leadBaseName || 'Trip Plan')}</div>`;
     const content = `
         <div class="details-header">
             <div>
-                <div class="client-name">${dashboardEscapeHtml(lead.name?.replace(/\(fees\)\s*$/i, '').trim() || 'Trip Plan')}</div>
+                ${leadNameHtml}
                 <div class="pnr-code">PNR: ${dashboardEscapeHtml(pnr)}</div>
             </div>
             <div class="details-status-badge confirmed">${dashboardEscapeHtml(lead.airline || 'Airline')}</div>
@@ -1213,6 +1230,18 @@ function showTripPlanDetail(pnr) {
     `;
     openModal(content, 'solid-modal');
     document.getElementById('tripPlanCloseBtn').addEventListener('click', closeModal);
+
+    document.querySelectorAll('.clickable-client-link').forEach(link => {
+        link.addEventListener('click', async (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const key = ev.currentTarget.dataset.clientKey;
+            if (!key) return;
+            closeModal();
+            const { navigateToClient } = await import('./search.js');
+            navigateToClient(key);
+        });
+    });
 }
 
 function renderDashboardTravelSchedule(groups) {
