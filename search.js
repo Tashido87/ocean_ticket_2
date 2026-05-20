@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast } from './utils.js';
+import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast, isTicketPaid } from './utils.js';
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets } from './db.js';
@@ -151,10 +151,10 @@ function getTicketAmount(ticket) {
 }
 
 function getPaymentStatus(ticket) {
-    if (ticket.paid) return 'paid';
+    if (isTicketPaid(ticket)) return 'paid';
     const pnr = normalize(ticket.booking_reference);
     const samePnr = pnr ? state.allTickets.filter(t => normalize(t.booking_reference) === pnr) : [];
-    if (samePnr.some(t => t.paid) && samePnr.some(t => !t.paid)) return 'partial';
+    if (samePnr.some(t => isTicketPaid(t)) && samePnr.some(t => !isTicketPaid(t))) return 'partial';
     return 'unpaid';
 }
 

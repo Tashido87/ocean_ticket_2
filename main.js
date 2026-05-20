@@ -852,7 +852,8 @@ function getUpcomingTripGroups(days = 14) {
 function groupUnpaidTickets(rows) {
     const groups = new Map();
 
-    // Include ALL non-canceled rows (including fees) so unpaid fees are counted
+    // Match Client Detail outstanding logic: unpaid money can live on passenger rows
+    // or on "(Fees)" change rows. Fee rows are not clients, but they are still receivables.
     const activeTickets = rows.filter(ticket => !isCanceledTicket(ticket));
 
     // Group by PNR first
@@ -872,14 +873,18 @@ function groupUnpaidTickets(rows) {
         if (unpaidAmount > 0) {
             // Use the passenger row (non-fee) for display name/route/dates
             const passengerTicket = tickets.find(t => !isFeeEntryRow(t)) || tickets[0];
+            const displayName = String(passengerTicket.name || tickets[0]?.name || '')
+                .replace(/\(fees\)\s*$/i, '')
+                .trim();
             groups.set(pnr, {
                 pnr,
-                client: passengerTicket.name || 'Passenger',
+                client: displayName || 'Passenger',
                 route: dashboardRouteLabel(passengerTicket),
                 dueDate: parseSheetDate(passengerTicket.departing_on),
                 issuedDate: parseSheetDate(passengerTicket.issued_date),
                 amount: unpaidAmount,
-                tickets: tickets.filter(t => !isFeeEntryRow(t)).length
+                tickets: tickets.filter(t => !isFeeEntryRow(t)).length,
+                hasFeeRows: tickets.some(t => isFeeEntryRow(t) && !isTicketPaid(t))
             });
         }
     });
