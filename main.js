@@ -852,6 +852,16 @@ function getUpcomingTripGroups(days = 14) {
 function groupUnpaidTickets(rows) {
     const groups = new Map();
 
+    // ── DIAGNOSTIC: dump every row for target PNRs ──
+    const targetPnrs = ['1KC8OZ', '1KC80Z', '1KCBOZ', '1KCB0Z', '1KB5S4'];
+    rows.forEach(ticket => {
+        const pnr = String(ticket.booking_reference || '').trim().toUpperCase();
+        if (targetPnrs.includes(pnr)) {
+            console.log(`[DIAG PNR=${pnr}] name=${ticket.name} | paid=${JSON.stringify(ticket.paid)} (type=${typeof ticket.paid}) | isFee=${isFeeEntryRow(ticket)} | isCanceled=${isCanceledTicket(ticket)} | isTicketPaid=${isTicketPaid(ticket)} | net=${ticket.net_amount} | paid_date=${ticket.paid_date}`);
+        }
+    });
+    // ── END DIAGNOSTIC ──
+
     const unpaidTickets = rows.filter(ticket => {
         if (isFeeEntryRow(ticket) || isCanceledTicket(ticket)) return false;
         return !isTicketPaid(ticket);
