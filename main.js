@@ -1277,22 +1277,12 @@ function renderDashboardUnpaidTickets(groups) {
     }
 
     const rows = groups.slice(0, 6).map(group => {
-        const dueDiff = group.dueDate?.getTime?.() ? daysBetween(today, group.dueDate) : null;
-        const age = group.issuedDate?.getTime?.() ? Math.max(0, daysBetween(group.issuedDate, today)) : 0;
-        const status = dueDiff !== null && dueDiff < 0
-            ? { label: 'Overdue', cls: 'danger' }
-            : dueDiff === 0
-                ? { label: 'Due Today', cls: 'warning' }
-                : { label: 'Pending', cls: 'neutral' };
         return `
             <tr>
                 <td><strong><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></strong></td>
                 <td>${dashboardEscapeHtml(group.client)}</td>
                 <td>${dashboardEscapeHtml(group.route)}</td>
-                <td>${dashboardEscapeHtml(formatDashboardDateLabel(group.dueDate, '—'))}</td>
                 <td class="num">${formatDashboardAmount(group.amount)} MMK</td>
-                <td>${age}d</td>
-                <td><span class="dashboard-status ${status.cls}">${status.label}</span></td>
                 <td><button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}"><i class="fa-solid fa-eye"></i></button></td>
             </tr>
         `;
@@ -1312,10 +1302,7 @@ function renderDashboardUnpaidTickets(groups) {
                         <th>PNR</th>
                         <th>Client</th>
                         <th>Route</th>
-                        <th>Due Date</th>
                         <th>Amount Due</th>
-                        <th>Age</th>
-                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>

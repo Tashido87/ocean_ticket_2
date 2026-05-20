@@ -316,7 +316,7 @@ export function showDetails(docId) {
             <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
         </div>
     `;
-    openModal(content);
+    openModal(content, 'solid-modal');
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 
     const clientLink = document.querySelector('.clickable-client-link');

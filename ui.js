@@ -171,13 +171,13 @@ export function openModal(content, sizeClass = '') {
     const modalBody = document.getElementById('modalBody');
     modalBody.innerHTML = content;
     const modalContent = modal.querySelector('.modal-content');
-    if (sizeClass === 'solid-modal') {
+    const classes = String(sizeClass || '').split(/\s+/).filter(Boolean);
+    if (classes.includes('solid-modal')) {
         modalContent.className = 'modal-content solid-modal';
+        classes.filter(cls => cls !== 'solid-modal').forEach(cls => modalContent.classList.add(cls));
     } else {
         modalContent.className = 'modal-content glass-card'; // Reset classes
-        if (sizeClass) {
-            modalContent.classList.add(sizeClass);
-        }
+        classes.forEach(cls => modalContent.classList.add(cls));
     }
     modal.classList.add('show');
     document.body.classList.add('modal-open');
@@ -877,7 +877,7 @@ function openPnrScheduleModal(pnr) {
                     <span>No schedule found for PNR <strong>${pnr}</strong>.</span>
                 </div>
             </div>
-        `, 'large-modal');
+        `, 'large-modal solid-modal');
 
         const btn = document.getElementById('closePnrScheduleBtn');
         if (btn) btn.onclick = closeModal;
@@ -931,7 +931,7 @@ function openPnrScheduleModal(pnr) {
                 </table>
             </div>
         </div>
-    `, 'large-modal');
+    `, 'large-modal solid-modal');
 
     const btn = document.getElementById('closePnrScheduleBtn');
     if (btn) btn.onclick = closeModal;
