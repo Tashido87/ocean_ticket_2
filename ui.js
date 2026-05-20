@@ -686,7 +686,7 @@ export function updateUpcomingPnrs() {
  * Opens a modal showing the full list of upcoming PNRs (same definition as the dashboard widget).
  * Includes client names alongside the PNR and quick access to Manage Ticket.
  */
-function showUpcomingPnrsModal() {
+export function showUpcomingPnrsModal() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
