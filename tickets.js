@@ -302,8 +302,8 @@ export function showDetails(docId) {
             <div class="details-grid">
                  <div class="details-item"><i class="fa-solid fa-receipt"></i><div class="details-item-content"><div class="label">Net Amount</div><div class="value">${(ticket.net_amount || 0).toLocaleString()} MMK</div></div></div>
                  <div class="details-item"><i class="fa-solid fa-hand-holding-dollar"></i><div class="details-item-content"><div class="label">Commission</div><div class="value">${(ticket.commission || 0).toLocaleString()} MMK</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-money-bill-transfer"></i><div class="details-item-content"><div class="label">Date Change / Extra</div><div class="value">${((ticket.date_change || 0) + (ticket.extra_fare || 0)).toLocaleString()} MMK</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-credit-card"></i><div class="details-item-content"><div class="label">Payment Status</div><div class="value">${ticket.paid ? `Paid via ${ticket.payment_method || 'N/A'}` : 'Not Paid'}</div></div></div>
+                 <div class="details-item"><i class="fa-solid fa-money-bill-transfer"></i><div class="details-item-content"><div class="label">Date Change Fees</div><div class="value">${(ticket.date_change || 0).toLocaleString()} MMK</div></div></div>
+                 <div class="details-item"><i class="fa-solid fa-circle-plus"></i><div class="details-item-content"><div class="label">Extra Fare</div><div class="value">${(ticket.extra_fare || 0).toLocaleString()} MMK</div></div></div>
             </div>
         </div>
         <div class="form-actions" style="margin-top: 1rem;">
