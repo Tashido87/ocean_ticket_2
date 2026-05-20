@@ -9861,6 +9861,215 @@ a.clickable-pnr:hover {
     background: rgba(223, 248, 245, 0.68);
 }
 
+/* Tasks & Reminders mini app */
+#tasks-reminders-box {
+    grid-column: span 12;
+    min-height: 420px;
+}
+
+#client-insights-box {
+    grid-column: span 5;
+}
+
+.dashboard-task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.dashboard-task-form {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) 128px 92px 92px 38px;
+    gap: 0.45rem;
+    padding: 0.55rem;
+    border: 1px solid rgba(36, 36, 43, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.dashboard-task-form input,
+.dashboard-task-form select {
+    min-width: 0;
+    height: 34px;
+    border: 1px solid rgba(36, 36, 43, 0.10);
+    border-radius: 11px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0 0.55rem;
+}
+
+.dashboard-task-form input[name="taskTitle"] {
+    font-size: 0.78rem;
+}
+
+.dashboard-task-form button {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--teal);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(19, 170, 164, 0.20);
+}
+
+.task-mini-section {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.task-mini-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: rgba(36, 36, 43, 0.58);
+    font-size: 0.68rem;
+    font-weight: 950;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.task-mini-title small {
+    color: var(--teal-dark);
+}
+
+.task-mini-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.dashboard-auto-task,
+.dashboard-task-item.manual {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.62rem;
+    border-radius: 16px;
+    border: 1px solid rgba(36, 36, 43, 0.08);
+    background: rgba(255, 255, 255, 0.78);
+    text-align: left;
+}
+
+.dashboard-auto-task {
+    cursor: pointer;
+}
+
+.dashboard-auto-task:hover,
+.dashboard-task-item.manual:hover {
+    border-color: rgba(19, 170, 164, 0.22);
+    background: rgba(223, 248, 245, 0.38);
+}
+
+.dashboard-auto-task.danger,
+.dashboard-task-item.manual.danger {
+    background: rgba(253, 231, 229, 0.74);
+}
+
+.dashboard-auto-task.warning,
+.dashboard-task-item.manual.warning {
+    background: rgba(255, 228, 168, 0.38);
+}
+
+.dashboard-task-item.manual.done,
+.dashboard-task-item.manual.is-done {
+    opacity: 0.66;
+    background: rgba(36, 36, 43, 0.04);
+}
+
+.dashboard-task-item.manual.is-done strong {
+    text-decoration: line-through;
+}
+
+.task-auto-icon {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: var(--teal-soft);
+    color: var(--teal-dark);
+}
+
+.task-auto-body,
+.task-manual-body {
+    min-width: 0;
+}
+
+.task-auto-body strong,
+.task-auto-body small,
+.task-manual-body strong,
+.task-manual-body small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.task-auto-body strong,
+.task-manual-body strong {
+    color: var(--ink);
+    font-size: 0.78rem;
+    line-height: 1.2;
+}
+
+.task-auto-body small,
+.task-manual-body small {
+    margin-top: 0.16rem;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.dashboard-task-item.manual {
+    grid-template-columns: 20px minmax(0, 1fr) 32px;
+}
+
+.dashboard-task-item.manual input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--teal);
+}
+
+.task-delete-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(36, 36, 43, 0.08);
+    border-radius: 11px;
+    background: #fff;
+    color: var(--coral-dark);
+    cursor: pointer;
+}
+
+.task-delete-btn:hover {
+    background: var(--blush-soft);
+}
+
+.task-empty-line {
+    padding: 0.7rem;
+    border-radius: 14px;
+    background: rgba(36, 36, 43, 0.04);
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-align: center;
+}
+
+@media (max-width: 980px) {
+    .dashboard-task-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dashboard-task-form input[name="taskTitle"],
+    .dashboard-task-form button {
+        grid-column: span 2;
+        width: 100%;
+    }
+}
+
 @media (max-width: 1320px) {
     #booking-revenue-overview-box,
     #travel-schedule-box,

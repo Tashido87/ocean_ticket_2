@@ -1326,54 +1326,240 @@ function renderDashboardUnpaidTickets(groups) {
     wireDashboardPnrButtons(container);
 }
 
+function getBookingDeadlineReminderRows(activeBookings) {
+    const grouped = new Map();
+    activeBookings.forEach(booking => {
+        const deadline = getBookingDeadline(booking);
+        if (!deadline) return;
+        const pnr = String(booking.pnr || booking.booking_reference || '').trim() || booking.groupId || booking.id || 'No PNR';
+        const key = `${pnr}|${booking.departure || ''}|${booking.destination || ''}|${booking.departing_on || ''}`;
+        if (!grouped.has(key)) {
+            grouped.set(key, {
+                key,
+                pnr,
+                lead: String(booking.name || '').replace(/^(MR|MS)\s+/i, '').trim() || 'Booking',
+                route: dashboardRouteLabel(booking),
+                deadline,
+                pax: 0
+            });
+        }
+        const group = grouped.get(key);
+        group.pax += 1;
+    });
+
+    return [...grouped.values()].map(group => {
+        const minutes = Math.round((group.deadline.getTime() - Date.now()) / 60000);
+        let tone = 'neutral';
+        let label = 'Upcoming';
+        if (minutes < 0) {
+            tone = 'danger';
+            label = 'Overdue';
+        } else if (minutes <= 6 * 60) {
+            tone = 'danger';
+            label = 'Due soon';
+        } else if (minutes <= 24 * 60) {
+            tone = 'warning';
+            label = 'Due today';
+        } else if (minutes <= 72 * 60) {
+            tone = 'warning';
+            label = 'This week';
+        }
+        return { ...group, minutes, tone, label };
+    }).sort((a, b) => a.deadline - b.deadline);
+}
+
+function formatTaskDueLabel(dateValue, timeValue = '') {
+    if (!dateValue) return 'No due date';
+    const date = new Date(`${dateValue}T${timeValue || '00:00'}`);
+    if (isNaN(date.getTime())) return dateValue;
+    const dayLabel = formatDashboardDateLabel(date);
+    return timeValue ? `${dayLabel} ${timeValue}` : dayLabel;
+}
+
+function getManualTaskSortValue(task) {
+    if (!task.dueDate) return Number.MAX_SAFE_INTEGER;
+    const parsed = new Date(`${task.dueDate}T${task.dueTime || '23:59'}`);
+    return isNaN(parsed.getTime()) ? Number.MAX_SAFE_INTEGER : parsed.getTime();
+}
+
+function manualTaskTone(task) {
+    if (task.done) return 'done';
+    const due = getManualTaskSortValue(task);
+    if (due === Number.MAX_SAFE_INTEGER) return task.priority === 'high' ? 'warning' : 'neutral';
+    const diff = due - Date.now();
+    if (diff < 0) return 'danger';
+    if (diff <= 24 * 60 * 60 * 1000) return 'warning';
+    return task.priority === 'high' ? 'warning' : 'neutral';
+}
+
+async function saveManualDashboardTask(data) {
+    const now = new Date().toISOString();
+    const payload = normalizeDashboardTask({
+        ...data,
+        source: 'manual',
+        done: false,
+        createdAt: now,
+        updatedAt: now
+    });
+    try {
+        const { id, localOnly, ...firestorePayload } = payload;
+        const savedId = await addDashboardTask(firestorePayload);
+        upsertLocalDashboardTask({ ...payload, id: savedId, localOnly: false });
+    } catch (error) {
+        console.warn('Task saved locally because cloud save failed:', error);
+        upsertLocalDashboardTask({ ...payload, localOnly: true });
+        showToast('Task saved on this browser.', 'info');
+    }
+}
+
+async function updateManualDashboardTask(id, data) {
+    const existing = (state.dashboardTasks || []).find(task => task.id === id);
+    if (!existing) return;
+    const updated = normalizeDashboardTask({
+        ...existing,
+        ...data,
+        updatedAt: new Date().toISOString()
+    });
+    upsertLocalDashboardTask(updated);
+    if (updated.localOnly || String(id).startsWith('local-')) return;
+    try {
+        await updateDashboardTask(id, {
+            ...data,
+            updatedAt: updated.updatedAt
+        });
+    } catch (error) {
+        console.warn('Task update kept locally because cloud update failed:', error);
+        upsertLocalDashboardTask({ ...updated, localOnly: true });
+    }
+}
+
+async function deleteManualDashboardTask(id) {
+    const existing = (state.dashboardTasks || []).find(task => task.id === id);
+    removeLocalDashboardTask(id);
+    if (!existing || existing.localOnly || String(id).startsWith('local-')) return;
+    try {
+        await deleteDashboardTask(id);
+    } catch (error) {
+        console.warn('Task deleted locally, cloud delete failed:', error);
+    }
+}
+
+function openBookingFromReminder(pnr) {
+    showView('booking');
+    const searchInput = document.getElementById('bookingSearchText');
+    if (searchInput && pnr && pnr !== 'No PNR') searchInput.value = pnr;
+    performBookingSearch();
+}
+
+function wireDashboardTaskInteractions(container) {
+    const form = container.querySelector('#dashboardTaskQuickForm');
+    if (form) {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const titleInput = form.querySelector('[name="taskTitle"]');
+            const dueDateInput = form.querySelector('[name="taskDueDate"]');
+            const dueTimeInput = form.querySelector('[name="taskDueTime"]');
+            const priorityInput = form.querySelector('[name="taskPriority"]');
+            const title = titleInput?.value.trim();
+            if (!title) {
+                titleInput?.focus();
+                return;
+            }
+            await saveManualDashboardTask({
+                title,
+                dueDate: dueDateInput?.value || '',
+                dueTime: dueTimeInput?.value || '',
+                priority: priorityInput?.value || 'normal'
+            });
+            form.reset();
+        });
+    }
+
+    container.querySelectorAll('[data-task-toggle]').forEach(input => {
+        input.addEventListener('change', () => {
+            updateManualDashboardTask(input.dataset.taskToggle, { done: input.checked });
+        });
+    });
+
+    container.querySelectorAll('[data-task-delete]').forEach(button => {
+        button.addEventListener('click', () => {
+            deleteManualDashboardTask(button.dataset.taskDelete);
+        });
+    });
+
+    container.querySelectorAll('[data-booking-reminder]').forEach(button => {
+        button.addEventListener('click', () => {
+            openBookingFromReminder(button.dataset.bookingReminder);
+        });
+    });
+}
+
 function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups, financialPendingCount, upcomingTrips }) {
     const container = document.getElementById('dashboardTasksReminders');
     const hint = document.getElementById('dashboardTasksHint');
     if (!container) return;
 
-    const tasks = [];
-    const overdueBookings = activeBookings.filter(booking => {
-        const deadline = getBookingDeadline(booking);
-        return deadline && deadline.getTime() < Date.now();
-    });
-    if (overdueBookings.length) {
-        tasks.push({ tone: 'danger', title: 'Review expired booking holds', meta: `${overdueBookings.length} booking${overdueBookings.length === 1 ? '' : 's'} past deadline` });
-    }
-    if (dueToday.length) {
-        tasks.push({ tone: 'warning', title: 'Confirm booking deadlines', meta: `${dueToday.length} active booking${dueToday.length === 1 ? '' : 's'} due within 24 hours` });
-    }
-    if (unpaidGroups.length) {
-        tasks.push({ tone: 'danger', title: 'Follow up unpaid tickets', meta: `${unpaidGroups.length} PNR · ${formatDashboardAmount(unpaidGroups.reduce((sum, group) => sum + group.amount, 0))} MMK` });
-    }
-    if (financialPendingCount) {
-        tasks.push({ tone: 'warning', title: 'Complete ticket financials', meta: `${financialPendingCount} ticket${financialPendingCount === 1 ? '' : 's'} need net/commission review` });
-    }
-    const tomorrowTrips = upcomingTrips.filter(group => daysBetween(new Date(), group.date) === 1);
-    if (tomorrowTrips.length) {
-        tasks.push({ tone: 'success', title: 'Prepare tomorrow travel list', meta: `${tomorrowTrips.length} upcoming PNR${tomorrowTrips.length === 1 ? '' : 's'}` });
-    }
+    const bookingReminders = getBookingDeadlineReminderRows(activeBookings);
+    const manualTasks = [...(state.dashboardTasks || [])]
+        .map(normalizeDashboardTask)
+        .filter(task => task.source === 'manual' && task.title)
+        .sort((a, b) => Number(a.done) - Number(b.done) || getManualTaskSortValue(a) - getManualTaskSortValue(b) || taskTimestampValue(b.createdAt) - taskTimestampValue(a.createdAt));
+    const openManualCount = manualTasks.filter(task => !task.done).length;
+    const urgentBookingCount = bookingReminders.filter(item => ['danger', 'warning'].includes(item.tone)).length;
+    if (hint) hint.textContent = `${openManualCount + urgentBookingCount} open`;
 
-    if (hint) hint.textContent = `${tasks.length} open`;
-    if (!tasks.length) {
-        container.innerHTML = `
-            <div class="dashboard-empty-panel compact">
-                <span class="mini-checklist-illustration" aria-hidden="true"></span>
-                <strong>No urgent tasks</strong>
-                <span>Booking, unpaid, and financial review queues are clear.</span>
-            </div>
-        `;
-        return;
-    }
+    const bookingHtml = bookingReminders.length
+        ? bookingReminders.slice(0, 5).map(item => `
+            <button type="button" class="dashboard-auto-task ${item.tone}" data-booking-reminder="${dashboardEscapeHtml(item.pnr)}">
+                <span class="task-auto-icon"><i class="fa-solid fa-bell"></i></span>
+                <span class="task-auto-body">
+                    <strong>${dashboardEscapeHtml(item.pnr)} · ${dashboardEscapeHtml(item.lead)}${item.pax > 1 ? ` +${item.pax - 1}` : ''}</strong>
+                    <small>${dashboardEscapeHtml(item.route)} · ${dashboardEscapeHtml(formatTaskDueLabel(item.deadline.toISOString().slice(0, 10), item.deadline.toTimeString().slice(0, 5)))}</small>
+                </span>
+                <span class="dashboard-status ${item.tone === 'danger' ? 'danger' : item.tone === 'warning' ? 'warning' : 'neutral'}">${dashboardEscapeHtml(item.label)}</span>
+            </button>
+        `).join('')
+        : `<div class="task-empty-line">No active booking deadlines.</div>`;
 
-    container.innerHTML = tasks.slice(0, 6).map(task => `
-        <label class="dashboard-task-item ${task.tone}">
-            <input type="checkbox" aria-label="${dashboardEscapeHtml(task.title)}">
-            <span>
-                <strong>${dashboardEscapeHtml(task.title)}</strong>
-                <small>${dashboardEscapeHtml(task.meta)}</small>
-            </span>
-        </label>
-    `).join('');
+    const manualHtml = manualTasks.length
+        ? manualTasks.slice(0, 8).map(task => {
+            const tone = manualTaskTone(task);
+            const dueLabel = formatTaskDueLabel(task.dueDate, task.dueTime);
+            return `
+                <div class="dashboard-task-item manual ${tone} ${task.done ? 'is-done' : ''}">
+                    <input type="checkbox" data-task-toggle="${dashboardEscapeHtml(task.id)}" ${task.done ? 'checked' : ''} aria-label="Mark ${dashboardEscapeHtml(task.title)} done">
+                    <span class="task-manual-body">
+                        <strong>${dashboardEscapeHtml(task.title)}</strong>
+                        <small>${dashboardEscapeHtml(dueLabel)} · ${dashboardEscapeHtml(task.priority)}${task.localOnly ? ' · local' : ''}</small>
+                    </span>
+                    <button type="button" class="task-delete-btn" data-task-delete="${dashboardEscapeHtml(task.id)}" aria-label="Delete ${dashboardEscapeHtml(task.title)}"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `;
+        }).join('')
+        : `<div class="task-empty-line">No manual tasks yet.</div>`;
+
+    container.innerHTML = `
+        <form class="dashboard-task-form" id="dashboardTaskQuickForm">
+            <input type="text" name="taskTitle" placeholder="Add task or reminder..." autocomplete="off">
+            <input type="date" name="taskDueDate" aria-label="Task due date">
+            <input type="time" name="taskDueTime" aria-label="Task due time">
+            <select name="taskPriority" aria-label="Task priority">
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="low">Low</option>
+            </select>
+            <button type="submit" aria-label="Add task"><i class="fa-solid fa-plus"></i></button>
+        </form>
+        <div class="task-mini-section">
+            <div class="task-mini-title"><span>Booking deadlines</span><small>${bookingReminders.length}</small></div>
+            <div class="task-mini-list">${bookingHtml}</div>
+        </div>
+        <div class="task-mini-section">
+            <div class="task-mini-title"><span>My tasks</span><small>${openManualCount} open</small></div>
+            <div class="task-mini-list">${manualHtml}</div>
+        </div>
+    `;
+    wireDashboardTaskInteractions(container);
 }
 
 function renderNeedsAttentionPanel(ticketsInPeriod, activeBookings, dueBookings, unpaidAmount, financialPendingCount) {
