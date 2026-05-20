@@ -928,15 +928,11 @@ export function updateDashboardData() {
     const curTickets = ticketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
     const prevTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
 
-    // 3. Total Revenue (Using same as Total Sales pending clarification)
-    const curRevenue = curSales;
-    const prevRevenue = prevSales;
-
-    // 4. Total Profit
+    // 3. Total Profit
     const curProfit = ticketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
     const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
 
-    // 5. Owner Payable
+    // 4. Owner Payable
     const curPayable = ticketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
     const prevPayable = prevTicketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
 
@@ -960,9 +956,6 @@ export function updateDashboardData() {
     setHtml('tickets-trend-wrapper', curTickets > prevTickets 
         ? `<span class="trend-badge positive"><i class="fa-solid fa-arrow-trend-up"></i> +${curTickets - prevTickets}</span>`
         : `<span class="trend-badge neutral">steady</span>`);
-
-    setText('total-revenue-value', formatDashboardAmount(curRevenue));
-    setHtml('total-revenue-trend-wrapper', getTrendBadgeHtml(curRevenue, prevRevenue));
 
     setText('total-profit-value', formatDashboardAmount(curProfit));
     setHtml('profit-trend-wrapper', getTrendBadgeHtml(curProfit, prevProfit));
@@ -1659,8 +1652,14 @@ export function updateComparisonChart() {
         return c;
     };
 
-    const revenueFill = withAlpha(revenueBase, 0.22);
-    const bookingsFill = withAlpha(bookingsBase, 0.22);
+    const ctx = canvas.getContext('2d');
+    const revenueFill = ctx.createLinearGradient(0, 0, 0, 300);
+    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.35));
+    revenueFill.addColorStop(1, withAlpha(revenueBase, 0.01));
+
+    const bookingsFill = ctx.createLinearGradient(0, 0, 0, 300);
+    bookingsFill.addColorStop(0, withAlpha(bookingsBase, 0.35));
+    bookingsFill.addColorStop(1, withAlpha(bookingsBase, 0.01));
 
     const hasCancellations = buckets.some(b => b.cancellations > 0);
     const datasets = [{
@@ -1670,20 +1669,27 @@ export function updateComparisonChart() {
         backgroundColor: revenueFill,
         borderWidth: 3,
         pointRadius: 0,
-        pointHoverRadius: 5,
-        tension: 0.4,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#ffffff',
+        pointHoverBorderColor: revenueBase,
+        pointHoverBorderWidth: 2,
+        tension: 0.45,
         fill: true,
         yAxisID: 'y'
     }, {
         label: 'Bookings',
         data: buckets.map(bucket => bucket.bookings),
-        type: 'bar',
-        backgroundColor: bookingsFill,
+        type: 'line',
         borderColor: bookingsBase,
-        borderWidth: 1,
-        borderRadius: 8,
-        barThickness: 'flex',
-        maxBarThickness: 28,
+        backgroundColor: bookingsFill,
+        borderWidth: 3,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#ffffff',
+        pointHoverBorderColor: bookingsBase,
+        pointHoverBorderWidth: 2,
+        tension: 0.45,
+        fill: true,
         yAxisID: 'y1'
     }];
     if (hasCancellations) {
@@ -1715,54 +1721,49 @@ export function updateComparisonChart() {
                 intersect: false,
             },
             layout: {
-                padding: { left: 4, right: 12, top: 8, bottom: 4 }
+                padding: { left: 4, right: 12, top: 12, bottom: 4 }
             },
             scales: {
                 x: {
                     ticks: {
-                        color: textColor,
+                        color: withAlpha(textColor, 0.6),
                         autoSkip: true,
                         maxRotation: 0,
                         maxTicksLimit: 8,
-                        font: { size: 11 }
+                        font: { size: 12, family: "'Inter', sans-serif", weight: '500' }
                     },
-                    grid: { color: gridColor, drawBorder: false, tickLength: 6 }
+                    grid: { display: false }
                 },
                 y: {
                     type: 'linear',
                     display: true,
                     position: 'left',
-                    title: {
-                        display: false
-                    },
+                    title: { display: false },
+                    border: { display: false },
                     ticks: {
-                        color: textColor,
+                        color: withAlpha(textColor, 0.6),
                         maxTicksLimit: 6,
                         callback: value => {
                             if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
                             if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
                             return Number(value).toLocaleString();
                         },
-                        font: { size: 11 }
+                        font: { size: 11, family: "'Inter', sans-serif" }
                     },
-                    grid: { color: gridColor, drawBorder: false },
+                    grid: { color: gridColor, borderDash: [4, 4] },
                     beginAtZero: true
                 },
                 y1: {
                     type: 'linear',
                     display: true,
                     position: 'right',
-                    title: {
-                        display: false
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                        drawBorder: false
-                    },
+                    title: { display: false },
+                    border: { display: false },
+                    grid: { display: false },
                     ticks: {
-                        color: textColor,
+                        color: withAlpha(textColor, 0.6),
                         maxTicksLimit: 5,
-                        font: { size: 11 }
+                        font: { size: 11, family: "'Inter', sans-serif" }
                     },
                     beginAtZero: true
                 }
@@ -1774,18 +1775,22 @@ export function updateComparisonChart() {
                         color: textColor,
                         usePointStyle: true,
                         pointStyle: 'circle',
-                        boxWidth: 6,
-                        padding: 16,
-                        font: { size: 11, weight: '700' }
+                        boxWidth: 8,
+                        padding: 20,
+                        font: { size: 12, family: "'Inter', sans-serif", weight: '600' }
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(255,255,255,0.96)',
-                    titleColor: textColor,
-                    bodyColor: textColor,
-                    borderColor: gridColor,
+                    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                    titleColor: '#0b1f3a',
+                    bodyColor: '#334155',
+                    titleFont: { size: 13, weight: '700', family: "'Inter', sans-serif" },
+                    bodyFont: { size: 12, family: "'Inter', sans-serif", weight: '600' },
+                    borderColor: 'rgba(0,0,0,0.06)',
                     borderWidth: 1,
-                    padding: 10,
+                    padding: 12,
+                    boxPadding: 6,
+                    usePointStyle: true,
                     callbacks: {
                         label: context => {
                             if (context.dataset.yAxisID === 'y') {
@@ -1799,7 +1804,7 @@ export function updateComparisonChart() {
         }
     };
 
-    state.charts.comparisonChart = new Chart(canvas.getContext('2d'), chartConfig);
+    state.charts.comparisonChart = new Chart(ctx, chartConfig);
 }
 
 

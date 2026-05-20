@@ -377,6 +377,15 @@ function escapeHtml(text) {
  * @returns {boolean} True if the ticket is paid, false otherwise.
  */
 export function isTicketPaid(ticket) {
+    const paymentText = [
+        ticket?.payment_status,
+        ticket?.paid_status,
+        ticket?.remarks,
+        ticket?.split_status
+    ].map(v => String(v || '').toLowerCase()).join(' ');
+
+    if (paymentText.includes('unpaid') || paymentText.includes('partial') || paymentText.includes('balance')) return false;
+
     const rawPaid = ticket?.paid;
     if (typeof rawPaid === 'boolean') return rawPaid;
     if (typeof rawPaid === 'number') return rawPaid === 1;
@@ -385,18 +394,11 @@ export function isTicketPaid(ticket) {
     const hasExplicitPaidValue = rawPaid !== undefined && rawPaid !== null && paidValue !== '';
     const explicitPaid = ['true', 'yes', 'y', 'paid', '1', 'complete', 'completed', 'settled'].includes(paidValue);
     const explicitUnpaid = hasExplicitPaidValue && ['false', 'no', 'n', 'unpaid', 'not paid', '0', 'pending', 'partial'].includes(paidValue);
-    const paymentText = [
-        ticket?.payment_status,
-        ticket?.paid_status,
-        ticket?.remarks,
-        ticket?.split_status
-    ].map(v => String(v || '').toLowerCase()).join(' ');
-    if (paymentText.includes('unpaid') || paymentText.includes('partial') || paymentText.includes('balance')) return false;
+    
     if (explicitPaid) return true;
     if (paymentText.includes('paid') || paymentText.includes('settled') || paymentText.includes('complete')) return true;
     if (explicitUnpaid) return false;
-    // Only consider paid if there's an explicit paid date or explicit paid signal.
-    // Having a payment_method recorded doesn't mean the ticket is paid.
+    
     return Boolean(ticket?.paid_date);
 }
 
