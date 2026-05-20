@@ -245,10 +245,17 @@ export async function initializeApp() {
         if (state.timeUpdateInterval) clearInterval(state.timeUpdateInterval);
         state.timeUpdateInterval = setInterval(updateDynamicTimes, 60000);
         updateDynamicTimes();
+        
+        const loading = document.getElementById('loading');
+        const dashboardContent = document.getElementById('dashboard-content');
+        if (loading) loading.style.display = 'none';
+        if (dashboardContent) dashboardContent.style.display = 'flex';
 
     } catch (error) {
         console.error("Initialization failed:", error);
         showToast('A critical error occurred during data initialization. Please check the console (F12) for details.', 'error');
+        const loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'none';
     }
 }
 
