@@ -970,7 +970,6 @@ export function updateDashboardData() {
 
     renderDashboardTravelSchedule(upcomingTrips);
     renderDashboardUnpaidTickets(unpaidGroups);
-    renderDashboardClientInsights(ticketsInPeriod, range);
     renderDashboardTasksReminders({
         activeBookings,
         dueToday,
@@ -1103,42 +1102,6 @@ function renderDashboardUnpaidTickets(groups) {
         </div>
     `;
     wireDashboardPnrButtons(container);
-}
-
-function renderDashboardClientInsights(ticketsInPeriod, range) {
-    const container = document.getElementById('dashboardClientInsights');
-    if (!container) return;
-    const customers = activeClientRows();
-    const returning = customers.filter(client => Number(client.ticket_count || 0) > 1).length;
-    const newCustomers = customers.filter(client => inDashboardRange(parseSheetDate(client.last_issued), range)).length;
-    const customerTotal = Math.max(customers.length, 1);
-    const returningPct = Math.round((returning / customerTotal) * 100);
-    const newPct = Math.max(0, 100 - returningPct);
-    const routeCounts = {};
-    ticketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).forEach(ticket => {
-        const route = dashboardRouteLabel(ticket);
-        routeCounts[route] = (routeCounts[route] || 0) + 1;
-    });
-    const topRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0];
-    const activeBookingCount = getActiveBookings().length;
-    const avgSpend = customers.length
-        ? Math.round(customers.reduce((sum, client) => sum + (Number(client.total_spent) || 0), 0) / customers.length)
-        : 0;
-
-    container.innerHTML = `
-        <div class="client-insight-donut" style="--new-stop:${newPct}%; --returning-stop:${returningPct}%;">
-            <div><strong>${returningPct}%</strong><span>Returning</span></div>
-        </div>
-        <div class="client-insight-legend">
-            <span><i class="legend-dot teal"></i> New customers <strong>${newCustomers}</strong></span>
-            <span><i class="legend-dot blue"></i> Returning <strong>${returning}</strong></span>
-        </div>
-        <div class="client-insight-list">
-            <div><span>Top route</span><strong>${dashboardEscapeHtml(topRoute ? topRoute[0] : '—')}</strong></div>
-            <div><span>Active bookings</span><strong>${activeBookingCount}</strong></div>
-            <div><span>Avg. client spend</span><strong>${formatDashboardAmount(avgSpend)} MMK</strong></div>
-        </div>
-    `;
 }
 
 function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups, financialPendingCount, upcomingTrips }) {

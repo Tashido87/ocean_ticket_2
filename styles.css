@@ -9431,12 +9431,7 @@ body.material-theme {
 }
 
 #dashboard-unpaid-box {
-    grid-column: span 4;
-    min-height: 336px;
-}
-
-#client-insights-box {
-    grid-column: span 4;
+    grid-column: span 8;
     min-height: 336px;
 }
 
@@ -9854,12 +9849,10 @@ body.material-theme {
     #booking-revenue-overview-box,
     #travel-schedule-box,
     #dashboard-unpaid-box,
-    #client-insights-box,
     #tasks-reminders-box {
         grid-column: span 12;
     }
 
-    #client-insights-box,
     #tasks-reminders-box {
         min-height: 280px;
     }
