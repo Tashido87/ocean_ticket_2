@@ -851,7 +851,18 @@ function getUpcomingTripGroups(days = 14) {
 
 function groupUnpaidTickets(rows) {
     const groups = new Map();
-    rows.filter(ticket => !isFeeEntryRow(ticket) && !isCanceledTicket(ticket) && !isTicketPaid(ticket)).forEach(ticket => {
+    // Debug: log ticket paid status
+    const debugUnpaid = rows.filter(ticket => {
+        if (isFeeEntryRow(ticket) || isCanceledTicket(ticket)) return false;
+        const paid = isTicketPaid(ticket);
+        if (!paid) {
+            console.log('Unpaid ticket found:', ticket.booking_reference, ticket.name, 'paid field:', ticket.paid, 'paid_date:', ticket.paid_date);
+        }
+        return !paid;
+    });
+    console.log('Total rows:', rows.length, 'Unpaid count:', debugUnpaid.length);
+    
+    debugUnpaid.forEach(ticket => {
         const pnr = String(ticket.booking_reference || '').trim() || ticket.id || 'No PNR';
         const key = pnr;
         if (!groups.has(key)) {
@@ -909,15 +920,30 @@ export function updateDashboardData() {
     const ticketsInPeriod = activeTicketRowsInRange(range);
     const prevTicketsInPeriod = activeTicketRowsInRange(prevRange);
 
-    const curRevenue = ticketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    const prevRevenue = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    // Unpaid tickets are an operational follow-up queue, not a period report.
-    // Keep them global so older unpaid PNRs never disappear when the dashboard period changes.
+    // 1. Total Sales (Customer Price)
+    const curSales = ticketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+    const prevSales = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+
+    // 2. Total Tickets (Count of Passenger Tickets)
+    const curTickets = ticketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
+    const prevTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
+
+    // 3. Total Revenue (Using same as Total Sales pending clarification)
+    const curRevenue = curSales;
+    const prevRevenue = prevSales;
+
+    // 4. Total Profit
+    const curProfit = ticketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
+    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
+
+    // 5. Owner Payable
+    const curPayable = ticketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
+    const prevPayable = prevTicketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
+
+    // Also gather data for side panels
     const unpaidGroups = groupUnpaidTickets(state.allTickets || []);
     const curUnpaid = unpaidGroups.reduce((sum, group) => sum + group.amount, 0);
     const upcomingTrips = getUpcomingTripGroups(14);
-    const customers = activeClientRows();
-    const newCustomersThisPeriod = customers.filter(client => inDashboardRange(parseSheetDate(client.last_issued), range)).length;
     const activeBookings = getActiveBookings();
     const dueToday = activeBookings.filter(b => {
         const deadline = getBookingDeadline(b);
@@ -926,24 +952,23 @@ export function updateDashboardData() {
         return diff <= 24 * 60 * 60 * 1000;
     });
 
-    setText('monthly-revenue-value', formatDashboardAmount(curRevenue));
-    setHtml('revenue-trend-wrapper', getTrendBadgeHtml(curRevenue, prevRevenue));
+    // Populate Cards
+    setText('monthly-revenue-value', formatDashboardAmount(curSales));
+    setHtml('revenue-trend-wrapper', getTrendBadgeHtml(curSales, prevSales));
 
-    setText('unpaid-ticket-count-value', unpaidGroups.length);
-    setText('unpaid-amount-value', `${formatDashboardAmount(curUnpaid)} MMK`);
-    setHtml('unpaid-trend-wrapper', unpaidGroups.length > 0
-        ? `<span class="trend-badge negative"><i class="fa-solid fa-circle-exclamation"></i> all open</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> clear</span>`);
-
-    setText('upcoming-trips-value', upcomingTrips.length);
-    setHtml('upcoming-trips-wrapper', upcomingTrips.length > 0
-        ? `<span class="trend-badge positive"><i class="fa-solid fa-plane-departure"></i> ${upcomingTrips.length} scheduled</span>`
-        : `<span class="trend-badge neutral">no trips</span>`);
-
-    setText('total-customers-value', customers.length);
-    setHtml('customers-trend-wrapper', newCustomersThisPeriod > 0
-        ? `<span class="trend-badge positive"><i class="fa-solid fa-user-plus"></i> ${newCustomersThisPeriod} new</span>`
+    setText('total-tickets-value', curTickets);
+    setHtml('tickets-trend-wrapper', curTickets > prevTickets 
+        ? `<span class="trend-badge positive"><i class="fa-solid fa-arrow-trend-up"></i> +${curTickets - prevTickets}</span>`
         : `<span class="trend-badge neutral">steady</span>`);
+
+    setText('total-revenue-value', formatDashboardAmount(curRevenue));
+    setHtml('total-revenue-trend-wrapper', getTrendBadgeHtml(curRevenue, prevRevenue));
+
+    setText('total-profit-value', formatDashboardAmount(curProfit));
+    setHtml('profit-trend-wrapper', getTrendBadgeHtml(curProfit, prevProfit));
+
+    setText('owner-payable-value', formatDashboardAmount(curPayable));
+    setHtml('owner-payable-trend-wrapper', getTrendBadgeHtml(curPayable, prevPayable));
 
     setText('bookingRevenuePeriodHint', range.label || 'This Month');
     setText('dashboardUnpaidHint', `${formatDashboardAmount(curUnpaid)} MMK`);

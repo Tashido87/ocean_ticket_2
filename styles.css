@@ -561,17 +561,19 @@ body.sidebar-collapsed .app-body {
 
 .records-today-date {
     margin-left: auto;
-    display: inline-flex;
+    display: inline-flex !important;
     align-items: center;
     gap: 0.4rem;
     padding: 0.4rem 0.8rem;
     border-radius: 999px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(223,248,245,0.5));
-    border: 1px solid rgba(19, 170, 164, 0.18);
-    color: var(--teal-dark, #087f7b);
+    background: linear-gradient(135deg, rgba(19, 170, 164, 0.12), rgba(19, 170, 164, 0.06));
+    border: 1px solid rgba(19, 170, 164, 0.28);
+    color: #087f7b !important;
     font-size: 0.82rem;
     font-weight: 800;
     white-space: nowrap;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .records-today-date::before {
@@ -9009,7 +9011,7 @@ body.material-theme tbody tr:hover {
 }
 
 .dashboard-kpis {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: 1rem !important;
 }
 
@@ -9424,7 +9426,8 @@ body.material-theme {
 .booking-revenue-chart-container {
     position: relative;
     flex: 1;
-    min-height: 286px;
+    height: 320px !important;
+    min-height: 320px;
 }
 
 .dashboard-empty-panel {
