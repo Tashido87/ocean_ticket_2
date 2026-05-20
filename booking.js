@@ -578,8 +578,7 @@ function openExtendDeadlineModal(docIdsStr) {
                 remark: ''
             })));
             showToast('Booking deadline updated.', 'success');
-            await loadBookingData();
-            updateNotifications();
+            // Data and UI will update automatically via real-time listeners
         } catch (error) {
             console.error('Failed to extend booking deadline:', error);
             showToast('Could not update booking deadline.', 'error');
@@ -740,8 +739,7 @@ export async function handleNewBookingSubmit(e) {
             await addBookings(bookingObjects);
             showToast(`Booking for ${passengerData.length} passenger(s) saved!`, 'success');
             hideNewBookingForm();
-            await loadBookingData();
-            updateNotifications();
+            // Data and UI will update automatically via real-time listeners
         } finally {
             state.isSubmitting = false;
             if (submitButton) submitButton.disabled = false;

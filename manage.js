@@ -130,16 +130,11 @@ function getManageIssues(tickets) {
 }
 
 async function reloadManagePnr(pnr) {
-    state.cache = {};
-    const { loadTicketData } = await import('./tickets.js');
-    const { updateDashboardData } = await import('./main.js');
-    const { loadHistory } = await import('./history.js');
-    const { updateNotifications } = await import('./ui.js');
-
-    await Promise.all([loadTicketData(), loadHistory()]);
-    updateDashboardData();
-    updateNotifications();
-    findTicketForManage(pnr);
+    // Real-time listeners automatically sync state. 
+    // Small delay ensures the onSnapshot listener fires and state is updated before re-rendering.
+    setTimeout(() => {
+        findTicketForManage(pnr);
+    }, 250);
 }
 
 /**
@@ -254,12 +249,13 @@ function displayManageResults(tickets) {
                    <button class="manage-action-btn danger" data-action="cancel" data-id="${t.id}"><i class="fa-solid fa-ban"></i></button>
                    <button class="manage-action-btn" data-action="advanced" data-id="${t.id}"><i class="fa-solid fa-gear"></i></button>`;
 
-        html += `<tr class="${canceled ? 'is-cancelled' : ''}">
-            <td>
-                <span class="manage-row-type ${isFee ? 'fee' : ''}">${rowType}</span>
-                <strong>${t.name || '—'}</strong>
-                <small>${t.id_no || ''}</small>
-            </td>
+        html += `
+            <tr class="${canceled ? 'canceled-row' : ''} ${isFee ? 'fee-row' : ''}">
+                <td>
+                    <span class="manage-row-type ${isFee ? 'fee' : ''}">${rowType}</span>
+                    <strong>${escapeHtml(String(t.name || 'Passenger').replace(/\(fees\)\s*$/i, '').trim())}</strong>
+                    <small>${t.id_no || ''}</small>
+                </td>
             <td>
                 <strong>${route}</strong>
                 <small>Travel: ${formatDateToDMMMY(t.departing_on) || t.departing_on || '—'} · Issued: ${formatDateToDMMMY(t.issued_date) || t.issued_date || '—'}</small>
@@ -417,15 +413,7 @@ function openFeeManageModal(docId) {
              closeModal();
              
              // Refresh data
-             state.cache = {};
-             const { loadTicketData } = await import('./tickets.js');
-             const { updateDashboardData } = await import('./main.js');
-             const { updateNotifications } = await import('./ui.js');
-             
-             await loadTicketData();
-             updateDashboardData();
-             updateNotifications();
-             findTicketForManage(ticket.booking_reference);
+             reloadManagePnr(ticket.booking_reference);
          });
     });
 }
@@ -462,15 +450,7 @@ async function handleUpdateFeeRow(e) {
         showToast('Updated successfully!', 'success');
         closeModal();
 
-        state.cache = {};
-        const { loadTicketData } = await import('./tickets.js');
-        const { updateDashboardData } = await import('./main.js');
-        const { updateNotifications } = await import('./ui.js');
-
-        await loadTicketData();
-        updateDashboardData();
-        updateNotifications();
-        findTicketForManage(ticket.booking_reference);
+        reloadManagePnr(ticket.booking_reference);
 
     } catch (error) {
         console.error(error);
@@ -1126,17 +1106,9 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
             await addTickets(newRows);
         }
 
-        const { loadTicketData } = await import('./tickets.js');
-        const { updateDashboardData } = await import('./main.js');
-        const { updateNotifications } = await import('./ui.js');
-
         showToast('Payment distributed across PNR successfully.', 'success');
         closeModal();
-
-        await loadTicketData();
-        updateDashboardData();
-        updateNotifications();
-        findTicketForManage(ticketsToPay[0].booking_reference);
+        reloadManagePnr(ticketsToPay[0].booking_reference);
 
     } catch (error) {
         console.error(error);
@@ -1294,15 +1266,7 @@ async function handleUpdateTicket(e) {
         showToast('Updated successfully!', 'success');
         closeModal();
         
-        const { loadTicketData } = await import('./tickets.js');
-        const { updateDashboardData } = await import('./main.js');
-        const { loadHistory } = await import('./history.js');
-        const { updateNotifications } = await import('./ui.js');
-
-        await Promise.all([loadTicketData(), loadHistory()]);
-        updateDashboardData();
-        updateNotifications(); // FORCE UI UPDATE
-        findTicketForManage(pnr);
+        reloadManagePnr(pnr);
 
     } catch (error) {
         console.error(error);

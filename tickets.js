@@ -462,10 +462,7 @@ async function confirmAndSaveTicket(form, sharedData, passengerData, returnShare
         populateFlightLocations();
         updateToggleLabels();
 
-        await loadTicketData();
-        updateDashboardData();
-        buildClientList();
-        updateNotifications();
+        // Data and UI will update automatically via real-time listeners
         showView('home');
 
     } catch (error) {
@@ -972,9 +969,7 @@ export function openEditTicketModal(ticket) {
         });
         showToast('Ticket updated successfully', 'success');
         closeModal();
-        await loadTicketData();
-        updateDashboardData();
-        refreshTicketView();
+        // Data and UI will update automatically via real-time listeners
     });
 }
 
@@ -1027,9 +1022,7 @@ export function openEditGroupModal(group) {
         await batchUpdateTickets(updates);
         showToast('Group updated successfully', 'success');
         closeModal();
-        await loadTicketData();
-        updateDashboardData();
-        refreshTicketView();
+        // Data and UI will update automatically via real-time listeners
     });
 }
 
@@ -1039,9 +1032,7 @@ export function deleteTicketWithConfirm(ticketId) {
         async () => {
             await deleteDocument('tickets', ticketId);
             showToast('Ticket deleted', 'success');
-            await loadTicketData();
-            updateDashboardData();
-            refreshTicketView();
+            // Data and UI will update automatically via real-time listeners
         }
     );
 }

@@ -11,9 +11,9 @@ import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange
 import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket } from './utils.js';
 
 // Feature Modules
-import { loadTicketData, performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
+import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
-import { loadHistory } from './history.js';
+import {  } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
 import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
@@ -156,13 +156,7 @@ export async function initializeApp() {
         state.unsubscribers.forEach(unsub => unsub && unsub());
         state.unsubscribers = [];
 
-        // Load initial data
-        await Promise.all([
-            loadTicketData(),
-            loadBookingData(),
-            loadHistory(),
-            loadSettlementData()
-        ]);
+        // Removed redundant full fetches; real-time listeners will populate initial state automatically from local cache.
 
         // Build derived data
         buildClientList();
@@ -1438,28 +1432,64 @@ function openBookingFromReminder(pnr) {
     performBookingSearch();
 }
 
-function wireDashboardTaskInteractions(container) {
-    const form = container.querySelector('#dashboardTaskQuickForm');
-    if (form) {
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const titleInput = form.querySelector('[name="taskTitle"]');
-            const dueDateInput = form.querySelector('[name="taskDueDate"]');
-            const dueTimeInput = form.querySelector('[name="taskDueTime"]');
-            const priorityInput = form.querySelector('[name="taskPriority"]');
-            const title = titleInput?.value.trim();
-            if (!title) {
-                titleInput?.focus();
-                return;
-            }
-            await saveManualDashboardTask({
-                title,
-                dueDate: dueDateInput?.value || '',
-                dueTime: dueTimeInput?.value || '',
-                priority: priorityInput?.value || 'normal'
-            });
-            form.reset();
+function openTaskModal() {
+    const content = `
+        <div class="form-container" style="background:var(--bg-color);">
+            <h2><i class="fa-solid fa-plus"></i> Add Task or Reminder</h2>
+            <form id="dashboardTaskModalForm" class="centered-form">
+                <div class="form-group">
+                    <label>Task Title</label>
+                    <input type="text" name="taskTitle" placeholder="e.g. Follow up on passport" required autocomplete="off">
+                </div>
+                <div style="display:flex; gap:1rem;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Due Date</label>
+                        <input type="date" name="taskDueDate">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Due Time</label>
+                        <input type="time" name="taskDueTime">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select name="taskPriority">
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="form-actions" style="margin-top:1rem;">
+                    <button type="button" class="btn btn-secondary" id="cancelTaskModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Task</button>
+                </div>
+            </form>
+        </div>
+    `;
+    openModal(content, 'small-modal');
+    
+    document.getElementById('cancelTaskModalBtn').addEventListener('click', closeModal);
+    
+    document.getElementById('dashboardTaskModalForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = new FormData(e.target);
+        const taskTitle = data.get('taskTitle')?.trim();
+        if (!taskTitle) return;
+        await saveManualDashboardTask({
+            title: taskTitle,
+            dueDate: data.get('taskDueDate'),
+            dueTime: data.get('taskDueTime'),
+            priority: data.get('taskPriority') || 'normal'
         });
+        closeModal();
+        updateDashboardData();
+    });
+}
+
+function wireDashboardTaskInteractions(container) {
+    const addBtn = container.querySelector('#openTaskModalBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', openTaskModal);
     }
 
     container.querySelectorAll('[data-task-toggle]').forEach(input => {
@@ -1526,17 +1556,12 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
         : `<div class="task-empty-line">No manual tasks yet.</div>`;
 
     container.innerHTML = `
-        <form class="dashboard-task-form" id="dashboardTaskQuickForm">
-            <input type="text" name="taskTitle" placeholder="Add task or reminder..." autocomplete="off">
-            <input type="date" name="taskDueDate" aria-label="Task due date">
-            <input type="time" name="taskDueTime" aria-label="Task due time">
-            <select name="taskPriority" aria-label="Task priority">
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="low">Low</option>
-            </select>
-            <button type="submit" aria-label="Add task"><i class="fa-solid fa-plus"></i></button>
-        </form>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+            <h3 style="margin:0; font-size:1.1rem;"><i class="fa-solid fa-list-check"></i> Tasks & Reminders</h3>
+            <button type="button" class="btn btn-primary btn-sm" id="openTaskModalBtn" style="border-radius:50%; width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center;" title="Add Task">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
         <div class="task-mini-section">
             <div class="task-mini-title"><span>Booking deadlines</span><small>${bookingReminders.length}</small></div>
             <div class="task-mini-list">${bookingHtml}</div>

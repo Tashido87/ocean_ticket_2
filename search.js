@@ -926,7 +926,7 @@ function renderRow(result) {
             <td class="strong-cell">
                 <div class="cell-with-avatar">
                     <span class="cell-avatar ticket-avatar"><i class="fa-solid fa-ticket"></i></span>
-                    <span class="${clientKey ? 'clickable-client-link' : ''}" data-client-key="${escapeHtml(clientKey)}" ${clientKey ? 'style="cursor:pointer; color:var(--primary-accent);"' : ''} title="${clientKey ? 'View Client' : ''}">${highlightText(t.name || '—')}</span>
+                    <span class="${clientKey ? 'clickable-client-link' : ''}" data-client-key="${escapeHtml(clientKey)}" ${clientKey ? 'style="cursor:pointer; color:var(--primary-accent);"' : ''} title="${clientKey ? 'View Client' : ''}">${highlightText(String(t.name || '—').replace(/\\(fees\\)\\s*$/i, '').trim())}</span>
                 </div>
             </td>
             <td>${highlightText(t.account_name || '—')}</td>
