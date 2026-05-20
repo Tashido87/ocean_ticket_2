@@ -9565,6 +9565,17 @@ body.material-theme {
     font-weight: 700;
 }
 
+a.clickable-pnr {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+a.clickable-pnr:hover {
+    color: var(--teal-dark);
+    text-decoration: underline;
+}
+
 .travel-progress {
     display: grid;
     gap: 0.24rem;
@@ -9879,4 +9890,18 @@ body.material-theme {
     .unpaid-summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+}
+
+/* Clickable PNR Links */
+.clickable-pnr {
+    color: var(--primary);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+    font-weight: 600;
+}
+.clickable-pnr:hover {
+    text-decoration-color: var(--primary);
+    color: var(--primary-dark);
 }
