@@ -19,7 +19,8 @@ import {
     parsePaymentMethod,
     formatPaymentMethod,
     isCanceledTicket,
-    isFeeEntryRow
+    isFeeEntryRow,
+    escapeHtml
 } from './utils.js';
 import {
     openModal,
