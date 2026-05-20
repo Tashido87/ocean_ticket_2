@@ -10101,33 +10101,57 @@ a.clickable-pnr:hover {
 }
 
 /* Solid detail modals: trip and PNR detail views should not inherit glass surfaces. */
-#modal .modal-content.solid-modal,
-body.material-theme #modal .modal-content.solid-modal,
-body:not(.material-theme) #modal .modal-content.solid-modal {
+#modal.solid-modal-open,
+body.material-theme #modal.solid-modal-open {
+    background: rgba(36, 36, 43, 0.48) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+#modal.solid-modal-open .modal-content.solid-modal,
+body.material-theme #modal.solid-modal-open .modal-content.solid-modal,
+body:not(.material-theme) #modal.solid-modal-open .modal-content.solid-modal {
     background: #ffffff !important;
     background-color: #ffffff !important;
+    background-image: none !important;
     opacity: 1 !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     filter: none !important;
+    isolation: isolate;
     border: 1px solid rgba(36, 36, 43, 0.14) !important;
     box-shadow: 0 22px 70px rgba(36, 36, 43, 0.18) !important;
 }
 
-#modal .modal-content.solid-modal #modalBody,
-#modal .modal-content.solid-modal .modal-body,
-#modal .modal-content.solid-modal .details-section,
-#modal .modal-content.solid-modal .pnr-schedule-summary,
-#modal .modal-content.solid-modal .table-wrapper {
+#modal.solid-modal-open .modal-content.solid-modal::before,
+#modal.solid-modal-open .modal-content.solid-modal::after {
+    display: none !important;
+}
+
+#modal.solid-modal-open .modal-content.solid-modal #modalBody,
+#modal.solid-modal-open .modal-content.solid-modal .modal-header,
+#modal.solid-modal-open .modal-content.solid-modal .modal-body,
+#modal.solid-modal-open .modal-content.solid-modal .details-header,
+#modal.solid-modal-open .modal-content.solid-modal .details-section,
+#modal.solid-modal-open .modal-content.solid-modal .pnr-schedule-summary,
+#modal.solid-modal-open .modal-content.solid-modal .table-wrapper,
+#modal.solid-modal-open .modal-content.solid-modal .simple-table,
+#modal.solid-modal-open .modal-content.solid-modal .simple-table thead,
+#modal.solid-modal-open .modal-content.solid-modal .simple-table tbody,
+#modal.solid-modal-open .modal-content.solid-modal .simple-table tr,
+#modal.solid-modal-open .modal-content.solid-modal .simple-table th,
+#modal.solid-modal-open .modal-content.solid-modal .simple-table td {
+    background: #ffffff !important;
     background-color: #ffffff !important;
+    background-image: none !important;
     opacity: 1 !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
 
-#modal .modal-content.solid-modal .details-section,
-#modal .modal-content.solid-modal .pnr-schedule-summary,
-#modal .modal-content.solid-modal .table-wrapper {
+#modal.solid-modal-open .modal-content.solid-modal .details-section,
+#modal.solid-modal-open .modal-content.solid-modal .pnr-schedule-summary,
+#modal.solid-modal-open .modal-content.solid-modal .table-wrapper {
     border: 1px solid rgba(36, 36, 43, 0.10) !important;
 }
 
