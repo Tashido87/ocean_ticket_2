@@ -20,7 +20,7 @@ import { ocrPassport } from './passport-ocr.js';
  * Normalizes passenger names for grouped dashboard widgets.
  * - Removes helper suffixes like "(Fees)" so the UI shows real client names.
  */
-function normalizePassengerName(name) {
+export function normalizePassengerName(name) {
     const raw = String(name || '').trim();
     if (!raw) return 'N/A';
     return raw.replace(/\s*\(fees\)\s*$/i, '').trim();
