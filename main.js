@@ -59,8 +59,7 @@ document.addEventListener('click', (e) => {
         e.stopPropagation();
         const pnr = rowEl.dataset.dashboardPnr;
         if (pnr && pnr !== 'No PNR' && pnr !== '—') {
-            showView('manage');
-            findTicketForManage(pnr);
+            showTripPlanDetail(pnr);
         }
         return;
     }
