@@ -578,131 +578,110 @@ export function updateNotifications() {
  * Strict Rule: Only show PNRs for "Tomorrow".
  */
 export function updateUpcomingPnrs() {
-    const list = document.getElementById('upcoming-pnr-list');
-    const hint = document.querySelector('#upcoming-pnr-box .panel-hint');
+    const list = document.getElementById('upcomingTravelScheduleList');
     if (!list) return;
 
-    // 1. Calculate Tomorrow and the Day After Tomorrow (normalized to midnight)
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    const windowEnd = new Date(today);
+    windowEnd.setDate(today.getDate() + 7);
+    windowEnd.setHours(23, 59, 59, 999);
 
-    const dayAfter = new Date(today);
-    dayAfter.setDate(today.getDate() + 2);
-    dayAfter.setHours(0, 0, 0, 0);
-
-    // Format text for display (e.g., "Dec 20")
-    const dateOptions = { month: 'short', day: 'numeric' };
-    const tomorrowStr = tomorrow.toLocaleDateString('en-US', dateOptions);
-    const dayAfterStr = dayAfter.toLocaleDateString('en-US', dateOptions);
-
-    // 2. Filter & Group Tickets (PNR) for both days
-    const tomorrowGroups = {};
-    const dayAfterGroups = {};
-
-    function addToGroup(groups, t) {
-        const pnr = (t.booking_reference || 'N/A').toUpperCase();
-        if (!groups[pnr]) groups[pnr] = { pnr, passengers: [], route: '' };
-
-        // Add passenger name (excluding fees)
-        if (!isFeeEntryRow(t) && t.name) {
-            groups[pnr].passengers.push(normalizePassengerName(t.name));
-        }
-
-        // Set route if available
-        if (!groups[pnr].route && t.departure && t.destination) {
-            groups[pnr].route = `${t.departure.split(' ')[0]} → ${t.destination.split(' ')[0]}`;
-        }
-    }
+    // Group tickets by (departure date + PNR + route)
+    const groups = {};
 
     state.allTickets.forEach(t => {
         const lowerRemarks = String(t.remarks || '').toLowerCase();
         if (lowerRemarks.includes('cancel') || lowerRemarks.includes('refund')) return;
-        
-        // NEW: Ignore fee rows for scheduling notifications to prevent date confusion
         if (isFeeEntryRow(t)) return;
 
         const travelDate = parseSheetDate(t.departing_on);
         if (!travelDate || isNaN(travelDate.getTime())) return;
-        travelDate.setHours(0, 0, 0, 0);
+        
+        const travelDateMidnight = new Date(travelDate);
+        travelDateMidnight.setHours(0, 0, 0, 0);
 
-        if (travelDate.getTime() === tomorrow.getTime()) {
-            addToGroup(tomorrowGroups, t);
-        } else if (travelDate.getTime() === dayAfter.getTime()) {
-            addToGroup(dayAfterGroups, t);
+        if (travelDateMidnight >= today && travelDateMidnight <= windowEnd) {
+            const pnr = (t.booking_reference || 'N/A').toUpperCase();
+            const dateKey = travelDateMidnight.getTime();
+            const route = t.departure && t.destination ? `${t.departure.split(' ')[0]} → ${t.destination.split(' ')[0]}` : 'Unknown';
+            const key = `${dateKey}_${pnr}_${route}`;
+
+            if (!groups[key]) {
+                groups[key] = {
+                    date: travelDateMidnight,
+                    pnr,
+                    route,
+                    airline: (t.airline || 'Airline').trim(),
+                    passengers: []
+                };
+            }
+            if (t.name) {
+                groups[key].passengers.push(normalizePassengerName(t.name));
+            }
         }
     });
 
-    const upcomingTomorrow = Object.values(tomorrowGroups);
-    const upcomingDayAfter = Object.values(dayAfterGroups);
-
-    // Update the hint text on the dashboard card (total for two days)
-    const total = upcomingTomorrow.length + upcomingDayAfter.length;
-    if (hint) hint.textContent = `Next 2 Days (${total})`;
+    const upcoming = Object.values(groups).sort((a, b) => a.date - b.date);
 
     list.innerHTML = '';
 
-    // If both empty, keep the old "empty" style
-    if (total === 0) {
+    if (upcoming.length === 0) {
         list.innerHTML = `
-            <div class="notification-item empty">
-                <i class="fa-solid fa-calendar-check"></i>
-                <span>No flights for tomorrow or the day after tomorrow.</span>
-            </div>`;
+            <div class="empty-state-small" style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
+                <i class="fa-solid fa-calendar-check" style="font-size: 1.5rem; color: var(--primary-accent); margin-bottom: 0.5rem; display: block;"></i>
+                <span>No flights scheduled for the next 7 days.</span>
+            </div>
+        `;
         return;
     }
 
-    function renderDaySection(dateStr, groups) {
-        if (groups.length === 0) {
-            list.insertAdjacentHTML('beforeend', `
-                <div class="notification-item empty">
-                    <i class="fa-solid fa-calendar-check"></i>
-                    <span>No flights for ${dateStr}.</span>
-                </div>
-            `);
-            return;
-        }
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-        groups.forEach(g => {
-            const clientName = g.passengers[0] || 'Unknown';
-            const paxCount = g.passengers.length;
-            const extraPax = paxCount > 1 ? ` (+${paxCount - 1})` : '';
-            const route = g.route || 'Route N/A';
+    upcoming.forEach(g => {
+        const dateDay = g.date.getDate();
+        const dateMonth = months[g.date.getMonth()];
+        const passengerCount = g.passengers.length;
+        const mainPax = g.passengers[0] || 'Unknown Client';
+        const displayTitle = passengerCount > 1 ? `${mainPax} (+${passengerCount - 1})` : mainPax;
+        const detailSub = `${g.airline} · PNR: ${g.pnr}`;
 
-            const html = `
-                <div class="simple-item-row upcoming-row">
-                    <div class="simple-item-content">
-                        <span class="simple-text-main">${dateStr} • ${clientName}${extraPax}</span>
-                        <span class="simple-text-sub">PNR: <strong>${g.pnr}</strong> • ${route}</span>
+        // Capacity indicator
+        const fillPercent = Math.min(100, Math.max(10, passengerCount * 25));
+
+        const html = `
+            <div class="schedule-item-row" data-pnr="${g.pnr}">
+                <div class="schedule-left">
+                    <div class="schedule-time-box">
+                        ${dateDay} <small>${dateMonth}</small>
                     </div>
-                    <i class="fa-solid fa-circle-info simple-detail-icon" data-open-pnr="${g.pnr}" title="View travel schedule" aria-label="Open details"></i>
+                    <div class="schedule-info">
+                        <span class="schedule-vessel">${displayTitle}</span>
+                        <span class="schedule-route"><i class="fa-solid fa-plane-departure" style="font-size: 0.7rem;"></i> ${g.route} <small style="margin-left: 0.5rem; opacity: 0.7;">${detailSub}</small></span>
+                    </div>
                 </div>
-            `;
-            list.insertAdjacentHTML('beforeend', html);
-        });
-    }
+                <div class="schedule-right">
+                    <div class="schedule-occupancy-bar">
+                        <div class="schedule-occupancy-bar-fill" style="width: ${fillPercent}%;"></div>
+                    </div>
+                    <span class="schedule-occupancy-text">${passengerCount} Pax</span>
+                </div>
+            </div>
+        `;
+        list.insertAdjacentHTML('beforeend', html);
+    });
 
-    // 3. Render tomorrow first
-    renderDaySection(tomorrowStr, upcomingTomorrow);
-
-    // 4. Separator + day after tomorrow
-    list.insertAdjacentHTML('beforeend', `
-        <hr style="margin: 10px 0; opacity: 0.3;" />
-    `);
-
-    renderDaySection(dayAfterStr, upcomingDayAfter);
-
-    // Attach click events ONLY to the details icon
-    list.querySelectorAll('.simple-detail-icon[data-open-pnr]').forEach(icon => {
-        icon.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const pnr = icon.getAttribute('data-open-pnr');
-            openPnrScheduleModal(pnr);
+    list.querySelectorAll('.schedule-item-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const pnr = row.getAttribute('data-pnr');
+            if (pnr && pnr !== 'N/A') {
+                openPnrScheduleModal(pnr);
+            }
         });
     });
 }
+
 /**
  * Opens a modal showing the full list of upcoming PNRs (same definition as the dashboard widget).
  * Includes client names alongside the PNR and quick access to Manage Ticket.

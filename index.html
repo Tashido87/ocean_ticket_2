@@ -96,229 +96,328 @@
                 
                 <div class="dashboard-content-wrapper" id="dashboard-content" style="display: none;">
 
-                    <section class="dashboard-hero glass-card">
-                        <div class="dashboard-hero-copy">
-                            <span class="dashboard-eyebrow">Ocean Travel Operations</span>
-                            <h1>Ocean Travel Dashboard</h1>
-                            <p>Ticket sales, bookings, payments, owner payable, and travel reminders in one calm workspace.</p>
-                            <div class="dashboard-period-controls" aria-label="Dashboard period">
-                                <button type="button" class="dashboard-period-btn active" data-dashboard-period="month">This Month</button>
-                                <button type="button" class="dashboard-period-btn" data-dashboard-period="today">Today</button>
-                                <button type="button" class="dashboard-period-btn" data-dashboard-period="last-month">Last Month</button>
-                                <button type="button" class="dashboard-period-btn" data-dashboard-period="custom">Custom</button>
-                                <span class="dashboard-custom-range" id="dashboardCustomRange" hidden>
-                                    <input type="date" id="dashboardCustomStart" aria-label="Dashboard start date">
-                                    <input type="date" id="dashboardCustomEnd" aria-label="Dashboard end date">
-                                </span>
-                            </div>
+                    <!-- Dashboard Header Row -->
+                    <div class="dashboard-header-row">
+                        <div class="dashboard-header-left">
+                            <h1>Dashboard <span class="dashboard-emoji">⛵</span></h1>
+                            <p>Welcome back, here's today's travel and ticketing overview.</p>
                         </div>
-                        <div class="dashboard-hero-actions">
-                            <button type="button" class="btn btn-primary dashboard-action-btn" data-dashboard-view="sell"><i class="fa-solid fa-ticket"></i> Sell Ticket</button>
-                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="booking"><i class="fa-solid fa-calendar-plus"></i> New Booking</button>
-                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="manage"><i class="fa-solid fa-magnifying-glass"></i> Manage PNR</button>
-                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="settle"><i class="fa-solid fa-handshake"></i> Owner Settlement</button>
-                        </div>
-                        <div class="app-illustration panel-illustration dashboard-hero-illustration" aria-hidden="true">
-                            <svg viewBox="0 0 260 190" role="img">
-                                <path class="illus-soft" d="M34 144c30 28 113 31 166 6 39-18 45-62 22-91-30-38-118-48-166-20-36 21-51 76-22 105z"/>
-                                <path class="illus-line" d="M68 87h101c11 0 20 9 20 20v37H58v-47c0-6 4-10 10-10z"/>
-                                <path class="illus-fill-coral" d="M74 100h103v33H74z"/>
-                                <path class="illus-line" d="M78 101l18 18 18-18 18 18 18-18 22 22"/>
-                                <path class="illus-fill-mint" d="M48 56c19-10 44-4 57 12-20 14-44 11-57-12z"/>
-                                <path class="illus-line" d="M48 56c19-10 44-4 57 12-20 14-44 11-57-12zM68 58l-13-18M87 62l8-21"/>
-                                <path class="illus-fill-butter" d="M180 49l33-14-10 34z"/>
-                                <path class="illus-line" d="M180 49l33-14-10 34-9-15zM194 54l-17 23"/>
-                                <path class="illus-line" d="M38 124c-12 3-20 11-24 24M209 91c17-4 30 1 39 13M127 39c6-9 14-16 24-21"/>
-                                <circle class="illus-dot" cx="46" cy="94" r="4"/>
-                                <circle class="illus-dot" cx="218" cy="123" r="3"/>
-                                <circle class="illus-dot" cx="151" cy="58" r="3"/>
-                            </svg>
-                        </div>
-                    </section>
-
-                    <div class="dashboard-kpis">
-                        <div id="total-tickets-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Tickets Sold</h3>
-                                <i class="icon fa-solid fa-ticket-simple" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value" id="total-tickets-value">0</div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="tickets-trend-wrapper"></span>
-                                <span class="sub-value">this month</span>
-                            </div>
-                        </div>
-
-                        <div id="monthly-revenue-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Ticket Sales Total</h3>
-                                <i class="icon fa-solid fa-sack-dollar" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value-wrap">
-                                <span class="main-value" id="monthly-revenue-value">0</span>
-                                <span class="currency-label">MMK</span>
-                            </div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="revenue-trend-wrapper"></span>
-                                <span class="sub-value">this month</span>
-                            </div>
-                        </div>
-
-                        <div id="monthly-profit-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Net Profit</h3>
-                                <i class="icon fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value-wrap">
-                                <span class="main-value" id="monthly-profit-value">0</span>
-                                <span class="currency-label">MMK</span>
-                            </div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="profit-trend-wrapper"></span>
-                                <span class="sub-value" id="profit-breakdown-label">Comm / Extra</span>
-                            </div>
-                        </div>
-
-                        <div id="owner-payable-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Owner Payable</h3>
-                                <i class="icon fa-solid fa-handshake" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value-wrap">
-                                <span class="main-value" id="owner-payable-value">0</span>
-                                <span class="currency-label">MMK</span>
-                            </div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="owner-payable-trend-wrapper"></span>
-                                <span class="sub-value">settlement basis</span>
-                            </div>
-                        </div>
-
-                        <div id="unpaid-amount-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Unpaid Amount</h3>
-                                <i class="icon fa-solid fa-wallet" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value-wrap">
-                                <span class="main-value" id="unpaid-amount-value">0</span>
-                                <span class="currency-label">MMK</span>
-                            </div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="unpaid-trend-wrapper"></span>
-                                <span class="sub-value">client collection risk</span>
-                            </div>
-                        </div>
-
-                        <div id="active-bookings-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Active Bookings</h3>
-                                <i class="icon fa-solid fa-calendar-check" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value" id="active-bookings-value">0</div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="bookings-due-wrapper"></span>
-                                <span class="sub-value">pending issuance</span>
-                            </div>
-                        </div>
-
-                        <div id="booking-deadlines-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Booking Deadlines</h3>
-                                <i class="icon fa-solid fa-bell" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value" id="booking-deadlines-value">0</div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="deadline-health-wrapper"></span>
-                                <span class="sub-value">due within 24h</span>
-                            </div>
-                        </div>
-
-                        <div id="financial-pending-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Financial Pending</h3>
-                                <i class="icon fa-solid fa-clipboard-check" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value" id="financial-pending-value">0</div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="financial-pending-wrapper"></span>
-                                <span class="sub-value">needs review</span>
+                        <div class="dashboard-header-right">
+                            <div class="dashboard-filter-group">
+                                <div class="dashboard-filter-btn" id="dashboard-date-range">
+                                    <i class="fa-regular fa-calendar"></i>
+                                    <span id="dashboard-date-text">Jun 10 - Jun 16, 2025</span>
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                                <select id="dashboard-route-filter" class="dashboard-filter-select" aria-label="Route filter">
+                                    <option value="all">All Routes</option>
+                                </select>
+                                <select id="dashboard-status-filter" class="dashboard-filter-select" aria-label="Status filter">
+                                    <option value="all">All Status</option>
+                                </select>
+                                <button class="btn btn-secondary dashboard-export-btn" id="dashboardExportBtn">
+                                    <i class="fa-solid fa-download"></i> Export
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="dashboard-panels-row">
-                        <div id="needs-attention-box" class="glass-card dashboard-panel attention-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Needs Attention</h3>
-                                <span class="panel-hint hint-warning" id="attention-count-hint">0 items</span>
+                    <!-- 4 Redesigned KPI Cards -->
+                    <div class="dashboard-kpi-row">
+                        <!-- Card 1: Total Sales -->
+                        <div class="kpi-card glass-card" id="kpi-total-sales">
+                            <div class="kpi-header-row">
+                                <div class="kpi-title-block">
+                                    <div class="kpi-icon" style="--kpi-bg: rgba(20, 184, 166, 0.1); --kpi-color: #0d9488;">
+                                        <i class="fa-solid fa-dollar-sign"></i>
+                                    </div>
+                                    <h3>Total Sales <i class="fa-solid fa-info-circle kpi-info-icon" title="Sum of net amount, extra fare, and date change fees"></i></h3>
+                                </div>
+                                <div class="sparkline-container">
+                                    <canvas id="sales-sparkline"></canvas>
+                                </div>
                             </div>
-                            <div id="needsAttentionList" class="panel-list attention-list"></div>
-                        </div>
-
-                        <div id="settlement-snapshot-box" class="glass-card dashboard-panel settlement-snapshot-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i> Owner Settlement</h3>
-                                <span class="panel-hint hint-neutral">This Period</span>
-                            </div>
-                            <div id="ownerSettlementSnapshot" class="settlement-snapshot-list"></div>
-                        </div>
-
-                        <div id="notification-panel-box" class="glass-card dashboard-panel notification-panel">
-                            <div class="panel-header">
-                                <a href="#" id="notification-title-link" class="panel-title-link">
-                                    <h3><i class="fa-solid fa-bell" aria-hidden="true"></i> Notifications</h3>
-                                </a>
-                                <span class="panel-hint" id="notification-unpaid-total">Total Unpaid: 0 MMK</span>
-                            </div>
-                            <div id="notification-list" class="notification-list panel-list"></div>
-                        </div>
-
-                        <div id="upcoming-pnr-box" class="glass-card dashboard-panel upcoming-panel">
-                            <div class="panel-header">
-                                <a href="#" id="upcoming-title-link" class="panel-title-link">
-                                    <h3><i class="fa-solid fa-plane-up" aria-hidden="true"></i> Upcoming PNR</h3>
-                                </a>
-                                <span class="panel-hint">Next 14 days</span>
-                            </div>
-                            <div id="upcoming-pnr-list" class="upcoming-list panel-list"></div>
-                        </div>
-
-                        <div id="payment-status-box" class="glass-card dashboard-panel chart-panel payment-status-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Payment Status</h3>
-                                <span class="panel-hint hint-neutral">Amount</span>
-                            </div>
-                            <div class="mini-chart-container">
-                                <canvas id="paymentStatusChart"></canvas>
+                            <div class="kpi-value-block">
+                                <h2 id="kpi-sales-value">0 MMK</h2>
+                                <div class="kpi-footer-row">
+                                    <span class="kpi-trend positive" id="kpi-sales-trend"><i class="fa-solid fa-arrow-up"></i> 0%</span>
+                                    <span class="kpi-subtitle">vs last month</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div id="route-performance-box" class="glass-card dashboard-panel chart-panel route-performance-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-route" aria-hidden="true"></i> Route Performance</h3>
-                                <span class="panel-hint hint-neutral">Top Routes</span>
+                        <!-- Card 2: Unpaid Tickets -->
+                        <div class="kpi-card glass-card" id="kpi-unpaid-tickets">
+                            <div class="kpi-header-row">
+                                <div class="kpi-title-block">
+                                    <div class="kpi-icon" style="--kpi-bg: rgba(239, 68, 68, 0.1); --kpi-color: #ef4444;">
+                                        <i class="fa-solid fa-ticket"></i>
+                                    </div>
+                                    <h3>Unpaid Tickets <i class="fa-solid fa-info-circle kpi-info-icon" title="Count of unpaid tickets"></i></h3>
+                                </div>
+                                <div class="sparkline-container">
+                                    <canvas id="unpaid-sparkline"></canvas>
+                                </div>
                             </div>
-                            <div class="mini-chart-container">
-                                <canvas id="routePerformanceChart"></canvas>
+                            <div class="kpi-value-block">
+                                <h2 id="kpi-unpaid-value">0</h2>
+                                <div class="kpi-footer-row">
+                                    <span class="kpi-trend negative" id="kpi-unpaid-trend"><i class="fa-solid fa-arrow-down"></i> 0%</span>
+                                    <span class="kpi-subtitle">vs last month</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div id="airline-share-box" class="glass-card dashboard-panel airline-share-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Airline Share</h3>
-                                <span class="panel-hint hint-neutral">This Month</span>
+                        <!-- Card 3: Upcoming Trips -->
+                        <div class="kpi-card glass-card" id="kpi-upcoming-trips">
+                            <div class="kpi-header-row">
+                                <div class="kpi-title-block">
+                                    <div class="kpi-icon" style="--kpi-bg: rgba(99, 102, 241, 0.1); --kpi-color: #6366f1;">
+                                        <i class="fa-solid fa-ship"></i>
+                                    </div>
+                                    <h3>Upcoming Trips <i class="fa-solid fa-info-circle kpi-info-icon" title="Total trips scheduled next 14 days"></i></h3>
+                                </div>
+                                <div class="sparkline-container">
+                                    <canvas id="upcoming-sparkline"></canvas>
+                                </div>
                             </div>
-                            <div class="airline-chart-container">
-                                <canvas id="airlineChart"></canvas>
+                            <div class="kpi-value-block">
+                                <h2 id="kpi-upcoming-value">0</h2>
+                                <div class="kpi-footer-row">
+                                    <span class="kpi-trend positive" id="kpi-upcoming-trend"><i class="fa-solid fa-arrow-up"></i> 0 today</span>
+                                    <span class="kpi-subtitle">vs yesterday</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div id="recent-activity-box" class="glass-card dashboard-panel recent-activity-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Recent Activity</h3>
-                                <span class="panel-hint hint-neutral">Local</span>
+                        <!-- Card 4: Total Customers -->
+                        <div class="kpi-card glass-card" id="kpi-total-customers">
+                            <div class="kpi-header-row">
+                                <div class="kpi-title-block">
+                                    <div class="kpi-icon" style="--kpi-bg: rgba(245, 158, 11, 0.1); --kpi-color: #f59e0b;">
+                                        <i class="fa-solid fa-users"></i>
+                                    </div>
+                                    <h3>Total Customers <i class="fa-solid fa-info-circle kpi-info-icon" title="Total unique clients registered"></i></h3>
+                                </div>
+                                <div class="sparkline-container">
+                                    <canvas id="customers-sparkline"></canvas>
+                                </div>
                             </div>
-                            <div id="recentActivityList" class="recent-activity-list panel-list"></div>
+                            <div class="kpi-value-block">
+                                <h2 id="kpi-customers-value">0</h2>
+                                <div class="kpi-footer-row">
+                                    <span class="kpi-trend positive" id="kpi-customers-trend"><i class="fa-solid fa-arrow-up"></i> +0 this month</span>
+                                    <span class="kpi-subtitle">new clients</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 1: Booking & Revenue Overview (Left) + Upcoming Travel Schedule (Right) -->
+                    <div class="dashboard-main-row">
+                        <!-- Chart Card -->
+                        <div class="dashboard-chart-card glass-card">
+                            <div class="card-header">
+                                <div class="card-header-title">
+                                    <h3>Booking & Revenue Overview <i class="fa-solid fa-info-circle card-info-icon" title="Double y-axis chart showing daily bookings and revenue"></i></h3>
+                                </div>
+                                <div class="card-header-actions">
+                                    <select id="chart-timeframe" class="dashboard-select-sm" aria-label="Chart timeframe select">
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="main-chart-container">
+                                <canvas id="bookingRevenueChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Travel Schedule -->
+                        <div class="dashboard-schedule-card glass-card">
+                            <div class="card-header">
+                                <div class="card-header-title">
+                                    <h3>Upcoming Travel Schedule</h3>
+                                </div>
+                                <div class="card-header-actions">
+                                    <a href="#" class="card-link" id="upcoming-travel-view-all">View all</a>
+                                </div>
+                            </div>
+                            <div class="upcoming-schedule-list" id="upcomingTravelList">
+                                <!-- Dynamic rows -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Unpaid Tickets (Left) + 3 mini widgets (Right) -->
+                    <div class="dashboard-bottom-row">
+                        <!-- Unpaid Tickets Table Widget -->
+                        <div class="unpaid-tickets-card glass-card">
+                            <div class="card-header">
+                                <div class="card-header-title">
+                                    <h3>Unpaid Tickets</h3>
+                                </div>
+                                <div class="card-header-actions">
+                                    <a href="#" class="card-link" id="unpaid-tickets-view-all">View all</a>
+                                </div>
+                            </div>
+
+                            <!-- Mini stats inside table card -->
+                            <div class="unpaid-mini-kpis">
+                                <div class="mini-kpi-item">
+                                    <span class="mini-kpi-label">Total Unpaid Amount</span>
+                                    <strong class="mini-kpi-value" id="unpaid-total-amount">0 MMK</strong>
+                                </div>
+                                <div class="mini-kpi-item">
+                                    <span class="mini-kpi-label">Overdue</span>
+                                    <strong class="mini-kpi-value text-danger" id="unpaid-count-overdue">0</strong>
+                                </div>
+                                <div class="mini-kpi-item">
+                                    <span class="mini-kpi-label">Due Today</span>
+                                    <strong class="mini-kpi-value text-warning" id="unpaid-count-today">0</strong>
+                                </div>
+                                <div class="mini-kpi-item">
+                                    <span class="mini-kpi-label">Due This Week</span>
+                                    <strong class="mini-kpi-value text-info" id="unpaid-count-week">0</strong>
+                                </div>
+                            </div>
+
+                            <!-- Unpaid table -->
+                            <div class="unpaid-table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Ticket ID</th>
+                                            <th>Client</th>
+                                            <th>Route</th>
+                                            <th>Due Date</th>
+                                            <th>Amount Due</th>
+                                            <th>Age</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="unpaidTicketsTableBody">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Mini widgets container (3 columns side-by-side or stacked on smaller screens) -->
+                        <div class="mini-cards-column">
+                            <!-- Card A: Payment Summary -->
+                            <div class="mini-widget-card glass-card" id="widget-payment-summary">
+                                <div class="card-header-mini">
+                                    <h4>Payment Summary <i class="fa-solid fa-info-circle card-info-icon" title="Overview of paid vs outstanding ticket payments"></i></h4>
+                                    <a href="#" class="card-link-mini" id="payment-summary-view-details">Details</a>
+                                </div>
+                                <div class="widget-content flex-row">
+                                    <div class="widget-chart-wrap">
+                                        <canvas id="paymentSummaryChart" width="80" height="80"></canvas>
+                                        <div class="chart-center-label">
+                                            <span id="settled-percentage">0%</span>
+                                            <small>Settled</small>
+                                        </div>
+                                    </div>
+                                    <div class="widget-details-wrap">
+                                        <div class="payment-stat-row">
+                                            <span class="indicator settled" style="background: #14b8a6;"></span>
+                                            <div class="payment-stat-text">
+                                                <span class="label">Settled</span>
+                                                <strong id="payment-settled-value">0 MMK</strong>
+                                            </div>
+                                        </div>
+                                        <div class="payment-stat-row">
+                                            <span class="indicator pending" style="background: #fb923c;"></span>
+                                            <div class="payment-stat-text">
+                                                <span class="label">Pending</span>
+                                                <strong id="payment-pending-value">0 MMK</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="payout-progress-section">
+                                    <div class="payout-progress-header">
+                                        <span>Payout Progress</span>
+                                        <span id="payout-progress-percent">0%</span>
+                                    </div>
+                                    <div class="payout-progress-bar-wrap">
+                                        <div class="payout-progress-bar-fill" id="payout-progress-fill" style="width: 0%; background: #14b8a6;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card B: Client Insights -->
+                            <div class="mini-widget-card glass-card" id="widget-client-insights">
+                                <div class="card-header-mini">
+                                    <h4>Client Insights <i class="fa-solid fa-info-circle card-info-icon" title="Customer segments and new vs returning ratios"></i></h4>
+                                    <a href="#" class="card-link-mini" id="client-insights-view-all">All</a>
+                                </div>
+                                <div class="widget-content flex-row">
+                                    <div class="widget-chart-wrap">
+                                        <canvas id="clientInsightsChart" width="80" height="80"></canvas>
+                                    </div>
+                                    <div class="widget-details-wrap">
+                                        <div class="segment-label-item">
+                                            <span class="label-dot new-cust" style="background: #6366f1;"></span>
+                                            <span class="text">New (42%)</span>
+                                        </div>
+                                        <div class="segment-label-item">
+                                            <span class="label-dot ret-cust" style="background: #38bdf8;"></span>
+                                            <span class="text">Ret (58%)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="top-segments-section">
+                                    <h5 class="section-title-mini">Top Segments</h5>
+                                    <div class="segment-progress-item">
+                                        <div class="segment-progress-labels">
+                                            <span>Leisure Travelers</span>
+                                            <span>46%</span>
+                                        </div>
+                                        <div class="segment-progress-bar">
+                                            <div class="segment-progress-fill bg-teal" style="width: 46%; background: #14b8a6;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="segment-progress-item">
+                                        <div class="segment-progress-labels">
+                                            <span>Business Travelers</span>
+                                            <span>28%</span>
+                                        </div>
+                                        <div class="segment-progress-bar">
+                                            <div class="segment-progress-fill bg-indigo" style="width: 28%; background: #6366f1;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="segment-progress-item">
+                                        <div class="segment-progress-labels">
+                                            <span>Group Bookings</span>
+                                            <span>26%</span>
+                                        </div>
+                                        <div class="segment-progress-bar">
+                                            <div class="segment-progress-fill bg-orange" style="width: 26%; background: #fb923c;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card C: Tasks & Reminders -->
+                            <div class="mini-widget-card glass-card" id="widget-tasks-reminders">
+                                <div class="card-header-mini">
+                                    <h4>Tasks & Reminders</h4>
+                                    <a href="#" class="card-link-mini" id="tasks-reminders-view-all">All</a>
+                                </div>
+                                <div class="widget-content-column">
+                                    <div class="tasks-checkbox-list" id="dashboardTasksList">
+                                        <!-- Checkbox items injected dynamically -->
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-full-width" id="addDashboardTaskBtn" style="margin-top: 0.5rem; justify-content: center; font-size: 0.75rem;">
+                                        <i class="fa-solid fa-plus"></i> Add new task
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -383,20 +482,7 @@
                             <div id="pagination" class="pagination-container"></div>
                         </div>
                     </div>
-                    <div class="dashboard-chart-grid">
-                        <div class="comparison-section glass-card">
-                            <h3><i class="fa-solid fa-chart-line"></i> Sales & Profit Trend</h3>
-                            <div class="chart-container">
-                                <canvas id="comparisonChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="comparison-section glass-card">
-                            <h3><i class="fa-solid fa-scale-balanced"></i> Owner Payable vs Paid</h3>
-                            <div class="chart-container">
-                                <canvas id="ownerPayableChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </section>
 

@@ -25,7 +25,7 @@ import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, format
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
-import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview } from './ui.js';
+import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview, normalizePassengerName, showUpcomingPnrsModal } from './ui.js';
 
 function syncGroupToggleState() {
     const start = document.getElementById('searchStartDate')?.value;
@@ -177,16 +177,77 @@ function setupEventListeners() {
         });
     });
 
-    document.querySelectorAll('.dashboard-period-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.dashboard-period-btn').forEach(b => b.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            dashboardPeriodState.period = e.currentTarget.dataset.dashboardPeriod || 'month';
+    const periodSelect = document.getElementById('dashboard-period-select');
+    if (periodSelect) {
+        periodSelect.addEventListener('change', (e) => {
+            dashboardPeriodState.period = e.target.value;
             const custom = document.getElementById('dashboardCustomRange');
-            if (custom) custom.hidden = dashboardPeriodState.period !== 'custom';
+            if (custom) {
+                if (dashboardPeriodState.period === 'custom') {
+                    custom.removeAttribute('hidden');
+                } else {
+                    custom.setAttribute('hidden', '');
+                }
+            }
             updateDashboardData();
         });
-    });
+    }
+
+    const routeSelect = document.getElementById('dashboard-route-select');
+    if (routeSelect) {
+        routeSelect.addEventListener('change', (e) => {
+            dashboardRouteFilter = e.target.value;
+            updateDashboardData();
+        });
+    }
+
+    const statusSelect = document.getElementById('dashboard-status-select');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+            dashboardStatusFilter = e.target.value;
+            updateDashboardData();
+        });
+    }
+
+    const exportBtn = document.getElementById('dashboard-export-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            if (!currentPeriodTickets || currentPeriodTickets.length === 0) {
+                showToast('No data to export for this period.');
+                return;
+            }
+            const headers = ['Issued Date', 'Client Name', 'Airline', 'Route', 'Amount (MMK)', 'Status'];
+            const rows = currentPeriodTickets.map(t => [
+                t.issued_date || '—',
+                t.name || '—',
+                t.airline || '—',
+                t.departure && t.destination ? `${t.departure} to ${t.destination}` : '—',
+                ticketSalesAmount(t),
+                t.paid ? 'Paid' : 'Unpaid'
+            ]);
+
+            let csvContent = "data:text/csv;charset=utf-8," 
+                + headers.join(",") + "\n"
+                + rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",")).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `ocean_dashboard_export_${(currentPeriodRange.label || 'period').replace(/\s+/g, '_').toLowerCase()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Dashboard data exported successfully!');
+        });
+    }
+
+    const upcomingPnrsBtn = document.getElementById('upcomingPnrsModalBtn');
+    if (upcomingPnrsBtn) {
+        upcomingPnrsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showUpcomingPnrsModal();
+        });
+    }
     ['dashboardCustomStart', 'dashboardCustomEnd'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -635,6 +696,12 @@ function setupEventListeners() {
     });
 }
 
+// Redesigned dashboard state filters
+let dashboardRouteFilter = 'all';
+let dashboardStatusFilter = 'all';
+let currentPeriodTickets = [];
+let currentPeriodRange = {};
+
 const dashboardPeriodState = {
     period: 'month',
     customStart: '',
@@ -791,9 +858,47 @@ function initializeDashboardSelectors() {
 export function updateDashboardData() {
     const range = getDashboardDateRange();
     const prevRange = getPreviousDashboardRange(range);
-    const ticketsInPeriod = activeTicketRowsInRange(range);
-    const prevTicketsInPeriod = activeTicketRowsInRange(prevRange);
+    
+    // Get raw tickets in period
+    let ticketsInPeriod = activeTicketRowsInRange(range);
+    let prevTicketsInPeriod = activeTicketRowsInRange(prevRange);
 
+    // Apply Route Filter if active
+    if (dashboardRouteFilter && dashboardRouteFilter !== 'all') {
+        const routeFilterUpper = dashboardRouteFilter.toUpperCase();
+        ticketsInPeriod = ticketsInPeriod.filter(t => {
+            const dep = String(t.departure || '').toUpperCase();
+            const dest = String(t.destination || '').toUpperCase();
+            return dep.includes(routeFilterUpper) || dest.includes(routeFilterUpper);
+        });
+        prevTicketsInPeriod = prevTicketsInPeriod.filter(t => {
+            const dep = String(t.departure || '').toUpperCase();
+            const dest = String(t.destination || '').toUpperCase();
+            return dep.includes(routeFilterUpper) || dest.includes(routeFilterUpper);
+        });
+    }
+
+    // Apply Payment Status Filter if active
+    if (dashboardStatusFilter && dashboardStatusFilter !== 'all') {
+        ticketsInPeriod = ticketsInPeriod.filter(t => {
+            if (dashboardStatusFilter === 'paid') return t.paid;
+            if (dashboardStatusFilter === 'unpaid') return !t.paid;
+            if (dashboardStatusFilter === 'pending') return isFinancialPendingTicket(t);
+            return true;
+        });
+        prevTicketsInPeriod = prevTicketsInPeriod.filter(t => {
+            if (dashboardStatusFilter === 'paid') return t.paid;
+            if (dashboardStatusFilter === 'unpaid') return !t.paid;
+            if (dashboardStatusFilter === 'pending') return isFinancialPendingTicket(t);
+            return true;
+        });
+    }
+
+    // Store globally for export tool
+    currentPeriodTickets = ticketsInPeriod;
+    currentPeriodRange = range;
+
+    // Calculate core period metrics
     const passengerTicketsInPeriod = ticketsInPeriod.filter(t => !isFeeEntryRow(t));
     const curPassengerTickets = passengerTicketsInPeriod.length;
 
@@ -803,55 +908,42 @@ export function updateDashboardData() {
     const curProfit = totalCommission + totalExtraFare;
     const curOwnerPayable = ticketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
     const curUnpaid = ticketsInPeriod.filter(t => !t.paid).reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    const curFinancialPending = ticketsInPeriod.filter(isFinancialPendingTicket).length;
 
     const prevPassengerTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t)).length;
     const prevRevenue = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
-    const prevOwnerPayable = prevTicketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
     const prevUnpaid = prevTicketsInPeriod.filter(t => !t.paid).reduce((sum, t) => sum + ticketSalesAmount(t), 0);
 
-    setText('total-tickets-value', curPassengerTickets);
-    setHtml('tickets-trend-wrapper', getTrendBadgeHtml(curPassengerTickets, prevPassengerTickets));
+    // Populate KPI Card 1: Total Sales
+    setText('totalSalesVal', formatDashboardAmount(curRevenue) + ' MMK');
+    setHtml('salesTrend', getTrendBadgeHtml(curRevenue, prevRevenue));
+    setText('salesPeriodLabel', `sales in ${range.label}`);
 
-    setText('monthly-revenue-value', formatDashboardAmount(curRevenue));
-    setHtml('revenue-trend-wrapper', getTrendBadgeHtml(curRevenue, prevRevenue));
+    // Populate KPI Card 2: Unpaid Tickets
+    const curUnpaidCount = ticketsInPeriod.filter(t => !t.paid && !isCanceledTicket(t) && !isFeeEntryRow(t)).length;
+    setText('unpaidTicketsVal', formatDashboardAmount(curUnpaid) + ' MMK');
+    setHtml('unpaidTrend', getTrendBadgeHtml(curUnpaid, prevUnpaid, true));
+    setText('unpaidCountLabel', `${curUnpaidCount} ticket${curUnpaidCount === 1 ? '' : 's'} outstanding`);
 
-    setText('monthly-profit-value', formatDashboardAmount(curProfit));
-    setHtml('profit-trend-wrapper', getTrendBadgeHtml(curProfit, prevProfit));
-    setText('profit-breakdown-label', `Comm: ${formatDashboardAmount(totalCommission)} | Extra: ${formatDashboardAmount(totalExtraFare)}`);
+    // Populate KPI Card 3: Upcoming Trips
+    setText('upcomingTripsVal', curPassengerTickets);
+    setHtml('tripsTrend', getTrendBadgeHtml(curPassengerTickets, prevPassengerTickets));
+    setText('tripsPeriodLabel', `departures in ${range.label}`);
 
-    setText('owner-payable-value', formatDashboardAmount(curOwnerPayable));
-    setHtml('owner-payable-trend-wrapper', getTrendBadgeHtml(curOwnerPayable, prevOwnerPayable));
+    // Populate KPI Card 4: Total Customers
+    const curUniqueCustomers = new Set(ticketsInPeriod.filter(t => t.name && !isFeeEntryRow(t)).map(t => normalizePassengerName(t.name))).size;
+    const prevUniqueCustomers = new Set(prevTicketsInPeriod.filter(t => t.name && !isFeeEntryRow(t)).map(t => normalizePassengerName(t.name))).size;
+    setText('totalCustomersVal', curUniqueCustomers);
+    setHtml('customersTrend', getTrendBadgeHtml(curUniqueCustomers, prevUniqueCustomers));
+    setText('customersPeriodLabel', `unique travelers in ${range.label}`);
 
-    setText('unpaid-amount-value', formatDashboardAmount(curUnpaid));
-    setHtml('unpaid-trend-wrapper', getTrendBadgeHtml(curUnpaid, prevUnpaid, true));
+    // Render modern widgets and sparklines
+    renderSparklines(ticketsInPeriod, range);
+    renderUnpaidTicketsTable(ticketsInPeriod);
+    renderPaymentSummary(ticketsInPeriod, range);
+    renderClientInsights(ticketsInPeriod);
+    initializeTasksReminders();
 
-    const activeBookings = getActiveBookings();
-    const dueToday = activeBookings.filter(b => {
-        const deadline = getBookingDeadline(b);
-        if (!deadline) return false;
-        const diff = deadline.getTime() - Date.now();
-        return diff <= 24 * 60 * 60 * 1000;
-    });
-
-    setText('active-bookings-value', activeBookings.length);
-    setHtml('bookings-due-wrapper', dueToday.length > 0
-        ? `<span class="trend-badge negative"><i class="fa-solid fa-triangle-exclamation"></i> ${dueToday.length} due</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> On Track</span>`);
-
-    setText('booking-deadlines-value', dueToday.length);
-    setHtml('deadline-health-wrapper', dueToday.length > 0
-        ? `<span class="trend-badge negative"><i class="fa-solid fa-bell"></i> review</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> clear</span>`);
-
-    setText('financial-pending-value', curFinancialPending);
-    setHtml('financial-pending-wrapper', curFinancialPending > 0
-        ? `<span class="trend-badge negative"><i class="fa-solid fa-clipboard-list"></i> action</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> confirmed</span>`);
-
-    renderNeedsAttentionPanel(ticketsInPeriod, activeBookings, dueToday, curUnpaid, curFinancialPending);
-    renderOwnerSettlementSnapshot(ticketsInPeriod, range);
+    // Trigger standard updates
     updateNotifications();
     updateUpcomingPnrs();
     updateSettlementDashboard();
@@ -1253,7 +1345,9 @@ export function updateComparisonChart() {
         }
     });
 
-    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    const canvas = document.getElementById('bookingRevenueChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const ctx = canvas.getContext('2d');
 
     if (state.charts.comparisonChart) {
         state.charts.comparisonChart.destroy();
@@ -1263,12 +1357,12 @@ export function updateComparisonChart() {
     const isMaterialLight = document.body.classList.contains('material-theme') && !document.body.classList.contains('dark-theme');
     const computed = getComputedStyle(document.body);
 
-    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || (isMaterialLight ? '#4A4A4A' : '#FFFFFF');
-    const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || (isMaterialLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)');
+    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || (isMaterialLight ? '#475569' : '#FFFFFF');
+    const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || (isMaterialLight ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.08)');
 
-    const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#fb923c';
-    const profitBase = (computed.getPropertyValue('--chart-profit') || '').trim() || '#2ecc71';
-    const ticketsBase = (computed.getPropertyValue('--chart-tickets') || '').trim() || '#3498db';
+    const revenueBase = '#14b8a6'; // Cute Teal
+    const profitBase = '#6366f1'; // Beautiful Indigo
+    const ticketsBase = '#fb923c'; // Vibrant Orange
 
     const withAlpha = (color, alpha) => {
         const c = String(color).trim();
@@ -1294,13 +1388,12 @@ export function updateComparisonChart() {
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
-        // fallback
         return c;
     };
 
-    const revenueFill = withAlpha(revenueBase, 0.55);
-    const profitFill = withAlpha(profitBase, 0.55);
-    const ticketsFill = withAlpha(ticketsBase, 0.30);
+    const revenueFill = withAlpha(revenueBase, 0.45);
+    const profitFill = withAlpha(profitBase, 0.45);
+    const ticketsFill = withAlpha(ticketsBase, 0.20);
 
     const chartConfig = {
         type: 'bar',
@@ -1312,6 +1405,7 @@ export function updateComparisonChart() {
                 backgroundColor: revenueFill,
                 borderColor: revenueBase,
                 borderWidth: 1,
+                borderRadius: 4,
                 yAxisID: 'y'
             }, {
                 label: 'Total Profit',
@@ -1319,16 +1413,18 @@ export function updateComparisonChart() {
                 backgroundColor: profitFill,
                 borderColor: profitBase,
                 borderWidth: 1,
+                borderRadius: 4,
                 yAxisID: 'y'
             }, {
                 label: 'Total Tickets',
                 data: monthlyData.map(d => d.tickets),
                 backgroundColor: ticketsFill,
                 borderColor: ticketsBase,
-                borderWidth: 1,
+                borderWidth: 2,
                 type: 'line',
                 yAxisID: 'y1',
-                tension: 0.3
+                tension: 0.35,
+                pointRadius: 2
             }]
         },
         options: {
@@ -1340,7 +1436,7 @@ export function updateComparisonChart() {
             },
             scales: {
                 x: {
-                    ticks: { color: textColor },
+                    ticks: { color: textColor, font: { family: 'Inter', weight: '600' } },
                     grid: { color: gridColor }
                 },
                 y: {
@@ -1350,10 +1446,12 @@ export function updateComparisonChart() {
                     title: {
                         display: true,
                         text: 'Amount (MMK)',
-                        color: textColor
+                        color: textColor,
+                        font: { family: 'Inter', weight: '700' }
                     },
                     ticks: {
-                        color: textColor
+                        color: textColor,
+                        font: { family: 'Inter' }
                     },
                     grid: { color: gridColor }
                 },
@@ -1364,21 +1462,24 @@ export function updateComparisonChart() {
                     title: {
                         display: true,
                         text: 'Number of Tickets',
-                        color: textColor
+                        color: textColor,
+                        font: { family: 'Inter', weight: '700' }
                     },
                     grid: {
                         color: gridColor,
                         drawOnChartArea: false,
                     },
                     ticks: {
-                        color: textColor
+                        color: textColor,
+                        font: { family: 'Inter' }
                     }
                 }
             },
             plugins: {
                 legend: {
                     labels: {
-                        color: textColor
+                        color: textColor,
+                        font: { family: 'Inter', weight: '600' }
                     }
                 }
             }
@@ -1389,6 +1490,349 @@ export function updateComparisonChart() {
 }
 
 
+
+function renderSparklines(ticketsInPeriod, range) {
+    const start = range.start;
+    const end = range.end;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const days = Math.max(2, Math.round((end - start) / dayMs) + 1);
+    
+    const dailySales = Array(days).fill(0);
+    const dailyUnpaid = Array(days).fill(0);
+    const dailyTrips = Array(days).fill(0);
+    const dailyCustomers = Array(days).fill(0);
+
+    const seenCustomers = new Set();
+    
+    ticketsInPeriod.forEach(t => {
+        const issueDate = parseSheetDate(t.issued_date);
+        if (!issueDate || isNaN(issueDate.getTime())) return;
+        const dayIdx = Math.min(days - 1, Math.max(0, Math.floor((issueDate - start) / dayMs)));
+        
+        const sales = ticketSalesAmount(t);
+        dailySales[dayIdx] += sales;
+        if (!t.paid) {
+            dailyUnpaid[dayIdx] += sales;
+        }
+        if (!isFeeEntryRow(t)) {
+            dailyTrips[dayIdx] += 1;
+        }
+        if (t.name) {
+            seenCustomers.add(normalizePassengerName(t.name));
+            dailyCustomers[dayIdx] = seenCustomers.size;
+        }
+    });
+
+    let cumulative = 0;
+    for (let i = 0; i < days; i++) {
+        if (dailyCustomers[i] === 0) {
+            dailyCustomers[i] = cumulative;
+        } else {
+            cumulative = dailyCustomers[i];
+        }
+    }
+
+    function drawSparkline2D(canvasId, points, strokeColor) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+        const height = canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        
+        const w = canvas.offsetWidth;
+        const h = canvas.offsetHeight;
+        
+        ctx.clearRect(0, 0, w, h);
+        if (points.length < 2) return;
+
+        const max = Math.max(...points, 1);
+        const min = Math.min(...points, 0);
+        const rangeVal = max - min || 1;
+
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        for (let i = 0; i < points.length; i++) {
+            const x = (i / (points.length - 1)) * w;
+            const y = h - ((points[i] - min) / rangeVal) * (h - 4) - 2;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        const gradient = ctx.createLinearGradient(0, 0, 0, h);
+        gradient.addColorStop(0, strokeColor + '18');
+        gradient.addColorStop(1, strokeColor + '00');
+        ctx.fillStyle = gradient;
+        ctx.fill();
+    }
+
+    drawSparkline2D('salesSparkline', dailySales, '#14b8a6');
+    drawSparkline2D('unpaidSparkline', dailyUnpaid, '#ef4444');
+    drawSparkline2D('tripsSparkline', dailyTrips, '#6366f1');
+    drawSparkline2D('customersSparkline', dailyCustomers, '#10b981');
+}
+
+function renderUnpaidTicketsTable(ticketsInPeriod) {
+    const tbody = document.getElementById('unpaidTicketsTableBody');
+    if (!tbody) return;
+
+    const unpaidTickets = ticketsInPeriod.filter(t => !t.paid && !isCanceledTicket(t) && !isFeeEntryRow(t));
+    unpaidTickets.sort((a, b) => ticketSalesAmount(b) - ticketSalesAmount(a));
+
+    tbody.innerHTML = '';
+
+    if (unpaidTickets.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 1.5rem 0;">
+                    <i class="fa-solid fa-thumbs-up" style="font-size: 1.5rem; color: #10b981; margin-bottom: 0.5rem; display: block;"></i>
+                    <span>All tickets in this period have been fully paid!</span>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    unpaidTickets.slice(0, 10).forEach(t => {
+        const route = t.departure && t.destination ? `${t.departure.split(' ')[0]} → ${t.destination.split(' ')[0]}` : 'N/A';
+        const clientName = t.name || 'Unknown Client';
+        const issuedDate = t.issued_date || '—';
+        const amount = ticketSalesAmount(t);
+        
+        const remarks = String(t.remarks || '').toLowerCase();
+        const split = String(t.split_status || '').toLowerCase();
+        let statusLabel = '<span class="status-badge" style="background: rgba(239,68,68,0.08); color: #ef4444; border-radius: 99px; padding: 0.15rem 0.45rem; font-size: 0.7rem; font-weight:600;">Unpaid</span>';
+        if (remarks.includes('partial') || remarks.includes('balance') || split.includes('partial') || split.includes('balance')) {
+            statusLabel = '<span class="status-badge" style="background: rgba(245,158,11,0.08); color: #f59e0b; border-radius: 99px; padding: 0.15rem 0.45rem; font-size: 0.7rem; font-weight:600;">Partial</span>';
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight: 600;">${clientName}</td>
+            <td>${route}</td>
+            <td>${issuedDate}</td>
+            <td style="font-weight: 700; color: #ef4444;">${formatDashboardAmount(amount)}</td>
+            <td>${statusLabel}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function renderPaymentSummary(ticketsInPeriod, range) {
+    const canvas = document.getElementById('paymentSummaryChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const ownerPayable = ticketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
+    const paidToOwner = (state.allSettlements || []).filter(s => inDashboardRange(parseSheetDate(s.settlement_date), range))
+        .reduce((sum, s) => sum + (Number(s.amount_paid) || 0), 0);
+    const remaining = ownerPayable - paidToOwner;
+
+    const paidEl = document.getElementById('paidToOwnersVal');
+    const dueEl = document.getElementById('remainingDueVal');
+    if (paidEl) paidEl.textContent = formatDashboardAmount(paidToOwner);
+    if (dueEl) dueEl.textContent = formatDashboardAmount(Math.max(0, remaining));
+
+    const progressPct = ownerPayable > 0 ? Math.min(100, Math.round((paidToOwner / ownerPayable) * 100)) : 100;
+    const progressFill = document.getElementById('payoutProgressFill');
+    const progressLabel = document.getElementById('payoutProgressLabel');
+    if (progressFill) progressFill.style.width = `${progressPct}%`;
+    if (progressLabel) progressLabel.textContent = `${progressPct}% of payouts settled`;
+
+    if (state.charts.paymentSummaryChart) {
+        state.charts.paymentSummaryChart.destroy();
+    }
+    
+    const ctx = canvas.getContext('2d');
+    state.charts.paymentSummaryChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Paid', 'Remaining'],
+            datasets: [{
+                data: [paidToOwner, Math.max(0, remaining)],
+                backgroundColor: ['#10b981', '#f59e0b'],
+                borderWidth: 1,
+                borderColor: 'var(--surface)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: true } },
+            cutout: '70%'
+        }
+    });
+}
+
+function renderClientInsights(ticketsInPeriod) {
+    const canvas = document.getElementById('clientInsightsChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const clientCounts = {};
+    ticketsInPeriod.forEach(t => {
+        if (isFeeEntryRow(t) || !t.name) return;
+        const name = normalizePassengerName(t.name);
+        clientCounts[name] = (clientCounts[name] || 0) + 1;
+    });
+
+    let oneTime = 0;
+    let frequent = 0;
+    let vip = 0;
+
+    Object.values(clientCounts).forEach(count => {
+        if (count >= 5) vip++;
+        else if (count >= 2) frequent++;
+        else oneTime++;
+    });
+
+    const totalClients = oneTime + frequent + vip;
+    const labelSpan = document.getElementById('clientInsightsCountVal');
+    if (labelSpan) labelSpan.textContent = totalClients;
+
+    if (state.charts.clientInsightsChart) {
+        state.charts.clientInsightsChart.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    state.charts.clientInsightsChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['VIP (5+ Flights)', 'Regular (2-4)', 'New (1)'],
+            datasets: [{
+                data: [vip, frequent, oneTime],
+                backgroundColor: ['#6366f1', '#14b8a6', '#fb923c'],
+                borderWidth: 1,
+                borderColor: 'var(--surface)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: true } },
+            cutout: '70%'
+        }
+    });
+
+    const segmentsList = document.getElementById('topSegmentsList');
+    if (!segmentsList) return;
+
+    const routes = {};
+    ticketsInPeriod.forEach(t => {
+        if (isFeeEntryRow(t) || !t.departure || !t.destination) return;
+        const r = `${t.departure.split(' ')[0]} → ${t.destination.split(' ')[0]}`;
+        routes[r] = (routes[r] || 0) + 1;
+    });
+
+    const sortedRoutes = Object.entries(routes)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+    segmentsList.innerHTML = '<h5 class="section-title-mini">Top Routes</h5>';
+
+    if (sortedRoutes.length === 0) {
+        segmentsList.innerHTML += `
+            <div style="font-size: 0.72rem; color: var(--text-secondary); padding: 0.25rem 0;">No routes found</div>
+        `;
+        return;
+    }
+
+    const maxRouteTickets = sortedRoutes[0] ? sortedRoutes[0][1] : 1;
+    const colors = ['#6366f1', '#14b8a6', '#fb923c'];
+
+    sortedRoutes.forEach((route, idx) => {
+        const name = route[0];
+        const count = route[1];
+        const pct = Math.round((count / maxRouteTickets) * 100);
+        const barColor = colors[idx % colors.length];
+
+        const item = document.createElement('div');
+        item.className = 'segment-progress-item';
+        item.innerHTML = `
+            <div class="segment-progress-labels">
+                <span>${name}</span>
+                <strong>${count} tickets</strong>
+            </div>
+            <div class="segment-progress-bar">
+                <div class="segment-progress-fill" style="width: ${pct}%; background: ${barColor};"></div>
+            </div>
+        `;
+        segmentsList.appendChild(item);
+    });
+}
+
+function initializeTasksReminders() {
+    const list = document.getElementById('tasksCheckboxList');
+    if (!list) return;
+
+    let tasks = [];
+    try {
+        tasks = JSON.parse(localStorage.getItem('ocean_dashboard_tasks')) || [];
+    } catch (e) {
+        tasks = [];
+    }
+
+    if (tasks.length === 0) {
+        tasks = [
+            { id: 1, text: 'Confirm payout with MNA', completed: false },
+            { id: 2, text: 'Follow up on unpaid invoice #1042', completed: false },
+            { id: 3, text: 'Issue ticketing hold for PNR: KBZ78', completed: true },
+            { id: 4, text: 'Update exchange rate for weekly settlement', completed: false }
+        ];
+        localStorage.setItem('ocean_dashboard_tasks', JSON.stringify(tasks));
+    }
+
+    function saveTasks() {
+        localStorage.setItem('ocean_dashboard_tasks', JSON.stringify(tasks));
+    }
+
+    function renderTasks() {
+        list.innerHTML = '';
+        tasks.forEach(t => {
+            const label = document.createElement('label');
+            label.className = `task-item ${t.completed ? 'completed' : ''}`;
+            label.innerHTML = `
+                <input type="checkbox" data-task-id="${t.id}" ${t.completed ? 'checked' : ''}>
+                <span>${t.text}</span>
+            `;
+            
+            const cb = label.querySelector('input');
+            cb.addEventListener('change', (e) => {
+                t.completed = e.target.checked;
+                label.classList.toggle('completed', t.completed);
+                saveTasks();
+            });
+
+            list.appendChild(label);
+        });
+    }
+
+    renderTasks();
+
+    const addBtn = document.getElementById('addNewTaskBtn');
+    if (addBtn && !addBtn.dataset.wired) {
+        addBtn.dataset.wired = 'true';
+        addBtn.addEventListener('click', () => {
+            const text = prompt('Enter task/reminder description:');
+            if (text && text.trim()) {
+                const newTask = {
+                    id: Date.now(),
+                    text: text.trim(),
+                    completed: false
+                };
+                tasks.push(newTask);
+                saveTasks();
+                renderTasks();
+            }
+        });
+    }
+}
 
 // --- APP START ---
 window.onload = async () => {
