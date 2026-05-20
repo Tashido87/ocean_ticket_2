@@ -80,6 +80,7 @@ export async function initializeApp() {
                 displayInitialTickets();
                 updateNotifications();
                 buildClientList();
+                updateDashboardData();
             })
         );
 
@@ -88,6 +89,7 @@ export async function initializeApp() {
                 state.allBookings = bookings;
                 displayBookings();
                 updateNotifications();
+                updateDashboardData();
             })
         );
 
@@ -95,6 +97,7 @@ export async function initializeApp() {
             onSettlementsChange((settlements) => {
                 state.allSettlements = settlements;
                 displaySettlements();
+                updateDashboardData();
             })
         );
 
@@ -628,10 +631,6 @@ function setupEventListeners() {
     // Theme change listener for chart redraw
     document.body.addEventListener('themeChanged', () => {
         updateComparisonChart();
-        updateAirlineChart();
-        updatePaymentStatusChart();
-        updateRoutePerformanceChart();
-        updateOwnerPayableChart();
     });
 }
 
@@ -771,6 +770,131 @@ function getBookingDeadline(b) {
     return parseDeadline(b.enddate, b.endtime);
 }
 
+function dashboardEscapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[ch]));
+}
+
+function compactPlace(value) {
+    const text = String(value || '').trim();
+    if (!text) return '—';
+    return text.replace(/\s*\([^)]*\)\s*/g, '').trim() || text;
+}
+
+function dashboardRouteLabel(record) {
+    return `${compactPlace(record.departure)} → ${compactPlace(record.destination)}`;
+}
+
+function formatDashboardDateLabel(value, fallback = '—') {
+    const date = value instanceof Date ? value : parseSheetDate(value);
+    if (!date || isNaN(date.getTime()) || date.getTime() === 0) return fallback;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${String(date.getDate()).padStart(2, '0')}-${months[date.getMonth()]}-${date.getFullYear()}`;
+}
+
+function formatDashboardShortDate(value) {
+    const date = value instanceof Date ? value : parseSheetDate(value);
+    if (!date || isNaN(date.getTime()) || date.getTime() === 0) return { day: '—', month: '' };
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return { day: String(date.getDate()).padStart(2, '0'), month: months[date.getMonth()] };
+}
+
+function daysBetween(from, to) {
+    const start = startOfDay(from).getTime();
+    const end = startOfDay(to).getTime();
+    return Math.round((end - start) / (24 * 60 * 60 * 1000));
+}
+
+function isTicketPaid(ticket) {
+    const paymentText = [
+        ticket?.payment_status,
+        ticket?.paid_status,
+        ticket?.remarks,
+        ticket?.split_status
+    ].map(v => String(v || '').toLowerCase()).join(' ');
+    if (paymentText.includes('unpaid') || paymentText.includes('partial') || paymentText.includes('balance')) return false;
+    return Boolean(ticket?.paid) || paymentText.includes('paid');
+}
+
+function activeClientRows() {
+    return (state.allClients || []).filter(client => !/\(fees\)\s*$/i.test(String(client?.name || '')));
+}
+
+function getUpcomingTripGroups(days = 14) {
+    const today = startOfDay(new Date());
+    const end = endOfDay(new Date(today));
+    end.setDate(end.getDate() + days);
+    const groups = new Map();
+
+    (state.allTickets || []).forEach(ticket => {
+        if (isFeeEntryRow(ticket) || isCanceledTicket(ticket)) return;
+        const travelDate = parseSheetDate(ticket.departing_on);
+        if (!travelDate || isNaN(travelDate.getTime()) || travelDate < today || travelDate > end) return;
+        const pnr = String(ticket.booking_reference || '').trim() || ticket.id || 'No PNR';
+        const key = `${pnr}|${ticket.departing_on || ''}|${ticket.departure || ''}|${ticket.destination || ''}`;
+        if (!groups.has(key)) {
+            groups.set(key, {
+                pnr,
+                date: travelDate,
+                route: dashboardRouteLabel(ticket),
+                airline: ticket.airline || 'Airline',
+                lead: ticket.name || 'Passenger',
+                passengers: 0,
+                paidPassengers: 0,
+                unpaidAmount: 0
+            });
+        }
+        const group = groups.get(key);
+        group.passengers += 1;
+        if (isTicketPaid(ticket)) group.paidPassengers += 1;
+        else group.unpaidAmount += ticketSalesAmount(ticket);
+    });
+
+    return [...groups.values()].sort((a, b) => a.date - b.date);
+}
+
+function groupUnpaidTickets(rows) {
+    const groups = new Map();
+    rows.filter(ticket => !isFeeEntryRow(ticket) && !isCanceledTicket(ticket) && !isTicketPaid(ticket)).forEach(ticket => {
+        const pnr = String(ticket.booking_reference || '').trim() || ticket.id || 'No PNR';
+        const key = pnr;
+        if (!groups.has(key)) {
+            groups.set(key, {
+                pnr,
+                client: ticket.name || 'Passenger',
+                route: dashboardRouteLabel(ticket),
+                dueDate: parseSheetDate(ticket.departing_on),
+                issuedDate: parseSheetDate(ticket.issued_date),
+                amount: 0,
+                tickets: 0
+            });
+        }
+        const group = groups.get(key);
+        group.amount += ticketSalesAmount(ticket);
+        group.tickets += 1;
+        const travelDate = parseSheetDate(ticket.departing_on);
+        if (travelDate && travelDate.getTime() && (!group.dueDate?.getTime?.() || travelDate < group.dueDate)) {
+            group.dueDate = travelDate;
+        }
+        const issuedDate = parseSheetDate(ticket.issued_date);
+        if (issuedDate && issuedDate.getTime() && (!group.issuedDate?.getTime?.() || issuedDate < group.issuedDate)) {
+            group.issuedDate = issuedDate;
+        }
+    });
+
+    return [...groups.values()].sort((a, b) => {
+        const aDue = a.dueDate?.getTime?.() || Number.MAX_SAFE_INTEGER;
+        const bDue = b.dueDate?.getTime?.() || Number.MAX_SAFE_INTEGER;
+        if (aDue !== bDue) return aDue - bDue;
+        return b.amount - a.amount;
+    });
+}
+
 /**
  * Initializes dashboard-specific UI elements like date selectors.
  */
@@ -794,39 +918,15 @@ export function updateDashboardData() {
     const ticketsInPeriod = activeTicketRowsInRange(range);
     const prevTicketsInPeriod = activeTicketRowsInRange(prevRange);
 
-    const passengerTicketsInPeriod = ticketsInPeriod.filter(t => !isFeeEntryRow(t));
-    const curPassengerTickets = passengerTicketsInPeriod.length;
-
     const curRevenue = ticketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    const totalCommission = ticketsInPeriod.reduce((sum, t) => sum + (Number(t.commission) || 0), 0);
-    const totalExtraFare = ticketsInPeriod.reduce((sum, t) => sum + (Number(t.extra_fare) || 0), 0);
-    const curProfit = totalCommission + totalExtraFare;
-    const curOwnerPayable = ticketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
-    const curUnpaid = ticketsInPeriod.filter(t => !t.paid).reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    const curFinancialPending = ticketsInPeriod.filter(isFinancialPendingTicket).length;
-
-    const prevPassengerTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t)).length;
     const prevRevenue = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
-    const prevOwnerPayable = prevTicketsInPeriod.reduce((sum, t) => sum + ticketOwnerPayableAmount(t), 0);
-    const prevUnpaid = prevTicketsInPeriod.filter(t => !t.paid).reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-
-    setText('total-tickets-value', curPassengerTickets);
-    setHtml('tickets-trend-wrapper', getTrendBadgeHtml(curPassengerTickets, prevPassengerTickets));
-
-    setText('monthly-revenue-value', formatDashboardAmount(curRevenue));
-    setHtml('revenue-trend-wrapper', getTrendBadgeHtml(curRevenue, prevRevenue));
-
-    setText('monthly-profit-value', formatDashboardAmount(curProfit));
-    setHtml('profit-trend-wrapper', getTrendBadgeHtml(curProfit, prevProfit));
-    setText('profit-breakdown-label', `Comm: ${formatDashboardAmount(totalCommission)} | Extra: ${formatDashboardAmount(totalExtraFare)}`);
-
-    setText('owner-payable-value', formatDashboardAmount(curOwnerPayable));
-    setHtml('owner-payable-trend-wrapper', getTrendBadgeHtml(curOwnerPayable, prevOwnerPayable));
-
-    setText('unpaid-amount-value', formatDashboardAmount(curUnpaid));
-    setHtml('unpaid-trend-wrapper', getTrendBadgeHtml(curUnpaid, prevUnpaid, true));
-
+    const unpaidGroups = groupUnpaidTickets(ticketsInPeriod);
+    const prevUnpaidGroups = groupUnpaidTickets(prevTicketsInPeriod);
+    const curUnpaid = unpaidGroups.reduce((sum, group) => sum + group.amount, 0);
+    const prevUnpaid = prevUnpaidGroups.reduce((sum, group) => sum + group.amount, 0);
+    const upcomingTrips = getUpcomingTripGroups(14);
+    const customers = activeClientRows();
+    const newCustomersThisPeriod = customers.filter(client => inDashboardRange(parseSheetDate(client.last_issued), range)).length;
     const activeBookings = getActiveBookings();
     const dueToday = activeBookings.filter(b => {
         const deadline = getBookingDeadline(b);
@@ -835,31 +935,249 @@ export function updateDashboardData() {
         return diff <= 24 * 60 * 60 * 1000;
     });
 
-    setText('active-bookings-value', activeBookings.length);
-    setHtml('bookings-due-wrapper', dueToday.length > 0
-        ? `<span class="trend-badge negative"><i class="fa-solid fa-triangle-exclamation"></i> ${dueToday.length} due</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> On Track</span>`);
+    setText('monthly-revenue-value', formatDashboardAmount(curRevenue));
+    setHtml('revenue-trend-wrapper', getTrendBadgeHtml(curRevenue, prevRevenue));
 
-    setText('booking-deadlines-value', dueToday.length);
-    setHtml('deadline-health-wrapper', dueToday.length > 0
-        ? `<span class="trend-badge negative"><i class="fa-solid fa-bell"></i> review</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> clear</span>`);
+    setText('unpaid-ticket-count-value', unpaidGroups.length);
+    setText('unpaid-amount-value', `${formatDashboardAmount(curUnpaid)} MMK`);
+    setHtml('unpaid-trend-wrapper', getTrendBadgeHtml(curUnpaid, prevUnpaid, true));
 
-    setText('financial-pending-value', curFinancialPending);
-    setHtml('financial-pending-wrapper', curFinancialPending > 0
-        ? `<span class="trend-badge negative"><i class="fa-solid fa-clipboard-list"></i> action</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> confirmed</span>`);
+    setText('upcoming-trips-value', upcomingTrips.length);
+    setHtml('upcoming-trips-wrapper', upcomingTrips.length > 0
+        ? `<span class="trend-badge positive"><i class="fa-solid fa-plane-departure"></i> ${upcomingTrips.length} scheduled</span>`
+        : `<span class="trend-badge neutral">no trips</span>`);
 
-    renderNeedsAttentionPanel(ticketsInPeriod, activeBookings, dueToday, curUnpaid, curFinancialPending);
-    renderOwnerSettlementSnapshot(ticketsInPeriod, range);
-    updateNotifications();
-    updateUpcomingPnrs();
-    updateSettlementDashboard();
+    setText('total-customers-value', customers.length);
+    setHtml('customers-trend-wrapper', newCustomersThisPeriod > 0
+        ? `<span class="trend-badge positive"><i class="fa-solid fa-user-plus"></i> ${newCustomersThisPeriod} new</span>`
+        : `<span class="trend-badge neutral">steady</span>`);
+
+    setText('bookingRevenuePeriodHint', range.label || 'This Month');
+    setText('dashboardUnpaidHint', `${formatDashboardAmount(curUnpaid)} MMK`);
+
+    renderDashboardTravelSchedule(upcomingTrips);
+    renderDashboardUnpaidTickets(unpaidGroups);
+    renderDashboardClientInsights(ticketsInPeriod, range);
+    renderDashboardTasksReminders({
+        activeBookings,
+        dueToday,
+        unpaidGroups,
+        financialPendingCount: ticketsInPeriod.filter(isFinancialPendingTicket).length,
+        upcomingTrips
+    });
     updateComparisonChart();
-    updateAirlineChart();
-    updatePaymentStatusChart();
-    updateRoutePerformanceChart();
-    updateOwnerPayableChart();
+    updateSettlementDashboard();
+}
+
+function wireDashboardPnrButtons(container) {
+    container.querySelectorAll('[data-dashboard-pnr]').forEach(button => {
+        button.addEventListener('click', () => {
+            const pnr = button.dataset.dashboardPnr;
+            if (!pnr || pnr === 'No PNR') return;
+            showView('manage');
+            findTicketForManage(pnr);
+        });
+    });
+}
+
+function renderDashboardTravelSchedule(groups) {
+    const container = document.getElementById('dashboardTravelSchedule');
+    if (!container) return;
+
+    if (!groups.length) {
+        container.innerHTML = `
+            <div class="dashboard-empty-panel">
+                <span class="mini-travel-illustration" aria-hidden="true"></span>
+                <strong>No upcoming travel</strong>
+                <span>No ticket travel dates are scheduled in the next 14 days.</span>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = groups.slice(0, 6).map(group => {
+        const date = formatDashboardShortDate(group.date);
+        const progress = group.passengers ? Math.round((group.paidPassengers / group.passengers) * 100) : 0;
+        const hasUnpaid = group.unpaidAmount > 0;
+        return `
+            <div class="travel-schedule-row">
+                <div class="travel-date-chip">
+                    <strong>${dashboardEscapeHtml(date.day)}</strong>
+                    <span>${dashboardEscapeHtml(date.month)}</span>
+                </div>
+                <div class="travel-schedule-main">
+                    <strong>${dashboardEscapeHtml(group.pnr)}</strong>
+                    <span>${dashboardEscapeHtml(group.route)} · ${dashboardEscapeHtml(group.airline)}</span>
+                    <small>${dashboardEscapeHtml(group.lead)}${group.passengers > 1 ? ` +${group.passengers - 1}` : ''}</small>
+                </div>
+                <div class="travel-progress">
+                    <span>${progress}% paid</span>
+                    <div class="progress-track"><i style="width:${progress}%"></i></div>
+                    <small class="${hasUnpaid ? 'text-risk' : 'text-success'}">${hasUnpaid ? `${formatDashboardAmount(group.unpaidAmount)} MMK due` : 'Paid'}</small>
+                </div>
+                <button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button>
+            </div>
+        `;
+    }).join('');
+    wireDashboardPnrButtons(container);
+}
+
+function renderDashboardUnpaidTickets(groups) {
+    const container = document.getElementById('dashboardUnpaidTickets');
+    if (!container) return;
+    const today = startOfDay(new Date());
+    const weekEnd = endOfDay(new Date(today));
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const totalAmount = groups.reduce((sum, group) => sum + group.amount, 0);
+    const overdue = groups.filter(group => group.dueDate?.getTime?.() && group.dueDate < today);
+    const dueToday = groups.filter(group => group.dueDate?.getTime?.() && daysBetween(today, group.dueDate) === 0);
+    const dueThisWeek = groups.filter(group => group.dueDate?.getTime?.() && group.dueDate >= today && group.dueDate <= weekEnd);
+
+    if (!groups.length) {
+        container.innerHTML = `
+            <div class="dashboard-empty-panel">
+                <span class="mini-wallet-illustration" aria-hidden="true"></span>
+                <strong>No unpaid tickets</strong>
+                <span>All tickets in this period are marked paid.</span>
+            </div>
+        `;
+        return;
+    }
+
+    const rows = groups.slice(0, 6).map(group => {
+        const dueDiff = group.dueDate?.getTime?.() ? daysBetween(today, group.dueDate) : null;
+        const age = group.issuedDate?.getTime?.() ? Math.max(0, daysBetween(group.issuedDate, today)) : 0;
+        const status = dueDiff !== null && dueDiff < 0
+            ? { label: 'Overdue', cls: 'danger' }
+            : dueDiff === 0
+                ? { label: 'Due Today', cls: 'warning' }
+                : { label: 'Pending', cls: 'neutral' };
+        return `
+            <tr>
+                <td><strong>${dashboardEscapeHtml(group.pnr)}</strong></td>
+                <td>${dashboardEscapeHtml(group.client)}</td>
+                <td>${dashboardEscapeHtml(group.route)}</td>
+                <td>${dashboardEscapeHtml(formatDashboardDateLabel(group.dueDate, '—'))}</td>
+                <td class="num">${formatDashboardAmount(group.amount)} MMK</td>
+                <td>${age}d</td>
+                <td><span class="dashboard-status ${status.cls}">${status.label}</span></td>
+                <td><button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button></td>
+            </tr>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="unpaid-summary-grid">
+            <div><span>Total Unpaid</span><strong>${formatDashboardAmount(totalAmount)}</strong><small>MMK</small></div>
+            <div><span>Overdue</span><strong>${overdue.length}</strong><small>PNR</small></div>
+            <div><span>Due Today</span><strong>${dueToday.length}</strong><small>PNR</small></div>
+            <div><span>Due This Week</span><strong>${dueThisWeek.length}</strong><small>PNR</small></div>
+        </div>
+        <div class="dashboard-table-wrap">
+            <table class="dashboard-mini-table">
+                <thead>
+                    <tr>
+                        <th>PNR</th>
+                        <th>Client</th>
+                        <th>Route</th>
+                        <th>Due Date</th>
+                        <th>Amount Due</th>
+                        <th>Age</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+    wireDashboardPnrButtons(container);
+}
+
+function renderDashboardClientInsights(ticketsInPeriod, range) {
+    const container = document.getElementById('dashboardClientInsights');
+    if (!container) return;
+    const customers = activeClientRows();
+    const returning = customers.filter(client => Number(client.ticket_count || 0) > 1).length;
+    const newCustomers = customers.filter(client => inDashboardRange(parseSheetDate(client.last_issued), range)).length;
+    const customerTotal = Math.max(customers.length, 1);
+    const returningPct = Math.round((returning / customerTotal) * 100);
+    const newPct = Math.max(0, 100 - returningPct);
+    const routeCounts = {};
+    ticketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).forEach(ticket => {
+        const route = dashboardRouteLabel(ticket);
+        routeCounts[route] = (routeCounts[route] || 0) + 1;
+    });
+    const topRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0];
+    const activeBookingCount = getActiveBookings().length;
+    const avgSpend = customers.length
+        ? Math.round(customers.reduce((sum, client) => sum + (Number(client.total_spent) || 0), 0) / customers.length)
+        : 0;
+
+    container.innerHTML = `
+        <div class="client-insight-donut" style="--new-stop:${newPct}%; --returning-stop:${returningPct}%;">
+            <div><strong>${returningPct}%</strong><span>Returning</span></div>
+        </div>
+        <div class="client-insight-legend">
+            <span><i class="legend-dot teal"></i> New customers <strong>${newCustomers}</strong></span>
+            <span><i class="legend-dot blue"></i> Returning <strong>${returning}</strong></span>
+        </div>
+        <div class="client-insight-list">
+            <div><span>Top route</span><strong>${dashboardEscapeHtml(topRoute ? topRoute[0] : '—')}</strong></div>
+            <div><span>Active bookings</span><strong>${activeBookingCount}</strong></div>
+            <div><span>Avg. client spend</span><strong>${formatDashboardAmount(avgSpend)} MMK</strong></div>
+        </div>
+    `;
+}
+
+function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups, financialPendingCount, upcomingTrips }) {
+    const container = document.getElementById('dashboardTasksReminders');
+    const hint = document.getElementById('dashboardTasksHint');
+    if (!container) return;
+
+    const tasks = [];
+    const overdueBookings = activeBookings.filter(booking => {
+        const deadline = getBookingDeadline(booking);
+        return deadline && deadline.getTime() < Date.now();
+    });
+    if (overdueBookings.length) {
+        tasks.push({ tone: 'danger', title: 'Review expired booking holds', meta: `${overdueBookings.length} booking${overdueBookings.length === 1 ? '' : 's'} past deadline` });
+    }
+    if (dueToday.length) {
+        tasks.push({ tone: 'warning', title: 'Confirm booking deadlines', meta: `${dueToday.length} active booking${dueToday.length === 1 ? '' : 's'} due within 24 hours` });
+    }
+    if (unpaidGroups.length) {
+        tasks.push({ tone: 'danger', title: 'Follow up unpaid tickets', meta: `${unpaidGroups.length} PNR · ${formatDashboardAmount(unpaidGroups.reduce((sum, group) => sum + group.amount, 0))} MMK` });
+    }
+    if (financialPendingCount) {
+        tasks.push({ tone: 'warning', title: 'Complete ticket financials', meta: `${financialPendingCount} ticket${financialPendingCount === 1 ? '' : 's'} need net/commission review` });
+    }
+    const tomorrowTrips = upcomingTrips.filter(group => daysBetween(new Date(), group.date) === 1);
+    if (tomorrowTrips.length) {
+        tasks.push({ tone: 'success', title: 'Prepare tomorrow travel list', meta: `${tomorrowTrips.length} upcoming PNR${tomorrowTrips.length === 1 ? '' : 's'}` });
+    }
+
+    if (hint) hint.textContent = `${tasks.length} open`;
+    if (!tasks.length) {
+        container.innerHTML = `
+            <div class="dashboard-empty-panel compact">
+                <span class="mini-checklist-illustration" aria-hidden="true"></span>
+                <strong>No urgent tasks</strong>
+                <span>Booking, unpaid, and financial review queues are clear.</span>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = tasks.slice(0, 6).map(task => `
+        <label class="dashboard-task-item ${task.tone}">
+            <input type="checkbox" aria-label="${dashboardEscapeHtml(task.title)}">
+            <span>
+                <strong>${dashboardEscapeHtml(task.title)}</strong>
+                <small>${dashboardEscapeHtml(task.meta)}</small>
+            </span>
+        </label>
+    `).join('');
 }
 
 function renderNeedsAttentionPanel(ticketsInPeriod, activeBookings, dueBookings, unpaidAmount, financialPendingCount) {
@@ -1227,62 +1545,89 @@ export function updateAirlineChart() {
 
 
 /**
- * Updates the yearly comparison chart on the dashboard.
+ * Updates the Booking & Revenue Overview chart on the dashboard.
  */
 export function updateComparisonChart() {
-    const currentYear = new Date().getFullYear();
-    const isFeeEntryRow = (t) => /\(fees\)\s*$/i.test(String(t?.name || '')) || String(t?.remarks || '').toLowerCase().includes('fee entry');
-    const ticketsThisYear = state.allTickets.filter(t => {
-        const ticketDate = parseSheetDate(t.issued_date);
-        return ticketDate.getFullYear() === currentYear;
-    });
-
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthlyData = Array(12).fill(null).map(() => ({
-        revenue: 0,
-        profit: 0,
-        tickets: 0
-    }));
-
-    ticketsThisYear.forEach(t => {
-        const month = parseSheetDate(t.issued_date).getMonth();
-        monthlyData[month].revenue += (t.net_amount || 0) + (t.date_change || 0);
-        monthlyData[month].profit += (t.commission || 0) + (t.extra_fare || 0);
-        if (!isFeeEntryRow(t)) {
-            monthlyData[month].tickets++;
+    const canvas = document.getElementById('comparisonChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    const range = getDashboardDateRange();
+    const dayCount = Math.max(1, Math.round((range.end - range.start) / (24 * 60 * 60 * 1000)) + 1);
+    const useDailyBuckets = dayCount <= 45;
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const buckets = [];
+    const bucketKey = (date) => {
+        if (useDailyBuckets) {
+            return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
         }
+        return `${date.getFullYear()}-${date.getMonth()}`;
+    };
+
+    if (useDailyBuckets) {
+        const cursor = startOfDay(range.start);
+        while (cursor <= range.end) {
+            buckets.push({
+                key: bucketKey(cursor),
+                label: `${String(cursor.getDate()).padStart(2, '0')} ${monthNames[cursor.getMonth()]}`,
+                revenue: 0,
+                bookings: 0,
+                cancellations: 0
+            });
+            cursor.setDate(cursor.getDate() + 1);
+        }
+    } else {
+        const cursor = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+        const endMonth = new Date(range.end.getFullYear(), range.end.getMonth(), 1);
+        while (cursor <= endMonth) {
+            buckets.push({
+                key: bucketKey(cursor),
+                label: `${monthNames[cursor.getMonth()]} ${cursor.getFullYear()}`,
+                revenue: 0,
+                bookings: 0,
+                cancellations: 0
+            });
+            cursor.setMonth(cursor.getMonth() + 1);
+        }
+    }
+
+    const bucketMap = new Map(buckets.map(bucket => [bucket.key, bucket]));
+    (state.allTickets || []).forEach(ticket => {
+        const issuedDate = parseSheetDate(ticket.issued_date);
+        if (!inDashboardRange(issuedDate, range)) return;
+        const bucket = bucketMap.get(bucketKey(issuedDate));
+        if (!bucket) return;
+        if (isCanceledTicket(ticket)) {
+            bucket.cancellations += 1;
+            return;
+        }
+        bucket.revenue += ticketSalesAmount(ticket);
+        if (!isFeeEntryRow(ticket)) bucket.bookings += 1;
     });
 
-    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    (state.allBookings || []).forEach(booking => {
+        const date = parseSheetDate(booking.departing_on || booking.enddate);
+        if (!inDashboardRange(date, range)) return;
+        const bucket = bucketMap.get(bucketKey(date));
+        if (bucket) bucket.bookings += 1;
+    });
 
     if (state.charts.comparisonChart) {
         state.charts.comparisonChart.destroy();
     }
 
-    // Theme-aware chart styling (reads from CSS variables)
-    const isMaterialLight = document.body.classList.contains('material-theme') && !document.body.classList.contains('dark-theme');
     const computed = getComputedStyle(document.body);
-
-    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || (isMaterialLight ? '#4A4A4A' : '#FFFFFF');
-    const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || (isMaterialLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)');
-
-    const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#fb923c';
-    const profitBase = (computed.getPropertyValue('--chart-profit') || '').trim() || '#2ecc71';
-    const ticketsBase = (computed.getPropertyValue('--chart-tickets') || '').trim() || '#3498db';
+    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#24242b';
+    const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || 'rgba(36,36,43,0.10)';
+    const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#22b8b2';
+    const bookingsBase = (computed.getPropertyValue('--chart-tickets') || '').trim() || '#4d8df7';
+    const cancelBase = (computed.getPropertyValue('--coral') || '').trim() || '#ff6f5e';
 
     const withAlpha = (color, alpha) => {
         const c = String(color).trim();
         if (!c) return c;
-
-        // rgba(...) -> swap alpha
         const rgbaMatch = c.match(/^rgba\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\)$/i);
         if (rgbaMatch) return `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, ${alpha})`;
-
-        // rgb(...) -> add alpha
         const rgbMatch = c.match(/^rgb\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)$/i);
         if (rgbMatch) return `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, ${alpha})`;
-
-        // #RRGGBB / #RGB -> rgba
         const hexMatch = c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
         if (hexMatch) {
             const hex = hexMatch[1].length === 3
@@ -1293,40 +1638,44 @@ export function updateComparisonChart() {
             const b = parseInt(hex.slice(4, 6), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
-
-        // fallback
         return c;
     };
 
-    const revenueFill = withAlpha(revenueBase, 0.55);
-    const profitFill = withAlpha(profitBase, 0.55);
-    const ticketsFill = withAlpha(ticketsBase, 0.30);
+    const revenueFill = withAlpha(revenueBase, 0.22);
+    const bookingsFill = withAlpha(bookingsBase, 0.22);
 
     const chartConfig = {
-        type: 'bar',
+        type: 'line',
         data: {
-            labels: months,
+            labels: buckets.map(bucket => bucket.label),
             datasets: [{
-                label: 'Total Revenue',
-                data: monthlyData.map(d => d.revenue),
-                backgroundColor: revenueFill,
+                label: 'Revenue',
+                data: buckets.map(bucket => bucket.revenue),
                 borderColor: revenueBase,
-                borderWidth: 1,
+                backgroundColor: revenueFill,
+                borderWidth: 3,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                tension: 0.36,
+                fill: true,
                 yAxisID: 'y'
             }, {
-                label: 'Total Profit',
-                data: monthlyData.map(d => d.profit),
-                backgroundColor: profitFill,
-                borderColor: profitBase,
+                label: 'Bookings',
+                data: buckets.map(bucket => bucket.bookings),
+                type: 'bar',
+                backgroundColor: bookingsFill,
+                borderColor: bookingsBase,
                 borderWidth: 1,
-                yAxisID: 'y'
+                borderRadius: 10,
+                yAxisID: 'y1'
             }, {
-                label: 'Total Tickets',
-                data: monthlyData.map(d => d.tickets),
-                backgroundColor: ticketsFill,
-                borderColor: ticketsBase,
-                borderWidth: 1,
-                type: 'line',
+                label: 'Cancellations',
+                data: buckets.map(bucket => bucket.cancellations),
+                borderColor: cancelBase,
+                backgroundColor: cancelBase,
+                borderWidth: 2,
+                pointRadius: 2,
+                pointHoverRadius: 4,
                 yAxisID: 'y1',
                 tension: 0.3
             }]
@@ -1353,7 +1702,8 @@ export function updateComparisonChart() {
                         color: textColor
                     },
                     ticks: {
-                        color: textColor
+                        color: textColor,
+                        callback: value => Number(value).toLocaleString()
                     },
                     grid: { color: gridColor }
                 },
@@ -1363,7 +1713,7 @@ export function updateComparisonChart() {
                     position: 'right',
                     title: {
                         display: true,
-                        text: 'Number of Tickets',
+                        text: 'Count',
                         color: textColor
                     },
                     grid: {
@@ -1378,14 +1728,27 @@ export function updateComparisonChart() {
             plugins: {
                 legend: {
                     labels: {
-                        color: textColor
+                        color: textColor,
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        font: { size: 11, weight: '700' }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: context => {
+                            if (context.dataset.yAxisID === 'y') {
+                                return `${context.dataset.label}: ${formatDashboardAmount(context.raw)} MMK`;
+                            }
+                            return `${context.dataset.label}: ${context.raw}`;
+                        }
                     }
                 }
             }
         }
     };
 
-    state.charts.comparisonChart = new Chart(ctx, chartConfig);
+    state.charts.comparisonChart = new Chart(canvas.getContext('2d'), chartConfig);
 }
 
 

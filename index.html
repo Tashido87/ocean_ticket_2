@@ -112,12 +112,6 @@
                                 </span>
                             </div>
                         </div>
-                        <div class="dashboard-hero-actions">
-                            <button type="button" class="btn btn-primary dashboard-action-btn" data-dashboard-view="sell"><i class="fa-solid fa-ticket"></i> Sell Ticket</button>
-                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="booking"><i class="fa-solid fa-calendar-plus"></i> New Booking</button>
-                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="manage"><i class="fa-solid fa-magnifying-glass"></i> Manage PNR</button>
-                            <button type="button" class="btn btn-secondary dashboard-action-btn" data-dashboard-view="settle"><i class="fa-solid fa-handshake"></i> Owner Settlement</button>
-                        </div>
                         <div class="app-illustration panel-illustration dashboard-hero-illustration" aria-hidden="true">
                             <svg viewBox="0 0 260 190" role="img">
                                 <path class="illus-soft" d="M34 144c30 28 113 31 166 6 39-18 45-62 22-91-30-38-118-48-166-20-36 21-51 76-22 105z"/>
@@ -137,21 +131,9 @@
                     </section>
 
                     <div class="dashboard-kpis">
-                        <div id="total-tickets-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Tickets Sold</h3>
-                                <i class="icon fa-solid fa-ticket-simple" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value" id="total-tickets-value">0</div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="tickets-trend-wrapper"></span>
-                                <span class="sub-value">this month</span>
-                            </div>
-                        </div>
-
                         <div id="monthly-revenue-box" class="info-card glass-card">
                             <div class="stat-head">
-                                <h3>Ticket Sales Total</h3>
+                                <h3>Total Sales</h3>
                                 <i class="icon fa-solid fa-sack-dollar" aria-hidden="true"></i>
                             </div>
                             <div class="main-value-wrap">
@@ -164,161 +146,84 @@
                             </div>
                         </div>
 
-                        <div id="monthly-profit-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Net Profit</h3>
-                                <i class="icon fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value-wrap">
-                                <span class="main-value" id="monthly-profit-value">0</span>
-                                <span class="currency-label">MMK</span>
-                            </div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="profit-trend-wrapper"></span>
-                                <span class="sub-value" id="profit-breakdown-label">Comm / Extra</span>
-                            </div>
-                        </div>
-
-                        <div id="owner-payable-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Owner Payable</h3>
-                                <i class="icon fa-solid fa-handshake" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value-wrap">
-                                <span class="main-value" id="owner-payable-value">0</span>
-                                <span class="currency-label">MMK</span>
-                            </div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="owner-payable-trend-wrapper"></span>
-                                <span class="sub-value">settlement basis</span>
-                            </div>
-                        </div>
-
                         <div id="unpaid-amount-box" class="info-card glass-card">
                             <div class="stat-head">
-                                <h3>Unpaid Amount</h3>
+                                <h3>Unpaid Tickets</h3>
                                 <i class="icon fa-solid fa-wallet" aria-hidden="true"></i>
                             </div>
-                            <div class="main-value-wrap">
-                                <span class="main-value" id="unpaid-amount-value">0</span>
-                                <span class="currency-label">MMK</span>
-                            </div>
+                            <div class="main-value" id="unpaid-ticket-count-value">0</div>
                             <div class="stat-foot">
                                 <span class="trend-wrapper" id="unpaid-trend-wrapper"></span>
-                                <span class="sub-value">client collection risk</span>
+                                <span class="sub-value" id="unpaid-amount-value">0 MMK</span>
                             </div>
                         </div>
 
                         <div id="active-bookings-box" class="info-card glass-card">
                             <div class="stat-head">
-                                <h3>Active Bookings</h3>
-                                <i class="icon fa-solid fa-calendar-check" aria-hidden="true"></i>
+                                <h3>Upcoming Trips</h3>
+                                <i class="icon fa-solid fa-ship" aria-hidden="true"></i>
                             </div>
-                            <div class="main-value" id="active-bookings-value">0</div>
+                            <div class="main-value" id="upcoming-trips-value">0</div>
                             <div class="stat-foot">
-                                <span class="trend-wrapper" id="bookings-due-wrapper"></span>
-                                <span class="sub-value">pending issuance</span>
+                                <span class="trend-wrapper" id="upcoming-trips-wrapper"></span>
+                                <span class="sub-value">next 14 days</span>
                             </div>
                         </div>
 
-                        <div id="booking-deadlines-box" class="info-card glass-card">
+                        <div id="total-customers-box" class="info-card glass-card">
                             <div class="stat-head">
-                                <h3>Booking Deadlines</h3>
-                                <i class="icon fa-solid fa-bell" aria-hidden="true"></i>
+                                <h3>Total Customers</h3>
+                                <i class="icon fa-solid fa-users" aria-hidden="true"></i>
                             </div>
-                            <div class="main-value" id="booking-deadlines-value">0</div>
+                            <div class="main-value" id="total-customers-value">0</div>
                             <div class="stat-foot">
-                                <span class="trend-wrapper" id="deadline-health-wrapper"></span>
-                                <span class="sub-value">due within 24h</span>
-                            </div>
-                        </div>
-
-                        <div id="financial-pending-box" class="info-card glass-card">
-                            <div class="stat-head">
-                                <h3>Financial Pending</h3>
-                                <i class="icon fa-solid fa-clipboard-check" aria-hidden="true"></i>
-                            </div>
-                            <div class="main-value" id="financial-pending-value">0</div>
-                            <div class="stat-foot">
-                                <span class="trend-wrapper" id="financial-pending-wrapper"></span>
-                                <span class="sub-value">needs review</span>
+                                <span class="trend-wrapper" id="customers-trend-wrapper"></span>
+                                <span class="sub-value">client records</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="dashboard-panels-row">
-                        <div id="needs-attention-box" class="glass-card dashboard-panel attention-panel">
+                        <div id="booking-revenue-overview-box" class="glass-card dashboard-panel chart-panel booking-revenue-panel">
                             <div class="panel-header">
-                                <h3><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Needs Attention</h3>
-                                <span class="panel-hint hint-warning" id="attention-count-hint">0 items</span>
+                                <h3><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Booking & Revenue Overview</h3>
+                                <span class="panel-hint hint-neutral" id="bookingRevenuePeriodHint">This Month</span>
                             </div>
-                            <div id="needsAttentionList" class="panel-list attention-list"></div>
-                        </div>
-
-                        <div id="settlement-snapshot-box" class="glass-card dashboard-panel settlement-snapshot-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i> Owner Settlement</h3>
-                                <span class="panel-hint hint-neutral">This Period</span>
-                            </div>
-                            <div id="ownerSettlementSnapshot" class="settlement-snapshot-list"></div>
-                        </div>
-
-                        <div id="notification-panel-box" class="glass-card dashboard-panel notification-panel">
-                            <div class="panel-header">
-                                <a href="#" id="notification-title-link" class="panel-title-link">
-                                    <h3><i class="fa-solid fa-bell" aria-hidden="true"></i> Notifications</h3>
-                                </a>
-                                <span class="panel-hint" id="notification-unpaid-total">Total Unpaid: 0 MMK</span>
-                            </div>
-                            <div id="notification-list" class="notification-list panel-list"></div>
-                        </div>
-
-                        <div id="upcoming-pnr-box" class="glass-card dashboard-panel upcoming-panel">
-                            <div class="panel-header">
-                                <a href="#" id="upcoming-title-link" class="panel-title-link">
-                                    <h3><i class="fa-solid fa-plane-up" aria-hidden="true"></i> Upcoming PNR</h3>
-                                </a>
-                                <span class="panel-hint">Next 14 days</span>
-                            </div>
-                            <div id="upcoming-pnr-list" class="upcoming-list panel-list"></div>
-                        </div>
-
-                        <div id="payment-status-box" class="glass-card dashboard-panel chart-panel payment-status-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Payment Status</h3>
-                                <span class="panel-hint hint-neutral">Amount</span>
-                            </div>
-                            <div class="mini-chart-container">
-                                <canvas id="paymentStatusChart"></canvas>
+                            <div class="booking-revenue-chart-container">
+                                <canvas id="comparisonChart"></canvas>
                             </div>
                         </div>
 
-                        <div id="route-performance-box" class="glass-card dashboard-panel chart-panel route-performance-panel">
+                        <div id="travel-schedule-box" class="glass-card dashboard-panel travel-schedule-panel">
                             <div class="panel-header">
-                                <h3><i class="fa-solid fa-route" aria-hidden="true"></i> Route Performance</h3>
-                                <span class="panel-hint hint-neutral">Top Routes</span>
+                                <h3><i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Upcoming Travel Schedule</h3>
+                                <span class="panel-hint hint-neutral">Next 14 days</span>
                             </div>
-                            <div class="mini-chart-container">
-                                <canvas id="routePerformanceChart"></canvas>
-                            </div>
+                            <div id="dashboardTravelSchedule" class="travel-schedule-list panel-list"></div>
                         </div>
 
-                        <div id="airline-share-box" class="glass-card dashboard-panel airline-share-panel">
+                        <div id="dashboard-unpaid-box" class="glass-card dashboard-panel dashboard-unpaid-panel">
                             <div class="panel-header">
-                                <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Airline Share</h3>
-                                <span class="panel-hint hint-neutral">This Month</span>
+                                <h3><i class="fa-solid fa-receipt" aria-hidden="true"></i> Unpaid Tickets</h3>
+                                <span class="panel-hint" id="dashboardUnpaidHint">0 MMK</span>
                             </div>
-                            <div class="airline-chart-container">
-                                <canvas id="airlineChart"></canvas>
-                            </div>
+                            <div id="dashboardUnpaidTickets" class="dashboard-unpaid-content"></div>
                         </div>
 
-                        <div id="recent-activity-box" class="glass-card dashboard-panel recent-activity-panel">
+                        <div id="client-insights-box" class="glass-card dashboard-panel client-insights-panel">
                             <div class="panel-header">
-                                <h3><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Recent Activity</h3>
-                                <span class="panel-hint hint-neutral">Local</span>
+                                <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Client Insights</h3>
+                                <span class="panel-hint hint-neutral">Overview</span>
                             </div>
-                            <div id="recentActivityList" class="recent-activity-list panel-list"></div>
+                            <div id="dashboardClientInsights" class="dashboard-client-insights"></div>
+                        </div>
+
+                        <div id="tasks-reminders-box" class="glass-card dashboard-panel tasks-reminders-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-list-check" aria-hidden="true"></i> Tasks & Reminders</h3>
+                                <span class="panel-hint hint-neutral" id="dashboardTasksHint">0 open</span>
+                            </div>
+                            <div id="dashboardTasksReminders" class="dashboard-task-list panel-list"></div>
                         </div>
                     </div>
 
@@ -381,20 +286,6 @@
 
                             <div id="resultsBodyContainer" class="table-container"></div>
                             <div id="pagination" class="pagination-container"></div>
-                        </div>
-                    </div>
-                    <div class="dashboard-chart-grid">
-                        <div class="comparison-section glass-card">
-                            <h3><i class="fa-solid fa-chart-line"></i> Sales & Profit Trend</h3>
-                            <div class="chart-container">
-                                <canvas id="comparisonChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="comparison-section glass-card">
-                            <h3><i class="fa-solid fa-scale-balanced"></i> Owner Payable vs Paid</h3>
-                            <div class="chart-container">
-                                <canvas id="ownerPayableChart"></canvas>
-                            </div>
                         </div>
                     </div>
                 </div>

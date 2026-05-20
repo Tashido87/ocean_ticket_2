@@ -9305,3 +9305,555 @@ body.material-theme tbody tr:hover {
         max-width: none;
     }
 }
+
+/* ============================================================
+   Dashboard vNext: Ocean teal operations layout
+   ============================================================ */
+:root,
+body.material-theme {
+    --teal: #13aaa4;
+    --teal-dark: #087f7b;
+    --teal-soft: #dff8f5;
+    --sky-soft: #eaf3ff;
+    --blue-accent: #4d8df7;
+    --primary-accent: var(--teal);
+    --primary-accent-dark: var(--teal-dark);
+    --secondary-accent: var(--lavender-strong);
+    --focus-ring: rgba(19, 170, 164, 0.18);
+    --chart-revenue: var(--teal);
+    --chart-profit: var(--mint-strong);
+    --chart-tickets: var(--blue-accent);
+}
+
+.dashboard-hero {
+    grid-template-columns: minmax(0, 1fr) 240px !important;
+    min-height: 210px;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(223, 248, 245, 0.54)),
+        radial-gradient(circle at 85% 20%, rgba(255, 228, 168, 0.42), transparent 12rem) !important;
+}
+
+.dashboard-eyebrow {
+    background: rgba(19, 170, 164, 0.12) !important;
+    color: var(--teal-dark) !important;
+}
+
+.dashboard-period-btn.active {
+    background: var(--teal) !important;
+    border-color: var(--teal) !important;
+    color: #fff !important;
+}
+
+.dashboard-kpis {
+    align-items: stretch;
+}
+
+#monthly-revenue-box { --kpi-accent: var(--teal); --kpi-soft: var(--teal-soft); }
+#unpaid-amount-box { --kpi-accent: var(--coral-dark); --kpi-soft: var(--blush-soft); }
+#active-bookings-box { --kpi-accent: var(--blue-accent); --kpi-soft: var(--sky-soft); }
+#total-customers-box { --kpi-accent: #eb8d34; --kpi-soft: var(--peach); }
+
+.trend-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 999px;
+    padding: 0.18rem 0.46rem;
+    font-size: 0.68rem;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.trend-badge.positive {
+    background: var(--teal-soft);
+    color: var(--teal-dark);
+}
+
+.trend-badge.negative {
+    background: var(--blush-soft);
+    color: var(--coral-dark);
+}
+
+.trend-badge.neutral {
+    background: rgba(36, 36, 43, 0.06);
+    color: rgba(36, 36, 43, 0.58);
+}
+
+.dashboard-panels-row {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+    align-items: stretch;
+}
+
+.dashboard-panels-row .dashboard-panel {
+    min-width: 0;
+}
+
+#booking-revenue-overview-box {
+    grid-column: span 7;
+    min-height: 374px;
+}
+
+#travel-schedule-box {
+    grid-column: span 5;
+    min-height: 374px;
+}
+
+#dashboard-unpaid-box {
+    grid-column: span 7;
+    min-height: 336px;
+}
+
+#client-insights-box {
+    grid-column: span 3;
+    min-height: 336px;
+}
+
+#tasks-reminders-box {
+    grid-column: span 2;
+    min-height: 336px;
+}
+
+.booking-revenue-chart-container {
+    position: relative;
+    flex: 1;
+    min-height: 286px;
+}
+
+.dashboard-empty-panel {
+    flex: 1;
+    min-height: 190px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 0.35rem;
+    text-align: center;
+    color: var(--muted);
+    padding: 1rem;
+}
+
+.dashboard-empty-panel.compact {
+    min-height: 150px;
+}
+
+.dashboard-empty-panel strong {
+    color: var(--ink);
+}
+
+.mini-travel-illustration,
+.mini-wallet-illustration,
+.mini-checklist-illustration {
+    width: 76px;
+    height: 58px;
+    border: 3px solid var(--ink);
+    border-radius: 22px;
+    box-shadow: 6px 6px 0 rgba(36, 36, 43, 0.06);
+}
+
+.mini-travel-illustration {
+    background:
+        radial-gradient(circle at 32% 44%, var(--teal) 0 7px, transparent 8px),
+        linear-gradient(135deg, var(--sky-soft), #fff);
+}
+
+.mini-wallet-illustration {
+    background:
+        linear-gradient(var(--butter), var(--butter)) 48% 58% / 40px 12px no-repeat,
+        linear-gradient(135deg, var(--blush-soft), #fff);
+}
+
+.mini-checklist-illustration {
+    background:
+        linear-gradient(var(--teal), var(--teal)) 28px 22px / 26px 4px no-repeat,
+        linear-gradient(var(--teal), var(--teal)) 28px 34px / 26px 4px no-repeat,
+        linear-gradient(135deg, var(--teal-soft), #fff);
+}
+
+.travel-schedule-list {
+    gap: 0.72rem;
+}
+
+.travel-schedule-row {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr) minmax(110px, 0.58fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.72rem;
+    border: 1px solid rgba(36, 36, 43, 0.08);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.72);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.travel-schedule-row:hover {
+    transform: translateY(-1px);
+    border-color: rgba(19, 170, 164, 0.24);
+    box-shadow: 0 12px 30px rgba(36, 36, 43, 0.07);
+}
+
+.travel-date-chip {
+    width: 48px;
+    min-height: 50px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    border-radius: 16px;
+    background: var(--teal-soft);
+    color: var(--teal-dark);
+    line-height: 1;
+}
+
+.travel-date-chip strong {
+    font-size: 1rem;
+}
+
+.travel-date-chip span {
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.travel-schedule-main {
+    min-width: 0;
+}
+
+.travel-schedule-main strong,
+.travel-schedule-main span,
+.travel-schedule-main small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.travel-schedule-main strong {
+    color: var(--ink);
+    font-size: 0.9rem;
+}
+
+.travel-schedule-main span,
+.travel-schedule-main small {
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.travel-progress {
+    display: grid;
+    gap: 0.24rem;
+}
+
+.travel-progress span,
+.travel-progress small {
+    font-size: 0.68rem;
+    font-weight: 900;
+}
+
+.progress-track {
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(36, 36, 43, 0.08);
+    overflow: hidden;
+}
+
+.progress-track i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--teal);
+}
+
+.text-risk { color: var(--coral-dark) !important; }
+.text-success { color: var(--teal-dark) !important; }
+
+.dashboard-row-action {
+    border: 1px solid rgba(36, 36, 43, 0.10);
+    background: #fff;
+    color: var(--teal-dark);
+    border-radius: 999px;
+    padding: 0.38rem 0.62rem;
+    font-size: 0.72rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.dashboard-row-action:hover {
+    background: var(--teal-soft);
+    border-color: rgba(19, 170, 164, 0.28);
+}
+
+.dashboard-unpaid-content {
+    display: grid;
+    gap: 0.85rem;
+    min-height: 0;
+}
+
+.unpaid-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.unpaid-summary-grid > div {
+    min-width: 0;
+    padding: 0.66rem 0.72rem;
+    border-radius: 16px;
+    border: 1px solid rgba(36, 36, 43, 0.08);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(223, 248, 245, 0.36));
+}
+
+.unpaid-summary-grid span,
+.unpaid-summary-grid small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.66rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.unpaid-summary-grid strong {
+    display: block;
+    margin-top: 0.16rem;
+    color: var(--ink);
+    font-size: 1.05rem;
+    line-height: 1.1;
+}
+
+.dashboard-table-wrap {
+    overflow: auto;
+    border: 1px solid rgba(36, 36, 43, 0.08);
+    border-radius: 18px;
+}
+
+.dashboard-mini-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 760px;
+    font-size: 0.76rem;
+}
+
+.dashboard-mini-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    text-align: left;
+    padding: 0.62rem 0.72rem;
+    color: rgba(36, 36, 43, 0.55);
+    background: #fffaf7;
+    font-size: 0.66rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(36, 36, 43, 0.08);
+}
+
+.dashboard-mini-table td {
+    padding: 0.62rem 0.72rem;
+    border-bottom: 1px solid rgba(36, 36, 43, 0.06);
+    color: var(--ink);
+    vertical-align: middle;
+}
+
+.dashboard-mini-table tbody tr:hover {
+    background: rgba(223, 248, 245, 0.34);
+}
+
+.dashboard-mini-table .num {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 900;
+}
+
+.dashboard-status {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 0.24rem 0.5rem;
+    font-size: 0.66rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.dashboard-status.danger {
+    background: var(--blush-soft);
+    color: var(--coral-dark);
+}
+
+.dashboard-status.warning {
+    background: var(--butter);
+    color: #90621f;
+}
+
+.dashboard-status.neutral {
+    background: var(--teal-soft);
+    color: var(--teal-dark);
+}
+
+.dashboard-client-insights {
+    display: grid;
+    gap: 0.8rem;
+    justify-items: center;
+    align-content: start;
+}
+
+.client-insight-donut {
+    width: 132px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background:
+        radial-gradient(circle at center, #fff 0 47%, transparent 48%),
+        conic-gradient(var(--teal) 0 var(--returning-stop, 0%), var(--blue-accent) 0 100%);
+    box-shadow: inset 0 0 0 1px rgba(36, 36, 43, 0.06);
+}
+
+.client-insight-donut div {
+    width: 78px;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--ink);
+    box-shadow: 0 8px 20px rgba(36, 36, 43, 0.08);
+}
+
+.client-insight-donut strong,
+.client-insight-donut span {
+    display: block;
+    line-height: 1;
+}
+
+.client-insight-donut span {
+    margin-top: 0.2rem;
+    color: var(--muted);
+    font-size: 0.64rem;
+    font-weight: 900;
+}
+
+.client-insight-legend,
+.client-insight-list {
+    width: 100%;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.client-insight-legend span,
+.client-insight-list > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+    padding: 0.48rem 0;
+    border-bottom: 1px solid rgba(36, 36, 43, 0.07);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.client-insight-list strong,
+.client-insight-legend strong {
+    color: var(--ink);
+    text-align: right;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+}
+
+.legend-dot.teal { background: var(--teal); }
+.legend-dot.blue { background: var(--blue-accent); }
+
+.dashboard-task-list {
+    gap: 0.64rem;
+}
+
+.dashboard-task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.7rem;
+    border-radius: 16px;
+    border: 1px solid rgba(36, 36, 43, 0.08);
+    background: rgba(255, 255, 255, 0.74);
+}
+
+.dashboard-task-item input {
+    margin-top: 0.18rem;
+    accent-color: var(--teal);
+}
+
+.dashboard-task-item strong,
+.dashboard-task-item small {
+    display: block;
+}
+
+.dashboard-task-item strong {
+    color: var(--ink);
+    font-size: 0.78rem;
+    line-height: 1.25;
+}
+
+.dashboard-task-item small {
+    margin-top: 0.16rem;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.dashboard-task-item.danger {
+    background: rgba(253, 231, 229, 0.72);
+}
+
+.dashboard-task-item.warning {
+    background: rgba(255, 228, 168, 0.38);
+}
+
+.dashboard-task-item.success {
+    background: rgba(223, 248, 245, 0.68);
+}
+
+@media (max-width: 1320px) {
+    #booking-revenue-overview-box,
+    #travel-schedule-box,
+    #dashboard-unpaid-box,
+    #client-insights-box,
+    #tasks-reminders-box {
+        grid-column: span 12;
+    }
+
+    #client-insights-box,
+    #tasks-reminders-box {
+        min-height: 280px;
+    }
+}
+
+@media (max-width: 860px) {
+    .dashboard-hero {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-hero-illustration {
+        display: none;
+    }
+
+    .travel-schedule-row {
+        grid-template-columns: 48px minmax(0, 1fr);
+    }
+
+    .travel-progress,
+    .travel-schedule-row .dashboard-row-action {
+        grid-column: 2;
+    }
+
+    .unpaid-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
