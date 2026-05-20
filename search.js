@@ -930,7 +930,7 @@ function renderRow(result) {
                 </div>
             </td>
             <td>${highlightText(t.account_name || '—')}</td>
-            <td><strong>${highlightText(t.booking_reference || '—')}</strong></td>
+            <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${highlightText(t.booking_reference)}</a>` : '—'}</strong></td>
             <td>${escapeHtml(routeShort(t))}</td>
             <td>${paymentBadge(result.payment)}</td>
             <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid')}</td>
@@ -1316,7 +1316,7 @@ function ticketHistorySection(client, tickets) {
         return `
             <tr data-pnr="${escapeHtml(t.booking_reference || '')}" data-tt="${escapeHtml(String(t.ticket_type || '').toUpperCase().includes('ROUND') ? 'round' : 'oneway')}" data-year="${escapeHtml(String(parseSheetDate(t.issued_date)?.getFullYear?.() || ''))}" class="${canceled ? 'canceled-row' : ''}">
                 <td>${fmtDateOrDash(t.issued_date)}</td>
-                <td><strong>${escapeHtml(t.booking_reference || '—')}</strong></td>
+                <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${escapeHtml(t.booking_reference)}</a>` : '—'}</strong></td>
                 <td>${escapeHtml(routeShort(t))}</td>
                 <td>${fmtDateOrDash(t.departing_on)}</td>
                 <td>${escapeHtml(t.airline || '—')}</td>

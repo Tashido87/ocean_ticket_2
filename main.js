@@ -39,6 +39,32 @@ function syncGroupToggleState() {
     }
 }
 
+// Global PNR Click Handler
+document.addEventListener('click', (e) => {
+    const pnrEl = e.target.closest('.clickable-pnr');
+    if (pnrEl) {
+        e.preventDefault();
+        e.stopPropagation();
+        const pnr = pnrEl.dataset.pnr;
+        if (pnr && pnr !== 'No PNR' && pnr !== '—') {
+            showView('manage');
+            findTicketForManage(pnr);
+        }
+        return;
+    }
+
+    const rowEl = e.target.closest('.travel-schedule-row');
+    if (rowEl) {
+        e.preventDefault();
+        e.stopPropagation();
+        const pnr = rowEl.dataset.dashboardPnr;
+        if (pnr && pnr !== 'No PNR' && pnr !== '—') {
+            showView('manage');
+            findTicketForManage(pnr);
+        }
+    }
+});
+
 /**
  * Main application initialization function. Called after authentication.
  * @export
@@ -982,14 +1008,7 @@ export function updateDashboardData() {
 }
 
 function wireDashboardPnrButtons(container) {
-    container.querySelectorAll('[data-dashboard-pnr]').forEach(button => {
-        button.addEventListener('click', () => {
-            const pnr = button.dataset.dashboardPnr;
-            if (!pnr || pnr === 'No PNR') return;
-            showView('manage');
-            findTicketForManage(pnr);
-        });
-    });
+    // Buttons removed in favor of global .clickable-pnr listener
 }
 
 function renderDashboardTravelSchedule(groups) {
@@ -1012,7 +1031,7 @@ function renderDashboardTravelSchedule(groups) {
         const progress = group.passengers ? Math.round((group.paidPassengers / group.passengers) * 100) : 0;
         const hasUnpaid = group.unpaidAmount > 0;
         return `
-            <div class="travel-schedule-row">
+            <div class="travel-schedule-row" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}" style="cursor:pointer">
                 <div class="travel-date-chip">
                     <strong>${dashboardEscapeHtml(date.day)}</strong>
                     <span>${dashboardEscapeHtml(date.month)}</span>
@@ -1020,12 +1039,11 @@ function renderDashboardTravelSchedule(groups) {
                 <div class="travel-schedule-main">
                     <strong>${dashboardEscapeHtml(group.lead)}${group.passengers > 1 ? ` +${group.passengers - 1}` : ''}</strong>
                     <span>${dashboardEscapeHtml(group.route)}</span>
-                    <small>${dashboardEscapeHtml(group.pnr)}</small>
+                    <small><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></small>
                 </div>
                 <div class="travel-progress">
                     <small>${dashboardEscapeHtml(group.airline)}</small>
                 </div>
-                <button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button>
             </div>
         `;
     }).join('');
@@ -1064,14 +1082,14 @@ function renderDashboardUnpaidTickets(groups) {
                 : { label: 'Pending', cls: 'neutral' };
         return `
             <tr>
-                <td><strong>${dashboardEscapeHtml(group.pnr)}</strong></td>
+                <td><strong><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></strong></td>
                 <td>${dashboardEscapeHtml(group.client)}</td>
                 <td>${dashboardEscapeHtml(group.route)}</td>
                 <td>${dashboardEscapeHtml(formatDashboardDateLabel(group.dueDate, '—'))}</td>
                 <td class="num">${formatDashboardAmount(group.amount)} MMK</td>
                 <td>${age}d</td>
                 <td><span class="dashboard-status ${status.cls}">${status.label}</span></td>
-                <td><button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button></td>
+                <td></td>
             </tr>
         `;
     }).join('');
