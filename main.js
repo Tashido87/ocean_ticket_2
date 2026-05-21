@@ -1140,24 +1140,43 @@ function showTripPlanDetail(pnr) {
     const feeRows = allRows.filter(t => isFeeEntryRow(t));
     const lead = passengerRows[0] || allRows[0];
 
-    const passengerList = passengerRows.map(t => {
-        const paid = isTicketPaid(t);
-        const amount = ticketSalesAmount(t);
+    // Group passenger rows by name to avoid duplicating round-trip legs
+    const passengerMap = new Map();
+    passengerRows.forEach(t => {
         const baseName = String(t.name || '').replace(/\s*\(fees\)\s*$/i, '').trim();
-        const matchedClient = state.allClients.find(c => String(c.name || '').toLowerCase() === baseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
+        const key = baseName.toLowerCase();
+        if (!passengerMap.has(key)) {
+            passengerMap.set(key, {
+                name: t.name || 'Passenger',
+                baseName,
+                amount: 0,
+                allPaid: true,
+                tickets: []
+            });
+        }
+        const entry = passengerMap.get(key);
+        entry.amount += ticketSalesAmount(t);
+        if (!isTicketPaid(t)) entry.allPaid = false;
+        entry.tickets.push(t.ticket_number || 'N/A');
+    });
+    const uniquePassengers = [...passengerMap.values()];
+
+    const passengerList = uniquePassengers.map(p => {
+        const matchedClient = state.allClients.find(c => String(c.name || '').toLowerCase() === p.baseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
         const ck = matchedClient?.client_key || '';
         const nameHtml = ck
-            ? `<a href="#" class="clickable-client-link" data-client-key="${dashboardEscapeHtml(ck)}" style="color:var(--teal-dark);text-decoration:underline;font-weight:700">${dashboardEscapeHtml(t.name || 'Passenger')}</a>`
-            : `<span style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(t.name || 'Passenger')}</span>`;
+            ? `<a href="#" class="clickable-client-link" data-client-key="${dashboardEscapeHtml(ck)}" style="color:var(--teal-dark);text-decoration:underline;font-weight:700">${dashboardEscapeHtml(p.name)}</a>`
+            : `<span style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(p.name)}</span>`;
+        const ticketList = p.tickets.filter(tn => tn !== 'N/A').join(', ') || 'N/A';
         return `
             <div class="details-item" style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
                 <div>
                     <div>${nameHtml}</div>
-                    <div style="font-size:0.72rem;color:var(--muted)">Ticket: ${dashboardEscapeHtml(t.ticket_number || 'N/A')}</div>
+                    <div style="font-size:0.72rem;color:var(--muted)">Ticket: ${dashboardEscapeHtml(ticketList)}</div>
                 </div>
                 <div style="text-align:right">
-                    <div style="font-weight:700">${formatDashboardAmount(amount)} MMK</div>
-                    <span class="dashboard-status ${paid ? 'success' : 'danger'}" style="font-size:0.65rem">${paid ? 'Paid' : 'Unpaid'}</span>
+                    <div style="font-weight:700">${formatDashboardAmount(p.amount)} MMK</div>
+                    <span class="dashboard-status ${p.allPaid ? 'success' : 'danger'}" style="font-size:0.65rem">${p.allPaid ? 'Paid' : 'Unpaid'}</span>
                 </div>
             </div>
         `;
@@ -1209,7 +1228,7 @@ function showTripPlanDetail(pnr) {
                 <div class="details-item"><i class="fa-solid fa-plane-departure"></i><div class="details-item-content"><div class="label">From</div><div class="value">${dashboardEscapeHtml(lead.departure || 'N/A')}</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-plane-arrival"></i><div class="details-item-content"><div class="label">To</div><div class="value">${dashboardEscapeHtml(lead.destination || 'N/A')}</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-calendar-days"></i><div class="details-item-content"><div class="label">Travel Date</div><div class="value">${dashboardEscapeHtml(lead.departing_on || 'N/A')}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-ticket"></i><div class="details-item-content"><div class="label">Passengers</div><div class="value">${passengerRows.length}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-ticket"></i><div class="details-item-content"><div class="label">Passengers</div><div class="value">${uniquePassengers.length}</div></div></div>
             </div>
         </div>
         <div class="details-section">
