@@ -426,6 +426,10 @@ const AIRLINE_LOGO_ALIASES = {
     'THAI LION AIR': 'SL'
 };
 
+const AIRLINE_LOCAL_LOGOS = {
+    UB: './assets/airlines/mna.png'
+};
+
 function normalizeAirlineKey(value) {
     return String(value || '')
         .trim()
@@ -452,15 +456,17 @@ export function getAirlineLogoCode(airline) {
 
 export function getAirlineLogoUrl(airline) {
     const code = getAirlineLogoCode(airline);
-    return code ? `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png` : '';
+    if (!code) return '';
+    return AIRLINE_LOCAL_LOGOS[code] || `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png`;
 }
 
 export function renderAirlineName(airline, options = {}) {
     const label = String(airline || '').trim() || '—';
+    const code = getAirlineLogoCode(label);
     const logoUrl = getAirlineLogoUrl(label);
     const initials = getAirlineInitials(label);
     const size = options.size === 'md' ? 'md' : options.size === 'xs' ? 'xs' : 'sm';
-    const classes = ['airline-name', `airline-name-${size}`, logoUrl ? 'has-airline-logo' : 'has-airline-fallback'];
+    const classes = ['airline-name', `airline-name-${size}`, code ? `airline-code-${code.toLowerCase()}` : '', logoUrl ? 'has-airline-logo' : 'has-airline-fallback'].filter(Boolean);
     const logo = logoUrl
         ? `<img src="${escapeHtml(logoUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('is-fallback'); this.remove();">`
         : '';

@@ -10191,22 +10191,22 @@ body:not(.material-theme) #modal.solid-modal-open .modal-content.solid-modal {
 }
 
 .airline-logo-mark {
-    width: 30px;
-    height: 28px;
-    flex: 0 0 30px;
+    width: 38px;
+    height: 30px;
+    flex: 0 0 38px;
     display: inline-grid;
     place-items: center;
-    overflow: hidden;
-    border-radius: 10px;
-    background: #ffffff;
-    border: 1px solid rgba(36, 36, 43, 0.10);
-    box-shadow: 0 5px 14px rgba(36, 36, 43, 0.08);
+    overflow: visible;
+    border-radius: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
 }
 
 .airline-logo-mark img {
     width: 100%;
     height: 100%;
-    padding: 3px;
+    padding: 0;
     object-fit: contain;
     display: block;
 }
@@ -10221,8 +10221,10 @@ body:not(.material-theme) #modal.solid-modal-open .modal-content.solid-modal {
 }
 
 .airline-logo-mark.is-fallback {
-    background: linear-gradient(135deg, #dff8f5, #fff4ef);
-    border-color: rgba(15, 159, 149, 0.18);
+    background: transparent;
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
 }
 
 .airline-logo-mark.is-fallback::after {
@@ -10234,9 +10236,9 @@ body:not(.material-theme) #modal.solid-modal-open .modal-content.solid-modal {
 }
 
 .airline-name-xs .airline-logo-mark {
-    width: 24px;
-    height: 22px;
-    flex-basis: 24px;
+    width: 30px;
+    height: 24px;
+    flex-basis: 30px;
 }
 
 .airline-name-xs .airline-logo-mark::after {
@@ -10244,15 +10246,33 @@ body:not(.material-theme) #modal.solid-modal-open .modal-content.solid-modal {
 }
 
 .airline-name-sm .airline-logo-mark {
-    width: 30px;
-    height: 28px;
-    flex-basis: 30px;
+    width: 38px;
+    height: 30px;
+    flex-basis: 38px;
 }
 
 .airline-name-md .airline-logo-mark {
-    width: 40px;
-    height: 36px;
-    flex-basis: 40px;
+    width: 56px;
+    height: 42px;
+    flex-basis: 56px;
+}
+
+.airline-code-ub .airline-logo-mark {
+    width: 48px;
+    height: 34px;
+    flex-basis: 48px;
+}
+
+.airline-code-ub.airline-name-xs .airline-logo-mark {
+    width: 38px;
+    height: 28px;
+    flex-basis: 38px;
+}
+
+.airline-code-ub.airline-name-md .airline-logo-mark {
+    width: 64px;
+    height: 48px;
+    flex-basis: 64px;
 }
 
 td .airline-name,
