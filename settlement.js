@@ -1277,7 +1277,7 @@ export function openNewSettlementModal(existing = null) {
                 </div>
             </form>
         </div>
-    `, 'large-modal');
+    `, 'solid-modal large-modal');
 
     document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
     document.getElementById('set_method')?.addEventListener('change', (e) => {
