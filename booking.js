@@ -18,7 +18,8 @@ import {
     formatDateToDMMMY,
     parseDeadline,
     makeClickable,
-    formatDateForSheet
+    formatDateForSheet,
+    escapeHtml
 } from './utils.js';
 import {
     openModal,
@@ -291,39 +292,16 @@ function bindBookingFilters() {
  */
 async function handleExpiredBookings() {
     const now = new Date();
-    const expiredBookings = [];
 
     state.allBookings.forEach(booking => {
         const deadline = getBookingDeadline(booking);
 
         if (isActiveBooking(booking) && deadline && deadline < now) {
-            expiredBookings.push(booking);
+            booking._computedExpired = true;
+            booking.status = 'expired';
+            booking.remark = 'end';
         }
     });
-
-    if (expiredBookings.length > 0) {
-        console.log(`Found ${expiredBookings.length} expired bookings to update.`);
-        try {
-            for (const booking of expiredBookings) {
-                await updateBooking(booking.id, {
-                    status: 'expired',
-                    remark: 'end',
-                    expiredAt: new Date().toISOString()
-                });
-            }
-            console.log('Successfully updated expired bookings.');
-            const expiredIds = new Set(expiredBookings.map(b => b.id));
-            state.allBookings = state.allBookings.map(b => expiredIds.has(b.id) ? {
-                ...b,
-                status: 'expired',
-                remark: 'end',
-                expiredAt: new Date().toISOString()
-            } : b);
-        } catch (error) {
-            console.error('Failed to update expired bookings:', error);
-            showToast('Could not update expired bookings automatically.', 'error');
-        }
-    }
 }
 
 /**
@@ -399,8 +377,8 @@ export function renderBookingPage(page) {
             <td>${deadlineBadge(group)}</td>
             <td>${formatDateToDMMMY(group.departing_on) || ''}</td>
             <td>
-                <div class="booking-client-cell">${firstPassengerName}${passengerCount > 1 ? ` (+${passengerCount - 1})` : ''}</div>
-                <div class="booking-meta-sub">${group.phone || group.account_type || ''}</div>
+                <div class="booking-client-cell">${escapeHtml(firstPassengerName)}${passengerCount > 1 ? ` (+${passengerCount - 1})` : ''}</div>
+                <div class="booking-meta-sub">${escapeHtml(group.phone || group.account_type || '')}</div>
             </td>
             <td>${routeLabel(group)}</td>
             <td>${group.pnr ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(group.pnr)}">${escapeHtml(group.pnr)}</a>` : 'N/A'}</td>
@@ -595,10 +573,10 @@ function showBookingDetails(docIdsStr) {
     const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
 
     if (bookingGroup) {
-        const passengerListHtml = bookingGroup.passengers.map(p => `<li><strong>${p.name}</strong> (ID: ${p.id_no || 'N/A'})</li>`).join('');
+        const passengerListHtml = bookingGroup.passengers.map(p => `<li><strong>${escapeHtml(p.name)}</strong> (ID: ${escapeHtml(p.id_no || 'N/A')})</li>`).join('');
         const content = `
             <h3>Booking Request Details</h3>
-            ${bookingGroup.pnr ? `<p><strong>PNR Code:</strong> ${bookingGroup.pnr}</p>` : ''}
+            ${bookingGroup.pnr ? `<p><strong>PNR Code:</strong> ${escapeHtml(bookingGroup.pnr)}</p>` : ''}
             <p><strong>Status:</strong> ${BOOKING_STATUS_LABELS[bookingGroup.status] || 'Active'}</p>
             <p><strong>Priority:</strong> ${bookingGroup.priority || 'Normal'}</p>
             <div class="details-section">
@@ -608,15 +586,15 @@ function showBookingDetails(docIdsStr) {
             </div>
              <hr style="border-color: rgba(255,255,255,0.2); margin: 1rem 0;">
             <p><strong>Phone:</strong> ${makeClickable(bookingGroup.phone)}</p>
-            <p><strong>Account Name:</strong> ${bookingGroup.account_name || 'N/A'}</p>
-            <p><strong>Account Type:</strong> ${bookingGroup.account_type || 'N/A'}</p>
+            <p><strong>Account Name:</strong> ${escapeHtml(bookingGroup.account_name || 'N/A')}</p>
+            <p><strong>Account Type:</strong> ${escapeHtml(bookingGroup.account_type || 'N/A')}</p>
             <p><strong>Account Link:</strong> ${makeClickable(bookingGroup.account_link) || 'N/A'}</a></p>
             <hr style="border-color: rgba(255,255,255,0.2); margin: 1rem 0;">
-            <p><strong>Route:</strong> ${bookingGroup.departure || 'N/A'} → ${bookingGroup.destination || 'N/A'}</p>
+            <p><strong>Route:</strong> ${escapeHtml(bookingGroup.departure || 'N/A')} → ${escapeHtml(bookingGroup.destination || 'N/A')}</p>
             <p><strong>Travel Date:</strong> ${formatDateToDMMMY(bookingGroup.departing_on) || 'N/A'}</p>
             <p><strong>Booking Deadline:</strong> ${bookingGroup.enddate && bookingGroup.endtime ? `${formatDateToDMMMY(bookingGroup.enddate)} ${bookingGroup.endtime}` : 'N/A'}</p>
             <p><strong>Deadline Status:</strong> ${bookingGroup.deadlineMeta?.label || 'N/A'}</p>
-            <p><strong>Notes:</strong> ${bookingGroup.notes || 'N/A'}</p>
+            <p><strong>Notes:</strong> ${escapeHtml(bookingGroup.notes || 'N/A')}</p>
             <div class="form-actions" style="margin-top: 1.5rem;">
                 <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
             </div>

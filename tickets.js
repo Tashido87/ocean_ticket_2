@@ -281,26 +281,26 @@ export function showDetails(docId) {
     const content = `
         <div class="details-header">
             <div>
-                <div class="client-name ${clientKey ? 'clickable-client-link' : ''}" data-client-key="${clientKey || ''}" ${clientKey ? 'style="cursor:pointer; color:var(--teal-dark); text-decoration:underline;" title="View Client"' : ''}>${(baseTicketName || ticket.name || 'N/A')}${/\(fees\)\s*$/i.test(ticket.name || '') ? ' <span style="color:var(--muted);font-weight:600">(Fees)</span>' : ''}</div>
-                <div class="pnr-code">PNR: ${ticket.booking_reference || 'N/A'}</div>
+                <div class="client-name ${clientKey ? 'clickable-client-link' : ''}" data-client-key="${clientKey || ''}" ${clientKey ? 'style="cursor:pointer; color:var(--teal-dark); text-decoration:underline;" title="View Client"' : ''}>${escapeHtml(baseTicketName || ticket.name || 'N/A')}${/\(fees\)\s*$/i.test(ticket.name || '') ? ' <span style="color:var(--muted);font-weight:600">(Fees)</span>' : ''}</div>
+                <div class="pnr-code">PNR: ${escapeHtml(ticket.booking_reference || 'N/A')}</div>
             </div>
             <div class="details-status-badge ${statusClass}">${statusText}</div>
         </div>
         <div class="details-section">
             <div class="details-section-title">Client Information</div>
             <div class="details-grid">
-                <div class="details-item"><i class="fa-solid fa-id-card"></i><div class="details-item-content"><div class="label">ID No.</div><div class="value">${ticket.id_no || 'N/A'}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-id-card"></i><div class="details-item-content"><div class="label">ID No.</div><div class="value">${escapeHtml(ticket.id_no || 'N/A')}</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-phone"></i><div class="details-item-content"><div class="label">Phone</div><div class="value">${makeClickable(ticket.phone) || 'N/A'}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-hashtag"></i><div class="details-item-content"><div class="label">Social Media</div><div class="value">${ticket.account_name || 'N/A'} (${ticket.account_type || 'N/A'})</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-hashtag"></i><div class="details-item-content"><div class="label">Social Media</div><div class="value">${escapeHtml(ticket.account_name || 'N/A')} (${escapeHtml(ticket.account_type || 'N/A')})</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-link"></i><div class="details-item-content"><div class="label">Account Link</div><div class="value">${makeClickable(ticket.account_link) || 'N/A'}</div></div></div>
             </div>
         </div>
         <div class="details-section">
             <div class="details-section-title">Flight Details</div>
             <div class="details-grid">
-                <div class="details-item"><i class="fa-solid fa-plane-departure"></i><div class="details-item-content"><div class="label">From</div><div class="value">${ticket.departure || 'N/A'}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-plane-arrival"></i><div class="details-item-content"><div class="label">To</div><div class="value">${ticket.destination || 'N/A'}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-calendar-days"></i><div class="details-item-content"><div class="label">Travel Date</div><div class="value">${ticket.departing_on || 'N/A'}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-plane-departure"></i><div class="details-item-content"><div class="label">From</div><div class="value">${escapeHtml(ticket.departure || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-plane-arrival"></i><div class="details-item-content"><div class="label">To</div><div class="value">${escapeHtml(ticket.destination || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-calendar-days"></i><div class="details-item-content"><div class="label">Travel Date</div><div class="value">${escapeHtml(ticket.departing_on || 'N/A')}</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-plane"></i><div class="details-item-content"><div class="label">Airline</div><div class="value">${renderAirlineName(ticket.airline || 'N/A', { size: 'md' })}</div></div></div>
             </div>
         </div>
@@ -869,7 +869,7 @@ export function handleAirlineChange() {
 export function populateSearchAirlines() {
     const airlineSelect = document.getElementById('searchAirline');
     if (!airlineSelect) return;
-    const uniqueAirlines = [...new Set(state.allTickets.map(t => t.airline.toUpperCase()).filter(Boolean))];
+    const uniqueAirlines = [...new Set(state.allTickets.map(t => String(t.airline || '').toUpperCase()).filter(Boolean))];
     uniqueAirlines.sort();
 
     while (airlineSelect.options.length > 1) {

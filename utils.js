@@ -14,10 +14,11 @@ import {
  */
 export function makeClickable(text) {
     if (!text) return 'N/A';
-    if (text.toLowerCase().startsWith('http')) return `<a href="${text}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    if (/^[\d\s\-+()]+$/.test(text)) return `<a href="tel:${text.replace(/[^\d+]/g, '')}">${text}</a>`;
-    if (text.startsWith('@')) return `<a href="https://t.me/${text.substring(1)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-    return text;
+    const escaped = escapeHtml(text);
+    if (text.toLowerCase().startsWith('http')) return `<a href="${escaped}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
+    if (/^[\d\s\-+()]+$/.test(text)) return `<a href="tel:${text.replace(/[^\d+]/g, '')}">${escaped}</a>`;
+    if (text.startsWith('@')) return `<a href="https://t.me/${escaped.substring(1)}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
+    return escaped;
 }
 
 /**

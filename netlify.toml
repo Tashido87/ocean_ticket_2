@@ -25,3 +25,15 @@
   for = "/*.html"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[redirects]]
+  from = "/scratch*.js"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/check_amounts.js"
+  to = "/404.html"
+  status = 404
+  force = true

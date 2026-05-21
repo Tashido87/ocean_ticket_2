@@ -20,6 +20,7 @@ import {
     formatPaymentMethod,
     isCanceledTicket,
     isFeeEntryRow,
+    isTicketPaid,
     escapeHtml,
     renderAirlineName
 } from './utils.js';
@@ -85,7 +86,7 @@ function getFinancialStatus(ticket) {
 
 function paymentStatus(ticket) {
     if (isCanceledTicket(ticket)) return { key: 'cancelled', label: 'Cancelled' };
-    return ticket.paid ? { key: 'paid', label: `Paid${ticket.payment_method ? ` · ${ticket.payment_method}` : ''}` } : { key: 'unpaid', label: 'Unpaid' };
+    return isTicketPaid(ticket) ? { key: 'paid', label: `Paid${ticket.payment_method ? ` · ${ticket.payment_method}` : ''}` } : { key: 'unpaid', label: 'Unpaid' };
 }
 
 function getPnrSummary(tickets) {
@@ -93,7 +94,7 @@ function getPnrSummary(tickets) {
     const originals = active.filter(t => !isFeeEntryRow(t));
     const fees = active.filter(isFeeEntryRow);
     const totalValue = active.reduce((sum, t) => sum + ticketTotal(t), 0);
-    const paidValue = active.filter(t => t.paid).reduce((sum, t) => sum + ticketTotal(t), 0);
+    const paidValue = active.filter(t => isTicketPaid(t)).reduce((sum, t) => sum + ticketTotal(t), 0);
     const unpaidValue = totalValue - paidValue;
     const totalProfit = active.reduce((sum, t) => sum + profitAmount(t), 0);
     const totalOwnerPayable = active.reduce((sum, t) => sum + ownerPayable(t), 0);
@@ -124,8 +125,8 @@ function getManageIssues(tickets) {
         const ref = `${ticket.name || 'Ticket'}${ticket.booking_reference ? ` · ${ticket.booking_reference}` : ''}`;
         if (!(Number(ticket.net_amount) > 0)) issues.push({ tone: 'danger', text: `${ref}: net amount is missing or zero.` });
         if (!(Number(ticket.commission) > 0)) issues.push({ tone: 'warning', text: `${ref}: commission still needs review.` });
-        if (ticket.paid && !ticket.paid_date) issues.push({ tone: 'warning', text: `${ref}: marked paid but paid date is missing.` });
-        if (ticket.paid && !ticket.payment_method) issues.push({ tone: 'warning', text: `${ref}: marked paid but payment method is missing.` });
+        if (isTicketPaid(ticket) && !ticket.paid_date) issues.push({ tone: 'warning', text: `${ref}: marked paid but paid date is missing.` });
+        if (isTicketPaid(ticket) && !ticket.payment_method) issues.push({ tone: 'warning', text: `${ref}: marked paid but payment method is missing.` });
         if (ownerPayable(ticket) < 0) issues.push({ tone: 'danger', text: `${ref}: owner payable is negative.` });
     });
     return issues;
@@ -345,7 +346,7 @@ function openFeeManageModal(docId) {
             <div class="form-grid" style="margin-top: 1rem;">
                 <div class="form-group checkbox-group" style="padding-top: 1.5rem;">
                     <label for="fee_paid">Paid</label>
-                    <input type="checkbox" id="fee_paid" ${ticket.paid ? 'checked' : ''} style="width: 20px; height: 20px;">
+                    <input type="checkbox" id="fee_paid" ${isTicketPaid(ticket) ? 'checked' : ''} style="width: 20px; height: 20px;">
                 </div>
                 <div class="form-group">
                     <label for="fee_payment_method">Payment Method</label>
@@ -602,7 +603,7 @@ function openPaymentModal(docId) {
             <div class="form-grid">
                 <div class="form-group checkbox-group" style="padding-top: 1.5rem;">
                     <label for="payment_paid">Paid</label>
-                    <input type="checkbox" id="payment_paid" ${ticket.paid ? 'checked' : ''} style="width: 20px; height: 20px;">
+                    <input type="checkbox" id="payment_paid" ${isTicketPaid(ticket) ? 'checked' : ''} style="width: 20px; height: 20px;">
                 </div>
                 <div class="form-group">
                     <label for="payment_method">Payment Method</label>
@@ -912,9 +913,8 @@ function openPartialPaymentModal(docId) {
         // Find ALL unpaid non-cancelled tickets for this PNR
         ticketsToPay = state.allTickets.filter(t =>
             t.booking_reference === ticket.booking_reference &&
-            !t.paid &&
-            !String(t.remarks||'').toLowerCase().includes('cancel') &&
-            !String(t.remarks||'').toLowerCase().includes('refund')
+            !isTicketPaid(t) &&
+            !isCanceledTicket(t)
         );
         // Sort by createdAt to pay oldest first
         ticketsToPay.sort((a,b) => getTimestampMs(a.createdAt) - getTimestampMs(b.createdAt));
@@ -1041,18 +1041,18 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
         for (const ticket of ticketsToPay) {
             if (payAmount <= 0) break;
 
-            const ticketTotal = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
+            const ticketTotalAmt = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
             
-            if (payAmount >= ticketTotal) {
+            if (payAmount >= ticketTotalAmt) {
                 updates.push(updateTicket(ticket.id, {
                     paid: true,
                     payment_method: payMethod,
                     paid_date: payDate
                 }));
-                payAmount -= ticketTotal;
+                payAmount -= ticketTotalAmt;
             } else {
-                const remainder = ticketTotal - payAmount;
-                const ratio = payAmount / ticketTotal;
+                const remainder = ticketTotalAmt - payAmount;
+                const ratio = payAmount / ticketTotalAmt;
                 const part1_Base = Math.floor((ticket.base_fare || 0) * ratio);
                 const part1_Comm = Math.floor((ticket.commission || 0) * ratio);
                 const part2_Base = (ticket.base_fare || 0) - part1_Base;

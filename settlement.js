@@ -294,25 +294,23 @@ export function getOwnerLedgerRows() {
     const rows = [];
 
     state.allTickets.forEach(t => {
-        if (isFeeEntry(t)) return;
+        if (isExcluded(t)) return;
         const issued = parseSheetDate(t.issued_date);
         if (!issued.getTime() || !inRange(issued, start, end)) return;
 
-        const canceled = isCanceled(t);
-        const ticketOwnerPayable = n(t.net_amount) - n(t.commission);
-        const ownerPayable = canceled ? -getTicketOwnerPayable(t) : ticketOwnerPayable;
+        const ownerPayable = getTicketOwnerPayable(t);
 
         if (n(t.net_amount) > 0) {
             rows.push({
                 date: issued,
-                type: canceled ? 'Refund / Cancel' : 'Ticket Sale',
+                type: 'Ticket Sale',
                 ref: t.booking_reference || '—',
                 client: t.name || '—',
                 description: `${(t.departure || '').split(' ')[0]} → ${(t.destination || '').split(' ')[0]} · ${t.airline || ''}`,
-                ticketAmount: canceled ? -getTicketGrossAmount(t) : n(t.net_amount),
+                ticketAmount: n(t.net_amount),
                 ownerPayable,
                 paidToOwner: 0,
-                agentProfit: canceled ? -getTicketAgentProfit(t) : getTicketAgentProfit(t),
+                agentProfit: getTicketAgentProfit(t),
                 meta: { kind: 'ticket', ticketId: t.id, pnr: t.booking_reference }
             });
         }
@@ -536,7 +534,7 @@ export function getSettlementDiscrepancies() {
 
     // Overpayment check: total paid > total owner payable to date
     const totalOwnerPayable = tickets.reduce((sum, t) => {
-        if (isCanceled(t)) return sum - getTicketOwnerPayable(t);
+        if (isExcluded(t)) return sum;
         return sum + getTicketOwnerPayable(t);
     }, 0);
     const totalPaid = state.allSettlements.reduce((sum, s) => sum + n(s.amount_paid), 0);
@@ -936,7 +934,7 @@ function renderRecords() {
     const sorted = [...state.allSettlements].sort((a, b) => parseSheetDate(b.settlement_date) - parseSheetDate(a.settlement_date));
 
     if (!sorted.length) {
-        body.innerHTML = `<tr><td colspan="9" class="settle-empty"><i class="fa-solid fa-handshake"></i> No settlements yet — record your first payment to the owner.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="7" class="settle-empty"><i class="fa-solid fa-handshake"></i> No settlements yet — record your first payment to the owner.</td></tr>`;
         document.getElementById('settlementPagination').innerHTML = '';
         return;
     }
