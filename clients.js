@@ -9,7 +9,8 @@ import {
 import {
     showToast,
     parseSheetDate,
-    formatDateToDMMMY
+    formatDateToDMMMY,
+    getAirlineIconHtml
 } from './utils.js';
 import {
     openModal,
@@ -438,7 +439,7 @@ function _legacyViewClientHistory(clientKey) {
                 <td>${t.booking_reference}</td>
                 <td>${t.departure.split(' ')[0]}→${t.destination.split(' ')[0]}</td>
                 <td>${formatDateToDMMMY(t.departing_on)}</td>
-                <td>${t.airline}</td>
+                <td>${getAirlineIconHtml(t.airline)}</td>
                 <td>${(t.net_amount || 0).toLocaleString()}</td>
             </tr>
         `;

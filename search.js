@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast, isTicketPaid } from './utils.js';
+import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast, isTicketPaid, getAirlineIconHtml } from './utils.js';
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets } from './db.js';
@@ -922,7 +922,7 @@ function renderRow(result) {
             </td>
             <td>${highlightText(t.account_name || '—')}</td>
             <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${highlightText(t.booking_reference)}</a>` : '—'}</strong></td>
-            <td>${escapeHtml(routeShort(t))}</td>
+            <td>${getAirlineIconHtml(t.airline)}</td>
             <td>${paymentBadge(result.payment)}</td>
             <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid')}</td>
         </tr>

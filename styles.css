@@ -2080,6 +2080,22 @@ body.material-theme .modal-content.solid-modal {
     border: 1px solid rgba(207, 45, 86, 0.5);
 }
 
+.airline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.airline-badge i {
+    font-size: 0.68rem;
+}
+
 .details-section {
     margin-bottom: 1.5rem;
     background: rgba(38, 37, 30, 0.03);

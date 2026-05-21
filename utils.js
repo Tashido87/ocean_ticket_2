@@ -415,3 +415,38 @@ export function isCanceledTicket(ticket) {
     const status = String(ticket?.status || '').toLowerCase();
     return status.includes('cancel') || remarks.includes('cancel') || remarks.includes('refund');
 }
+
+/**
+ * Returns a styled airline icon badge HTML string.
+ * Uses colored backgrounds to differentiate airlines.
+ * @param {string} airline The airline name or code.
+ * @returns {string} HTML string with icon and airline name.
+ */
+export function getAirlineIconHtml(airline) {
+    const name = String(airline || '').trim();
+    const upper = name.toUpperCase();
+    let color = '#6b7280';
+    let bg = '#f3f4f6';
+
+    if (upper.includes('MAI') || upper.includes('MYANMAR AIRWAYS')) {
+        color = '#1CB5AD'; bg = '#e8f8f7';
+    } else if (upper.includes('MAH') || upper.includes('MYANMAR NATIONAL') || upper.includes('AIR BAGAN')) {
+        color = '#e74c3c'; bg = '#fdeaea';
+    } else if (upper.includes('UB')) {
+        color = '#3498db'; bg = '#eaf2f8';
+    } else if (upper.includes('K7') || upper.includes('AIR KBZ')) {
+        color = '#f39c12'; bg = '#fef5e7';
+    } else if (upper.includes('8M')) {
+        color = '#1CB5AD'; bg = '#e8f8f7';
+    } else if (upper.includes('THAI') || upper.includes('TG')) {
+        color = '#9b59b6'; bg = '#f4ecf7';
+    } else if (upper.includes('AIR ASIA') || upper.includes('AK') || upper.includes('FD')) {
+        color = '#e84393'; bg = '#fdeef5';
+    } else if (upper.includes('SINGAPORE') || upper.includes('SQ')) {
+        color = '#e67e22'; bg = '#fef0e3';
+    } else if (upper.includes('MALAYSIAN') || upper.includes('MH')) {
+        color = '#2ecc71'; bg = '#e9f9f0';
+    }
+
+    return `<span class="airline-badge" style="background:${bg};color:${color}"><i class="fa-solid fa-plane" aria-hidden="true"></i> ${escapeHtml(name)}</span>`;
+}

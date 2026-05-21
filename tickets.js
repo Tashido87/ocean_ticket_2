@@ -6,7 +6,7 @@
 
 import { state } from './state.js';
 import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument } from './db.js';
-import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid } from './utils.js';
+import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, getAirlineIconHtml } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
 import { updateDashboardData } from './main.js';
@@ -194,7 +194,7 @@ export function displayTickets(tickets, page = 1) {
             <td>${nameCell}</td>
             <td>${isGroup ? '—' : escapeHtml(ticket.booking_reference || '')}</td>
             <td>${isGroup ? '—' : escapeHtml(routeShort(ticket))}</td>
-            <td>${isGroup ? '—' : escapeHtml(ticket.airline || '')}</td>
+            <td>${isGroup ? '—' : getAirlineIconHtml(ticket.airline)}</td>
             <td class="num-cell">${(ticket.net_amount || 0).toLocaleString()}</td>
             <td class="num-cell">${(ticket.commission || 0).toLocaleString()}</td>
             <td class="num-cell">${(ticket.extra_fare || 0).toLocaleString()}</td>
@@ -301,7 +301,7 @@ export function showDetails(docId) {
                 <div class="details-item"><i class="fa-solid fa-plane-departure"></i><div class="details-item-content"><div class="label">From</div><div class="value">${ticket.departure || 'N/A'}</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-plane-arrival"></i><div class="details-item-content"><div class="label">To</div><div class="value">${ticket.destination || 'N/A'}</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-calendar-days"></i><div class="details-item-content"><div class="label">Travel Date</div><div class="value">${ticket.departing_on || 'N/A'}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-plane"></i><div class="details-item-content"><div class="label">Airline</div><div class="value">${ticket.airline || 'N/A'}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-plane"></i><div class="details-item-content"><div class="label">Airline</div><div class="value">${getAirlineIconHtml(ticket.airline)}</div></div></div>
             </div>
         </div>
         <div class="details-section">

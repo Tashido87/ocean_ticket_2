@@ -8,7 +8,7 @@
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
 import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask } from './db.js';
-import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket } from './utils.js';
+import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, getAirlineIconHtml } from './utils.js';
 
 // Feature Modules
 import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount } from './tickets.js';
@@ -1220,7 +1220,7 @@ function showTripPlanDetail(pnr) {
                 ${leadNameHtml}
                 <div class="pnr-code">PNR: ${dashboardEscapeHtml(pnr)}</div>
             </div>
-            <div class="details-status-badge confirmed">${dashboardEscapeHtml(lead.airline || 'Airline')}</div>
+            <div class="details-status-badge confirmed">${getAirlineIconHtml(lead.airline || 'Airline')}</div>
         </div>
         <div class="details-section">
             <div class="details-section-title">Trip Overview</div>
@@ -1294,7 +1294,7 @@ function renderDashboardTravelSchedule(groups) {
                     <small><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></small>
                 </div>
                 <div class="travel-progress">
-                    <small>${dashboardEscapeHtml(group.airline)}</small>
+                    ${getAirlineIconHtml(group.airline)}
                 </div>
                 <button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button>
             </div>

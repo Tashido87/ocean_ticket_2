@@ -20,7 +20,8 @@ import {
     formatPaymentMethod,
     isCanceledTicket,
     isFeeEntryRow,
-    escapeHtml
+    escapeHtml,
+    getAirlineIconHtml
 } from './utils.js';
 import {
     openModal,
@@ -195,7 +196,7 @@ function displayManageResults(tickets) {
                 <div>
                     <div class="manage-eyebrow">PNR Control Center</div>
                     <h3>${summary.pnr}</h3>
-                    <p>${summary.route} · ${summary.airline} · Travel ${formatDateToDMMMY(summary.travelDate) || summary.travelDate}</p>
+                    <p>${summary.route} · ${getAirlineIconHtml(summary.airline)} · Travel ${formatDateToDMMMY(summary.travelDate) || summary.travelDate}</p>
                 </div>
                 <div class="manage-header-stats">
                     <span>${summary.passengers} passenger${summary.passengers === 1 ? '' : 's'}</span>
