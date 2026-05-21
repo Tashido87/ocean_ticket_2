@@ -371,6 +371,108 @@ export function escapeHtml(text) {
     return div.innerHTML;
 }
 
+const AIRLINE_LOGO_ALIASES = {
+    '8M': '8M',
+    'MAI': '8M',
+    'MMA': '8M',
+    'MYANMAR AIRWAYS': '8M',
+    'MYANMAR AIRWAYS INTERNATIONAL': '8M',
+    'MYANMAR AIRWAYS INTL': '8M',
+    'MAIAIR': '8M',
+    'UB': 'UB',
+    'MNA': 'UB',
+    'UBA': 'UB',
+    'MYANMAR NATIONAL': 'UB',
+    'MYANMAR NATIONAL AIRLINES': 'UB',
+    '7Y': '7Y',
+    'MYP': '7Y',
+    'MANN YADANARPON': '7Y',
+    'MANN YADANARPON AIRLINES': '7Y',
+    'MAN YADANARPON': '7Y',
+    'MANYADANARPON': '7Y',
+    'AIR MYP': '7Y',
+    'ST': 'ST',
+    'RTL': 'ST',
+    'AIR THANLWIN': 'ST',
+    'AIR THAN LWIN': 'ST',
+    'AIRTHANLWIN': 'ST',
+    'YANGON AIRWAYS': 'ST',
+    'K7': 'K7',
+    'AIR KBZ': 'K7',
+    'AIR KBZ LIMITED': 'K7',
+    'TG': 'TG',
+    'THAI': 'TG',
+    'THAI AIRWAYS': 'TG',
+    'THAI AIRWAYS INTERNATIONAL': 'TG',
+    'PG': 'PG',
+    'BANGKOK AIRWAYS': 'PG',
+    'FD': 'FD',
+    'THAI AIRASIA': 'FD',
+    'THAI AIR ASIA': 'FD',
+    'AK': 'AK',
+    'AIRASIA': 'AK',
+    'AIR ASIA': 'AK',
+    'SQ': 'SQ',
+    'SINGAPORE AIRLINES': 'SQ',
+    'VJ': 'VJ',
+    'VIETJET': 'VJ',
+    'VIETJET AIR': 'VJ',
+    'MH': 'MH',
+    'MALAYSIA AIRLINES': 'MH',
+    'MH MALAYSIA': 'MH',
+    'DD': 'DD',
+    'NOK AIR': 'DD',
+    'SL': 'SL',
+    'THAI LION AIR': 'SL'
+};
+
+function normalizeAirlineKey(value) {
+    return String(value || '')
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, ' ');
+}
+
+function getAirlineInitials(value) {
+    const cleaned = normalizeAirlineKey(value).replace(/[^A-Z0-9 ]/g, '');
+    if (!cleaned) return 'AIR';
+    const words = cleaned.split(' ').filter(Boolean);
+    if (words.length === 1) return words[0].slice(0, 3);
+    return words.slice(0, 3).map(word => word[0]).join('');
+}
+
+export function getAirlineLogoCode(airline) {
+    const key = normalizeAirlineKey(airline);
+    if (!key || key === '—' || key === 'N/A' || key === 'AIRLINE') return '';
+    if (AIRLINE_LOGO_ALIASES[key]) return AIRLINE_LOGO_ALIASES[key];
+    const compact = key.replace(/[^A-Z0-9]/g, '');
+    if (AIRLINE_LOGO_ALIASES[compact]) return AIRLINE_LOGO_ALIASES[compact];
+    return /^[A-Z0-9]{2}$/.test(compact) ? compact : '';
+}
+
+export function getAirlineLogoUrl(airline) {
+    const code = getAirlineLogoCode(airline);
+    return code ? `https://images.kiwi.com/airlines/64/${encodeURIComponent(code)}.png` : '';
+}
+
+export function renderAirlineName(airline, options = {}) {
+    const label = String(airline || '').trim() || '—';
+    const logoUrl = getAirlineLogoUrl(label);
+    const initials = getAirlineInitials(label);
+    const size = options.size === 'md' ? 'md' : options.size === 'xs' ? 'xs' : 'sm';
+    const classes = ['airline-name', `airline-name-${size}`, logoUrl ? 'has-airline-logo' : 'has-airline-fallback'];
+    const logo = logoUrl
+        ? `<img src="${escapeHtml(logoUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('is-fallback'); this.remove();">`
+        : '';
+
+    return `
+        <span class="${classes.join(' ')}">
+            <span class="airline-logo-mark ${logoUrl ? '' : 'is-fallback'}" data-initials="${escapeHtml(initials)}">${logo}</span>
+            <span class="airline-name-text">${escapeHtml(label)}</span>
+        </span>
+    `;
+}
+
 /**
  * Checks if a ticket is paid, handling various field types (boolean, number, string like "false", "no", etc.).
  * @param {Object} ticket The ticket object.
@@ -414,39 +516,4 @@ export function isCanceledTicket(ticket) {
     const remarks = String(ticket?.remarks || '').toLowerCase();
     const status = String(ticket?.status || '').toLowerCase();
     return status.includes('cancel') || remarks.includes('cancel') || remarks.includes('refund');
-}
-
-/**
- * Returns a styled airline icon badge HTML string.
- * Uses colored backgrounds to differentiate airlines.
- * @param {string} airline The airline name or code.
- * @returns {string} HTML string with icon and airline name.
- */
-export function getAirlineIconHtml(airline) {
-    const name = String(airline || '').trim();
-    const upper = name.toUpperCase();
-    let color = '#6b7280';
-    let bg = '#f3f4f6';
-
-    if (upper.includes('MAI') || upper.includes('MYANMAR AIRWAYS')) {
-        color = '#1CB5AD'; bg = '#e8f8f7';
-    } else if (upper.includes('MAH') || upper.includes('MYANMAR NATIONAL') || upper.includes('AIR BAGAN')) {
-        color = '#e74c3c'; bg = '#fdeaea';
-    } else if (upper.includes('UB')) {
-        color = '#3498db'; bg = '#eaf2f8';
-    } else if (upper.includes('K7') || upper.includes('AIR KBZ')) {
-        color = '#f39c12'; bg = '#fef5e7';
-    } else if (upper.includes('8M')) {
-        color = '#1CB5AD'; bg = '#e8f8f7';
-    } else if (upper.includes('THAI') || upper.includes('TG')) {
-        color = '#9b59b6'; bg = '#f4ecf7';
-    } else if (upper.includes('AIR ASIA') || upper.includes('AK') || upper.includes('FD')) {
-        color = '#e84393'; bg = '#fdeef5';
-    } else if (upper.includes('SINGAPORE') || upper.includes('SQ')) {
-        color = '#e67e22'; bg = '#fef0e3';
-    } else if (upper.includes('MALAYSIAN') || upper.includes('MH')) {
-        color = '#2ecc71'; bg = '#e9f9f0';
-    }
-
-    return `<span class="airline-badge" style="background:${bg};color:${color}"><i class="fa-solid fa-plane" aria-hidden="true"></i> ${escapeHtml(name)}</span>`;
 }

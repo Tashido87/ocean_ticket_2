@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast, isTicketPaid, getAirlineIconHtml } from './utils.js';
+import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast, isTicketPaid, renderAirlineName } from './utils.js';
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets } from './db.js';
@@ -922,7 +922,7 @@ function renderRow(result) {
             </td>
             <td>${highlightText(t.account_name || '—')}</td>
             <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${highlightText(t.booking_reference)}</a>` : '—'}</strong></td>
-            <td>${getAirlineIconHtml(t.airline)}</td>
+            <td>${escapeHtml(routeShort(t))}</td>
             <td>${paymentBadge(result.payment)}</td>
             <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid')}</td>
         </tr>
@@ -1310,7 +1310,7 @@ function ticketHistorySection(client, tickets) {
                 <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${escapeHtml(t.booking_reference)}</a>` : '—'}</strong></td>
                 <td>${escapeHtml(routeShort(t))}</td>
                 <td>${fmtDateOrDash(t.departing_on)}</td>
-                <td>${escapeHtml(t.airline || '—')}</td>
+                <td>${renderAirlineName(t.airline || '—')}</td>
                 <td>
                     ${canceled ? '<span class="payment-badge payment-unpaid">Canceled</span>' : `<span class="payment-badge payment-${upcoming === 'upcoming' ? 'partial' : 'paid'}">${upcoming === 'upcoming' ? 'Upcoming' : 'Completed'}</span>`}
                     ${paymentBadge(status)}
@@ -1931,7 +1931,7 @@ function suggestionItem(result) {
     return `
         <button type="button" class="suggestion-item" data-suggestion-kind="ticket" data-ticket-id="${escapeHtml(ticket.id || '')}">
             <span class="suggestion-main">PNR ${escapeHtml(ticket.booking_reference || '—')}</span>
-            <span class="suggestion-meta">${escapeHtml(routeShort(ticket))} · ${escapeHtml(ticket.airline || 'Airline')} · ${result.payment === 'paid' ? 'Paid' : 'Unpaid'}</span>
+            <span class="suggestion-meta">${escapeHtml(routeShort(ticket))} · ${renderAirlineName(ticket.airline || 'Airline', { size: 'xs' })} · ${result.payment === 'paid' ? 'Paid' : 'Unpaid'}</span>
             <span class="suggestion-badge">Ticket</span>
         </button>
     `;

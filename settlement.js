@@ -44,7 +44,8 @@ import {
     formatDateToDMMMY,
     formatPaymentMethod,
     parsePaymentMethod,
-    formatDateForSheet
+    formatDateForSheet,
+    renderAirlineName
 } from './utils.js';
 import { openModal, closeModal, setupGenericPagination } from './ui.js';
 
@@ -914,7 +915,7 @@ function renderTickets() {
             <td><strong>${escapeHtml(t.booking_reference || '—')}</strong></td>
             <td>${escapeHtml(t.name || '—')}</td>
             <td>${escapeHtml(`${(t.departure || '').split(' ')[0]} → ${(t.destination || '').split(' ')[0]}`)}</td>
-            <td>${escapeHtml(t.airline || '—')}</td>
+            <td>${renderAirlineName(t.airline || '—')}</td>
             <td>${escapeHtml(formatDateToDMMMY(t.departing_on) || '—')}</td>
             <td class="num">${formatMMK(getTicketGrossAmount(t))}</td>
             <td class="num">${formatMMK(n(t.commission))}</td>

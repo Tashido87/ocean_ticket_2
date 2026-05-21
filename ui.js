@@ -6,7 +6,7 @@
 
 import { CITIES } from './config.js';
 import { state } from './state.js';
-import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate, isTicketPaid, isFeeEntryRow } from './utils.js';
+import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate, isTicketPaid, isFeeEntryRow, renderAirlineName } from './utils.js';
 import { clearManageResults } from './manage.js';
 import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard, renderSettlementPage } from './settlement.js';
 import { showToast } from './utils.js';
@@ -908,7 +908,7 @@ function openPnrScheduleModal(pnr) {
         return `
             <tr>
                 <td>${d}</td>
-                <td>${r.airline}</td>
+                <td>${renderAirlineName(r.airline || 'N/A')}</td>
                 <td>${rRoute}</td>
                 <td>${r.name || ''}</td>
             </tr>`;

@@ -2080,22 +2080,6 @@ body.material-theme .modal-content.solid-modal {
     border: 1px solid rgba(207, 45, 86, 0.5);
 }
 
-.airline-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.2rem 0.55rem;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    white-space: nowrap;
-    line-height: 1.3;
-}
-
-.airline-badge i {
-    font-size: 0.68rem;
-}
-
 .details-section {
     margin-bottom: 1.5rem;
     background: rgba(38, 37, 30, 0.03);
@@ -10186,4 +10170,93 @@ body:not(.material-theme) #modal.solid-modal-open .modal-content.solid-modal {
 .clickable-pnr:hover {
     text-decoration-color: var(--primary);
     color: var(--primary-dark);
+}
+
+/* Airline logo labels */
+.airline-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    max-width: 100%;
+    min-width: 0;
+    vertical-align: middle;
+    color: inherit;
+    white-space: nowrap;
+}
+
+.airline-name-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.airline-logo-mark {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    display: inline-grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid rgba(36, 36, 43, 0.10);
+    box-shadow: 0 5px 14px rgba(36, 36, 43, 0.08);
+}
+
+.airline-logo-mark img {
+    width: 100%;
+    height: 100%;
+    padding: 2px;
+    object-fit: contain;
+    display: block;
+}
+
+.airline-logo-mark::after {
+    content: attr(data-initials);
+    display: none;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--primary, #0f9f95);
+}
+
+.airline-logo-mark.is-fallback {
+    background: linear-gradient(135deg, #dff8f5, #fff4ef);
+    border-color: rgba(15, 159, 149, 0.18);
+}
+
+.airline-logo-mark.is-fallback::after {
+    display: block;
+}
+
+.airline-name-xs {
+    gap: 0.35rem;
+}
+
+.airline-name-xs .airline-logo-mark {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+}
+
+.airline-name-xs .airline-logo-mark::after {
+    font-size: 0.48rem;
+}
+
+.airline-name-sm .airline-logo-mark {
+    width: 22px;
+    height: 22px;
+    flex-basis: 22px;
+}
+
+.airline-name-md .airline-logo-mark {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+}
+
+td .airline-name,
+.suggestion-meta .airline-name,
+.details-status-badge .airline-name {
+    max-width: 180px;
 }
