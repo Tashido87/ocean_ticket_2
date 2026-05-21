@@ -7,10 +7,10 @@ import { formatDateToDMMMY, parseSheetDate, showToast, isFeeEntryRow } from './u
 import { state } from './state.js';
 
 const INVOICE_THEME = {
-    accentHex: '#ef6f51',
-    accentRgb: [239, 111, 81],
-    accentSoftRgb: [252, 243, 238],
-    accentBorderRgb: [245, 208, 196],
+    accentHex: '#1CB5AD',
+    accentRgb: [28, 181, 173],
+    accentSoftRgb: [232, 248, 247],
+    accentBorderRgb: [190, 225, 223],
     textRgb: [46, 47, 56],
     mutedRgb: [107, 114, 128],
     lineRgb: [229, 231, 235]
@@ -285,9 +285,9 @@ function getInvoiceCSS() {
         }
         .inv-table th {
             padding: 8px 10px;
-            background: #fcf3ee;
-            border-top: 1px solid #f5d0c4;
-            border-bottom: 1px solid #f5d0c4;
+            background: #e8f8f7;
+            border-top: 1px solid #bee1df;
+            border-bottom: 1px solid #bee1df;
             font-size: 11px;
             font-weight: 700;
             color: #2e2f38;
