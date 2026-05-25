@@ -88,7 +88,7 @@ function getPassengerValidationError(passenger, index, isInternational) {
         return `${label}: Please complete all NRC parts.`;
     }
 
-    if (!isChild && !passenger.nrc_no) return `${label}: complete NRC number is required.`;
+    if (!isChild && !isInternational && !passenger.nrc_no) return `${label}: complete NRC number is required.`;
     if (isInternational && !passenger.passport_no) return `${label}: passport number is required for international tickets.`;
     if (isInternational && passenger.passport_no.length < 5) return `${label}: passport number looks too short.`;
     return '';

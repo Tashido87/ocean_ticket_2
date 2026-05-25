@@ -2509,12 +2509,13 @@ function validateNrc(formEl) {
 
     const title = formEl.querySelector('.passenger-gender:checked')?.value || '';
     const isChild = ['MSTR', 'MISS'].includes(title);
+    const isNrcOptional = isInternationalFlight();
 
     if (filled === 0 || filled === 4) {
         wrap.classList.remove('is-invalid');
         helper.classList.remove('is-error');
         helper.textContent = 'Format: 12/ABCDEF(N)123456';
-        return isChild ? true : (filled === 4);
+        return (isChild || isNrcOptional) ? true : (filled === 4);
     }
     wrap.classList.add('is-invalid');
     helper.classList.add('is-error');
@@ -2703,7 +2704,7 @@ export function applyFlightTypeToCard(formEl) {
     const nrcPanel = formEl.querySelector('.doc-panel[data-panel="nrc"]');
     const passportPanel = formEl.querySelector('.doc-panel[data-panel="passport"]');
 
-    nrcTab.classList.add('is-required');
+    nrcTab.classList.toggle('is-required', !intl);
     passportTab.classList.toggle('is-required', intl);
     passportTab.hidden = !intl;
     passportPanel.hidden = !intl;
