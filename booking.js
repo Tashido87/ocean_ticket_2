@@ -696,7 +696,7 @@ export async function handleNewBookingSubmit(e) {
             const bookingObjects = passengerData.map(passenger => ({
                 groupId,
                 name: `${passenger.gender} ${passenger.name}`,
-                id_no: passenger.id_no,
+                id_no: passenger.nrc_no || passenger.passport_no || '',
                 phone: sharedData.phone,
                 account_name: sharedData.account_name,
                 account_type: sharedData.account_type,
