@@ -83,7 +83,13 @@ export async function exportToPdf() {
         date: parseSheetDate(h.checkin),
         dateStr: h.checkin,
         type: 'hotel',
-        name: h.client_name + (h.other_names ? ` (${h.other_names})` : ''),
+        name: (() => {
+            const parsed = parseInt(h.other_names, 10);
+            if (h.other_names) {
+                return h.client_name + (!isNaN(parsed) ? (parsed > 1 ? ` (+${parsed - 1})` : '') : ` (${h.other_names})`);
+            }
+            return h.client_name;
+        })(),
         pnr: h.booking_ref || '—',
         route: `Hotel: ${h.hotel_name} (${h.city}, ${h.country})`,
         net_amount: Number(h.net_amount || 0),
@@ -133,7 +139,13 @@ export async function exportToPdf() {
             const key = `hotel-${h.id}`;
             mergedData[key] = {
                 issued_date: h.checkin,
-                names: new Set([h.client_name + (h.other_names ? ` (${h.other_names})` : '')]),
+                names: new Set([(() => {
+                    const parsed = parseInt(h.other_names, 10);
+                    if (h.other_names) {
+                        return h.client_name + (!isNaN(parsed) ? (parsed > 1 ? ` (+${parsed - 1})` : '') : ` (${h.other_names})`);
+                    }
+                    return h.client_name;
+                })()]),
                 booking_reference: h.booking_ref || '—',
                 route: `Hotel: ${h.hotel_name} (${h.city}, ${h.country})`,
                 pax: 1,

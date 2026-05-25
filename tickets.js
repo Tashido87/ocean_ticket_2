@@ -127,8 +127,13 @@ export async function loadTicketData() {
 function mapHotelToTicket(h) {
     let guestCount = 0;
     if (h.other_names) {
-        const parts = h.other_names.split(/,|\band\b|;/i).map(s => s.trim()).filter(Boolean);
-        guestCount = Math.max(1, parts.length);
+        const parsed = parseInt(h.other_names, 10);
+        if (!isNaN(parsed)) {
+            guestCount = Math.max(0, parsed - 1);
+        } else {
+            const parts = h.other_names.split(/,|\band\b|;/i).map(s => s.trim()).filter(Boolean);
+            guestCount = Math.max(1, parts.length);
+        }
     }
     const nameStr = h.client_name + (guestCount > 0 ? ` (+${guestCount})` : '');
 
@@ -417,7 +422,10 @@ export function showHotelDetails(hotel) {
         <div class="details-header">
             <div>
                 <div class="client-name ${clientKey ? 'clickable-client-link' : ''}" data-client-key="${clientKey || ''}" ${clientKey ? 'style="cursor:pointer; color:var(--teal-dark); text-decoration:underline;" title="View Client"' : ''}>${escapeHtml(hotel.client_name || 'N/A')}</div>
-                ${hotel.other_names ? `<div style="font-size:0.9rem; color:var(--muted);">Other Guests: ${escapeHtml(hotel.other_names)}</div>` : ''}
+                ${hotel.other_names ? `
+                    <div style="font-size:0.9rem; color:var(--muted);">
+                        ${!isNaN(parseInt(hotel.other_names, 10)) ? `Total Guests (incl. Lead): ${escapeHtml(hotel.other_names)}` : `Other Guests: ${escapeHtml(hotel.other_names)}`}
+                    </div>` : ''}
                 <div class="pnr-code">Confirmation Ref: ${escapeHtml(hotel.booking_ref || 'N/A')}</div>
             </div>
             <div class="details-status-badge ${statusClass}">${statusText}</div>

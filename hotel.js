@@ -1198,7 +1198,7 @@ export function renderHotelReservations() {
             `;
             const guestCell = `
                 <div style="font-weight: 700; color: var(--ink);">${escapeHtml(res.client_name)}</div>
-                ${res.other_names ? `<div style="font-size: 0.76rem; color: var(--muted); margin-top: 2px;">Guests: ${escapeHtml(res.other_names)}</div>` : ''}
+                ${res.other_names ? `<div style="font-size: 0.76rem; color: var(--muted); margin-top: 2px;">${!isNaN(parseInt(res.other_names, 10)) ? `Total Guests (incl. Lead): ${escapeHtml(res.other_names)}` : `Guests: ${escapeHtml(res.other_names)}`}</div>` : ''}
             `;
             const hotelCell = `
                 <div style="font-weight: 700; color: var(--ink);"><i class="fa-solid fa-hotel" style="color: #0d9488; margin-right: 4px; font-size: 0.8rem;"></i> ${escapeHtml(res.hotel_name)}</div>
