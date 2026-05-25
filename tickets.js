@@ -125,11 +125,18 @@ export async function loadTicketData() {
  * Helper to map hotel reservation to ticket-like object
  */
 function mapHotelToTicket(h) {
+    let guestCount = 0;
+    if (h.other_names) {
+        const parts = h.other_names.split(/,|\band\b|;/i).map(s => s.trim()).filter(Boolean);
+        guestCount = Math.max(1, parts.length);
+    }
+    const nameStr = h.client_name + (guestCount > 0 ? ` (+${guestCount})` : '');
+
     return {
         ...h,
         _isHotel: true,
         issued_date: h.checkin,
-        name: h.client_name + (h.other_names ? ` (${h.other_names})` : ''),
+        name: nameStr,
         booking_reference: h.booking_ref,
         departure: h.city,
         destination: `${h.hotel_name} (${h.country})`,
