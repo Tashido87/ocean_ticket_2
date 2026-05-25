@@ -78,7 +78,17 @@ function getPassengerValidationError(passenger, index, isInternational) {
     const label = `Passenger ${index + 1}`;
     if (!passenger.name) return `${label}: passenger name is required.`;
     if (!passenger.net_amount) return `${label}: net amount is required.`;
-    if (!passenger.nrc_no) return `${label}: complete NRC number is required.`;
+
+    const isChild = ['MSTR', 'MISS'].includes(passenger.gender);
+    
+    // Check if NRC is partially filled
+    const nrc = passenger.nrc || {};
+    const filledNrcParts = [nrc.region, nrc.township, nrc.type, nrc.serial].filter(Boolean).length;
+    if (filledNrcParts > 0 && filledNrcParts < 4) {
+        return `${label}: Please complete all NRC parts.`;
+    }
+
+    if (!isChild && !passenger.nrc_no) return `${label}: complete NRC number is required.`;
     if (isInternational && !passenger.passport_no) return `${label}: passport number is required for international tickets.`;
     if (isInternational && passenger.passport_no.length < 5) return `${label}: passport number looks too short.`;
     return '';

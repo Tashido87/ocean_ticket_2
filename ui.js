@@ -2506,11 +2506,15 @@ function validateNrc(formEl) {
     const type = formEl.querySelector('.nrc-type').value.trim();
     const serial = formEl.querySelector('.nrc-serial').value.trim();
     const filled = [region, township, type, serial].filter(Boolean).length;
+
+    const title = formEl.querySelector('.passenger-gender:checked')?.value || '';
+    const isChild = ['MSTR', 'MISS'].includes(title);
+
     if (filled === 0 || filled === 4) {
         wrap.classList.remove('is-invalid');
         helper.classList.remove('is-error');
         helper.textContent = 'Format: 12/ABCDEF(N)123456';
-        return filled === 4;
+        return isChild ? true : (filled === 4);
     }
     wrap.classList.add('is-invalid');
     helper.classList.add('is-error');

@@ -1790,6 +1790,11 @@ td .action-checkbox {
     color: #be123c;
 }
 
+.booking-action-btn.success:hover:not(:disabled) {
+    border-color: rgba(16, 185, 129, 0.28);
+    color: #047857;
+}
+
 .booking-action-btn:disabled {
     opacity: 0.42;
     cursor: not-allowed;
