@@ -2081,6 +2081,18 @@ export function updateComparisonChart() {
         if (!isFeeEntryRow(ticket)) bucket.profit += ticketProfitAmount(ticket);
     });
 
+    (state.allHotels || []).forEach(h => {
+        const checkinDate = parseSheetDate(h.checkin);
+        if (!checkinDate || !inDashboardRange(checkinDate, range)) return;
+        const bucket = bucketMap.get(bucketKey(checkinDate));
+        if (!bucket) return;
+        
+        // Hotel revenue is the customer base fare (gross sales)
+        bucket.revenue += Number(h.base_fare || 0);
+        // Hotel profit is the agent commission
+        bucket.profit += Number(h.commission || 0);
+    });
+
     if (state.charts.comparisonChart) {
         state.charts.comparisonChart.destroy();
     }
