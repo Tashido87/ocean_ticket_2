@@ -129,8 +129,25 @@ export async function exportToPdf() {
             mergedData[key].names.add(t.name);
         });
 
-        body = Object.values(mergedData).map((t, index) => {
-            const route = `${(t.departure||'').split('(')[0].trim()} - ${(t.destination||'').split('(')[0].trim()}`;
+        hotelsToExport.forEach(h => {
+            const key = `hotel-${h.id}`;
+            mergedData[key] = {
+                issued_date: h.checkin,
+                names: new Set([h.client_name + (h.other_names ? ` (${h.other_names})` : '')]),
+                booking_reference: h.booking_ref || '—',
+                route: `Hotel: ${h.hotel_name} (${h.city}, ${h.country})`,
+                pax: 1,
+                net_amount: Number(h.net_amount || 0),
+                date_change: 0,
+                commission: Number(h.commission || 0),
+                _isHotel: true
+            };
+        });
+
+        const sortedMerged = Object.values(mergedData).sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date));
+
+        body = sortedMerged.map((t, index) => {
+            const route = t._isHotel ? t.route : `${(t.departure||'').split('(')[0].trim()} - ${(t.destination||'').split('(')[0].trim()}`;
             const clientNames = [...t.names].join(', ');
             return [
                 index + 1,
@@ -145,9 +162,9 @@ export async function exportToPdf() {
             ];
         });
 
-        totalNetAmount = Object.values(mergedData).reduce((sum, t) => sum + t.net_amount, 0);
-        totalDateChange = Object.values(mergedData).reduce((sum, t) => sum + t.date_change, 0);
-        totalCommission = Object.values(mergedData).reduce((sum, t) => sum + t.commission, 0);
+        totalNetAmount = sortedMerged.reduce((sum, t) => sum + t.net_amount, 0);
+        totalDateChange = sortedMerged.reduce((sum, t) => sum + t.date_change, 0);
+        totalCommission = sortedMerged.reduce((sum, t) => sum + t.commission, 0);
 
         body.push([
             { content: 'Total', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold' } },
