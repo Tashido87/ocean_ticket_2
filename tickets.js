@@ -112,6 +112,26 @@ export async function loadTicketData() {
 }
 
 /**
+ * Helper to map hotel reservation to ticket-like object
+ */
+function mapHotelToTicket(h) {
+    return {
+        ...h,
+        _isHotel: true,
+        issued_date: h.checkin,
+        name: h.client_name + (h.other_names ? ` (${h.other_names})` : ''),
+        booking_reference: h.booking_ref,
+        departure: h.city,
+        destination: `${h.hotel_name} (${h.country})`,
+        airline: 'Hotel',
+        net_amount: Number(h.net_amount || 0),
+        commission: Number(h.commission || 0),
+        extra_fare: 0,
+        date_change: 0
+    };
+}
+
+/**
  * Displays the initial list of tickets.
  * MODIFICATION: Removed the .slice(0, 50) limit to allow navigating through all tickets.
  */
@@ -122,7 +142,8 @@ export function displayInitialTickets() {
         performSearch();
         return;
     }
-    const sorted = [...state.allTickets].sort((a, b) => {
+    const mappedHotels = (state.allHotels || []).map(mapHotelToTicket);
+    const sorted = [...state.allTickets, ...mappedHotels].sort((a, b) => {
         const dateDiff = parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date);
         if (dateDiff !== 0) return dateDiff;
         return getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt);
@@ -177,7 +198,7 @@ export function displayTickets(tickets, page = 1) {
         const isGroup = isGrouped && item._grouped;
         const row = tbody.insertRow();
         if (isGroup) row.classList.add('grouped-row');
-        if (!isGroup && item.remarks) {
+        if (!isGroup && !item._isHotel && item.remarks) {
             const lowerRemarks = item.remarks.toLowerCase();
             if (lowerRemarks.includes('refund') || lowerRemarks.includes('cancel')) {
                 row.classList.add('canceled-row');
@@ -189,12 +210,24 @@ export function displayTickets(tickets, page = 1) {
             ? `<strong>${escapeHtml(ticket.tickets[0]?.name || 'Unknown')}</strong> <span class="group-badge">${ticket.count} clients</span>`
             : escapeHtml(ticket.name || '');
 
+        const routeText = isGroup 
+            ? '—' 
+            : (ticket._isHotel 
+                ? escapeHtml(`${ticket.hotel_name} (${ticket.city}, ${ticket.country})`) 
+                : escapeHtml(routeShort(ticket)));
+
+        const airlineText = isGroup 
+            ? '—' 
+            : (ticket._isHotel 
+                ? `<span style="font-weight:600; color:#0d9488;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
+                : renderAirlineName(ticket.airline || ''));
+
         row.innerHTML = `
             <td>${ticket.issued_date || ticket.dateRange || ''}</td>
             <td>${nameCell}</td>
             <td>${isGroup ? '—' : escapeHtml(ticket.booking_reference || '')}</td>
-            <td>${isGroup ? '—' : escapeHtml(routeShort(ticket))}</td>
-            <td>${isGroup ? '—' : renderAirlineName(ticket.airline || '')}</td>
+            <td>${routeText}</td>
+            <td>${airlineText}</td>
             <td class="num-cell">${(ticket.net_amount || 0).toLocaleString()}</td>
             <td class="num-cell">${(ticket.commission || 0).toLocaleString()}</td>
             <td class="num-cell">${(ticket.extra_fare || 0).toLocaleString()}</td>
@@ -213,17 +246,26 @@ export function displayTickets(tickets, page = 1) {
                 if (action === 'view') {
                     if (isGroup) {
                         showGroupDetails(ticket);
+                    } else if (ticket._isHotel) {
+                        showHotelDetails(ticket);
                     } else {
                         showDetails(ticket.id);
                     }
                 } else if (action === 'edit') {
                     if (isGroup) {
                         openEditGroupModal(ticket);
+                    } else if (ticket._isHotel) {
+                        showView('hotel');
+                        window.editHotelReservation(ticket.id);
                     } else {
                         openEditTicketModal(ticket);
                     }
                 } else if (action === 'delete' && !isGroup) {
-                    deleteTicketWithConfirm(ticket.id);
+                    if (ticket._isHotel) {
+                        window.deleteHotelReservationAction(ticket.id);
+                    } else {
+                        deleteTicketWithConfirm(ticket.id);
+                    }
                 }
             });
         });
@@ -311,6 +353,80 @@ export function showDetails(docId) {
                  <div class="details-item"><i class="fa-solid fa-hand-holding-dollar"></i><div class="details-item-content"><div class="label">Commission</div><div class="value">${(ticket.commission || 0).toLocaleString()} MMK</div></div></div>
                  <div class="details-item"><i class="fa-solid fa-money-bill-transfer"></i><div class="details-item-content"><div class="label">Date Change Fees</div><div class="value">${(ticket.date_change || 0).toLocaleString()} MMK</div></div></div>
                  <div class="details-item"><i class="fa-solid fa-circle-plus"></i><div class="details-item-content"><div class="label">Extra Fare</div><div class="value">${(ticket.extra_fare || 0).toLocaleString()} MMK</div></div></div>
+            </div>
+        </div>
+        <div class="form-actions" style="margin-top: 1rem;">
+            <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
+        </div>
+    `;
+    openModal(content, 'solid-modal');
+    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+
+    const clientLink = document.querySelector('.clickable-client-link');
+    if (clientLink) {
+        clientLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const key = e.currentTarget.dataset.clientKey;
+            if (key) {
+                closeModal();
+                const { navigateToClient } = await import('./search.js');
+                navigateToClient(key);
+            }
+        });
+    }
+}
+
+/**
+ * Shows a detailed modal view for a specific hotel reservation.
+ * @param {Object} hotel The hotel reservation object.
+ */
+export function showHotelDetails(hotel) {
+    let statusClass = hotel.paid === 'paid' ? 'confirmed' : 'pending';
+    let statusText = hotel.paid === 'paid' 
+        ? `Paid on ${formatDateToDMMMY(hotel.payment_date) || 'N/A'} via ${hotel.payment_method || 'N/A'}`
+        : 'Unpaid';
+
+    let clientKey = '';
+    const baseClientName = String(hotel.client_name || '').trim();
+    if (baseClientName) {
+        const c = state.allClients.find(c =>
+            String(c.name || '').toLowerCase() === baseClientName.toLowerCase()
+        );
+        if (c) clientKey = c.client_key;
+    }
+
+    const content = `
+        <div class="details-header">
+            <div>
+                <div class="client-name ${clientKey ? 'clickable-client-link' : ''}" data-client-key="${clientKey || ''}" ${clientKey ? 'style="cursor:pointer; color:var(--teal-dark); text-decoration:underline;" title="View Client"' : ''}>${escapeHtml(hotel.client_name || 'N/A')}</div>
+                ${hotel.other_names ? `<div style="font-size:0.9rem; color:var(--muted);">Other Guests: ${escapeHtml(hotel.other_names)}</div>` : ''}
+                <div class="pnr-code">Confirmation Ref: ${escapeHtml(hotel.booking_ref || 'N/A')}</div>
+            </div>
+            <div class="details-status-badge ${statusClass}">${statusText}</div>
+        </div>
+        <div class="details-section">
+            <div class="details-section-title">Hotel Information</div>
+            <div class="details-grid">
+                <div class="details-item"><i class="fa-solid fa-hotel"></i><div class="details-item-content"><div class="label">Hotel Name</div><div class="value">${escapeHtml(hotel.hotel_name || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-location-dot"></i><div class="details-item-content"><div class="label">Location</div><div class="value">${escapeHtml(hotel.city || 'N/A')}, ${escapeHtml(hotel.country || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-calendar-check"></i><div class="details-item-content"><div class="label">Check In</div><div class="value">${escapeHtml(hotel.checkin || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-calendar-xmark"></i><div class="details-item-content"><div class="label">Check Out</div><div class="value">${escapeHtml(hotel.checkout || 'N/A')}</div></div></div>
+            </div>
+        </div>
+        <div class="details-section">
+            <div class="details-section-title">Supplier & Notes</div>
+            <div class="details-grid">
+                <div class="details-item"><i class="fa-solid fa-handshake"></i><div class="details-item-content"><div class="label">Supplier</div><div class="value">${escapeHtml(hotel.supplier || 'N/A')}</div></div></div>
+                <div class="details-item"><i class="fa-solid fa-note-sticky"></i><div class="details-item-content"><div class="label">Notes</div><div class="value">${escapeHtml(hotel.notes || '—')}</div></div></div>
+            </div>
+        </div>
+        <div class="details-section">
+            <div class="details-section-title">Financials</div>
+            <div class="details-grid">
+                 <div class="details-item"><i class="fa-solid fa-dollar-sign"></i><div class="details-item-content"><div class="label">Base Fare (Customer Price)</div><div class="value">${(hotel.base_fare || 0).toLocaleString()} MMK</div></div></div>
+                 <div class="details-item"><i class="fa-solid fa-receipt"></i><div class="details-item-content"><div class="label">Net Amount (Supplier Cost)</div><div class="value">${(hotel.net_amount || 0).toLocaleString()} MMK</div></div></div>
+                 <div class="details-item"><i class="fa-solid fa-hand-holding-dollar"></i><div class="details-item-content"><div class="label">Commission (Profit)</div><div class="value">${(hotel.commission || 0).toLocaleString()} MMK</div></div></div>
             </div>
         </div>
         <div class="form-actions" style="margin-top: 1rem;">
@@ -739,7 +855,7 @@ export function performSearch() {
 
     let searchTravelDate = travelDateVal ? parseSheetDate(travelDateVal) : null;
 
-    let results = state.allTickets.filter(t => {
+    let ticketResults = state.allTickets.filter(t => {
         const issuedDate = parseSheetDate(t.issued_date);
         const travelDate = parseSheetDate(t.departing_on);
         const tName = (t.name || '').toUpperCase();
@@ -752,7 +868,30 @@ export function performSearch() {
         const destinationMatch = !destination || (t.destination && t.destination.toUpperCase() === destination);
 
         return nameMatch && bookRefMatch && issuedDateMatch && travelDateMatch && departureMatch && destinationMatch;
-    }).sort((a, b) => {
+    });
+
+    let hotelResults = (state.allHotels || []).filter(h => {
+        const checkinDate = parseSheetDate(h.checkin);
+        const guestName = ((h.client_name || '') + ' ' + (h.other_names || '')).toUpperCase();
+
+        const nameMatch = nameTokens.length === 0 || nameTokens.every(token => guestName.includes(token));
+        const bookRefMatch = !bookRef || (h.booking_ref || '').toUpperCase().includes(bookRef);
+        const checkinMatch = (!searchStartDate || checkinDate >= searchStartDate) && (!searchEndDate || checkinDate <= searchEndDate);
+        const travelDateMatch = !searchTravelDate || (checkinDate && checkinDate.getTime() === searchTravelDate.getTime());
+
+        const departureMatch = !departure || 
+            (h.city && h.city.toUpperCase().includes(departure)) || 
+            (h.country && h.country.toUpperCase().includes(departure));
+
+        const destinationMatch = !destination || 
+            (h.hotel_name && h.hotel_name.toUpperCase().includes(destination)) ||
+            (h.city && h.city.toUpperCase().includes(destination)) ||
+            (h.country && h.country.toUpperCase().includes(destination));
+
+        return nameMatch && bookRefMatch && checkinMatch && travelDateMatch && departureMatch && destinationMatch;
+    }).map(mapHotelToTicket);
+
+    let results = [...ticketResults, ...hotelResults].sort((a, b) => {
         const dateDiff = parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date);
         if (dateDiff !== 0) return dateDiff;
         return getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt);

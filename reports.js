@@ -33,12 +33,14 @@ export async function exportToPdf() {
     const isMerged = document.getElementById('mergeToggle')?.checked;
     const exportConfirmModal = document.getElementById('exportConfirmModal');
 
-    let ticketsToExport;
+    let ticketsToExport = [];
+    let hotelsToExport = [];
     let startDate, endDate;
     let dateRangeString = '';
 
     if (exportType === 'filtered') {
         ticketsToExport = state.filteredTickets;
+        hotelsToExport = state.filteredHotels || [];
     } else {
         const startDateStr = document.getElementById('exportStartDate').value;
         const endDateStr = document.getElementById('exportEndDate').value;
@@ -58,10 +60,41 @@ export async function exportToPdf() {
             const issuedDate = parseSheetDate(t.issued_date);
             return issuedDate >= startDate && issuedDate <= endDate;
         });
+
+        hotelsToExport = (state.allHotels || []).filter(h => {
+            const checkinDate = parseSheetDate(h.checkin);
+            return checkinDate >= startDate && checkinDate <= endDate;
+        });
     }
 
-    if (ticketsToExport.length === 0) {
-        showToast('No tickets to export in the selected range.', 'info');
+    const itemsToExport = ticketsToExport.map(t => ({
+        date: parseSheetDate(t.issued_date),
+        dateStr: t.issued_date,
+        type: 'ticket',
+        name: t.name,
+        pnr: t.booking_reference || '—',
+        route: `${(t.departure||'').split('(')[0].trim()} - ${(t.destination||'').split('(')[0].trim()}`,
+        net_amount: Number(t.net_amount || 0),
+        date_change: Number(t.date_change || 0),
+        commission: Number(t.commission || 0)
+    }));
+
+    const hotelItems = hotelsToExport.map(h => ({
+        date: parseSheetDate(h.checkin),
+        dateStr: h.checkin,
+        type: 'hotel',
+        name: h.client_name + (h.other_names ? ` (${h.other_names})` : ''),
+        pnr: h.booking_ref || '—',
+        route: `Hotel: ${h.hotel_name} (${h.city}, ${h.country})`,
+        net_amount: Number(h.net_amount || 0),
+        date_change: 0,
+        commission: Number(h.commission || 0)
+    }));
+
+    const combinedItems = [...itemsToExport, ...hotelItems].sort((a, b) => a.date - b.date);
+
+    if (combinedItems.length === 0) {
+        showToast('No records to export in the selected range.', 'info');
         exportConfirmModal.classList.remove('show');
         return;
     }
@@ -126,23 +159,22 @@ export async function exportToPdf() {
 
     } else { // Default behavior if not merged or not a date range export
         head = [['No.', 'Issued Date', 'Name', 'PNR', 'Route', 'Net Amount', 'Date Change', 'Commission']];
-        body = ticketsToExport.map((t, index) => {
-            const route = `${(t.departure||'').split('(')[0].trim()} - ${(t.destination||'').split('(')[0].trim()}`;
+        body = combinedItems.map((item, index) => {
             return [
                 index + 1,
-                formatDateToDMMMY(t.issued_date),
-                t.name,
-                t.booking_reference,
-                route,
-                (t.net_amount || 0).toLocaleString(),
-                (t.date_change || 0).toLocaleString(),
-                (t.commission || 0).toLocaleString()
+                formatDateToDMMMY(item.dateStr),
+                item.name,
+                item.pnr,
+                item.route,
+                item.net_amount.toLocaleString(),
+                item.date_change > 0 ? item.date_change.toLocaleString() : '0',
+                item.commission.toLocaleString()
             ];
         });
 
-        totalNetAmount = ticketsToExport.reduce((sum, t) => sum + (t.net_amount || 0), 0);
-        totalDateChange = ticketsToExport.reduce((sum, t) => sum + (t.date_change || 0), 0);
-        totalCommission = ticketsToExport.reduce((sum, t) => sum + (t.commission || 0), 0);
+        totalNetAmount = combinedItems.reduce((sum, item) => sum + item.net_amount, 0);
+        totalDateChange = combinedItems.reduce((sum, item) => sum + item.date_change, 0);
+        totalCommission = combinedItems.reduce((sum, item) => sum + item.commission, 0);
 
         body.push([
             { content: 'Total', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
@@ -322,8 +354,13 @@ export async function exportPrivateReportToPdf() {
         return issuedDate >= startDate && issuedDate <= endDate;
     });
 
-    if (ticketsInMonth.length === 0) {
-        showToast('No tickets to export in the selected month.', 'info');
+    const hotelsInMonth = (state.allHotels || []).filter(h => {
+        const checkinDate = parseSheetDate(h.checkin);
+        return checkinDate >= startDate && checkinDate <= endDate;
+    });
+
+    if (ticketsInMonth.length === 0 && hotelsInMonth.length === 0) {
+        showToast('No records to export in the selected month.', 'info');
         return;
     }
 
@@ -339,15 +376,22 @@ export async function exportPrivateReportToPdf() {
 
     // --- Summary Section ---
     const totalTickets = ticketsInMonth.length;
-    // FIX: Added || 0 to prevent NaN if data is missing
-    const totalRevenue = ticketsInMonth.reduce((sum, t) => sum + (t.net_amount || 0), 0);
-    const totalCommission = ticketsInMonth.reduce((sum, t) => sum + (t.commission || 0), 0);
+    const totalHotels = hotelsInMonth.length;
+    const ticketRevenue = ticketsInMonth.reduce((sum, t) => sum + (t.net_amount || 0), 0);
+    const hotelRevenue = hotelsInMonth.reduce((sum, h) => sum + (h.net_amount || 0), 0);
+    const totalRevenue = ticketRevenue + hotelRevenue;
+
+    const ticketCommission = ticketsInMonth.reduce((sum, t) => sum + (t.commission || 0), 0);
+    const hotelCommission = hotelsInMonth.reduce((sum, h) => sum + (h.commission || 0), 0);
+    const totalCommission = ticketCommission + hotelCommission;
+
     const totalExtraFare = ticketsInMonth.reduce((sum, t) => sum + (t.extra_fare || 0), 0);
     const summaryTotalProfit = totalCommission + totalExtraFare;
 
     const summaryBody = [
         ['Total Ticket Sales', `${totalTickets} tickets`],
-        ['Total Revenue', `${totalRevenue.toLocaleString()} MMK`],
+        ['Total Hotel Bookings', `${totalHotels} bookings`],
+        ['Total Revenue (Net)', `${totalRevenue.toLocaleString()} MMK`],
         ['Total Commission', `${totalCommission.toLocaleString()} MMK`],
         ['Total Extra Fare', `${totalExtraFare.toLocaleString()} MMK`],
         ['Total Profit', `${summaryTotalProfit.toLocaleString()} MMK`],
@@ -525,6 +569,24 @@ export async function exportPrivateReportToPdf() {
             monthlyData[monthIndex].commission += (t.commission || 0);
             monthlyData[monthIndex].extraFare += (t.extra_fare || 0);
             monthlyData[monthIndex].profit += (t.commission || 0) + (t.extra_fare || 0);
+            monthlyData[monthIndex].tickets++;
+        }
+    });
+
+    const hotelsThisYear = (state.allHotels || []).filter(h => {
+        const checkinDate = parseSheetDate(h.checkin);
+        return checkinDate && checkinDate.getFullYear() === currentYear;
+    });
+
+    hotelsThisYear.forEach(h => {
+        const dateObj = parseSheetDate(h.checkin);
+        if (!dateObj || isNaN(dateObj)) return;
+        
+        const monthIndex = dateObj.getMonth();
+        if (monthIndex >= 0 && monthIndex < 12) {
+            monthlyData[monthIndex].revenue += (h.net_amount || 0);
+            monthlyData[monthIndex].commission += (h.commission || 0);
+            monthlyData[monthIndex].profit += (h.commission || 0);
             monthlyData[monthIndex].tickets++;
         }
     });

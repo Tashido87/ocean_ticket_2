@@ -236,6 +236,8 @@ export async function initializeApp() {
             onHotelsChange((hotels) => {
                 state.allHotels = hotels;
                 renderHotelReservations();
+                displayInitialTickets();
+                updateDashboardData();
             })
         );
 
@@ -888,6 +890,13 @@ function activeTicketRowsInRange(range) {
     });
 }
 
+function activeHotelRowsInRange(range) {
+    return (state.allHotels || []).filter(h => {
+        const checkinDate = parseSheetDate(h.checkin);
+        return inDashboardRange(checkinDate, range);
+    });
+}
+
 function formatDashboardAmount(value) {
     return Math.round(Number(value) || 0).toLocaleString();
 }
@@ -1081,16 +1090,20 @@ export function updateDashboardData() {
     const prevTicketsInPeriod = activeTicketRowsInRange(prevRange);
 
     // 1. Total Sales (Customer Price)
-    const curSales = ticketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
-    const prevSales = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+    const curHotelSales = activeHotelRowsInRange(range).reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
+    const prevHotelSales = activeHotelRowsInRange(prevRange).reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
+    const curSales = ticketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0) + curHotelSales;
+    const prevSales = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0) + prevHotelSales;
 
     // 2. Total Tickets (Count of Passenger Tickets)
     const curTickets = ticketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
     const prevTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
 
     // 3. Total Profit
-    const curProfit = ticketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
-    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0);
+    const curHotelProfit = activeHotelRowsInRange(range).reduce((sum, h) => sum + (Number(h.commission) || 0), 0);
+    const prevHotelProfit = activeHotelRowsInRange(prevRange).reduce((sum, h) => sum + (Number(h.commission) || 0), 0);
+    const curProfit = ticketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0) + curHotelProfit;
+    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0) + prevHotelProfit;
 
     // 4. Remaining Due to Owner (from settlement module — global, not period-scoped)
     const settleSummary = getSettlementSummary();

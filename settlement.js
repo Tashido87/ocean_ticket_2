@@ -203,6 +203,12 @@ export function getOpeningBalance(start) {
         ownerPayable += getTicketOwnerPayable(t);
     });
 
+    (state.allHotels || []).forEach(h => {
+        const d = parseSheetDate(h.checkin);
+        if (!d.getTime() || d.getTime() >= start.getTime()) return;
+        ownerPayable += n(h.net_amount);
+    });
+
     let paidToOwner = 0;
     state.allSettlements.forEach(s => {
         const d = parseSheetDate(s.settlement_date);
@@ -252,6 +258,17 @@ export function getSettlementSummary() {
         ownerPayable += getTicketOwnerPayable(t);
         myCommission += getMyCommission(t);
         extraProfit += getExtraProfit(t);
+    });
+
+    (state.allHotels || []).forEach(h => {
+        const checkin = parseSheetDate(h.checkin);
+        if (!checkin.getTime()) return;
+        const inP = inRange(checkin, start, end);
+        if (!inP) return;
+
+        ticketSalesTotal += n(h.base_fare);
+        ownerPayable += n(h.net_amount);
+        myCommission += n(h.commission);
     });
 
     const periodSettlements = state.allSettlements.filter(s => inRange(parseSheetDate(s.settlement_date), start, end));
@@ -342,6 +359,24 @@ export function getOwnerLedgerRows() {
                 meta: { kind: 'extra_fare', ticketId: t.id }
             });
         }
+    });
+
+    (state.allHotels || []).forEach(h => {
+        const checkin = parseSheetDate(h.checkin);
+        if (!checkin.getTime() || !inRange(checkin, start, end)) return;
+
+        rows.push({
+            date: checkin,
+            type: 'Hotel Booking',
+            ref: h.booking_ref || '—',
+            client: h.client_name || '—',
+            description: `${h.hotel_name} (${h.city}, ${h.country})`,
+            ticketAmount: n(h.base_fare),
+            ownerPayable: n(h.net_amount),
+            paidToOwner: 0,
+            agentProfit: n(h.commission),
+            meta: { kind: 'hotel', hotelId: h.id, pnr: h.booking_ref }
+        });
     });
 
     state.allSettlements.forEach(s => {
