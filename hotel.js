@@ -831,11 +831,13 @@ export function initHotelReservationSystem() {
 
     // Initialize Datepickers
     if (window.Datepicker) {
+        const bookingDateEl = document.getElementById('hotel_res_booking_date');
         const checkinEl = document.getElementById('hotel_res_checkin');
         const checkoutEl = document.getElementById('hotel_res_checkout');
         const payDateEl = document.getElementById('hotel_res_payment_date');
 
         const opt = { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true };
+        if (bookingDateEl) new window.Datepicker(bookingDateEl, opt);
         if (checkinEl) new window.Datepicker(checkinEl, opt);
         if (checkoutEl) new window.Datepicker(checkoutEl, opt);
         if (payDateEl) new window.Datepicker(payDateEl, opt);
@@ -865,9 +867,11 @@ export function showNewHotelReservationForm() {
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
 
+    const bookingDateEl = document.getElementById('hotel_res_booking_date');
     const checkinEl = document.getElementById('hotel_res_checkin');
     const checkoutEl = document.getElementById('hotel_res_checkout');
 
+    if (bookingDateEl) bookingDateEl.value = formatDMY(today);
     if (checkinEl) checkinEl.value = formatDMY(today);
     if (checkoutEl) checkoutEl.value = formatDMY(tomorrow);
 
@@ -974,6 +978,7 @@ async function saveHotelReservation() {
             hotel_name: document.getElementById('hotel_res_hotel_name').value.trim(),
             country: document.getElementById('hotel_res_country').value.trim(),
             city: document.getElementById('hotel_res_city').value.trim(),
+            booking_date: document.getElementById('hotel_res_booking_date').value,
             checkin: document.getElementById('hotel_res_checkin').value,
             checkout: document.getElementById('hotel_res_checkout').value,
             booking_ref: document.getElementById('hotel_res_booking_ref').value.trim(),
@@ -1028,6 +1033,7 @@ export function editHotelReservation(id) {
     document.getElementById('hotel_res_hotel_name').value = res.hotel_name || '';
     document.getElementById('hotel_res_country').value = res.country || '';
     document.getElementById('hotel_res_city').value = res.city || '';
+    document.getElementById('hotel_res_booking_date').value = res.booking_date || '';
     document.getElementById('hotel_res_checkin').value = res.checkin || '';
     document.getElementById('hotel_res_checkout').value = res.checkout || '';
     document.getElementById('hotel_res_booking_ref').value = res.booking_ref || '';
@@ -1057,6 +1063,20 @@ export async function deleteHotelReservationAction(id) {
         console.error(error);
         showToast('Failed to delete reservation.', 'error');
     }
+}
+
+/**
+ * Handles showing the detailed modal for a specific hotel reservation.
+ * @param {string} id The document ID.
+ */
+export async function showHotelDetailsAction(id) {
+    const res = state.allHotels.find(h => h.id === id);
+    if (!res) {
+        showToast('Could not find reservation details.', 'error');
+        return;
+    }
+    const { showHotelDetails } = await import('./tickets.js');
+    showHotelDetails(res);
 }
 
 /**
@@ -1168,11 +1188,14 @@ export function renderHotelReservations() {
     if (paginated.length === 0) {
         rowsHtml = `
             <tr>
-                <td colspan="7" class="empty-row" style="text-align: center; padding: 2rem;">No hotel reservations found.</td>
+                <td colspan="8" class="empty-row" style="text-align: center; padding: 2rem;">No hotel reservations found.</td>
             </tr>
         `;
     } else {
         paginated.forEach(res => {
+            const bookingDateHtml = `
+                <div style="font-weight: 600; color: var(--ink);">${formatNiceDate(res.booking_date || res.checkin)}</div>
+            `;
             const guestCell = `
                 <div style="font-weight: 700; color: var(--ink);">${escapeHtml(res.client_name)}</div>
                 ${res.other_names ? `<div style="font-size: 0.76rem; color: var(--muted); margin-top: 2px;">Guests: ${escapeHtml(res.other_names)}</div>` : ''}
@@ -1197,6 +1220,7 @@ export function renderHotelReservations() {
 
             rowsHtml += `
                 <tr data-id="${res.id}">
+                    <td style="padding: 1rem 0.75rem; vertical-align: top;">${bookingDateHtml}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top;">${guestCell}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top;">${hotelCell}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${dateCell}</td>
@@ -1204,8 +1228,11 @@ export function renderHotelReservations() {
                     <td style="padding: 1rem 0.75rem; vertical-align: top; font-weight: 700; color: #0d9488; text-align: right;">${(res.commission || 0).toLocaleString()} MMK</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${statusBadge}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;" class="search-row-actions">
-                        <button class="icon-btn" title="Edit Reservation" onclick="window.editHotelReservation('${res.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
-                        <button class="icon-btn btn-danger" title="Delete" onclick="window.deleteHotelReservationAction('${res.id}')"><i class="fa-solid fa-trash"></i></button>
+                        <div style="display: flex; gap: 0.25rem; justify-content: center;">
+                            <button class="icon-btn" title="View Details" onclick="window.showHotelDetailsAction('${res.id}')"><i class="fa-solid fa-eye"></i></button>
+                            <button class="icon-btn" title="Edit Reservation" onclick="window.editHotelReservation('${res.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="icon-btn btn-danger" title="Delete" onclick="window.deleteHotelReservationAction('${res.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -1216,12 +1243,13 @@ export function renderHotelReservations() {
         <table class="sell-table" style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th style="width: 20%; text-align: left;">Guest</th>
-                    <th style="width: 25%; text-align: left;">Hotel</th>
-                    <th style="width: 15%; text-align: center;">Stay Dates</th>
-                    <th style="width: 15%; text-align: left;">Cost Breakdown</th>
-                    <th style="width: 12%; text-align: right;">Commission</th>
-                    <th style="width: 8%; text-align: center;">Payment</th>
+                    <th style="width: 12%; text-align: left;">Booking Date</th>
+                    <th style="width: 18%; text-align: left;">Guest</th>
+                    <th style="width: 23%; text-align: left;">Hotel</th>
+                    <th style="width: 12%; text-align: center;">Stay Dates</th>
+                    <th style="width: 13%; text-align: left;">Cost Breakdown</th>
+                    <th style="width: 11%; text-align: right;">Commission</th>
+                    <th style="width: 6%; text-align: center;">Payment</th>
                     <th style="width: 5%; text-align: center;">Actions</th>
                 </tr>
             </thead>
@@ -1272,6 +1300,7 @@ function formatNiceDate(str) {
 // Attach functions to window for onclick handlers
 window.editHotelReservation = editHotelReservation;
 window.deleteHotelReservationAction = deleteHotelReservationAction;
+window.showHotelDetailsAction = showHotelDetailsAction;
 window.setHotelPage = (page) => {
     state.hotelPage = page;
     renderHotelReservations();

@@ -427,6 +427,7 @@ export function showHotelDetails(hotel) {
         <div class="details-section">
             <div class="details-section-title">Supplier & Notes</div>
             <div class="details-grid">
+                <div class="details-item"><i class="fa-solid fa-calendar-days"></i><div class="details-item-content"><div class="label">Booking Date</div><div class="value">${escapeHtml(hotel.booking_date || hotel.checkin || 'N/A')}</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-handshake"></i><div class="details-item-content"><div class="label">Supplier</div><div class="value">${escapeHtml(hotel.supplier || 'N/A')}</div></div></div>
                 <div class="details-item"><i class="fa-solid fa-note-sticky"></i><div class="details-item-content"><div class="label">Notes</div><div class="value">${escapeHtml(hotel.notes || '—')}</div></div></div>
             </div>
