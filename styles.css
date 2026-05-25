@@ -59,7 +59,7 @@ input, button, select, textarea {
     --text-primary: var(--ink);
     --text-secondary: var(--muted);
     --border-color: var(--line);
-    --glass-bg: rgba(255, 255, 255, 0.82);
+    --glass-bg: #ffffff;
     --glass-bg-hover: #ffffff;
     --glass-border: 1px solid var(--line);
     --shadow: rgba(36, 36, 43, 0.06);
@@ -77,8 +77,8 @@ input, button, select, textarea {
     --surface-400: var(--blush-soft);
     --surface-500: #eadbd2;
     --surface-1: var(--surface);
-    --surface-2: rgba(255, 244, 239, 0.72);
-    --surface-3: rgba(248, 201, 203, 0.34);
+    --surface-2: #fff4ef;
+    --surface-3: #fbe6e7;
 
     --ease-smooth: cubic-bezier(0.2, 0, 0, 1);
     --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
@@ -133,7 +133,7 @@ body::before {
 
 /* --- CURSOR WARM CARD STYLE --- */
 .glass-card {
-    background: rgba(255, 255, 255, 0.86);
+    background: #ffffff;
     border-radius: var(--liquid-radius);
     border: 1px solid rgba(36, 36, 43, 0.10);
     box-shadow: var(--liquid-shadow);
@@ -166,7 +166,7 @@ body::before {
 .sidebar {
     width: 240px;
     min-width: 240px;
-    background: rgba(255, 255, 255, 0.88);
+    background: #ffffff;
     border-right: 1px solid rgba(36, 36, 43, 0.08);
     display: flex;
     flex-direction: column;
@@ -277,7 +277,7 @@ body.sidebar-collapsed .app-body {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: rgba(255, 250, 247, 0.88);
+    background: #fffaf7;
     border-bottom: 1px solid rgba(36, 36, 43, 0.08);
     padding: 0.65rem 1.25rem;
     display: flex;
@@ -1060,7 +1060,7 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
     padding: 1rem;
     border: 1px solid rgba(38, 37, 30, 0.08);
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.78);
+    background: #ffffff;
     box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
 }
 
@@ -1126,7 +1126,7 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
     padding: 0.9rem;
     border: 1px solid rgba(38, 37, 30, 0.08);
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.82);
+    background: #ffffff;
 }
 
 .manage-kpi span {
@@ -1204,7 +1204,7 @@ tbody tr:hover { background-color: rgba(38, 37, 30, 0.04); }
 .manage-table-wrap {
     border: 1px solid rgba(38, 37, 30, 0.08);
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.72);
+    background: #ffffff;
 }
 
 .manage-table {
@@ -1564,7 +1564,7 @@ td .action-checkbox {
     padding: 1rem;
     border: 1px solid rgba(38, 37, 30, 0.08);
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.76);
+    background: #ffffff;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
@@ -2865,9 +2865,9 @@ body.material-theme.dark-theme {
     --text-secondary: rgba(255, 255, 255, 0.55);
     --border-color: rgba(255, 255, 255, 0.10);
 
-    --surface-1: rgba(255, 255, 255, 0.06);
-    --surface-2: rgba(255, 255, 255, 0.08);
-    --surface-3: rgba(255, 255, 255, 0.12);
+    --surface-1: #333333;
+    --surface-2: #3c3c3c;
+    --surface-3: #464646;
 
     --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.35);
     --shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.45), 0 24px 60px rgba(0, 0, 0, 0.45);
@@ -4447,7 +4447,7 @@ body.material-theme.dark-theme .notification-count {
 
 /* ---------- Service Panels ---------- */
 .service-panel {
-    background: rgba(255, 255, 255, 0.78);
+    background: #ffffff;
     border: 1px solid rgba(36, 36, 43, 0.08);
     border-radius: 16px;
     padding: 1.25rem;
@@ -4728,7 +4728,7 @@ body.material-theme.dark-theme .notification-count {
     justify-content: center;
     gap: 0.4rem;
     font-family: inherit;
-    background: rgba(255, 255, 255, 0.7);
+    background: #ffffff;
     border-color: rgba(38, 37, 30, 0.10);
 }
 
@@ -5340,14 +5340,14 @@ body.material-theme.dark-theme .notification-count {
     align-items: center;
     gap: 0.6rem;
     padding: 0.6rem 0.75rem;
-    background: rgba(255, 255, 255, 0.6);
+    background: #ffffff;
     border: 1px solid rgba(38, 37, 30, 0.06);
     border-radius: 9px;
     transition: all 0.15s ease;
 }
 
 .activity-item:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: #fdfdfd;
     border-color: rgba(38, 37, 30, 0.12);
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
