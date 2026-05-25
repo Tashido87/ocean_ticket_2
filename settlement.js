@@ -1220,7 +1220,7 @@ export function openNewSettlementModal(existing = null) {
                         <input type="date" id="set_date" required value="${toIsoDate(existing?.settlement_date) || todayIso()}">
                     </div>
                     <div class="form-group"><label>Amount Paid (MMK)</label>
-                        <input type="number" id="set_amount" min="0" required value="${existing?.amount_paid || ''}">
+                        <input type="number" id="set_amount" required value="${existing?.amount_paid || ''}">
                     </div>
                     <div class="form-group"><label>Payment Method</label>
                         <select id="set_method" required>
@@ -1429,7 +1429,7 @@ async function handleSettlementSubmit(e, existing) {
         const bank = document.getElementById('set_bank')?.value || '';
         const allocMode = document.querySelector('input[name="allocMode"]:checked')?.value || 'auto';
 
-        if (!dateIso || amount <= 0 || !method) {
+        if (!dateIso || amount === 0 || !method) {
             throw new Error('Date, amount, and payment method are required.');
         }
         if (isDateInLockedPeriod(dateIso)) {
