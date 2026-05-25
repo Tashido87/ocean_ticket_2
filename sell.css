@@ -1377,12 +1377,17 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 /* ---------- Booking Context section ---------- */
 #sell-view #section-booking {
-    z-index: 1;
+    position: relative;
+    z-index: 3;
 }
 
 /* The other sections sit above the page background gradient */
-#sell-view #section-client,
+#sell-view #section-client {
+    position: relative;
+    z-index: 2;
+}
 #sell-view #section-passengers {
+    position: relative;
     z-index: 1;
 }
 

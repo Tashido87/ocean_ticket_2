@@ -295,3 +295,35 @@ export async function getDocument(collectionName, docId) {
     const snap = await getDoc(docRef);
     return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
+
+// --- HOTEL RESERVATIONS ---
+const hotelsCol = collection(db, 'hotelReservations');
+
+export function onHotelsChange(callback) {
+    const q = query(hotelsCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const hotels = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callback(hotels);
+    });
+}
+
+export async function addHotelReservation(data) {
+    const docRef = await addDoc(hotelsCol, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+}
+
+export async function updateHotelReservation(docId, data) {
+    const docRef = doc(db, 'hotelReservations', docId);
+    await updateDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+    });
+}
+
+export async function deleteHotelReservation(docId) {
+    await deleteDoc(doc(db, 'hotelReservations', docId));
+}

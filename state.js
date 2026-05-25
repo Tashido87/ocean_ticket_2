@@ -13,6 +13,9 @@ export const state = {
     allClosedPeriods: [],
     allAdjustments: [],
     dashboardTasks: [],
+    allHotels: [],
+    filteredHotels: [],
+    hotelPage: 1,
     featuredClients: [], // For starred clients
     history: [],
     charts: {

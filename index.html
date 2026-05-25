@@ -41,6 +41,7 @@
                 <button class="nav-btn" data-view="sell"><i class="fa-solid fa-ticket" aria-hidden="true"></i><span>Sell Ticket</span></button>
                 <button class="nav-btn" data-view="manage"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Manage Ticket</span></button>
                 <button class="nav-btn" data-view="booking"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span>Booking</span></button>
+                <button class="nav-btn" data-view="hotel"><i class="fa-solid fa-hotel" aria-hidden="true"></i><span>Hotel</span></button>
                 <button class="nav-btn" data-view="settle"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span>Settle</span></button>
                 <button class="nav-btn" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></button>
             </nav>
@@ -417,6 +418,171 @@
                 </div>
             </section>
             
+            <section id="hotel-view" class="view">
+                <!-- NEW HOTEL RESERVATION FORM -->
+                <div id="hotel-form-container" class="form-container glass-card" style="display: none;">
+                    <h2><i class="fa-solid fa-hotel"></i> <span id="hotelFormTitle">New Hotel Reservation</span></h2>
+                    <form id="newHotelResForm" onsubmit="return false;">
+                        <input type="hidden" id="hotel_res_id">
+                        
+                        <div class="sell-section-header" style="margin-top: 1rem; border-bottom: none; padding-bottom: 0;">
+                            <span class="section-icon" style="background: rgba(13, 148, 136, 0.08); color: #0d9488;"><i class="fa-solid fa-user"></i></span>
+                            <div class="section-titles">
+                                <h3>Guest & Hotel Details</h3>
+                                <p class="section-subtitle">Lead guest name, destination country/city, and hotel brand</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group client-autosuggest-group">
+                                <label for="hotel_res_client_name">Client Name <span class="req">*</span></label>
+                                <input type="text" id="hotel_res_client_name" placeholder="Lead guest / client name" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_other_names">Other Client Name(s)</label>
+                                <input type="text" id="hotel_res_other_names" placeholder="e.g. Spouse, children or other guests" autocomplete="off">
+                            </div>
+                            
+                            <div class="form-group client-autosuggest-group" style="position: relative;">
+                                <label for="hotel_res_hotel_name">Hotel Name <span class="req">*</span></label>
+                                <input type="text" id="hotel_res_hotel_name" placeholder="e.g. Grande Centre Point Ratchadamri" required autocomplete="off">
+                                <div class="autosuggest-box" id="hotel_res_name_autosuggest" hidden></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_country">Country <span class="req">*</span></label>
+                                <input type="text" id="hotel_res_country" placeholder="e.g. Thailand" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_city">City <span class="req">*</span></label>
+                                <input type="text" id="hotel_res_city" placeholder="e.g. Bangkok" required autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="sell-section-header" style="margin-top: 1.5rem; border-bottom: none; padding-bottom: 0;">
+                            <span class="section-icon" style="background: rgba(13, 148, 136, 0.08); color: #0d9488;"><i class="fa-solid fa-calendar-days"></i></span>
+                            <div class="section-titles">
+                                <h3>Stay & Supplier Context</h3>
+                                <p class="section-subtitle">Check-in and check-out dates, booking references, and suppliers</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="hotel_res_checkin">Check-in Date <span class="req">*</span></label>
+                                <input type="text" id="hotel_res_checkin" placeholder="DD/MM/YYYY" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_checkout">Check-out Date <span class="req">*</span></label>
+                                <input type="text" id="hotel_res_checkout" placeholder="DD/MM/YYYY" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_booking_ref">Booking Reference / PNR</label>
+                                <input type="text" id="hotel_res_booking_ref" placeholder="Confirmation No. / PNR" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_supplier">Supplier</label>
+                                <input type="text" id="hotel_res_supplier" placeholder="e.g. Trip.com / Agoda" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="sell-section-header" style="margin-top: 1.5rem; border-bottom: none; padding-bottom: 0;">
+                            <span class="section-icon" style="background: rgba(13, 148, 136, 0.08); color: #0d9488;"><i class="fa-solid fa-coins"></i></span>
+                            <div class="section-titles">
+                                <h3>Accounting & Payment</h3>
+                                <p class="section-subtitle">Financial breakdown, commission rates, and payment methods</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="hotel_res_base_fare">Base Fare (MMK) <span class="req">*</span></label>
+                                <input type="number" id="hotel_res_base_fare" min="0" value="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_net_amount">Net Amount (MMK) <span class="req">*</span></label>
+                                <input type="number" id="hotel_res_net_amount" min="0" value="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_commission">Commission (MMK) <span class="req">*</span></label>
+                                <input type="number" id="hotel_res_commission" min="0" value="0" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="hotel_res_paid">Payment Status <span class="req">*</span></label>
+                                <select id="hotel_res_paid" required>
+                                    <option value="unpaid" selected>Unpaid</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="partial">Partial</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_payment_date">Payment Date</label>
+                                <input type="text" id="hotel_res_payment_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="hotel_res_payment_method">Payment Method</label>
+                                <select id="hotel_res_payment_method">
+                                    <option value="" selected disabled>Select Method</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="KBZPay">KBZPay</option>
+                                    <option value="CBPay">CBPay</option>
+                                    <option value="WavePay">WavePay</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Mobile Banking">Mobile Banking</option>
+                                    <option value="Card">Card</option>
+                                </select>
+                            </div>
+                            <div class="form-group form-group-wide">
+                                <label for="hotel_res_notes">Reservation Notes</label>
+                                <textarea id="hotel_res_notes" rows="3" placeholder="Additional room requests, bed requirements, or special details"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 2rem;">
+                           <button type="button" class="btn btn-secondary" id="cancelHotelResBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                           <button type="submit" class="btn btn-primary" id="saveHotelResBtn"><i class="fa-solid fa-check"></i> Save Reservation</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- HOTEL DISPLAY CONTAINER (LIST / KPIs) -->
+                <div id="hotel-display-container" class="results-section glass-card">
+                     <div class="table-header">
+                        <h3><i class="fa-solid fa-hotel"></i> Hotel Reservations</h3>
+                        <div class="table-controls">
+                           <button id="newHotelResBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Reservation</button>
+                        </div>
+                    </div>
+                    
+                    <!-- KPIs -->
+                    <div id="hotelKpiGrid" class="booking-kpi-grid">
+                        <!-- Filled Dynamically -->
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="booking-search-section">
+                        <input type="search" id="hotelResSearchText" placeholder="Search guest, hotel, city, ref..." autocomplete="off">
+                        <select id="hotelResStatusFilter">
+                            <option value="all">All statuses</option>
+                            <option value="active">Active stays</option>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                            <option value="partial">Partial</option>
+                        </select>
+                        <button id="hotelResSearchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i> Search</button>
+                        <button id="hotelResClearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div id="hotelResTableContainer" class="table-container">
+                        <!-- Filled Dynamically -->
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="hotelResPagination" class="pagination-container"></div>
+                </div>
+            </section>
+
             <section id="booking-view" class="view">
                 <div id="booking-form-container" class="form-container glass-card" style="display: none;">
                     <h2><i class="fa-solid fa-calendar-plus"></i> New Booking Request</h2>

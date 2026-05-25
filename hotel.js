@@ -5,7 +5,8 @@
  */
 
 import { state } from './state.js';
-import { showToast, formatDateToDMMMY, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity } from './utils.js';
+import { showToast, formatDateToDMMMY, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, escapeHtml } from './utils.js';
+import { addHotelReservation, updateHotelReservation, deleteHotelReservation } from './db.js';
 
 /* =========================================
    HOTEL BOOKING VOUCHER MODULE
@@ -753,3 +754,526 @@ function getKULHtml(data) {
     </div>
     `;
 }
+
+/* ==========================================================
+   HOTEL RESERVATION SYSTEM (DATABASE BACKED)
+   ========================================================== */
+
+/**
+ * Initializes the hotel reservation system event listeners.
+ */
+export function initHotelReservationSystem() {
+    // Buttons
+    const newBtn = document.getElementById('newHotelResBtn');
+    const cancelBtn = document.getElementById('cancelHotelResBtn');
+    const form = document.getElementById('newHotelResForm');
+    const searchBtn = document.getElementById('hotelResSearchBtn');
+    const clearBtn = document.getElementById('hotelResClearBtn');
+    const searchInput = document.getElementById('hotelResSearchText');
+    const statusFilter = document.getElementById('hotelResStatusFilter');
+
+    if (newBtn) newBtn.addEventListener('click', showNewHotelReservationForm);
+    if (cancelBtn) cancelBtn.addEventListener('click', hideHotelReservationForm);
+    
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveHotelReservation();
+        });
+    }
+
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            state.hotelPage = 1;
+            renderHotelReservations();
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = 'all';
+            state.hotelPage = 1;
+            renderHotelReservations();
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                state.hotelPage = 1;
+                renderHotelReservations();
+            }
+        });
+    }
+
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            state.hotelPage = 1;
+            renderHotelReservations();
+        });
+    }
+
+    // Auto-calculate commission (Commission = Base Fare - Net Amount)
+    const baseInput = document.getElementById('hotel_res_base_fare');
+    const netInput = document.getElementById('hotel_res_net_amount');
+    const commInput = document.getElementById('hotel_res_commission');
+
+    if (baseInput && netInput && commInput) {
+        const autoCalc = () => {
+            const base = parseFloat(baseInput.value) || 0;
+            const net = parseFloat(netInput.value) || 0;
+            commInput.value = Math.max(0, base - net);
+        };
+        baseInput.addEventListener('input', autoCalc);
+        netInput.addEventListener('input', autoCalc);
+    }
+
+    // Initialize Datepickers
+    if (window.Datepicker) {
+        const checkinEl = document.getElementById('hotel_res_checkin');
+        const checkoutEl = document.getElementById('hotel_res_checkout');
+        const payDateEl = document.getElementById('hotel_res_payment_date');
+
+        const opt = { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true };
+        if (checkinEl) new window.Datepicker(checkinEl, opt);
+        if (checkoutEl) new window.Datepicker(checkoutEl, opt);
+        if (payDateEl) new window.Datepicker(payDateEl, opt);
+    }
+
+    // Set up suggestions dropdown
+    setupHotelSuggestions();
+}
+
+/**
+ * Handles showing the New Hotel Reservation form.
+ */
+export function showNewHotelReservationForm() {
+    const form = document.getElementById('newHotelResForm');
+    const title = document.getElementById('hotelFormTitle');
+    const formContainer = document.getElementById('hotel-form-container');
+    const listContainer = document.getElementById('hotel-display-container');
+
+    if (form) {
+        form.reset();
+        document.getElementById('hotel_res_id').value = '';
+    }
+    if (title) title.textContent = 'New Hotel Reservation';
+
+    // Set default check-in (today) and check-out (tomorrow)
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    const checkinEl = document.getElementById('hotel_res_checkin');
+    const checkoutEl = document.getElementById('hotel_res_checkout');
+
+    if (checkinEl) checkinEl.value = formatDMY(today);
+    if (checkoutEl) checkoutEl.value = formatDMY(tomorrow);
+
+    if (listContainer) listContainer.style.display = 'none';
+    if (formContainer) {
+        formContainer.style.display = 'block';
+        document.getElementById('hotel_res_client_name')?.focus();
+    }
+}
+
+/**
+ * Hides the reservation form and returns to list view.
+ */
+export function hideHotelReservationForm() {
+    const formContainer = document.getElementById('hotel-form-container');
+    const listContainer = document.getElementById('hotel-display-container');
+    if (formContainer) formContainer.style.display = 'none';
+    if (listContainer) listContainer.style.display = 'block';
+}
+
+/**
+ * Sets up hotel name autocomplete suggestions and autofill country & city.
+ */
+function setupHotelSuggestions() {
+    const input = document.getElementById('hotel_res_hotel_name');
+    const box = document.getElementById('hotel_res_name_autosuggest');
+    if (!input || !box) return;
+
+    const render = () => {
+        const query = input.value.trim().toLowerCase();
+        if (!query) {
+            box.hidden = true;
+            return;
+        }
+
+        // Collect unique hotels from list of all reservations
+        const uniqueHotels = [];
+        const seen = new Set();
+        state.allHotels.forEach(h => {
+            const name = (h.hotel_name || '').trim();
+            const key = name.toLowerCase();
+            if (name && !seen.has(key)) {
+                seen.add(key);
+                uniqueHotels.push({
+                    name: name,
+                    country: h.country || '',
+                    city: h.city || ''
+                });
+            }
+        });
+
+        const matches = uniqueHotels.filter(h => h.name.toLowerCase().includes(query));
+        if (matches.length === 0) {
+            box.hidden = true;
+            return;
+        }
+
+        box.innerHTML = matches.map(h => `
+            <div class="autosuggest-item" data-hotel-name="${escapeHtml(h.name)}" data-hotel-country="${escapeHtml(h.country)}" data-hotel-city="${escapeHtml(h.city)}" style="padding: 10px 15px; cursor: pointer;">
+                <div style="font-weight: 600; font-size: 0.9rem;"><i class="fa-solid fa-hotel" style="color: #0d9488; margin-right: 5px;"></i> ${escapeHtml(h.name)}</div>
+                <div style="font-size: 0.75rem; color: #666; margin-top: 2px;">${escapeHtml(h.city)}, ${escapeHtml(h.country)}</div>
+            </div>
+        `).join('');
+        box.hidden = false;
+    };
+
+    input.addEventListener('input', render);
+    input.addEventListener('focus', render);
+
+    // Close box on click outside
+    document.addEventListener('click', (e) => {
+        if (!input.contains(e.target) && !box.contains(e.target)) {
+            box.hidden = true;
+        }
+    });
+
+    box.addEventListener('click', (e) => {
+        const item = e.target.closest('.autosuggest-item');
+        if (item) {
+            input.value = item.dataset.hotelName;
+            document.getElementById('hotel_res_country').value = item.dataset.hotelCountry;
+            document.getElementById('hotel_res_city').value = item.dataset.hotelCity;
+            box.hidden = true;
+            showToast(`Auto-filled details for ${item.dataset.hotelName}.`, 'info');
+        }
+    });
+}
+
+/**
+ * Saves a hotel reservation to Firestore.
+ */
+async function saveHotelReservation() {
+    if (state.isSubmitting) return;
+    state.isSubmitting = true;
+
+    const saveBtn = document.getElementById('saveHotelResBtn');
+    setButtonLoading(saveBtn, true);
+
+    try {
+        const id = document.getElementById('hotel_res_id').value;
+        const data = {
+            client_name: document.getElementById('hotel_res_client_name').value.trim(),
+            other_names: document.getElementById('hotel_res_other_names').value.trim(),
+            hotel_name: document.getElementById('hotel_res_hotel_name').value.trim(),
+            country: document.getElementById('hotel_res_country').value.trim(),
+            city: document.getElementById('hotel_res_city').value.trim(),
+            checkin: document.getElementById('hotel_res_checkin').value,
+            checkout: document.getElementById('hotel_res_checkout').value,
+            booking_ref: document.getElementById('hotel_res_booking_ref').value.trim(),
+            supplier: document.getElementById('hotel_res_supplier').value.trim(),
+            base_fare: parseFloat(document.getElementById('hotel_res_base_fare').value) || 0,
+            net_amount: parseFloat(document.getElementById('hotel_res_net_amount').value) || 0,
+            commission: parseFloat(document.getElementById('hotel_res_commission').value) || 0,
+            paid: document.getElementById('hotel_res_paid').value,
+            payment_date: document.getElementById('hotel_res_payment_date').value,
+            payment_method: document.getElementById('hotel_res_payment_method').value || '',
+            notes: document.getElementById('hotel_res_notes').value.trim()
+        };
+
+        if (id) {
+            await updateHotelReservation(id, data);
+            showToast('Hotel reservation updated successfully.', 'success');
+        } else {
+            await addHotelReservation(data);
+            showToast('Hotel reservation saved successfully.', 'success');
+        }
+
+        hideHotelReservationForm();
+    } catch (error) {
+        console.error(error);
+        showToast('Failed to save hotel reservation.', 'error');
+    } finally {
+        state.isSubmitting = false;
+        setButtonLoading(saveBtn, false);
+    }
+}
+
+/**
+ * Loads a reservation and populates the edit form.
+ * @param {string} id The document ID.
+ */
+export function editHotelReservation(id) {
+    const res = state.allHotels.find(h => h.id === id);
+    if (!res) {
+        showToast('Could not find reservation details.', 'error');
+        return;
+    }
+
+    const title = document.getElementById('hotelFormTitle');
+    const formContainer = document.getElementById('hotel-form-container');
+    const listContainer = document.getElementById('hotel-display-container');
+
+    if (title) title.textContent = 'Edit Hotel Reservation';
+    
+    document.getElementById('hotel_res_id').value = id;
+    document.getElementById('hotel_res_client_name').value = res.client_name || '';
+    document.getElementById('hotel_res_other_names').value = res.other_names || '';
+    document.getElementById('hotel_res_hotel_name').value = res.hotel_name || '';
+    document.getElementById('hotel_res_country').value = res.country || '';
+    document.getElementById('hotel_res_city').value = res.city || '';
+    document.getElementById('hotel_res_checkin').value = res.checkin || '';
+    document.getElementById('hotel_res_checkout').value = res.checkout || '';
+    document.getElementById('hotel_res_booking_ref').value = res.booking_ref || '';
+    document.getElementById('hotel_res_supplier').value = res.supplier || '';
+    document.getElementById('hotel_res_base_fare').value = res.base_fare || 0;
+    document.getElementById('hotel_res_net_amount').value = res.net_amount || 0;
+    document.getElementById('hotel_res_commission').value = res.commission || 0;
+    document.getElementById('hotel_res_paid').value = res.paid || 'unpaid';
+    document.getElementById('hotel_res_payment_date').value = res.payment_date || '';
+    document.getElementById('hotel_res_payment_method').value = res.payment_method || '';
+    document.getElementById('hotel_res_notes').value = res.notes || '';
+
+    if (listContainer) listContainer.style.display = 'none';
+    if (formContainer) formContainer.style.display = 'block';
+}
+
+/**
+ * Deletes a reservation from the database.
+ * @param {string} id The document ID.
+ */
+export async function deleteHotelReservationAction(id) {
+    if (!confirm('Are you sure you want to delete this hotel reservation? This action cannot be undone.')) return;
+    try {
+        await deleteHotelReservation(id);
+        showToast('Hotel reservation deleted successfully.', 'success');
+    } catch (error) {
+        console.error(error);
+        showToast('Failed to delete reservation.', 'error');
+    }
+}
+
+/**
+ * Renders the hotel reservations list and KPI summary cards.
+ */
+export function renderHotelReservations() {
+    const tbody = document.getElementById('hotelResTableContainer');
+    const kpisGrid = document.getElementById('hotelKpiGrid');
+    const pagination = document.getElementById('hotelResPagination');
+    if (!tbody) return;
+
+    const searchInput = document.getElementById('hotelResSearchText')?.value.trim().toLowerCase() || '';
+    const statusFilter = document.getElementById('hotelResStatusFilter')?.value || 'all';
+
+    // 1. Filter Reservations
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const filtered = state.allHotels.filter(res => {
+        // Search filter
+        const matchesSearch = 
+            (res.client_name || '').toLowerCase().includes(searchInput) ||
+            (res.other_names || '').toLowerCase().includes(searchInput) ||
+            (res.hotel_name || '').toLowerCase().includes(searchInput) ||
+            (res.city || '').toLowerCase().includes(searchInput) ||
+            (res.country || '').toLowerCase().includes(searchInput) ||
+            (res.booking_ref || '').toLowerCase().includes(searchInput) ||
+            (res.supplier || '').toLowerCase().includes(searchInput);
+
+        if (!matchesSearch) return false;
+
+        // Status filter
+        if (statusFilter === 'all') return true;
+        if (statusFilter === 'paid') return res.paid === 'paid';
+        if (statusFilter === 'unpaid') return res.paid === 'unpaid';
+        if (statusFilter === 'partial') return res.paid === 'partial';
+        if (statusFilter === 'active') {
+            const checkin = parseDMY(res.checkin);
+            const checkout = parseDMY(res.checkout);
+            if (checkin && checkout) {
+                checkin.setHours(0, 0, 0, 0);
+                checkout.setHours(0, 0, 0, 0);
+                return today >= checkin && today <= checkout;
+            }
+            return false;
+        }
+        return true;
+    });
+
+    state.filteredHotels = filtered;
+
+    // 2. Render KPIs
+    let totalBookings = filtered.length;
+    let unpaidStays = filtered.filter(res => res.paid !== 'paid').length;
+    let activeStaysCount = filtered.filter(res => {
+        const checkin = parseDMY(res.checkin);
+        const checkout = parseDMY(res.checkout);
+        if (checkin && checkout) {
+            checkin.setHours(0, 0, 0, 0);
+            checkout.setHours(0, 0, 0, 0);
+            return today >= checkin && today <= checkout;
+        }
+        return false;
+    }).length;
+    let totalComm = filtered.reduce((sum, res) => sum + (parseFloat(res.commission) || 0), 0);
+
+    if (kpisGrid) {
+        kpisGrid.innerHTML = `
+            <div class="kpi-card">
+                <div class="kpi-icon kpi-teal"><i class="fa-solid fa-list-check"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-label">Total Reservations</div>
+                    <div class="kpi-value">${totalBookings}</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon kpi-coral"><i class="fa-solid fa-hourglass-half"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-label">Unpaid Stays</div>
+                    <div class="kpi-value">${unpaidStays}</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon kpi-amber"><i class="fa-solid fa-clock"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-label">Active Stays</div>
+                    <div class="kpi-value">${activeStaysCount}</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon kpi-green"><i class="fa-solid fa-coins"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-label">Total Commission</div>
+                    <div class="kpi-value" style="font-size: 1.45rem;">${totalComm.toLocaleString()} MMK</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 3. Render Table
+    const totalPages = Math.ceil(filtered.length / state.rowsPerPage) || 1;
+    if (state.hotelPage > totalPages) state.hotelPage = totalPages;
+
+    const start = (state.hotelPage - 1) * state.rowsPerPage;
+    const end = start + state.rowsPerPage;
+    const paginated = filtered.slice(start, end);
+
+    let rowsHtml = '';
+    if (paginated.length === 0) {
+        rowsHtml = `
+            <tr>
+                <td colspan="7" class="empty-row" style="text-align: center; padding: 2rem;">No hotel reservations found.</td>
+            </tr>
+        `;
+    } else {
+        paginated.forEach(res => {
+            const guestCell = `
+                <div style="font-weight: 700; color: var(--ink);">${escapeHtml(res.client_name)}</div>
+                ${res.other_names ? `<div style="font-size: 0.76rem; color: var(--muted); margin-top: 2px;">Guests: ${escapeHtml(res.other_names)}</div>` : ''}
+            `;
+            const hotelCell = `
+                <div style="font-weight: 700; color: var(--ink);"><i class="fa-solid fa-hotel" style="color: #0d9488; margin-right: 4px; font-size: 0.8rem;"></i> ${escapeHtml(res.hotel_name)}</div>
+                <div style="font-size: 0.76rem; color: var(--muted); margin-top: 2px;">${escapeHtml(res.city)}, ${escapeHtml(res.country)}</div>
+            `;
+            const dateCell = `
+                <div style="font-weight: 600;">${formatNiceDate(res.checkin)}</div>
+                <div style="font-size: 0.72rem; color: var(--muted); font-weight: 500; margin: 2px 0;">to</div>
+                <div style="font-weight: 600;">${formatNiceDate(res.checkout)}</div>
+            `;
+            const costCell = `
+                <div style="font-size: 0.78rem; color: var(--text-secondary);">Base: <strong>${(res.base_fare || 0).toLocaleString()}</strong></div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Net: <strong>${(res.net_amount || 0).toLocaleString()}</strong></div>
+            `;
+            const statusBadge = `
+                <span class="payment-badge payment-${res.paid}">${res.paid === 'paid' ? 'Paid' : res.paid === 'partial' ? 'Partial' : 'Unpaid'}</span>
+                ${res.payment_method ? `<div style="font-size: 0.72rem; color: var(--muted); margin-top: 4px; font-weight: 600;">${escapeHtml(res.payment_method)}</div>` : ''}
+            `;
+
+            rowsHtml += `
+                <tr data-id="${res.id}">
+                    <td style="padding: 1rem 0.75rem; vertical-align: top;">${guestCell}</td>
+                    <td style="padding: 1rem 0.75rem; vertical-align: top;">${hotelCell}</td>
+                    <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${dateCell}</td>
+                    <td style="padding: 1rem 0.75rem; vertical-align: top;">${costCell}</td>
+                    <td style="padding: 1rem 0.75rem; vertical-align: top; font-weight: 700; color: #0d9488; text-align: right;">${(res.commission || 0).toLocaleString()} MMK</td>
+                    <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${statusBadge}</td>
+                    <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;" class="search-row-actions">
+                        <button class="icon-btn" title="Edit Reservation" onclick="window.editHotelReservation('${res.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="icon-btn btn-danger" title="Delete" onclick="window.deleteHotelReservationAction('${res.id}')"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    tbody.innerHTML = `
+        <table class="sell-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="width: 20%; text-align: left;">Guest</th>
+                    <th style="width: 25%; text-align: left;">Hotel</th>
+                    <th style="width: 15%; text-align: center;">Stay Dates</th>
+                    <th style="width: 15%; text-align: left;">Cost Breakdown</th>
+                    <th style="width: 12%; text-align: right;">Commission</th>
+                    <th style="width: 8%; text-align: center;">Payment</th>
+                    <th style="width: 5%; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
+
+    // 4. Render Pagination
+    let pagHtml = '';
+    if (totalPages > 1) {
+        pagHtml += `<button class="btn-page" ${state.hotelPage === 1 ? 'disabled' : ''} onclick="window.setHotelPage(${state.hotelPage - 1})"><i class="fa-solid fa-chevron-left"></i></button>`;
+        for (let i = 1; i <= totalPages; i++) {
+            pagHtml += `<button class="btn-page ${state.hotelPage === i ? 'active' : ''}" onclick="window.setHotelPage(${i})">${i}</button>`;
+        }
+        pagHtml += `<button class="btn-page" ${state.hotelPage === totalPages ? 'disabled' : ''} onclick="window.setHotelPage(${state.hotelPage + 1})"><i class="fa-solid fa-chevron-right"></i></button>`;
+    }
+    if (pagination) pagination.innerHTML = pagHtml;
+}
+
+// Helpers
+
+function parseDMY(str) {
+    if (!str) return null;
+    const parts = str.split('/');
+    if (parts.length !== 3) return null;
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const year = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+}
+
+function formatDMY(date) {
+    if (!date) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+function formatNiceDate(str) {
+    const d = parseDMY(str);
+    if (!d || isNaN(d)) return str || '—';
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Attach functions to window for onclick handlers
+window.editHotelReservation = editHotelReservation;
+window.deleteHotelReservationAction = deleteHotelReservationAction;
+window.setHotelPage = (page) => {
+    state.hotelPage = page;
+    renderHotelReservations();
+};
+

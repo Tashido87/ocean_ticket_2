@@ -9,7 +9,7 @@ import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToD
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets } from './db.js';
-import { sellTicketForClient, bookForClient } from './clients.js';
+import { sellTicketForClient, bookForClient, reserveHotelForClient } from './clients.js';
 import { showDetails } from './tickets.js';
 import { findTicketForManage } from './manage.js';
 import { openPhotoLightbox } from './passport.js';
@@ -1115,6 +1115,7 @@ function renderClientDetailView() {
                 <div class="client-hero-actions">
                     <button class="btn btn-primary" data-detail-action="sell"><i class="fa-solid fa-ticket"></i> Sell New Ticket</button>
                     <button class="btn btn-secondary" data-detail-action="booking"><i class="fa-solid fa-calendar-plus"></i> Booking</button>
+                    <button class="btn btn-secondary" data-detail-action="hotel"><i class="fa-solid fa-hotel"></i> Hotel</button>
                     <button class="btn btn-ghost" data-detail-action="back"><i class="fa-solid fa-arrow-left"></i> Back to results</button>
                 </div>
             </div>
@@ -1361,6 +1362,7 @@ function wireDetailActions(detail, client) {
             const action = btn.dataset.detailAction;
             if (action === 'sell') sellTicketForClient(client.client_key);
             else if (action === 'booking') bookForClient(client.client_key);
+            else if (action === 'hotel') reserveHotelForClient(client.client_key);
             else if (action === 'back') {
                 searchState.selectedClientKey = '';
                 refreshSearchView(false);

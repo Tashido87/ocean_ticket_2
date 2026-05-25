@@ -601,11 +601,67 @@ export function bookForClient(clientKey) {
     const passengerNameInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-name');
     const passengerNrcInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-nrc');
     const passengerPassportInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-passport');
-
     if (passengerGenderSelect) passengerGenderSelect.value = client.gender || 'MR';
     if (passengerNameInput) passengerNameInput.value = client.name.toUpperCase();
     if (passengerNrcInput) passengerNrcInput.value = (client.nrc_no || '').toUpperCase();
     if (passengerPassportInput) passengerPassportInput.value = (client.passport_no || '').toUpperCase();
 
     showToast(`Booking form pre-filled for ${client.name}.`, 'info');
+}
+
+/**
+ * Pre-fills the "New Hotel Reservation" form for a specific client.
+ * @param {string} clientKey The unique key of the client.
+ */
+export function reserveHotelForClient(clientKey) {
+    const client = state.allClients.find(c => c.client_key === clientKey);
+    if (!client) {
+        showToast('Could not find client details.', 'error');
+        return;
+    }
+
+    showView('hotel');
+    closeModal();
+
+    // Reset and show hotel form
+    const form = document.getElementById('newHotelResForm');
+    const title = document.getElementById('hotelFormTitle');
+    const formContainer = document.getElementById('hotel-form-container');
+    const listContainer = document.getElementById('hotel-display-container');
+
+    if (form) {
+        form.reset();
+        document.getElementById('hotel_res_id').value = '';
+    }
+    if (title) title.textContent = 'New Hotel Reservation';
+
+    // Set default check-in (today) and check-out (tomorrow)
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    const checkinEl = document.getElementById('hotel_res_checkin');
+    const checkoutEl = document.getElementById('hotel_res_checkout');
+    if (checkinEl) checkinEl.value = formatDMY(today);
+    if (checkoutEl) checkoutEl.value = formatDMY(tomorrow);
+
+    if (listContainer) listContainer.style.display = 'none';
+    if (formContainer) formContainer.style.display = 'block';
+
+    // Pre-fill client name
+    const clientNameInput = document.getElementById('hotel_res_client_name');
+    if (clientNameInput) {
+        clientNameInput.value = client.name.toUpperCase();
+    }
+
+    showToast(`Hotel form pre-filled for ${client.name}.`, 'info');
+}
+
+// Local helper duplicated from hotel.js to ensure formatDMY is standalone
+function formatDMY(date) {
+    if (!date) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 }

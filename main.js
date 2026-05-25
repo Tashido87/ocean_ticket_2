@@ -7,7 +7,7 @@
 // Core Modules
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
-import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask } from './db.js';
+import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange } from './db.js';
 import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName } from './utils.js';
 
 // Feature Modules
@@ -20,7 +20,7 @@ import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
-import { initHotelService } from './hotel.js'; 
+import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules
@@ -232,6 +232,13 @@ export async function initializeApp() {
             })
         );
 
+        state.unsubscribers.push(
+            onHotelsChange((hotels) => {
+                state.allHotels = hotels;
+                renderHotelReservations();
+            })
+        );
+
         initSettlementView();
 
         state.unsubscribers.push(
@@ -270,6 +277,10 @@ function handleHashRoute() {
         window._skipHashUpdate = true;
         showView(viewName);
         if (viewName === 'search') initSearchView();
+        if (viewName === 'hotel') {
+            hideHotelReservationForm();
+            renderHotelReservations();
+        }
     }
 }
 
@@ -283,6 +294,10 @@ function handlePopState(e) {
         window._skipHashUpdate = true;
         showView(viewMatch[1]);
         if (viewMatch[1] === 'search') initSearchView();
+        if (viewMatch[1] === 'hotel') {
+            hideHotelReservationForm();
+            renderHotelReservations();
+        }
     } else {
         window._skipHashUpdate = true;
         showView('home');
@@ -443,6 +458,7 @@ function setupEventListeners() {
 
     // Hotel Service Initialization
     initHotelService();
+    initHotelReservationSystem();
 
     // Invoice Generation Logic — unified Generate button with format selector
     const invoiceGenerateBtn = document.getElementById('invoiceGenerateBtn');
