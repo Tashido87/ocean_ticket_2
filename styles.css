@@ -9043,7 +9043,7 @@ body.material-theme tbody tr:hover {
 }
 
 .dashboard-kpis {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
     gap: 1rem !important;
 }
 
@@ -9326,7 +9326,7 @@ body.material-theme tbody tr:hover {
     .dashboard-hero { grid-template-columns: 1fr; }
     .dashboard-hero-actions { justify-content: flex-start; max-width: none; }
     .dashboard-hero-illustration { display: none; }
-    .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    .dashboard-kpis { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important; }
     .dashboard-panels-row { grid-template-columns: repeat(2, minmax(280px, 1fr)) !important; }
     .dashboard-chart-grid { grid-template-columns: 1fr; }
 }

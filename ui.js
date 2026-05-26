@@ -2152,6 +2152,23 @@ function _attachPaxBehaviour(formEl, opts = {}) {
         const el = formEl.querySelector('.' + cls);
         if (!el) return;
         el.addEventListener('input', () => {
+            // Auto-calculate commission = net - base
+            if (cls === 'passenger-base-fare' || cls === 'passenger-net-amount') {
+                const base = parseFloat(formEl.querySelector('.passenger-base-fare')?.value) || 0;
+                const net = parseFloat(formEl.querySelector('.passenger-net-amount')?.value) || 0;
+                const commEl = formEl.querySelector('.passenger-commission');
+                if (commEl && net > 0) {
+                    commEl.value = Math.max(0, net - base);
+                }
+            }
+            if (cls === 'passenger-return-base-fare' || cls === 'passenger-return-net-amount') {
+                const base = parseFloat(formEl.querySelector('.passenger-return-base-fare')?.value) || 0;
+                const net = parseFloat(formEl.querySelector('.passenger-return-net-amount')?.value) || 0;
+                const commEl = formEl.querySelector('.passenger-return-commission');
+                if (commEl && net > 0) {
+                    commEl.value = Math.max(0, net - base);
+                }
+            }
             updatePaxTotal(formEl);
             updatePaxStatus(formEl);
             updateSummaryBar();
