@@ -50,6 +50,25 @@ export function exportSelectedToExcel() {
         return;
     }
 
+    // Sort itemsToExport by date ascending (oldest first)
+    itemsToExport.sort((a, b) => {
+        const dateA = parseSheetDate(a.issued_date || a.checkin);
+        const dateB = parseSheetDate(b.issued_date || b.checkin);
+        
+        if (dateA && dateB && !isNaN(dateA) && !isNaN(dateB)) {
+            const diff = dateA - dateB;
+            if (diff !== 0) return diff;
+        }
+        
+        const getMs = (ts) => {
+            if (!ts) return 0;
+            if (typeof ts.toMillis === 'function') return ts.toMillis();
+            if (ts.seconds) return ts.seconds * 1000;
+            return 0;
+        };
+        return getMs(a.createdAt) - getMs(b.createdAt);
+    });
+
     // Prepare CSV data
     const headers = ['Type', 'Date', 'Name', 'PNR / Booking Ref', 'Route / Location', 'Airline', 'Net Amount', 'Commission', 'Extra Fare', 'Date Change', 'Status/Remarks'];
     const rows = [headers];
