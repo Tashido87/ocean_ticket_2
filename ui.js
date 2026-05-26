@@ -2840,7 +2840,7 @@ export function updateSummaryBar() {
     const round = isRoundTrip();
     let totalNet = 0;
     let totalCommission = 0;
-    const isSelf = document.querySelector('input[name="source"]:checked')?.value === 'self';
+    const isSelf = document.querySelector('input[name="ticket_source"]:checked')?.value === 'self';
     cards.forEach(card => {
         const net = parseFloat(card.querySelector('.passenger-net-amount').value) || 0;
         const extra = parseFloat(card.querySelector('.passenger-extra-fare').value) || 0;

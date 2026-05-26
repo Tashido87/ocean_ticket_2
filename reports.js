@@ -616,7 +616,11 @@ export async function exportPrivateReportToPdf() {
             monthlyData[monthIndex].revenue += (t.net_amount || 0) + (t.date_change || 0);
             monthlyData[monthIndex].commission += (t.commission || 0);
             monthlyData[monthIndex].extraFare += (t.extra_fare || 0);
-            monthlyData[monthIndex].profit += (t.commission || 0) + (t.extra_fare || 0);
+            let ticketProfit = (t.commission || 0) + (t.extra_fare || 0);
+        if (t.source === 'self' && ticketProfit === 0) {
+            ticketProfit = (Number(t.base_fare) || 0) + (Number(t.extra_fare) || 0) - (Number(t.cost_price) || 0);
+        }
+        monthlyData[monthIndex].profit += ticketProfit;
             monthlyData[monthIndex].tickets++;
         }
     });

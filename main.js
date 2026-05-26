@@ -868,6 +868,9 @@ function ticketSalesAmount(t) {
 }
 
 function ticketProfitAmount(t) {
+    if (t.source === 'self' && !(Number(t.commission) > 0)) {
+        return (Number(t.base_fare) || 0) + (Number(t.extra_fare) || 0) - (Number(t.cost_price) || 0);
+    }
     return (Number(t.commission) || 0) + (Number(t.extra_fare) || 0);
 }
 
