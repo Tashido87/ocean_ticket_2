@@ -106,7 +106,7 @@ function isCanceled(t) {
 }
 
 function isExcluded(t) {
-    return isFeeEntry(t) || isCanceled(t);
+    return isFeeEntry(t) || isCanceled(t) || t?.source === 'self';
 }
 
 function n(v) { return Number(v || 0); }
@@ -206,6 +206,7 @@ export function getOpeningBalance(start) {
     (state.allHotels || []).forEach(h => {
         const d = parseSheetDate(h.checkin);
         if (!d.getTime() || d.getTime() >= start.getTime()) return;
+        if (h.source === 'self') return;
         ownerPayable += n(h.net_amount);
     });
 
@@ -265,6 +266,7 @@ export function getSettlementSummary() {
         if (!checkin.getTime()) return;
         const inP = inRange(checkin, start, end);
         if (!inP) return;
+        if (h.source === 'self') return;
 
         ticketSalesTotal += n(h.base_fare);
         ownerPayable += n(h.net_amount);
@@ -364,6 +366,7 @@ export function getOwnerLedgerRows() {
     (state.allHotels || []).forEach(h => {
         const checkin = parseSheetDate(h.checkin);
         if (!checkin.getTime() || !inRange(checkin, start, end)) return;
+        if (h.source === 'self') return;
 
         rows.push({
             date: checkin,

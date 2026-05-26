@@ -924,7 +924,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.98);
+    background: #ffffff;
     border-top: 1px solid rgba(36, 36, 43, 0.10);
     box-shadow: 0 -8px 24px rgba(0,0,0,0.05);
     padding: 1rem 2rem;
@@ -1495,7 +1495,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 /* ---------- Domestic / International toggle — clean segmented control ---------- */
 #sell-view .flight-type-toggle {
-    background: rgba(255, 255, 255, 0.7);
+    background: #ffffff;
     border: 1px solid var(--sell-border);
     border-radius: 999px;
     padding: 3px;
@@ -1539,7 +1539,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 /* ---------- Trip type segment — refined ---------- */
 #sell-view .trip-type-segment {
-    background: rgba(255, 255, 255, 0.7);
+    background: #ffffff;
     border: 1px solid var(--sell-border);
     box-shadow: var(--sell-shadow-pill);
 }
@@ -2082,7 +2082,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 /* Cancel button — softer ghost */
 #stickySummaryBar #cancelSellBtn {
-    background: rgba(255, 255, 255, 0.7);
+    background: #ffffff;
     border: 1px solid var(--sell-border-strong);
     box-shadow: var(--sell-shadow-pill);
 }

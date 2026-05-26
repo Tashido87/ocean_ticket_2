@@ -868,11 +868,22 @@ function ticketSalesAmount(t) {
 }
 
 function ticketProfitAmount(t) {
+    if (t.source === 'self') {
+        return (Number(t.base_fare) || 0) + (Number(t.extra_fare) || 0) - (Number(t.cost_price) || 0);
+    }
     return (Number(t.commission) || 0) + (Number(t.extra_fare) || 0);
+}
+
+function hotelProfitAmount(h) {
+    if (h.source === 'self') {
+        return (Number(h.base_fare) || 0) - (Number(h.net_amount) || 0);
+    }
+    return Number(h.commission) || 0;
 }
 
 function ticketOwnerPayableAmount(t) {
     if (isCanceledTicket(t)) return 0;
+    if (t.source === 'self') return 0;
     // Owner payable follows settlement assumptions: net + date change owed to owner, commission retained by us.
     return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0) - (Number(t.commission) || 0);
 }
@@ -1100,10 +1111,18 @@ export function updateDashboardData() {
     const prevTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
 
     // 3. Total Profit
-    const curHotelProfit = activeHotelRowsInRange(range).reduce((sum, h) => sum + (Number(h.commission) || 0), 0);
-    const prevHotelProfit = activeHotelRowsInRange(prevRange).reduce((sum, h) => sum + (Number(h.commission) || 0), 0);
+    const curHotelProfit = activeHotelRowsInRange(range).reduce((sum, h) => sum + hotelProfitAmount(h), 0);
+    const prevHotelProfit = activeHotelRowsInRange(prevRange).reduce((sum, h) => sum + hotelProfitAmount(h), 0);
     const curProfit = ticketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0) + curHotelProfit;
     const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0) + prevHotelProfit;
+
+    // 3b. Self-Purchased Profit
+    const curSelfHotelProfit = activeHotelRowsInRange(range).filter(h => h.source === 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
+    const prevSelfHotelProfit = activeHotelRowsInRange(prevRange).filter(h => h.source === 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
+    const curSelfTicketProfit = ticketsInPeriod.filter(t => t.source === 'self').reduce((sum, t) => sum + ticketProfitAmount(t), 0);
+    const prevSelfTicketProfit = prevTicketsInPeriod.filter(t => t.source === 'self').reduce((sum, t) => sum + ticketProfitAmount(t), 0);
+    const curSelfProfit = curSelfHotelProfit + curSelfTicketProfit;
+    const prevSelfProfit = prevSelfHotelProfit + prevSelfTicketProfit;
 
     // 4. Remaining Due to Owner (from settlement module — global, not period-scoped)
     const settleSummary = getSettlementSummary();
@@ -1137,6 +1156,9 @@ export function updateDashboardData() {
     setHtml('owner-payable-trend-wrapper', curRemainingDue > 0
         ? `<span class="trend-badge negative"><i class="fa-solid fa-circle-exclamation"></i> outstanding</span>`
         : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> settled</span>`);
+        
+    setText('self-profit-value', formatDashboardAmount(curSelfProfit));
+    setHtml('self-profit-trend-wrapper', getTrendBadgeHtml(curSelfProfit, prevSelfProfit));
 
     setText('bookingRevenuePeriodHint', range.label || 'This Month');
     setText('dashboardUnpaidHint', `${formatDashboardAmount(curUnpaid)} MMK`);

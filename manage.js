@@ -65,12 +65,16 @@ function ticketTotal(ticket) {
 
 function ownerPayable(ticket) {
     if (isCanceledTicket(ticket)) return 0;
+    if (ticket.source === 'self') return 0; // Exclude self-purchased from owner payable
     // Owner payable assumption used in settlement: net/date-change owed owner, commission retained by us.
     return (Number(ticket.net_amount) || 0) + (Number(ticket.date_change) || 0) - (Number(ticket.commission) || 0);
 }
 
 function profitAmount(ticket) {
     if (isCanceledTicket(ticket)) return 0;
+    if (ticket.source === 'self') {
+        return (Number(ticket.base_fare) || 0) + (Number(ticket.extra_fare) || 0) - (Number(ticket.cost_price) || 0);
+    }
     return (Number(ticket.commission) || 0) + (Number(ticket.extra_fare) || 0);
 }
 

@@ -666,7 +666,8 @@ function collectFormData(form) {
         is_round_trip: isRound,
         paid: form.querySelector('#paid').checked,
         payment_method: finalPaymentMethod,
-        paid_date: form.querySelector('#paid_date').value
+        paid_date: form.querySelector('#paid_date').value,
+        source: form.querySelector('input[name="ticket_source"]:checked')?.value || 'owner'
     };
 
     // --- Build return-leg shared data when round-trip is enabled ---
@@ -749,12 +750,16 @@ function collectFormData(form) {
                 return entries;
             })(),
             // Outbound pricing
+            cost_price: readMoneyInput(pForm, '.passenger-cost-price'),
+            supplier: readPassengerInput(pForm, '.passenger-supplier'),
             base_fare: readMoneyInput(pForm, '.passenger-base-fare'),
             net_amount: readMoneyInput(pForm, '.passenger-net-amount'),
             extra_fare: readMoneyInput(pForm, '.passenger-extra-fare'),
             commission: readMoneyInput(pForm, '.passenger-commission'),
             remarks: readPassengerInput(pForm, '.passenger-remarks'),
             // Return-leg pricing (zero when one-way)
+            return_cost_price: isRound ? readMoneyInput(pForm, '.passenger-return-cost-price') : 0,
+            return_supplier: isRound ? readPassengerInput(pForm, '.passenger-return-supplier') : '',
             return_base_fare: isRound ? readMoneyInput(pForm, '.passenger-return-base-fare') : 0,
             return_net_amount: isRound ? readMoneyInput(pForm, '.passenger-return-net-amount') : 0,
             return_extra_fare: isRound ? readMoneyInput(pForm, '.passenger-return-extra-fare') : 0,
@@ -813,10 +818,13 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
             paid: sharedData.paid,
             payment_method: sharedData.payment_method,
             paid_date: sharedData.paid ? formatDateForSheet(sharedData.paid_date) : '',
-            commission: agentCommission,
+            commission: sharedData.source === 'self' ? 0 : agentCommission,
             remarks: pricing.remarks || '',
             extra_fare: pricing.extra_fare || 0,
             date_change: 0,
+            source: sharedData.source || 'owner',
+            cost_price: pricing.cost_price || 0,
+            supplier: pricing.supplier || '',
             gender: p.gender,
             member_airline: p.frequent_flyer_ids?.[0]?.airline || '',
             member_id:      p.frequent_flyer_ids?.[0]?.id || '',
@@ -836,6 +844,8 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
     passengerData.forEach(p => {
         // Outbound leg (always present)
         ticketObjects.push(buildRow(p, sharedData, 'outbound', {
+            cost_price: p.cost_price,
+            supplier: p.supplier,
             base_fare: p.base_fare,
             net_amount: p.net_amount,
             extra_fare: p.extra_fare,
@@ -846,6 +856,8 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
         // Return leg (only when round-trip)
         if (isRound) {
             ticketObjects.push(buildRow(p, returnSharedData, 'return', {
+                cost_price: p.return_cost_price,
+                supplier: p.return_supplier,
                 base_fare: p.return_base_fare,
                 net_amount: p.return_net_amount,
                 extra_fare: p.return_extra_fare,

@@ -1779,6 +1779,14 @@ function _buildPassengerCardHtml(idx, opts) {
                 <!-- OUTBOUND leg -->
                 <div class="leg-panel is-active" data-leg="outbound">
                     <div class="pricing-grid">
+                        <div class="form-group source-self-only" style="display:none;">
+                            <label>Cost Price (MMK) <span class="req">*</span></label>
+                            <input type="number" class="passenger-cost-price" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group source-self-only" style="display:none;">
+                            <label>Supplier</label>
+                            <input type="text" class="passenger-supplier" placeholder="e.g. Trip.com / Agoda">
+                        </div>
                         <div class="form-group">
                             <label>Base Fare</label>
                             <input type="number" class="passenger-base-fare" placeholder="0" min="0" step="1" inputmode="numeric">
@@ -1809,6 +1817,14 @@ function _buildPassengerCardHtml(idx, opts) {
                 <!-- RETURN leg (data submitted only when round-trip) -->
                 <div class="leg-panel" data-leg="return">
                     <div class="pricing-grid">
+                        <div class="form-group source-self-only" style="display:none;">
+                            <label>Cost Price (MMK) <span class="req return-req">*</span></label>
+                            <input type="number" class="passenger-return-cost-price" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group source-self-only" style="display:none;">
+                            <label>Supplier</label>
+                            <input type="text" class="passenger-return-supplier" placeholder="e.g. Trip.com / Agoda">
+                        </div>
                         <div class="form-group">
                             <label>Base Fare</label>
                             <input type="number" class="passenger-return-base-fare" placeholder="0" min="0" step="1" inputmode="numeric">
@@ -2854,8 +2870,8 @@ export function updateSummaryBar() {
 function duplicatePassengerForm(srcEl) {
     const gender = srcEl.querySelector('.passenger-gender:checked')?.value || '';
     const fields = [
-        'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission',
-        'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-commission'
+        'passenger-cost-price', 'passenger-supplier', 'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission',
+        'passenger-return-cost-price', 'passenger-return-supplier', 'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-commission'
     ];
     const values = Object.fromEntries(fields.map(c => [c, srcEl.querySelector('.' + c)?.value || '']));
 
@@ -3307,6 +3323,34 @@ export function initializeUISettings() {
             localStorage.removeItem('uiCustomSettings');
             applySettings(currentSettings);
         });
+    }
+    
+    // Setup Source Toggle Listeners
+    const ownerSourceBtn = document.getElementById('source_owner');
+    const selfSourceBtn = document.getElementById('source_self');
+    
+    function updateSourceVisibility() {
+        const isSelf = selfSourceBtn && selfSourceBtn.checked;
+        const container = document.getElementById('passenger-forms-container');
+        if (container) {
+            container.querySelectorAll('.source-self-only').forEach(el => {
+                el.style.display = isSelf ? '' : 'none';
+            });
+            // Hide commission when self-purchased
+            container.querySelectorAll('.passenger-commission, .passenger-return-commission').forEach(el => {
+                const formGroup = el.closest('.form-group');
+                if (formGroup) formGroup.style.display = isSelf ? 'none' : '';
+            });
+        }
+    }
+    
+    if (ownerSourceBtn) ownerSourceBtn.addEventListener('change', updateSourceVisibility);
+    if (selfSourceBtn) selfSourceBtn.addEventListener('change', updateSourceVisibility);
+    
+    // Add mutation observer to apply visibility to newly added passenger cards
+    const paxContainer = document.getElementById('passenger-forms-container');
+    if (paxContainer) {
+        new MutationObserver(updateSourceVisibility).observe(paxContainer, { childList: true });
     }
 
     // --- Initial Load & Render ---

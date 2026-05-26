@@ -404,26 +404,45 @@ export async function exportPrivateReportToPdf() {
     doc.text(dateRangeString, 105, 20, { align: 'center' });
 
     // --- Summary Section ---
+    const ownerTickets = ticketsInMonth.filter(t => t.source !== 'self');
+    const ownerHotels = hotelsInMonth.filter(h => h.source !== 'self');
+    const selfTickets = ticketsInMonth.filter(t => t.source === 'self');
+    const selfHotels = hotelsInMonth.filter(h => h.source === 'self');
+
     const totalTickets = ticketsInMonth.length;
     const totalHotels = hotelsInMonth.length;
-    const ticketRevenue = ticketsInMonth.reduce((sum, t) => sum + (t.net_amount || 0), 0);
-    const hotelRevenue = hotelsInMonth.reduce((sum, h) => sum + (h.net_amount || 0), 0);
+    
+    // Owner Financials
+    const ticketRevenue = ownerTickets.reduce((sum, t) => sum + (t.net_amount || 0), 0);
+    const hotelRevenue = ownerHotels.reduce((sum, h) => sum + (h.net_amount || 0), 0);
     const totalRevenue = ticketRevenue + hotelRevenue;
 
-    const ticketCommission = ticketsInMonth.reduce((sum, t) => sum + (t.commission || 0), 0);
-    const hotelCommission = hotelsInMonth.reduce((sum, h) => sum + (h.commission || 0), 0);
+    const ticketCommission = ownerTickets.reduce((sum, t) => sum + (t.commission || 0), 0);
+    const hotelCommission = ownerHotels.reduce((sum, h) => sum + (h.commission || 0), 0);
     const totalCommission = ticketCommission + hotelCommission;
 
-    const totalExtraFare = ticketsInMonth.reduce((sum, t) => sum + (t.extra_fare || 0), 0);
+    const totalExtraFare = ownerTickets.reduce((sum, t) => sum + (t.extra_fare || 0), 0);
     const summaryTotalProfit = totalCommission + totalExtraFare;
+    
+    // Self-Purchased Financials
+    const selfTicketRevenue = selfTickets.reduce((sum, t) => sum + (Number(t.base_fare) || 0) + (Number(t.extra_fare) || 0), 0);
+    const selfHotelRevenue = selfHotels.reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
+    const totalSelfRevenue = selfTicketRevenue + selfHotelRevenue;
+
+    const selfTicketProfit = selfTickets.reduce((sum, t) => sum + (Number(t.base_fare) || 0) + (Number(t.extra_fare) || 0) - (Number(t.cost_price) || 0), 0);
+    const selfHotelProfit = selfHotels.reduce((sum, h) => sum + (Number(h.base_fare) || 0) - (Number(h.net_amount) || 0), 0);
+    const totalSelfProfit = selfTicketProfit + selfHotelProfit;
 
     const summaryBody = [
         ['Total Ticket Sales', `${totalTickets} tickets`],
         ['Total Hotel Bookings', `${totalHotels} bookings`],
-        ['Total Revenue (Net)', `${totalRevenue.toLocaleString()} MMK`],
-        ['Total Commission', `${totalCommission.toLocaleString()} MMK`],
-        ['Total Extra Fare', `${totalExtraFare.toLocaleString()} MMK`],
-        ['Total Profit', `${summaryTotalProfit.toLocaleString()} MMK`],
+        ['Total Revenue (Owner)', `${totalRevenue.toLocaleString()} MMK`],
+        ['Total Commission (Owner)', `${totalCommission.toLocaleString()} MMK`],
+        ['Total Extra Fare (Owner)', `${totalExtraFare.toLocaleString()} MMK`],
+        ['Total Profit (Owner)', `${summaryTotalProfit.toLocaleString()} MMK`],
+        ['Total Revenue (Self-Purchased)', `${totalSelfRevenue.toLocaleString()} MMK`],
+        ['Total Profit (Self-Purchased)', `${totalSelfProfit.toLocaleString()} MMK`],
+        ['Grand Total Profit', `${(summaryTotalProfit + totalSelfProfit).toLocaleString()} MMK`],
     ];
     doc.autoTable({
         body: summaryBody,

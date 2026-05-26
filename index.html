@@ -196,6 +196,21 @@
                                 <span class="sub-value">this month</span>
                             </div>
                         </div>
+
+                        <div id="self-purchased-box" class="info-card glass-card">
+                            <div class="stat-head">
+                                <h3>Self-Purchased Profit</h3>
+                                <i class="icon fa-solid fa-credit-card" aria-hidden="true"></i>
+                            </div>
+                            <div class="main-value-wrap">
+                                <span class="main-value" id="self-profit-value">0</span>
+                                <span class="currency-label">MMK</span>
+                            </div>
+                            <div class="stat-foot">
+                                <span class="trend-wrapper" id="self-profit-trend-wrapper"></span>
+                                <span class="sub-value">this month</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="dashboard-panels-row">
@@ -434,6 +449,15 @@
                         </div>
 
                         <div class="form-grid">
+                            <div class="form-group form-group-wide" style="margin-bottom: 1rem;">
+                                <label>Reservation Source <span class="req">*</span></label>
+                                <div class="trip-type-segment" role="radiogroup">
+                                    <input type="radio" name="hotel_res_source" id="hotel_source_owner" value="owner" checked>
+                                    <label for="hotel_source_owner"><i class="fa-solid fa-building"></i> Owner</label>
+                                    <input type="radio" name="hotel_res_source" id="hotel_source_self" value="self">
+                                    <label for="hotel_source_self"><i class="fa-solid fa-credit-card"></i> Self-Purchased</label>
+                                </div>
+                            </div>
                             <div class="form-group client-autosuggest-group">
                                 <label for="hotel_res_client_name">Client Name <span class="req">*</span></label>
                                 <input type="text" id="hotel_res_client_name" placeholder="Lead guest / client name" required autocomplete="off">
@@ -687,6 +711,12 @@
                                 <i class="fa-solid fa-plane"></i>
                                 <span id="route-preview-text"></span>
                             </span>
+                            <div class="trip-type-segment" role="radiogroup" aria-label="Ticket Source" style="margin-right: 1rem;">
+                                <input type="radio" name="ticket_source" id="source_owner" value="owner" checked>
+                                <label for="source_owner"><i class="fa-solid fa-building"></i> Owner</label>
+                                <input type="radio" name="ticket_source" id="source_self" value="self">
+                                <label for="source_self"><i class="fa-solid fa-credit-card"></i> Self-Purchased</label>
+                            </div>
                             <div class="trip-type-segment" role="radiogroup" aria-label="Trip type">
                                 <input type="radio" name="trip_type" id="trip_type_oneway" value="oneway" checked>
                                 <label for="trip_type_oneway"><i class="fa-solid fa-arrow-right"></i> One-Way</label>

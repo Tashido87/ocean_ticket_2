@@ -972,6 +972,7 @@ async function saveHotelReservation() {
 
     try {
         const id = document.getElementById('hotel_res_id').value;
+        const sourceVal = document.querySelector('input[name="hotel_res_source"]:checked')?.value || 'owner';
         const data = {
             client_name: document.getElementById('hotel_res_client_name').value.trim(),
             other_names: document.getElementById('hotel_res_other_names').value.trim(),
@@ -985,11 +986,12 @@ async function saveHotelReservation() {
             supplier: document.getElementById('hotel_res_supplier').value.trim(),
             base_fare: parseFloat(document.getElementById('hotel_res_base_fare').value) || 0,
             net_amount: parseFloat(document.getElementById('hotel_res_net_amount').value) || 0,
-            commission: parseFloat(document.getElementById('hotel_res_commission').value) || 0,
+            commission: sourceVal === 'self' ? 0 : (parseFloat(document.getElementById('hotel_res_commission').value) || 0),
             paid: document.getElementById('hotel_res_paid').value,
             payment_date: document.getElementById('hotel_res_payment_date').value,
             payment_method: document.getElementById('hotel_res_payment_method').value || '',
-            notes: document.getElementById('hotel_res_notes').value.trim()
+            notes: document.getElementById('hotel_res_notes').value.trim(),
+            source: sourceVal
         };
 
         if (id) {
@@ -1028,6 +1030,17 @@ export function editHotelReservation(id) {
     if (title) title.textContent = 'Edit Hotel Reservation';
     
     document.getElementById('hotel_res_id').value = id;
+    
+    const isSelf = res.source === 'self';
+    const ownerToggle = document.getElementById('hotel_source_owner');
+    const selfToggle = document.getElementById('hotel_source_self');
+    if (ownerToggle && selfToggle) {
+        ownerToggle.checked = !isSelf;
+        selfToggle.checked = isSelf;
+        // Trigger change event to update any UI listeners
+        (isSelf ? selfToggle : ownerToggle).dispatchEvent(new Event('change'));
+    }
+
     document.getElementById('hotel_res_client_name').value = res.client_name || '';
     document.getElementById('hotel_res_other_names').value = res.other_names || '';
     document.getElementById('hotel_res_hotel_name').value = res.hotel_name || '';
