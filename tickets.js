@@ -244,17 +244,51 @@ export function displayTickets(tickets, page = 1) {
                 ? `<span style="font-weight:600; color:#0d9488;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
                 : renderAirlineName(ticket.airline || ''));
 
+        let netAmountHtml;
         let commissionHtml;
+        let extraFareHtml;
+        let dateChangeHtml;
+
         if (state.recordsEditMode && !isGroup) {
+            netAmountHtml = `<input type="number" 
+                class="net-amount-inline-input inline-excel-input" 
+                id="net-amount-input-${ticket.id}" 
+                data-id="${ticket.id}" 
+                data-field="net_amount"
+                data-is-hotel="${Boolean(ticket._isHotel)}"
+                value="${ticket.net_amount || 0}" 
+            />`;
             commissionHtml = `<input type="number" 
-                class="commission-inline-input" 
+                class="commission-inline-input inline-excel-input" 
                 id="commission-input-${ticket.id}" 
                 data-id="${ticket.id}" 
+                data-field="commission"
                 data-is-hotel="${Boolean(ticket._isHotel)}"
                 value="${ticket.commission || 0}" 
             />`;
+            extraFareHtml = `<input type="number" 
+                class="extra-fare-inline-input inline-excel-input" 
+                id="extra-fare-input-${ticket.id}" 
+                data-id="${ticket.id}" 
+                data-field="extra_fare"
+                data-is-hotel="${Boolean(ticket._isHotel)}"
+                value="${ticket.extra_fare || 0}" 
+                ${ticket._isHotel ? 'disabled style="background:transparent; border:none; color:var(--text-secondary); cursor:not-allowed;"' : ''}
+            />`;
+            dateChangeHtml = `<input type="number" 
+                class="date-change-inline-input inline-excel-input" 
+                id="date-change-input-${ticket.id}" 
+                data-id="${ticket.id}" 
+                data-field="date_change"
+                data-is-hotel="${Boolean(ticket._isHotel)}"
+                value="${ticket.date_change || 0}" 
+                ${ticket._isHotel ? 'disabled style="background:transparent; border:none; color:var(--text-secondary); cursor:not-allowed;"' : ''}
+            />`;
         } else {
+            netAmountHtml = (ticket.net_amount || 0).toLocaleString();
             commissionHtml = (ticket.commission || 0).toLocaleString();
+            extraFareHtml = (ticket.extra_fare || 0).toLocaleString();
+            dateChangeHtml = (ticket.date_change || 0).toLocaleString();
         }
 
         row.innerHTML = `
@@ -263,10 +297,10 @@ export function displayTickets(tickets, page = 1) {
             <td>${isGroup ? '—' : escapeHtml(ticket.booking_reference || '')}</td>
             <td class="route-cell">${routeText}</td>
             <td>${airlineText}</td>
-            <td class="num-cell">${(ticket.net_amount || 0).toLocaleString()}</td>
+            <td class="num-cell">${netAmountHtml}</td>
             <td class="num-cell commission-td">${commissionHtml}</td>
-            <td class="num-cell">${(ticket.extra_fare || 0).toLocaleString()}</td>
-            <td class="num-cell">${(ticket.date_change || 0).toLocaleString()}</td>
+            <td class="num-cell">${extraFareHtml}</td>
+            <td class="num-cell">${dateChangeHtml}</td>
             <td class="actions-cell">
                 <button class="icon-btn icon-btn-table" title="View Details" data-action="view"><i class="fa-solid fa-eye"></i></button>
                 <button class="icon-btn icon-btn-table" title="Edit" data-action="edit"><i class="fa-solid fa-pen-to-square"></i></button>
@@ -308,53 +342,58 @@ export function displayTickets(tickets, page = 1) {
 
     setupPagination(tickets);
 
-    // Setup event listeners for inline commission inputs
+    // Setup event listeners for inline excel inputs
     if (state.recordsEditMode) {
-        const inputs = Array.from(tbody.querySelectorAll('.commission-inline-input'));
-        inputs.forEach((input, index) => {
-            input.addEventListener('focus', function() {
-                window.activeFocusedInputId = this.id;
-            });
+        const inputFields = ['net_amount', 'commission', 'extra_fare', 'date_change'];
+        inputFields.forEach(field => {
+            const inputs = Array.from(tbody.querySelectorAll(`.${field.replace('_', '-')}-inline-input`));
+            inputs.forEach((input, index) => {
+                input.addEventListener('focus', function() {
+                    window.activeFocusedInputId = this.id;
+                });
 
-            input.addEventListener('blur', function() {
-                if (window.activeFocusedInputId === this.id) {
-                    window.activeFocusedInputId = null;
-                }
-                const ticketId = this.dataset.id;
-                const isHotel = this.dataset.isHotel === 'true';
-                const oldValue = isHotel 
-                    ? (state.allHotels.find(h => h.id === ticketId)?.commission || 0)
-                    : (state.allTickets.find(t => t.id === ticketId)?.commission || 0);
-                
-                const newValue = Number(this.value) || 0;
-                if (newValue !== oldValue) {
-                    saveCommissionUpdate(ticketId, isHotel, newValue);
-                }
-            });
-
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    
+                input.addEventListener('blur', function() {
+                    if (window.activeFocusedInputId === this.id) {
+                        window.activeFocusedInputId = null;
+                    }
                     const ticketId = this.dataset.id;
                     const isHotel = this.dataset.isHotel === 'true';
+                    const oldValue = isHotel 
+                        ? (state.allHotels.find(h => h.id === ticketId)?.[field] || 0)
+                        : (state.allTickets.find(t => t.id === ticketId)?.[field] || 0);
+                    
                     const newValue = Number(this.value) || 0;
-                    
-                    // Save asynchronously
-                    saveCommissionUpdate(ticketId, isHotel, newValue);
-                    
-                    // Navigate to next row
-                    const nextIndex = e.shiftKey ? index - 1 : index + 1;
-                    if (nextIndex >= 0 && nextIndex < inputs.length) {
-                        const nextInput = inputs[nextIndex];
-                        window.activeFocusedInputId = nextInput.id;
-                        window.activeFocusedInputSelectAll = true;
-                        nextInput.focus();
-                        nextInput.select();
-                    } else {
-                        this.blur();
+                    if (newValue !== oldValue) {
+                        saveFieldUpdate(ticketId, isHotel, field, newValue);
                     }
-                }
+                });
+
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        
+                        const ticketId = this.dataset.id;
+                        const isHotel = this.dataset.isHotel === 'true';
+                        const newValue = Number(this.value) || 0;
+                        
+                        // Save asynchronously
+                        saveFieldUpdate(ticketId, isHotel, field, newValue);
+                        
+                        // Navigate to next row in same column
+                        const colInputs = inputs.filter(inp => !inp.disabled);
+                        const colIndex = colInputs.indexOf(this);
+                        const nextIndex = e.shiftKey ? colIndex - 1 : colIndex + 1;
+                        if (nextIndex >= 0 && nextIndex < colInputs.length) {
+                            const nextInput = colInputs[nextIndex];
+                            window.activeFocusedInputId = nextInput.id;
+                            window.activeFocusedInputSelectAll = true;
+                            nextInput.focus();
+                            nextInput.select();
+                        } else {
+                            this.blur();
+                        }
+                    }
+                });
             });
         });
     }
@@ -373,34 +412,35 @@ export function displayTickets(tickets, page = 1) {
 }
 
 /**
- * Helper to update a ticket or hotel's commission value inline.
+ * Helper to update a ticket or hotel's field value inline.
  * Updates the local state for fast UI feedback, then pushes to Firestore.
  */
-async function saveCommissionUpdate(id, isHotel, value) {
+async function saveFieldUpdate(id, isHotel, field, value) {
     const numericVal = Number(value) || 0;
     
     // Update local state immediately for snappy response
     if (isHotel) {
         const hotel = state.allHotels.find(h => h.id === id);
-        if (hotel) hotel.commission = numericVal;
+        if (hotel) hotel[field] = numericVal;
     } else {
         const ticket = state.allTickets.find(t => t.id === id);
-        if (ticket) ticket.commission = numericVal;
+        if (ticket) ticket[field] = numericVal;
     }
     
     try {
+        const updateData = { [field]: numericVal };
         if (isHotel) {
-            await updateHotelReservation(id, { commission: numericVal });
+            await updateHotelReservation(id, updateData);
         } else {
-            await updateTicket(id, { commission: numericVal });
+            await updateTicket(id, updateData);
         }
         
         saveHistory({
-            action: 'Edit Commission',
-            details: `Inline commission update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`
+            action: `Edit ${field.replace('_', ' ')}`,
+            details: `Inline ${field.replace('_', ' ')} update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`
         });
     } catch (err) {
-        showToast('Failed to update commission: ' + err.message, 'error');
+        showToast(`Failed to update ${field.replace('_', ' ')}: ` + err.message, 'error');
     }
 }
 

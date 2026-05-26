@@ -6133,9 +6133,9 @@ body.material-theme ::-webkit-scrollbar-track {
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3) !important;
 }
 
-/* Inline Commission Input for spreadsheet edit mode */
-.commission-inline-input {
-    width: 110px;
+/* Inline Commission/Net Amount/Extra Fare/Date Change Inputs for spreadsheet edit mode */
+.inline-excel-input {
+    width: 90px;
     text-align: right;
     padding: 4px 8px;
     border: 1px solid var(--border-color, #e2e8f0);
@@ -6148,7 +6148,7 @@ body.material-theme ::-webkit-scrollbar-track {
     transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.commission-inline-input:focus {
+.inline-excel-input:focus {
     outline: none;
     border-color: var(--primary-color, #0d9488);
     box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
@@ -6156,14 +6156,14 @@ body.material-theme ::-webkit-scrollbar-track {
 }
 
 /* Chrome, Safari, Edge, Opera: Remove spin buttons on commission input */
-.commission-inline-input::-webkit-outer-spin-button,
-.commission-inline-input::-webkit-inner-spin-button {
+.inline-excel-input::-webkit-outer-spin-button,
+.inline-excel-input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
 /* Firefox: Remove spin buttons */
-.commission-inline-input[type=number] {
+.inline-excel-input[type=number] {
     -moz-appearance: textfield;
 }
 
