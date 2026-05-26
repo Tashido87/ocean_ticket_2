@@ -818,7 +818,7 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
             paid: sharedData.paid,
             payment_method: sharedData.payment_method,
             paid_date: sharedData.paid ? formatDateForSheet(sharedData.paid_date) : '',
-            commission: sharedData.source === 'self' ? 0 : agentCommission,
+            commission: agentCommission,
             remarks: pricing.remarks || '',
             extra_fare: pricing.extra_fare || 0,
             date_change: 0,

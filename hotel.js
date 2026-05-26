@@ -986,7 +986,7 @@ async function saveHotelReservation() {
             supplier: document.getElementById('hotel_res_supplier').value.trim(),
             base_fare: parseFloat(document.getElementById('hotel_res_base_fare').value) || 0,
             net_amount: parseFloat(document.getElementById('hotel_res_net_amount').value) || 0,
-            commission: sourceVal === 'self' ? 0 : (parseFloat(document.getElementById('hotel_res_commission').value) || 0),
+            commission: parseFloat(document.getElementById('hotel_res_commission').value) || 0,
             paid: document.getElementById('hotel_res_paid').value,
             payment_date: document.getElementById('hotel_res_payment_date').value,
             payment_method: document.getElementById('hotel_res_payment_method').value || '',
