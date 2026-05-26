@@ -67,8 +67,15 @@ export async function exportToPdf() {
         });
     }
 
-    // Ensure self-purchased are excluded for Agent Report regardless of mode
-    ticketsToExport = ticketsToExport.filter(t => t.source !== 'self');
+    // Ensure self-purchased, fee entries, and canceled tickets are excluded for Agent Report regardless of mode
+    ticketsToExport = ticketsToExport.filter(t => {
+        if (t.source === 'self') return false;
+        const name = String(t.name || '');
+        const remarks = String(t.remarks || '').toLowerCase();
+        const isFee = /\(fees\)\s*$/i.test(name) || remarks.includes('fee entry');
+        const isCanc = remarks.includes('cancel') || remarks.includes('refund');
+        return !isFee && !isCanc;
+    });
     hotelsToExport = hotelsToExport.filter(h => h.source !== 'self');
 
     const itemsToExport = ticketsToExport.map(t => ({
