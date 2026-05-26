@@ -199,7 +199,7 @@ export function displayTickets(tickets, page = 1) {
                 <th>Issued Date</th>
                 <th>Name</th>
                 <th>PNR</th>
-                <th>Route</th>
+                <th class="route-cell">Route</th>
                 <th>Airline</th>
                 <th class="num-header">Net Amount</th>
                 <th class="num-header">Commission</th>
@@ -261,7 +261,7 @@ export function displayTickets(tickets, page = 1) {
             <td>${ticket.issued_date || ticket.dateRange || ''}</td>
             <td>${nameCell}</td>
             <td>${isGroup ? '—' : escapeHtml(ticket.booking_reference || '')}</td>
-            <td>${routeText}</td>
+            <td class="route-cell">${routeText}</td>
             <td>${airlineText}</td>
             <td class="num-cell">${(ticket.net_amount || 0).toLocaleString()}</td>
             <td class="num-cell commission-td">${commissionHtml}</td>

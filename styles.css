@@ -6116,6 +6116,15 @@ body.material-theme ::-webkit-scrollbar-track {
     width: 100%;
 }
 
+/* Route Column Wrapping & Narrow Fit */
+.route-cell {
+    max-width: 160px;
+    white-space: normal !important;
+    word-break: break-word;
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
 /* Edit Mode Toggle Button Active State */
 #editModeBtn.active {
     background: var(--primary-color, #0d9488) !important;
