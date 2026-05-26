@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument } from './db.js';
+import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation } from './db.js';
 import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, renderAirlineName } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
@@ -244,6 +244,19 @@ export function displayTickets(tickets, page = 1) {
                 ? `<span style="font-weight:600; color:#0d9488;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
                 : renderAirlineName(ticket.airline || ''));
 
+        let commissionHtml;
+        if (state.recordsEditMode && !isGroup) {
+            commissionHtml = `<input type="number" 
+                class="commission-inline-input" 
+                id="commission-input-${ticket.id}" 
+                data-id="${ticket.id}" 
+                data-is-hotel="${Boolean(ticket._isHotel)}"
+                value="${ticket.commission || 0}" 
+            />`;
+        } else {
+            commissionHtml = (ticket.commission || 0).toLocaleString();
+        }
+
         row.innerHTML = `
             <td>${ticket.issued_date || ticket.dateRange || ''}</td>
             <td>${nameCell}</td>
@@ -251,7 +264,7 @@ export function displayTickets(tickets, page = 1) {
             <td>${routeText}</td>
             <td>${airlineText}</td>
             <td class="num-cell">${(ticket.net_amount || 0).toLocaleString()}</td>
-            <td class="num-cell">${(ticket.commission || 0).toLocaleString()}</td>
+            <td class="num-cell commission-td">${commissionHtml}</td>
             <td class="num-cell">${(ticket.extra_fare || 0).toLocaleString()}</td>
             <td class="num-cell">${(ticket.date_change || 0).toLocaleString()}</td>
             <td class="actions-cell">
@@ -295,7 +308,100 @@ export function displayTickets(tickets, page = 1) {
 
     setupPagination(tickets);
 
+    // Setup event listeners for inline commission inputs
+    if (state.recordsEditMode) {
+        const inputs = Array.from(tbody.querySelectorAll('.commission-inline-input'));
+        inputs.forEach((input, index) => {
+            input.addEventListener('focus', function() {
+                window.activeFocusedInputId = this.id;
+            });
 
+            input.addEventListener('blur', function() {
+                if (window.activeFocusedInputId === this.id) {
+                    window.activeFocusedInputId = null;
+                }
+                const ticketId = this.dataset.id;
+                const isHotel = this.dataset.isHotel === 'true';
+                const oldValue = isHotel 
+                    ? (state.allHotels.find(h => h.id === ticketId)?.commission || 0)
+                    : (state.allTickets.find(t => t.id === ticketId)?.commission || 0);
+                
+                const newValue = Number(this.value) || 0;
+                if (newValue !== oldValue) {
+                    saveCommissionUpdate(ticketId, isHotel, newValue);
+                }
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    
+                    const ticketId = this.dataset.id;
+                    const isHotel = this.dataset.isHotel === 'true';
+                    const newValue = Number(this.value) || 0;
+                    
+                    // Save asynchronously
+                    saveCommissionUpdate(ticketId, isHotel, newValue);
+                    
+                    // Navigate to next row
+                    const nextIndex = e.shiftKey ? index - 1 : index + 1;
+                    if (nextIndex >= 0 && nextIndex < inputs.length) {
+                        const nextInput = inputs[nextIndex];
+                        window.activeFocusedInputId = nextInput.id;
+                        window.activeFocusedInputSelectAll = true;
+                        nextInput.focus();
+                        nextInput.select();
+                    } else {
+                        this.blur();
+                    }
+                }
+            });
+        });
+    }
+
+    // Restore focus if needed
+    if (window.activeFocusedInputId) {
+        const activeEl = document.getElementById(window.activeFocusedInputId);
+        if (activeEl) {
+            activeEl.focus();
+            if (window.activeFocusedInputSelectAll) {
+                activeEl.select();
+                window.activeFocusedInputSelectAll = false;
+            }
+        }
+    }
+}
+
+/**
+ * Helper to update a ticket or hotel's commission value inline.
+ * Updates the local state for fast UI feedback, then pushes to Firestore.
+ */
+async function saveCommissionUpdate(id, isHotel, value) {
+    const numericVal = Number(value) || 0;
+    
+    // Update local state immediately for snappy response
+    if (isHotel) {
+        const hotel = state.allHotels.find(h => h.id === id);
+        if (hotel) hotel.commission = numericVal;
+    } else {
+        const ticket = state.allTickets.find(t => t.id === id);
+        if (ticket) ticket.commission = numericVal;
+    }
+    
+    try {
+        if (isHotel) {
+            await updateHotelReservation(id, { commission: numericVal });
+        } else {
+            await updateTicket(id, { commission: numericVal });
+        }
+        
+        saveHistory({
+            action: 'Edit Commission',
+            details: `Inline commission update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`
+        });
+    } catch (err) {
+        showToast('Failed to update commission: ' + err.message, 'error');
+    }
 }
 
 function escapeHtml(value) {

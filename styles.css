@@ -6110,6 +6110,55 @@ body.material-theme ::-webkit-scrollbar-track {
     margin: 0 auto;
 }
 
+/* Records view wrapper */
+.records-view-wrapper {
+    padding: 1.5rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Edit Mode Toggle Button Active State */
+#editModeBtn.active {
+    background: var(--primary-color, #0d9488) !important;
+    color: #ffffff !important;
+    border-color: var(--primary-color, #0d9488) !important;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3) !important;
+}
+
+/* Inline Commission Input for spreadsheet edit mode */
+.commission-inline-input {
+    width: 110px;
+    text-align: right;
+    padding: 4px 8px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary, #0f172a);
+    background: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.commission-inline-input:focus {
+    outline: none;
+    border-color: var(--primary-color, #0d9488);
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+    background: #ffffff;
+}
+
+/* Chrome, Safari, Edge, Opera: Remove spin buttons on commission input */
+.commission-inline-input::-webkit-outer-spin-button,
+.commission-inline-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox: Remove spin buttons */
+.commission-inline-input[type=number] {
+    -moz-appearance: textfield;
+}
+
 .search-view-header {
     margin-bottom: 1.5rem;
 }

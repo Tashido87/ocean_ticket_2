@@ -38,7 +38,8 @@ export const state = {
         cut: 0.60 // 60%
     },
     timeUpdateInterval: null, // To hold the timer
-    unsubscribers: [] // Firestore real-time listener unsubscribe functions
+    unsubscribers: [], // Firestore real-time listener unsubscribe functions
+    recordsEditMode: false // Inline edit mode state for Records
 };
 
 // --- AUTHENTICATION STATE ---
