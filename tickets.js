@@ -196,7 +196,6 @@ export function displayTickets(tickets, page = 1) {
     table.innerHTML = `
         <thead>
             <tr>
-                <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllRecords"></th>
                 <th>Issued Date</th>
                 <th>Name</th>
                 <th>PNR</th>
@@ -246,7 +245,6 @@ export function displayTickets(tickets, page = 1) {
                 : renderAirlineName(ticket.airline || ''));
 
         row.innerHTML = `
-            <td style="text-align: center;"><input type="checkbox" class="record-checkbox" data-id="${isGroup ? ticket.id : ticket.id}" ${window.selectedExportIds?.has(ticket.id) ? 'checked' : ''}></td>
             <td>${ticket.issued_date || ticket.dateRange || ''}</td>
             <td>${nameCell}</td>
             <td>${isGroup ? '—' : escapeHtml(ticket.booking_reference || '')}</td>
@@ -297,36 +295,7 @@ export function displayTickets(tickets, page = 1) {
 
     setupPagination(tickets);
 
-    // Checkbox logic
-    window.selectedExportIds = window.selectedExportIds || new Set();
-    const selectAllCb = document.getElementById('selectAllRecords');
-    const rowCbs = document.querySelectorAll('.record-checkbox');
 
-    // Update select all state based on current page
-    const updateSelectAllState = () => {
-        const allChecked = Array.from(rowCbs).every(cb => cb.checked);
-        const someChecked = Array.from(rowCbs).some(cb => cb.checked);
-        selectAllCb.checked = allChecked && rowCbs.length > 0;
-        selectAllCb.indeterminate = someChecked && !allChecked;
-    };
-    updateSelectAllState();
-
-    selectAllCb.addEventListener('change', (e) => {
-        const isChecked = e.target.checked;
-        rowCbs.forEach(cb => {
-            cb.checked = isChecked;
-            if (isChecked) window.selectedExportIds.add(cb.dataset.id);
-            else window.selectedExportIds.delete(cb.dataset.id);
-        });
-    });
-
-    rowCbs.forEach(cb => {
-        cb.addEventListener('change', (e) => {
-            if (e.target.checked) window.selectedExportIds.add(e.target.dataset.id);
-            else window.selectedExportIds.delete(e.target.dataset.id);
-            updateSelectAllState();
-        });
-    });
 }
 
 function escapeHtml(value) {
