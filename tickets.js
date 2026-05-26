@@ -1078,7 +1078,7 @@ export function performSearch() {
             (h.city && h.city.toUpperCase().includes(destination)) ||
             (h.country && h.country.toUpperCase().includes(destination));
 
-        return nameMatch && bookRefMatch && checkinMatch && travelDateMatch && departureMatch && destinationMatch;
+        return nameMatch && bookRefMatch && checkinMatch && travelDateMatch && departureMatch && destinationMatch && sourceMatch;
     }).map(mapHotelToTicket);
 
     let results = [...ticketResults, ...hotelResults].sort((a, b) => {
