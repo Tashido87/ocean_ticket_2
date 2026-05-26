@@ -2840,18 +2840,19 @@ export function updateSummaryBar() {
     const round = isRoundTrip();
     let totalNet = 0;
     let totalCommission = 0;
+    const isSelf = document.querySelector('input[name="source"]:checked')?.value === 'self';
     cards.forEach(card => {
         const net = parseFloat(card.querySelector('.passenger-net-amount').value) || 0;
         const extra = parseFloat(card.querySelector('.passenger-extra-fare').value) || 0;
         const commission = parseFloat(card.querySelector('.passenger-commission').value) || 0;
         totalNet += net + extra;
-        totalCommission += calculateAgentCut(commission);
+        totalCommission += isSelf ? commission : calculateAgentCut(commission);
         if (round) {
             const retNet = parseFloat(card.querySelector('.passenger-return-net-amount')?.value) || 0;
             const retExtra = parseFloat(card.querySelector('.passenger-return-extra-fare')?.value) || 0;
             const retCommission = parseFloat(card.querySelector('.passenger-return-commission')?.value) || 0;
             totalNet += retNet + retExtra;
-            totalCommission += calculateAgentCut(retCommission);
+            totalCommission += isSelf ? retCommission : calculateAgentCut(retCommission);
         }
     });
     const paxCountEl = document.getElementById('summaryPaxCount');
@@ -3336,12 +3337,9 @@ export function initializeUISettings() {
             container.querySelectorAll('.source-self-only').forEach(el => {
                 el.style.display = isSelf ? '' : 'none';
             });
-            // Hide commission when self-purchased
-            container.querySelectorAll('.passenger-commission, .passenger-return-commission').forEach(el => {
-                const formGroup = el.closest('.form-group');
-                if (formGroup) formGroup.style.display = isSelf ? 'none' : '';
-            });
+            // We no longer hide commission when self-purchased, user wants 100% of it
         }
+        updateSummaryBar();
     }
     
     if (ownerSourceBtn) ownerSourceBtn.addEventListener('change', updateSourceVisibility);

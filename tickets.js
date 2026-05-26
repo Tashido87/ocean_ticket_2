@@ -788,7 +788,7 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
 
     // Helper that builds a single ticket row for a given leg.
     const buildRow = (p, legShared, leg, pricing) => {
-        const agentCommission = calculateAgentCut(pricing.commission);
+        const agentCommission = sharedData.source === 'self' ? (Number(pricing.commission) || 0) : calculateAgentCut(pricing.commission);
         const row = {
             issued_date: formatDateForSheet(sharedData.issued_date),
             name: p.name,

@@ -72,9 +72,6 @@ function ownerPayable(ticket) {
 
 function profitAmount(ticket) {
     if (isCanceledTicket(ticket)) return 0;
-    if (ticket.source === 'self') {
-        return (Number(ticket.base_fare) || 0) + (Number(ticket.extra_fare) || 0) - (Number(ticket.cost_price) || 0);
-    }
     return (Number(ticket.commission) || 0) + (Number(ticket.extra_fare) || 0);
 }
 
