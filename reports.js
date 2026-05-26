@@ -23,6 +23,91 @@ export function togglePrivateReportButton() {
     }
 }
 
+export function exportSelectedToExcel() {
+    if (!window.selectedExportIds || window.selectedExportIds.size === 0) {
+        showToast('Please select at least one record to export.', 'error');
+        return;
+    }
+
+    const selectedIds = Array.from(window.selectedExportIds);
+    let itemsToExport = [];
+
+    // Gather selected tickets
+    state.allTickets.forEach(t => {
+        if (selectedIds.includes(t.id)) itemsToExport.push({ ...t, _type: 'ticket' });
+    });
+    // Gather selected hotels
+    if (state.allHotels) {
+        state.allHotels.forEach(h => {
+            if (selectedIds.includes(h.id)) itemsToExport.push({ ...h, _type: 'hotel' });
+        });
+    }
+
+    if (itemsToExport.length === 0) {
+        showToast('No valid records found for the selected IDs.', 'error');
+        return;
+    }
+
+    // Prepare CSV data
+    const headers = ['Type', 'Date', 'Name', 'PNR / Booking Ref', 'Route / Location', 'Airline', 'Net Amount', 'Commission', 'Extra Fare', 'Date Change', 'Status/Remarks'];
+    const rows = [headers];
+
+    itemsToExport.forEach(item => {
+        if (item._type === 'ticket') {
+            rows.push([
+                'Ticket',
+                item.issued_date || '',
+                item.name || '',
+                item.booking_reference || '',
+                `${(item.departure || '')} - ${(item.destination || '')}`,
+                item.airline || '',
+                item.net_amount || 0,
+                item.commission || 0,
+                item.extra_fare || 0,
+                item.date_change || 0,
+                item.remarks || ''
+            ]);
+        } else {
+            rows.push([
+                'Hotel',
+                item.checkin || '',
+                item.client_name || '',
+                item.booking_ref || '',
+                `${item.hotel_name || ''} (${item.city || ''}, ${item.country || ''})`,
+                '—',
+                item.net_amount || 0,
+                item.commission || 0,
+                0,
+                0,
+                item.notes || ''
+            ]);
+        }
+    });
+
+    // Escape CSV values
+    const csvContent = rows.map(e => e.map(val => {
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\\n')) {
+            return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+    }).join(',')).join('\\n');
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const dateStr = formatDateToDMMMY(new Date()).replace(/ /g, '_');
+    link.setAttribute('download', `ocean_records_export_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clear selection after export? Let's leave them selected so user can export again if needed.
+    showToast(`Successfully exported ${itemsToExport.length} records to Excel.`);
+}
+
 /**
  * Exports the Agent Report to a PDF file.
  */

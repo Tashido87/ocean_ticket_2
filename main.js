@@ -18,7 +18,7 @@ import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handl
 import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
-import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton } from './reports.js';
+import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
@@ -446,6 +446,7 @@ function setupEventListeners() {
     syncGroupToggleState();
 
     // Reports
+    document.getElementById('exportExcelBtn').addEventListener('click', exportSelectedToExcel);
     document.getElementById('exportPdfBtn').addEventListener('click', () => document.getElementById('exportConfirmModal').classList.add('show'));
     document.getElementById('confirmExportBtn').addEventListener('click', exportToPdf);
     document.getElementById('exportPrivateReportBtn').addEventListener('click', async () => {
