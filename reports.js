@@ -65,11 +65,11 @@ export async function exportToPdf() {
             const checkinDate = parseSheetDate(h.checkin);
             return checkinDate >= startDate && checkinDate <= endDate && h.source !== 'self';
         });
-    } else {
-        // Even if filtered mode, ensure self-purchased are excluded for Agent Report
-        ticketsToExport = ticketsToExport.filter(t => t.source !== 'self');
-        hotelsToExport = hotelsToExport.filter(h => h.source !== 'self');
     }
+
+    // Ensure self-purchased are excluded for Agent Report regardless of mode
+    ticketsToExport = ticketsToExport.filter(t => t.source !== 'self');
+    hotelsToExport = hotelsToExport.filter(h => h.source !== 'self');
 
     const itemsToExport = ticketsToExport.map(t => ({
         date: parseSheetDate(t.issued_date),
