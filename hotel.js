@@ -823,10 +823,19 @@ export function initHotelReservationSystem() {
         const autoCalc = () => {
             const base = parseFloat(baseInput.value) || 0;
             const net = parseFloat(netInput.value) || 0;
-            commInput.value = Math.max(0, base - net);
+            const sourceVal = document.querySelector('input[name="hotel_res_source"]:checked')?.value || 'owner';
+            
+            let calc = Math.max(0, net - base);
+            if (sourceVal === 'owner') {
+                calc = calc * 0.60;
+            }
+            commInput.value = calc;
         };
         baseInput.addEventListener('input', autoCalc);
         netInput.addEventListener('input', autoCalc);
+        
+        const sourceRadios = document.querySelectorAll('input[name="hotel_res_source"]');
+        sourceRadios.forEach(r => r.addEventListener('change', autoCalc));
     }
 
     // Initialize Datepickers

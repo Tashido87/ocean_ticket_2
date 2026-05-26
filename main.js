@@ -875,9 +875,6 @@ function ticketProfitAmount(t) {
 }
 
 function hotelProfitAmount(h) {
-    if (h.source === 'self') {
-        return (Number(h.base_fare) || 0) - (Number(h.net_amount) || 0);
-    }
     return Number(h.commission) || 0;
 }
 
