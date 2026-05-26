@@ -575,6 +575,7 @@ function showBookingDetails(docIdsStr) {
     const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
 
     if (bookingGroup) {
+        const isActive = bookingGroup.status === 'active';
         const passengerListHtml = bookingGroup.passengers.map(p => `<li><strong>${escapeHtml(p.name)}</strong> (ID: ${escapeHtml(p.id_no || 'N/A')})</li>`).join('');
         const content = `
             <h3>Booking Request Details</h3>
