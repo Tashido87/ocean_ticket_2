@@ -1138,20 +1138,20 @@ export function updateDashboardData() {
     const prevTicketsInPeriod = activeTicketRowsInRange(prevRange);
 
     // 1. Total Sales (Customer Price)
-    const curHotelSales = activeHotelRowsInRange(range).reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
-    const prevHotelSales = activeHotelRowsInRange(prevRange).reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
-    const curSales = ticketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0) + curHotelSales;
-    const prevSales = prevTicketsInPeriod.reduce((sum, t) => sum + ticketSalesAmount(t), 0) + prevHotelSales;
+    const curHotelSales = activeHotelRowsInRange(range).filter(h => h.source !== 'self').reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
+    const prevHotelSales = activeHotelRowsInRange(prevRange).filter(h => h.source !== 'self').reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
+    const curSales = ticketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + ticketSalesAmount(t), 0) + curHotelSales;
+    const prevSales = prevTicketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + ticketSalesAmount(t), 0) + prevHotelSales;
 
     // 2. Total Tickets (Count of Passenger Tickets)
-    const curTickets = ticketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
-    const prevTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t)).length;
+    const curTickets = ticketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t) && t.source !== 'self').length;
+    const prevTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t) && t.source !== 'self').length;
 
     // 3. Total Profit
-    const curHotelProfit = activeHotelRowsInRange(range).reduce((sum, h) => sum + hotelProfitAmount(h), 0);
-    const prevHotelProfit = activeHotelRowsInRange(prevRange).reduce((sum, h) => sum + hotelProfitAmount(h), 0);
-    const curProfit = ticketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0) + curHotelProfit;
-    const prevProfit = prevTicketsInPeriod.reduce((sum, t) => sum + ticketProfitAmount(t), 0) + prevHotelProfit;
+    const curHotelProfit = activeHotelRowsInRange(range).filter(h => h.source !== 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
+    const prevHotelProfit = activeHotelRowsInRange(prevRange).filter(h => h.source !== 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
+    const curProfit = ticketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + ticketProfitAmount(t), 0) + curHotelProfit;
+    const prevProfit = prevTicketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + ticketProfitAmount(t), 0) + prevHotelProfit;
 
     // 3b. Self-Purchased Profit
     const curSelfHotelProfit = activeHotelRowsInRange(range).filter(h => h.source === 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
