@@ -7,7 +7,7 @@
 // Core Modules
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
-import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange } from './db.js';
+import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, batchUpdateTickets } from './db.js';
 import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName } from './utils.js';
 
 // Feature Modules
@@ -259,11 +259,55 @@ export async function initializeApp() {
         if (loading) loading.style.display = 'none';
         if (dashboardContent) dashboardContent.style.display = 'flex';
 
+        // One-time migration: fix old self-purchased tickets with commission=0
+        migrateSelfTicketCommissions();
+
     } catch (error) {
         console.error("Initialization failed:", error);
         showToast('A critical error occurred during data initialization. Please check the console (F12) for details.', 'error');
         const loading = document.getElementById('loading');
         if (loading) loading.style.display = 'none';
+    }
+}
+
+/**
+ * One-time migration: finds self-purchased tickets where commission is 0
+ * and recalculates commission = net_amount - base_fare, then batch-updates Firestore.
+ */
+async function migrateSelfTicketCommissions() {
+    const MIGRATION_KEY = 'selfTicketCommissionMigrated_v1';
+    if (localStorage.getItem(MIGRATION_KEY)) return; // Already migrated on this browser
+
+    // Wait a moment for real-time listeners to populate state.allTickets
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const selfTicketsToFix = (state.allTickets || []).filter(t =>
+        t.source === 'self' &&
+        (!(Number(t.commission) > 0)) &&
+        (Number(t.net_amount) > 0)
+    );
+
+    if (selfTicketsToFix.length === 0) {
+        localStorage.setItem(MIGRATION_KEY, 'true');
+        return;
+    }
+
+    console.log(`[Migration] Found ${selfTicketsToFix.length} self-purchased tickets with commission=0. Fixing...`);
+
+    const updates = selfTicketsToFix.map(t => ({
+        id: t.id,
+        data: {
+            commission: Math.max(0, (Number(t.net_amount) || 0) - (Number(t.base_fare) || 0))
+        }
+    }));
+
+    try {
+        await batchUpdateTickets(updates);
+        console.log(`[Migration] Successfully updated ${updates.length} self-purchased ticket commissions.`);
+        showToast(`Fixed commission for ${updates.length} self-purchased ticket(s).`, 'success');
+        localStorage.setItem(MIGRATION_KEY, 'true');
+    } catch (err) {
+        console.error('[Migration] Failed to update self-purchased ticket commissions:', err);
     }
 }
 
