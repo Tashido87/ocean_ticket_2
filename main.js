@@ -405,7 +405,7 @@ function setupEventListeners() {
     const debouncedSearch = debounce(performSearch, 300);
     document.getElementById('searchName').addEventListener('input', debouncedSearch);
     document.getElementById('searchBooking').addEventListener('input', debouncedSearch);
-    ['searchTravelDate', 'searchStartDate', 'searchEndDate', 'searchDeparture', 'searchDestination', 'groupByAccountToggle'].forEach(id => {
+    ['searchTravelDate', 'searchStartDate', 'searchEndDate', 'searchDeparture', 'searchDestination', 'searchSource', 'groupByAccountToggle'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', performSearch);
     });

@@ -918,6 +918,7 @@ export function performSearch() {
     const departure = document.getElementById('searchDeparture')?.value.toUpperCase();
     const destination = document.getElementById('searchDestination')?.value.toUpperCase();
     const groupByAccount = document.getElementById('groupByAccountToggle')?.checked;
+    const searchSource = document.getElementById('searchSource')?.value || 'all';
 
     let searchStartDate = startDateVal ? parseSheetDate(startDateVal) : null;
     let searchEndDate = endDateVal ? parseSheetDate(endDateVal) : null;
@@ -938,8 +939,9 @@ export function performSearch() {
         const travelDateMatch = !searchTravelDate || (travelDate && travelDate.getTime() === searchTravelDate.getTime());
         const departureMatch = !departure || (t.departure && t.departure.toUpperCase() === departure);
         const destinationMatch = !destination || (t.destination && t.destination.toUpperCase() === destination);
+        const sourceMatch = searchSource === 'all' || (searchSource === 'self' ? t.source === 'self' : t.source !== 'self');
 
-        return nameMatch && bookRefMatch && issuedDateMatch && travelDateMatch && departureMatch && destinationMatch;
+        return nameMatch && bookRefMatch && issuedDateMatch && travelDateMatch && departureMatch && destinationMatch && sourceMatch;
     });
 
     let hotelResults = (state.allHotels || []).filter(h => {
@@ -950,6 +952,7 @@ export function performSearch() {
         const bookRefMatch = !bookRef || (h.booking_ref || '').toUpperCase().includes(bookRef);
         const checkinMatch = (!searchStartDate || checkinDate >= searchStartDate) && (!searchEndDate || checkinDate <= searchEndDate);
         const travelDateMatch = !searchTravelDate || (checkinDate && checkinDate.getTime() === searchTravelDate.getTime());
+        const sourceMatch = searchSource === 'all' || (searchSource === 'self' ? h.source === 'self' : h.source !== 'self');
 
         const departureMatch = !departure || 
             (h.city && h.city.toUpperCase().includes(departure)) || 
