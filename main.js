@@ -268,41 +268,41 @@ export async function initializeApp() {
         const loading = document.getElementById('loading');
         if (loading) loading.style.display = 'none';
     }
-}
+window.fixMyDates = async function() {
+    console.log("Starting date fix...");
+    const selfTicketsToFix = (state.allTickets || []).filter(t => t.source === 'self');
+    const updates = [];
+    
+    selfTicketsToFix.forEach(t => {
+        // Change any June dates to May 6th
+        if (t.issued_date === '05/06/2026' || t.issued_date === '01/06/2026' || t.issued_date === '06/06/2026') {
+            updates.push({
+                id: t.id,
+                data: { issued_date: '06/05/2026' }
+            });
+        }
+    });
+
+    if (updates.length > 0) {
+        try {
+            await batchUpdateTickets(updates);
+            console.log(`Successfully fixed ${updates.length} tickets!`);
+            alert(`Fixed ${updates.length} tickets! They are now May 6th.`);
+        } catch (err) {
+            console.error('Failed:', err);
+            alert('Failed to fix dates');
+        }
+    } else {
+        console.log("No tickets needed fixing.");
+        alert("No tickets found with the wrong dates.");
+    }
+};
 
 /**
  * Diagnostic + migration: finds self-purchased tickets, logs them, and fixes commission if needed.
  */
 async function migrateSelfTicketCommissions() {
-    // Wait for real-time listeners to populate state.allTickets
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    const MIGRATION_KEY = 'selfTicketDateFix_v1';
-    if (!localStorage.getItem(MIGRATION_KEY)) {
-        const updates = [];
-        const fixes = {
-            'nBItYSP2n4AlOIN3odd0': '06/05/2026',
-            'aXHxUSpVIT5najbSnchJ': '01/05/2026',
-            'VHxq1FLezNIDRtYxxtT0I': '01/05/2026',
-            'Dmbv3AFcIwxJRmaH1a8J': '06/05/2026'
-        };
-
-        for (const [id, correctDate] of Object.entries(fixes)) {
-            updates.push({
-                id,
-                data: { issued_date: correctDate }
-            });
-        }
-
-        try {
-            await batchUpdateTickets(updates);
-            console.log('[Date Fix] Successfully fixed ticket dates');
-            showToast('Automatically fixed the wrong dates on your self-purchased tickets!', 'success');
-            localStorage.setItem(MIGRATION_KEY, 'true');
-        } catch (err) {
-            console.error('[Date Fix] Failed:', err);
-        }
-    }
+    // Intentionally empty
 }
 
 /**
