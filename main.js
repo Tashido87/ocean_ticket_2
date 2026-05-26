@@ -268,6 +268,8 @@ export async function initializeApp() {
         const loading = document.getElementById('loading');
         if (loading) loading.style.display = 'none';
     }
+}
+
 window.fixMyDates = async function() {
     console.log("Starting date fix...");
     const selfTicketsToFix = (state.allTickets || []).filter(t => t.source === 'self');
