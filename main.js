@@ -271,43 +271,56 @@ export async function initializeApp() {
 }
 
 /**
- * One-time migration: finds self-purchased tickets where commission is 0
- * and recalculates commission = net_amount - base_fare, then batch-updates Firestore.
+ * Diagnostic + migration: finds self-purchased tickets, logs them, and fixes commission if needed.
  */
 async function migrateSelfTicketCommissions() {
-    const MIGRATION_KEY = 'selfTicketCommissionMigrated_v1';
-    if (localStorage.getItem(MIGRATION_KEY)) return; // Already migrated on this browser
+    // Wait for real-time listeners to populate state.allTickets
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Wait a moment for real-time listeners to populate state.allTickets
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const allTickets = state.allTickets || [];
+    const selfTickets = allTickets.filter(t => t.source === 'self');
+    
+    console.log(`[Self-Ticket Debug] Total tickets in database: ${allTickets.length}`);
+    console.log(`[Self-Ticket Debug] Self-purchased tickets found: ${selfTickets.length}`);
+    
+    if (selfTickets.length > 0) {
+        selfTickets.forEach(t => {
+            console.log(`[Self-Ticket] id=${t.id}, name=${t.name}, issued_date=${t.issued_date}, net=${t.net_amount}, base=${t.base_fare}, commission=${t.commission}, source=${t.source}`);
+        });
+        showToast(`Debug: Found ${selfTickets.length} self-purchased ticket(s) in database. Check browser console (F12) for details.`, 'info');
+    } else {
+        showToast(`Debug: Found 0 self-purchased tickets in database. Total tickets: ${allTickets.length}`, 'warning');
+        
+        // Let's also check if ANY ticket has any 'source' field at all
+        const withSource = allTickets.filter(t => t.source);
+        console.log(`[Self-Ticket Debug] Tickets with any 'source' field: ${withSource.length}`);
+        withSource.forEach(t => {
+            console.log(`[Self-Ticket] id=${t.id}, name=${t.name}, source='${t.source}', issued_date=${t.issued_date}`);
+        });
+    }
 
-    const selfTicketsToFix = (state.allTickets || []).filter(t =>
-        t.source === 'self' &&
+    // Fix commission for self tickets where it's 0
+    const selfTicketsToFix = selfTickets.filter(t =>
         (!(Number(t.commission) > 0)) &&
         (Number(t.net_amount) > 0)
     );
 
-    if (selfTicketsToFix.length === 0) {
-        localStorage.setItem(MIGRATION_KEY, 'true');
-        return;
-    }
+    if (selfTicketsToFix.length > 0) {
+        console.log(`[Migration] Fixing commission for ${selfTicketsToFix.length} self tickets...`);
+        const updates = selfTicketsToFix.map(t => ({
+            id: t.id,
+            data: {
+                commission: Math.max(0, (Number(t.net_amount) || 0) - (Number(t.base_fare) || 0))
+            }
+        }));
 
-    console.log(`[Migration] Found ${selfTicketsToFix.length} self-purchased tickets with commission=0. Fixing...`);
-
-    const updates = selfTicketsToFix.map(t => ({
-        id: t.id,
-        data: {
-            commission: Math.max(0, (Number(t.net_amount) || 0) - (Number(t.base_fare) || 0))
+        try {
+            await batchUpdateTickets(updates);
+            console.log(`[Migration] Successfully updated ${updates.length} self-purchased ticket commissions.`);
+            showToast(`Fixed commission for ${updates.length} self-purchased ticket(s).`, 'success');
+        } catch (err) {
+            console.error('[Migration] Failed:', err);
         }
-    }));
-
-    try {
-        await batchUpdateTickets(updates);
-        console.log(`[Migration] Successfully updated ${updates.length} self-purchased ticket commissions.`);
-        showToast(`Fixed commission for ${updates.length} self-purchased ticket(s).`, 'success');
-        localStorage.setItem(MIGRATION_KEY, 'true');
-    } catch (err) {
-        console.error('[Migration] Failed to update self-purchased ticket commissions:', err);
     }
 }
 
