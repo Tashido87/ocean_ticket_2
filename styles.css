@@ -6112,9 +6112,8 @@ body.material-theme ::-webkit-scrollbar-track {
 
 /* Records view wrapper */
 .records-view-wrapper {
-    padding: 1.5rem 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 0;
+    width: 100%;
 }
 
 /* Edit Mode Toggle Button Active State */
