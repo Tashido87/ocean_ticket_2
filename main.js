@@ -277,49 +277,30 @@ async function migrateSelfTicketCommissions() {
     // Wait for real-time listeners to populate state.allTickets
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    const allTickets = state.allTickets || [];
-    const selfTickets = allTickets.filter(t => t.source === 'self');
-    
-    console.log(`[Self-Ticket Debug] Total tickets in database: ${allTickets.length}`);
-    console.log(`[Self-Ticket Debug] Self-purchased tickets found: ${selfTickets.length}`);
-    
-    if (selfTickets.length > 0) {
-        selfTickets.forEach(t => {
-            console.log(`[Self-Ticket] id=${t.id}, name=${t.name}, issued_date=${t.issued_date}, net=${t.net_amount}, base=${t.base_fare}, commission=${t.commission}, source=${t.source}`);
-        });
-        showToast(`Debug: Found ${selfTickets.length} self-purchased ticket(s) in database. Check browser console (F12) for details.`, 'info');
-    } else {
-        showToast(`Debug: Found 0 self-purchased tickets in database. Total tickets: ${allTickets.length}`, 'warning');
-        
-        // Let's also check if ANY ticket has any 'source' field at all
-        const withSource = allTickets.filter(t => t.source);
-        console.log(`[Self-Ticket Debug] Tickets with any 'source' field: ${withSource.length}`);
-        withSource.forEach(t => {
-            console.log(`[Self-Ticket] id=${t.id}, name=${t.name}, source='${t.source}', issued_date=${t.issued_date}`);
-        });
-    }
+    const MIGRATION_KEY = 'selfTicketDateFix_v1';
+    if (!localStorage.getItem(MIGRATION_KEY)) {
+        const updates = [];
+        const fixes = {
+            'nBItYSP2n4AlOIN3odd0': '06/05/2026',
+            'aXHxUSpVIT5najbSnchJ': '01/05/2026',
+            'VHxq1FLezNIDRtYxxtT0I': '01/05/2026',
+            'Dmbv3AFcIwxJRmaH1a8J': '06/05/2026'
+        };
 
-    // Fix commission for self tickets where it's 0
-    const selfTicketsToFix = selfTickets.filter(t =>
-        (!(Number(t.commission) > 0)) &&
-        (Number(t.net_amount) > 0)
-    );
-
-    if (selfTicketsToFix.length > 0) {
-        console.log(`[Migration] Fixing commission for ${selfTicketsToFix.length} self tickets...`);
-        const updates = selfTicketsToFix.map(t => ({
-            id: t.id,
-            data: {
-                commission: Math.max(0, (Number(t.net_amount) || 0) - (Number(t.base_fare) || 0))
-            }
-        }));
+        for (const [id, correctDate] of Object.entries(fixes)) {
+            updates.push({
+                id,
+                data: { issued_date: correctDate }
+            });
+        }
 
         try {
             await batchUpdateTickets(updates);
-            console.log(`[Migration] Successfully updated ${updates.length} self-purchased ticket commissions.`);
-            showToast(`Fixed commission for ${updates.length} self-purchased ticket(s).`, 'success');
+            console.log('[Date Fix] Successfully fixed ticket dates');
+            showToast('Automatically fixed the wrong dates on your self-purchased tickets!', 'success');
+            localStorage.setItem(MIGRATION_KEY, 'true');
         } catch (err) {
-            console.error('[Migration] Failed:', err);
+            console.error('[Date Fix] Failed:', err);
         }
     }
 }
