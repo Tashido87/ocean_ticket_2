@@ -233,15 +233,21 @@ export async function exportToPdf() {
         head = [['No.', 'Issued Date', 'Name', 'PNR', 'Route', 'Pax', 'Net Amount', 'Date Change', 'Commission']];
         const mergedData = {};
         ticketsToExport.forEach(t => {
-            const key = `${t.account_link}-${t.issued_date}`; // Group by social account and date
+            const accName = (t.account_name || '—').trim().toUpperCase();
+            const isFee = String(t.name || '').match(/\(fees\)\s*$/i);
+            const key = isFee 
+                ? `FEE_${t.id || Math.random()}` 
+                : `${accName}_${(t.booking_reference || '').trim().toUpperCase()}`;
+
             if (!mergedData[key]) {
-                mergedData[key] = { ...t, pax: 0, net_amount: 0, date_change: 0, commission: 0, names: new Set() };
+                mergedData[key] = { ...t, pax: 0, net_amount: 0, date_change: 0, commission: 0, names: new Set(), routes: new Set() };
             }
             mergedData[key].pax++;
             mergedData[key].net_amount += (t.net_amount || 0);
             mergedData[key].date_change += (t.date_change || 0);
             mergedData[key].commission += (t.commission || 0);
             mergedData[key].names.add(t.name);
+            mergedData[key].routes.add(`${(t.departure||'').split('(')[0].trim()} - ${(t.destination||'').split('(')[0].trim()}`);
         });
 
         hotelsToExport.forEach(h => {
@@ -268,7 +274,7 @@ export async function exportToPdf() {
         const sortedMerged = Object.values(mergedData).sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date));
 
         body = sortedMerged.map((t, index) => {
-            const route = t._isHotel ? t.route : `${(t.departure||'').split('(')[0].trim()} - ${(t.destination||'').split('(')[0].trim()}`;
+            const route = t._isHotel ? t.route : (t.routes ? [...t.routes].join(' | ') : `${(t.departure||'').split('(')[0].trim()} - ${(t.destination||'').split('(')[0].trim()}`);
             const clientNames = [...t.names].join(', ');
             return [
                 index + 1,
