@@ -180,6 +180,9 @@ export function displayInitialTickets(page = 1) {
  * @param {number} [page=1] The page number to display.
  */
 export function displayTickets(tickets, page = 1) {
+    if (typeof page !== 'number' || isNaN(page)) {
+        page = 1;
+    }
     const container = document.getElementById('resultsBodyContainer');
     container.innerHTML = '';
 
@@ -1099,6 +1102,9 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
  * Filters and displays tickets based on search criteria.
  */
 export function performSearch(page = 1) {
+    if (typeof page !== 'number' || isNaN(page)) {
+        page = 1;
+    }
     const nameRaw = (document.getElementById('searchName')?.value || '').toUpperCase().trim();
     const nameTokens = nameRaw ? nameRaw.split(/\s+/) : [];
     const bookRef = (document.getElementById('searchBooking')?.value || '').toUpperCase();
