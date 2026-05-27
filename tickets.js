@@ -1184,10 +1184,10 @@ function groupTicketsByAccount(tickets, startDateVal, endDateVal) {
         // Check if fee
         const isFee = String(t.name || '').match(/\(fees\)\s*$/i);
         
-        // Group by Account Name, PNR, and Route. Fees are never grouped.
+        // Group by Account Name and PNR (ignore sector/route). Fees are never grouped.
         const key = isFee 
             ? `FEE_${t.id || Math.random()}` 
-            : `${accName}_${(t.booking_reference || '').trim().toUpperCase()}_${(t.departure || '').trim().toUpperCase()}_${(t.destination || '').trim().toUpperCase()}`;
+            : `${accName}_${(t.booking_reference || '').trim().toUpperCase()}`;
 
         if (!map.has(key)) {
             map.set(key, []);
