@@ -8251,12 +8251,19 @@ body.material-theme .search-skeleton-row span {
     font-weight: 700;
 }
 .settle-reconcile-equation {
-    display: grid;
-    grid-template-columns: minmax(145px, 1fr) auto minmax(145px, 1fr) auto minmax(145px, 1fr) auto minmax(145px, 1fr) auto minmax(165px, 1.1fr);
+    display: flex;
     align-items: stretch;
-    gap: 0.45rem;
+    gap: 0.35rem;
     overflow-x: auto;
     padding-bottom: 0.1rem;
+    flex-wrap: nowrap;
+}
+.settle-reconcile-equation .settle-reconcile-term {
+    flex: 1 1 0;
+    min-width: 100px;
+}
+.settle-reconcile-equation .settle-equation-op {
+    flex: 0 0 auto;
 }
 .settle-reconcile-term {
     min-width: 145px;
