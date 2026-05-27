@@ -131,7 +131,7 @@ export function parseSheetDate(dateString) {
         if (isNaN(parseInt(parts[1], 10))) {
             // DD-Mon-YYYY
             day = parseInt(parts[0], 10);
-            month = monthMap[parts[1].toUpperCase()];
+            month = monthMap[parts[1].toUpperCase().substring(0, 3)];
             year = parseInt(parts[2], 10);
         } else {
             const p0 = parseInt(parts[0], 10);

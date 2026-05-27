@@ -213,7 +213,7 @@ export function getOpeningBalance(start) {
         if (!d.getTime() || d.getTime() >= start.getTime()) return;
         if (h.source === 'self') return;
         if (useReset && d.getTime() < filterStartDate.getTime()) return;
-        ownerPayable += n(h.net_amount);
+        ownerPayable += n(h.net_amount) - n(h.commission);
     });
 
     let paidToOwner = 0;

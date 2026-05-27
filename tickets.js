@@ -311,7 +311,7 @@ export function displayTickets(tickets, page = 1) {
         row.innerHTML = `
             <td>${formatDateToDMMMY(ticket.issued_date || ticket.dateRange || '')}</td>
             <td>${nameCell}</td>
-            <td>${isGroup ? '—' : escapeHtml(ticket.booking_reference || '')}</td>
+            <td>${isGroup ? escapeHtml(ticket.tickets[0]?.booking_reference || '') : escapeHtml(ticket.booking_reference || '')}</td>
             <td class="route-cell">${routeText}</td>
             <td>${airlineText}</td>
             <td class="num-cell">${netAmountHtml}</td>
@@ -1101,9 +1101,9 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
 /**
  * Filters and displays tickets based on search criteria.
  */
-export function performSearch(page = 1) {
+export function performSearch(page) {
     if (typeof page !== 'number' || isNaN(page)) {
-        page = 1;
+        page = state.currentPage || 1;
     }
     const nameRaw = (document.getElementById('searchName')?.value || '').toUpperCase().trim();
     const nameTokens = nameRaw ? nameRaw.split(/\s+/) : [];
@@ -1181,8 +1181,14 @@ function groupTicketsByAccount(tickets, startDateVal, endDateVal) {
     tickets.forEach(t => {
         const accName = (t.account_name || '—').trim().toUpperCase();
         
-        // Group strictly by Account Name
-        const key = accName;
+        // Check if fee
+        const isFee = String(t.name || '').match(/\(fees\)\s*$/i);
+        
+        // Group by Account Name, PNR, and Route. Fees are never grouped.
+        const key = isFee 
+            ? `FEE_${t.id || Math.random()}` 
+            : `${accName}_${(t.booking_reference || '').trim().toUpperCase()}_${(t.departure || '').trim().toUpperCase()}_${(t.destination || '').trim().toUpperCase()}`;
+
         if (!map.has(key)) {
             map.set(key, []);
         }
