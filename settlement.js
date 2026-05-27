@@ -241,10 +241,9 @@ export function getSettlementSummary() {
     const { start, end } = getSettlementPeriodRange();
     const tickets = state.allTickets.filter(t => !isExcluded(t));
 
-    let ticketSalesTotal = 0;
-    let ownerPayable = 0;
-    let myCommission = 0;
-    let extraProfit = 0;
+    let totalRevenue = 0;       // net_amount + date_change (not self purchase)
+    let myCommission = 0;       // commission (not self purchase)
+    let extraProfit = 0;        // extra_fare (all period tickets)
     const periodTickets = [];
 
     tickets.forEach(t => {
@@ -255,8 +254,7 @@ export function getSettlementSummary() {
 
         periodTickets.push(t);
 
-        ticketSalesTotal += getTicketGrossAmount(t);
-        ownerPayable += getTicketOwnerPayable(t);
+        totalRevenue += n(t.net_amount) + n(t.date_change);
         myCommission += getMyCommission(t);
         extraProfit += getExtraProfit(t);
     });
@@ -268,8 +266,7 @@ export function getSettlementSummary() {
         if (!inP) return;
         if (h.source === 'self') return;
 
-        ticketSalesTotal += n(h.base_fare);
-        ownerPayable += n(h.net_amount);
+        totalRevenue += n(h.net_amount);
         myCommission += n(h.commission);
     });
 
@@ -280,7 +277,8 @@ export function getSettlementSummary() {
     const adjustmentsTotal = periodAdjustments.reduce((sum, a) => sum + adjustmentSignedAmount(a), 0);
 
     const opening = getOpeningBalance(start);
-    const closing = opening + ownerPayable + adjustmentsTotal - paidToOwner;
+    const ownerPayable = opening + totalRevenue;
+    const remainingDue = ownerPayable - (paidToOwner + myCommission);
 
     const pendingSettlements = state.allSettlements.filter(s => (s.status || 'Paid') !== 'Verified');
 
@@ -288,15 +286,15 @@ export function getSettlementSummary() {
         start, end,
         basis: ui.basis,
         opening,
-        ticketSalesTotal,
+        totalRevenue,
         ownerPayable,
         paidToOwner,
-        remainingDue: opening + ownerPayable + adjustmentsTotal - paidToOwner,
+        remainingDue,
         myCommission,
         extraProfit,
         myProfit: myCommission + extraProfit,
         adjustmentsTotal,
-        closing,
+        closing: remainingDue,
         periodTickets,
         periodSettlements,
         periodAdjustments,
@@ -754,11 +752,13 @@ function renderReconciliation() {
         <div class="settle-reconcile-equation">
             ${reconcileTerm('Opening balance', s.opening, 'navy')}
             <span class="settle-equation-op">+</span>
-            ${reconcileTerm('Owner payable', s.ownerPayable, 'teal')}
-            <span class="settle-equation-op">+</span>
-            ${reconcileTerm('Adjustments', s.adjustmentsTotal, 'amber')}
+            ${reconcileTerm('Total revenue', s.totalRevenue, 'teal')}
+            <span class="settle-equation-op">=</span>
+            ${reconcileTerm('Owner payable', s.ownerPayable, 'navy')}
             <span class="settle-equation-op">−</span>
             ${reconcileTerm('Paid to owner', s.paidToOwner, 'teal')}
+            <span class="settle-equation-op">−</span>
+            ${reconcileTerm('My commission', s.myCommission, 'teal')}
             <span class="settle-equation-op">=</span>
             ${reconcileTerm('Remaining due', s.remainingDue, dueClass)}
         </div>
@@ -785,13 +785,13 @@ function renderKpis() {
 
     const cards = [
         kpi('fa-money-bill-wave', 'navy', 'Opening Balance', formatMMK(s.opening), 'Carried from prior period'),
-        kpi('fa-ticket', 'navy', 'Ticket Sales Total', formatMMK(s.ticketSalesTotal), 'Gross ticket value in period'),
-        kpi('fa-file-invoice-dollar', 'navy', 'Owner Payable', formatMMK(s.ownerPayable), 'Ticket value owed to owner'),
+        kpi('fa-ticket', 'navy', 'Total Revenue', formatMMK(s.totalRevenue), 'Net amount + date change (current month)'),
+        kpi('fa-file-invoice-dollar', 'navy', 'Owner Payable', formatMMK(s.ownerPayable), 'Opening balance + total revenue'),
         kpi('fa-handshake', 'teal', 'Paid to Owner', formatMMK(s.paidToOwner), `${s.periodSettlements.length} settlements`),
         kpi('fa-scale-balanced', s.remainingDue > 0 ? 'coral' : 'teal', 'Remaining Due to Owner', formatMMK(s.remainingDue), s.remainingDue > 0 ? 'Outstanding owner payable' : 'No owner balance due'),
-        kpi('fa-percent', 'teal', 'My Commission', formatMMK(s.myCommission), 'Commission retained'),
+        kpi('fa-percent', 'teal', 'My Commission', formatMMK(s.myCommission), 'Commission retained (not self purchased)'),
         kpi('fa-arrow-trend-up', 'amber', 'Extra Profit', formatMMK(s.extraProfit), 'Extra fare retained'),
-        kpi('fa-chart-line', 'teal', 'Total My Profit', formatMMK(s.myProfit), 'Commission + extra fare')
+        kpi('fa-chart-line', 'teal', 'Total Profit', formatMMK(s.myProfit), 'Commission + extra fare')
     ];
 
     grid.innerHTML = cards.join('');
@@ -1025,7 +1025,7 @@ function renderStatementPreview() {
         </div>
         <div class="settle-preview-grid">
             <div><span>Opening</span><strong>${formatMMK(s.opening)}</strong></div>
-            <div><span>Ticket Sales</span><strong>${formatMMK(s.ticketSalesTotal)}</strong></div>
+            <div><span>Total Revenue</span><strong>${formatMMK(s.totalRevenue)}</strong></div>
             <div><span>Owner Payable</span><strong>${formatMMK(s.ownerPayable)}</strong></div>
             <div><span>My Profit</span><strong>${formatMMK(s.myProfit)}</strong></div>
             <div><span>Paid to Owner</span><strong>${formatMMK(s.paidToOwner)}</strong></div>
@@ -1163,7 +1163,7 @@ function renderClosedPeriods() {
             </div>
             <div class="settle-closed-grid">
                 <div><span>Opening</span><strong>${formatMMK(p.openingBalance)}</strong></div>
-                <div><span>Ticket Sales</span><strong>${formatMMK(p.ticketSalesTotal)}</strong></div>
+                <div><span>Total Revenue</span><strong>${formatMMK(p.totalRevenue || p.ticketSalesTotal)}</strong></div>
                 <div><span>Owner Payable</span><strong>${formatMMK(p.ownerPayable)}</strong></div>
                 <div><span>My Profit</span><strong>${formatMMK(n(p.myCommission) + n(p.extraProfit))}</strong></div>
                 <div><span>Paid</span><strong>${formatMMK(p.paidToOwner)}</strong></div>
@@ -1649,7 +1649,7 @@ function buildCloseSnapshot(periodKey) {
         endDate: formatDateToDDMMMYYYY(end.toISOString().slice(0, 10)),
         basis: ui.basis,
         openingBalance: Math.round(s.opening),
-        ticketSalesTotal: Math.round(s.ticketSalesTotal),
+        totalRevenue: Math.round(s.totalRevenue),
         ownerPayable: Math.round(s.ownerPayable),
         myCommission: Math.round(s.myCommission),
         extraProfit: Math.round(s.extraProfit),
@@ -1668,7 +1668,7 @@ function renderClosePreview(periodKey) {
         <h4>Month Close Summary · ${escapeHtml(periodKey)}</h4>
         <div class="settle-close-grid">
             <div><span>Opening</span><strong>${formatMMK(snap.openingBalance)}</strong></div>
-            <div><span>Ticket Sales</span><strong>${formatMMK(snap.ticketSalesTotal)}</strong></div>
+            <div><span>Total Revenue</span><strong>${formatMMK(snap.totalRevenue || snap.ticketSalesTotal)}</strong></div>
             <div><span>Owner Payable</span><strong>${formatMMK(snap.ownerPayable)}</strong></div>
             <div><span>Paid to Owner</span><strong>${formatMMK(snap.paidToOwner)}</strong></div>
             <div><span>Adjustments</span><strong>${formatMMK(snap.adjustments)}</strong></div>
@@ -1727,14 +1727,13 @@ export function openStatementModal() {
             </header>
             <section class="statement-summary">
                 <div><span>Opening Balance</span><strong>${formatMMK(s.opening)}</strong></div>
-                <div><span>Ticket Sales Total</span><strong>${formatMMK(s.ticketSalesTotal)}</strong></div>
-                <div><span>Owner Payable (Tickets)</span><strong>${formatMMK(s.ownerPayable)}</strong></div>
+                <div><span>Total Revenue</span><strong>${formatMMK(s.totalRevenue)}</strong></div>
+                <div><span>Owner Payable</span><strong>${formatMMK(s.ownerPayable)}</strong></div>
+                <div><span>Paid to Owner</span><strong>${formatMMK(s.paidToOwner)}</strong></div>
+                <div class="statement-closing"><span>Remaining Due to Owner</span><strong>${formatMMK(s.remainingDue)}</strong></div>
                 <div><span>My Commission</span><strong>${formatMMK(s.myCommission)}</strong></div>
                 <div><span>Extra Profit</span><strong>${formatMMK(s.extraProfit)}</strong></div>
-                <div><span>Total My Profit</span><strong>${formatMMK(s.myProfit)}</strong></div>
-                <div><span>Adjustments</span><strong>${formatMMK(s.adjustmentsTotal)}</strong></div>
-                <div><span>Settlements Paid</span><strong>${formatMMK(s.paidToOwner)}</strong></div>
-                <div class="statement-closing"><span>Closing Balance</span><strong>${formatMMK(s.closing)}</strong></div>
+                <div><span>Total Profit</span><strong>${formatMMK(s.myProfit)}</strong></div>
             </section>
             <h4>Ticket Line Items</h4>
             <table class="settle-table"><thead><tr><th>Date</th><th>PNR</th><th>Client</th><th class="num">Ticket Amount</th><th class="num">Comm.</th><th class="num">Extra</th><th class="num">Owner Payable</th></tr></thead><tbody>${lineItems}</tbody></table>
@@ -1799,14 +1798,13 @@ export function exportStatementPdf() {
 
     const summaryRows = [
         ['Opening Balance', formatMMK(s.opening)],
-        ['Ticket Sales Total', formatMMK(s.ticketSalesTotal)],
-        ['Owner Payable (Tickets)', formatMMK(s.ownerPayable)],
+        ['Total Revenue', formatMMK(s.totalRevenue)],
+        ['Owner Payable', formatMMK(s.ownerPayable)],
+        ['Paid to Owner', formatMMK(s.paidToOwner)],
+        ['Remaining Due to Owner', formatMMK(s.remainingDue)],
         ['My Commission', formatMMK(s.myCommission)],
         ['Extra Profit', formatMMK(s.extraProfit)],
-        ['Total My Profit', formatMMK(s.myProfit)],
-        ['Adjustments', formatMMK(s.adjustmentsTotal)],
-        ['Settlements Paid', formatMMK(s.paidToOwner)],
-        ['Closing Balance', formatMMK(s.closing)]
+        ['Total Profit', formatMMK(s.myProfit)]
     ];
     if (doc.autoTable) {
         doc.autoTable({
