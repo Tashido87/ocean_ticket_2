@@ -1158,9 +1158,9 @@ export function updateDashboardData() {
     const prevTickets = prevTicketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t) && t.source !== 'self').length;
 
     // 3. Total Profit (total commission of the month + total extra fare + self purchased profit)
-    const curCommission = ticketsInPeriod.filter(t => t.source !== 'self' && !isFeeEntryRow(t) && !isCanceledTicket(t)).reduce((sum, t) => sum + (Number(t.commission) || 0), 0) +
+    const curCommission = ticketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + (Number(t.commission) || 0), 0) +
                          activeHotelRowsInRange(range).filter(h => h.source !== 'self').reduce((sum, h) => sum + (Number(h.commission) || 0), 0);
-    const curExtraFare = ticketsInPeriod.filter(t => t.source !== 'self' && !isFeeEntryRow(t) && !isCanceledTicket(t)).reduce((sum, t) => sum + (Number(t.extra_fare) || 0), 0);
+    const curExtraFare = ticketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + (Number(t.extra_fare) || 0), 0);
 
     // 3b. Self-Purchased Profit
     const curSelfHotelProfit = activeHotelRowsInRange(range).filter(h => h.source === 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
@@ -1170,9 +1170,9 @@ export function updateDashboardData() {
     const curProfit = curCommission + curExtraFare + curSelfProfit;
 
     // Previous period (for trend calculation)
-    const prevCommission = prevTicketsInPeriod.filter(t => t.source !== 'self' && !isFeeEntryRow(t) && !isCanceledTicket(t)).reduce((sum, t) => sum + (Number(t.commission) || 0), 0) +
+    const prevCommission = prevTicketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + (Number(t.commission) || 0), 0) +
                           activeHotelRowsInRange(prevRange).filter(h => h.source !== 'self').reduce((sum, h) => sum + (Number(h.commission) || 0), 0);
-    const prevExtraFare = prevTicketsInPeriod.filter(t => t.source !== 'self' && !isFeeEntryRow(t) && !isCanceledTicket(t)).reduce((sum, t) => sum + (Number(t.extra_fare) || 0), 0);
+    const prevExtraFare = prevTicketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + (Number(t.extra_fare) || 0), 0);
     
     const prevSelfHotelProfit = activeHotelRowsInRange(prevRange).filter(h => h.source === 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
     const prevSelfTicketProfit = prevTicketsInPeriod.filter(t => t.source === 'self').reduce((sum, t) => sum + ticketProfitAmount(t), 0);

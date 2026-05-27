@@ -106,7 +106,7 @@ function isCanceled(t) {
 }
 
 function isExcluded(t) {
-    return isFeeEntry(t) || isCanceled(t) || t?.source === 'self';
+    return t?.source === 'self';
 }
 
 function n(v) { return Number(v || 0); }
