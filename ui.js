@@ -2863,13 +2863,13 @@ export function updateSummaryBar() {
         const extra = parseFloat(card.querySelector('.passenger-extra-fare').value) || 0;
         const commission = parseFloat(card.querySelector('.passenger-commission').value) || 0;
         totalNet += net + extra;
-        totalCommission += isSelf ? commission : calculateAgentCut(commission);
+        totalCommission += (isSelf ? commission : calculateAgentCut(commission)) + extra;
         if (round) {
             const retNet = parseFloat(card.querySelector('.passenger-return-net-amount')?.value) || 0;
             const retExtra = parseFloat(card.querySelector('.passenger-return-extra-fare')?.value) || 0;
             const retCommission = parseFloat(card.querySelector('.passenger-return-commission')?.value) || 0;
             totalNet += retNet + retExtra;
-            totalCommission += isSelf ? retCommission : calculateAgentCut(retCommission);
+            totalCommission += (isSelf ? retCommission : calculateAgentCut(retCommission)) + retExtra;
         }
     });
     const paxCountEl = document.getElementById('summaryPaxCount');
