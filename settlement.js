@@ -195,7 +195,7 @@ function inRange(date, start, end) {
  * across all tickets/settlements/adjustments, using the selected basis.
  */
 export function getOpeningBalance(start) {
-    const RESET_DATE = new Date(2026, 2, 1); // March 1, 2026
+    const RESET_DATE = new Date(2026, 3, 1); // April 1, 2026
     const useReset = start >= RESET_DATE;
     const filterStartDate = useReset ? RESET_DATE : null;
 

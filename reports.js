@@ -351,8 +351,8 @@ export async function exportToPdf() {
         
         // --- Previous Balance Calculation (Corrected Logic with Reset Date) ---
         
-        // User requested a hard reset. As of Mar 1, 2026, the balance is 0.
-        const RESET_DATE = new Date(2026, 2, 1); // 2 is for March in JS
+        // User requested a hard reset. As of Apr 1, 2026, the balance is 0.
+        const RESET_DATE = new Date(2026, 3, 1); // 3 is for April in JS
         
         // 'startDate' is the first day of the reporting period (e.g., Nov 1).
         const reportStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
