@@ -233,9 +233,11 @@ export function displayTickets(tickets, page = 1) {
             : escapeHtml(ticket.name || '');
 
         const routeText = isGroup 
-            ? (ticket.tickets[0]?._isHotel 
-                ? escapeHtml(`${ticket.tickets[0]?.hotel_name} (${ticket.tickets[0]?.city}, ${ticket.tickets[0]?.country})`) 
-                : escapeHtml(routeShort(ticket.tickets[0])))
+            ? [...new Set(ticket.tickets.map(t => {
+                return t._isHotel 
+                    ? `${t.hotel_name} (${t.city}, ${t.country})`
+                    : routeShort(t);
+              }))].map(escapeHtml).join(' | ')
             : (ticket._isHotel 
                 ? escapeHtml(`${ticket.hotel_name} (${ticket.city}, ${ticket.country})`) 
                 : escapeHtml(routeShort(ticket)));
@@ -1173,17 +1175,8 @@ function groupTicketsByAccount(tickets, startDateVal, endDateVal) {
     tickets.forEach(t => {
         const accName = (t.account_name || '—').trim().toUpperCase();
         
-        // Get route
-        const dep = (t.departure || '').trim().toUpperCase();
-        const dest = (t.destination || '').trim().toUpperCase();
-        const routeKey = `${dep}→${dest}`;
-        
-        // Get travel date
-        const travelDate = t._isHotel ? (t.checkin || t.issued_date || '') : (t.departing_on || '');
-        const dateKey = String(travelDate).trim().toUpperCase();
-        
-        // Compound key: Account + Route + Travel Date
-        const key = `${accName}|${routeKey}|${dateKey}`;
+        // Group strictly by Account Name
+        const key = accName;
         if (!map.has(key)) {
             map.set(key, []);
         }
