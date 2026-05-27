@@ -180,7 +180,7 @@ export async function initializeApp() {
                 state.allTickets = tickets;
                 populateSearchAirlines();
                 updateUnpaidCount();
-                displayInitialTickets();
+                displayInitialTickets(state.currentPage);
                 updateNotifications();
                 buildClientList();
                 updateDashboardData();
@@ -236,7 +236,7 @@ export async function initializeApp() {
             onHotelsChange((hotels) => {
                 state.allHotels = hotels;
                 renderHotelReservations();
-                displayInitialTickets();
+                displayInitialTickets(state.currentPage);
                 updateDashboardData();
             })
         );

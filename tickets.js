@@ -157,11 +157,11 @@ function mapHotelToTicket(h) {
  * Displays the initial list of tickets.
  * MODIFICATION: Removed the .slice(0, 50) limit to allow navigating through all tickets.
  */
-export function displayInitialTickets() {
+export function displayInitialTickets(page = 1) {
     const startDate = document.getElementById('searchStartDate')?.value;
     const endDate = document.getElementById('searchEndDate')?.value;
     if (startDate || endDate) {
-        performSearch();
+        performSearch(page);
         return;
     }
     const mappedHotels = (state.allHotels || []).map(mapHotelToTicket);
@@ -171,7 +171,7 @@ export function displayInitialTickets() {
         return getTimestampMs(b.createdAt) - getTimestampMs(a.createdAt);
     });
     state.filteredTickets = sorted;
-    displayTickets(sorted, 1);
+    displayTickets(sorted, page);
 }
 
 /**
@@ -1096,7 +1096,7 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
 /**
  * Filters and displays tickets based on search criteria.
  */
-export function performSearch() {
+export function performSearch(page = 1) {
     const nameRaw = (document.getElementById('searchName')?.value || '').toUpperCase().trim();
     const nameTokens = nameRaw ? nameRaw.split(/\s+/) : [];
     const bookRef = (document.getElementById('searchBooking')?.value || '').toUpperCase();
@@ -1165,7 +1165,7 @@ export function performSearch() {
     }
 
     state.filteredTickets = results;
-    displayTickets(state.filteredTickets, 1);
+    displayTickets(state.filteredTickets, page);
 }
 
 function groupTicketsByAccount(tickets, startDateVal, endDateVal) {
