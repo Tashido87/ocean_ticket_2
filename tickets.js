@@ -1198,7 +1198,12 @@ function groupTicketsByAccount(tickets, startDateVal, endDateVal) {
         });
     });
 
-    return grouped.sort((a, b) => b.net_amount - a.net_amount);
+    return grouped.sort((a, b) => {
+        const dateA = parseSheetDate(a.issued_date);
+        const dateB = parseSheetDate(b.issued_date);
+        if (dateB - dateA !== 0) return dateB - dateA;
+        return b.net_amount - a.net_amount;
+    });
 }
 
 /**
