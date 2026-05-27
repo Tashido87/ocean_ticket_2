@@ -278,7 +278,7 @@ export function getSettlementSummary() {
 
     const opening = getOpeningBalance(start);
     const ownerPayable = opening + totalRevenue;
-    const remainingDue = ownerPayable - (paidToOwner + myCommission);
+    const remainingDue = ownerPayable - (paidToOwner + myCommission) + adjustmentsTotal;
 
     const pendingSettlements = state.allSettlements.filter(s => (s.status || 'Paid') !== 'Verified');
 

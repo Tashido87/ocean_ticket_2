@@ -398,15 +398,25 @@ export async function exportToPdf() {
             const revenueBefore = ticketsBefore.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
             const commissionBefore = ticketsBefore.reduce((sum, t) => sum + (t.commission || 0), 0);
 
+            const adjustmentsBefore = state.allAdjustments.filter(a => {
+                const adjDate = parseSheetDate(a.adjustment_date);
+                return adjDate >= filterStartDate && adjDate < startDate;
+            });
+            const totalAdjustmentsBefore = adjustmentsBefore.reduce((sum, a) => {
+                const amt = Number(a.amount || 0);
+                if (a.type === 'Owner Debit' || a.type === 'Refund') return sum + amt;
+                if (a.type === 'Owner Credit' || a.type === 'Correction') return sum - amt;
+                return sum + amt;
+            }, 0);
+
             const settlementsBefore = state.allSettlements.filter(s => {
                 const settlementDate = parseSheetDate(s.settlement_date);
                 return settlementDate >= filterStartDate && settlementDate < startDate;
             });
             const totalSettlementsBefore = settlementsBefore.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
             
-            // This is the true balance carried over since the last reset.
-            // For Nov 1 report, ticketsBefore/settlementsBefore will be empty, so this will be 0.
-            previousEndOfMonthDue = revenueBefore - (commissionBefore + totalSettlementsBefore);
+            // This is the true balance carried over since the last reset, including adjustments.
+            previousEndOfMonthDue = revenueBefore + totalAdjustmentsBefore - (commissionBefore + totalSettlementsBefore);
         }
 
         // Add previous due to the grand total for this period
@@ -418,7 +428,19 @@ export async function exportToPdf() {
             return settlementDate >= startDate && settlementDate <= endDate;
         });
         const totalSettlements = settlementsInRange.reduce((sum, s) => sum + s.amount_paid, 0);
-        const amountToPay = grandTotal - (totalCommission + totalSettlements);
+
+        const adjustmentsInRange = state.allAdjustments.filter(a => {
+            const adjDate = parseSheetDate(a.adjustment_date);
+            return adjDate >= startDate && adjDate <= endDate;
+        });
+        const totalAdjustments = adjustmentsInRange.reduce((sum, a) => {
+            const amt = Number(a.amount || 0);
+            if (a.type === 'Owner Debit' || a.type === 'Refund') return sum + amt;
+            if (a.type === 'Owner Credit' || a.type === 'Correction') return sum - amt;
+            return sum + amt;
+        }, 0);
+
+        const amountToPay = grandTotal - (totalCommission + totalSettlements) + totalAdjustments;
 
         let settlementBody = [
             [{ content: `Grand Total for ${dateRangeString}:`, styles: { fontStyle: 'bold' } }, { content: `${(totalNetAmount + totalDateChange).toLocaleString()} MMK`, styles: { halign: 'right', fontStyle: 'bold' } }],
@@ -439,6 +461,19 @@ export async function exportToPdf() {
              settlementBody.push(
                  [{ content: `No settlements made during ${dateRangeString}`, styles: {textColor: [150, 150, 150]} }, { content: `(0) MMK`, styles: { halign: 'right', textColor: [150, 150, 150] } }]
             );
+        }
+
+        if(adjustmentsInRange.length > 0) {
+            adjustmentsInRange.forEach(a => {
+                const notes = a.notes ? `, ${a.notes}` : '';
+                const adjText = `Adjustment: ${a.type || 'Other'} (${a.adjustment_date}, ${a.reason || '—'}${notes})`;
+                const amt = Number(a.amount || 0);
+                const signed = (a.type === 'Owner Credit' || a.type === 'Correction') ? -amt : amt;
+                const displayVal = signed >= 0 ? `${signed.toLocaleString()} MMK` : `(${Math.abs(signed).toLocaleString()}) MMK`;
+                settlementBody.push(
+                     [{ content: adjText, styles: {textColor: [100, 100, 100]} }, { content: displayVal, styles: { halign: 'right', textColor: [100, 100, 100] } }]
+                );
+            });
         }
 
         settlementBody.push(
