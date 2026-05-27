@@ -395,8 +395,18 @@ export async function exportToPdf() {
                 const ticketDate = parseSheetDate(t.issued_date);
                 return ticketDate >= filterStartDate && ticketDate < startDate && t.source !== 'self';
             });
-            const revenueBefore = ticketsBefore.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
-            const commissionBefore = ticketsBefore.reduce((sum, t) => sum + (t.commission || 0), 0);
+            const ticketsRevenueBefore = ticketsBefore.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
+            const ticketsCommissionBefore = ticketsBefore.reduce((sum, t) => sum + (t.commission || 0), 0);
+
+            const hotelsBefore = (state.allHotels || []).filter(h => {
+                const checkinDate = parseSheetDate(h.checkin);
+                return checkinDate >= filterStartDate && checkinDate < startDate && h.source !== 'self';
+            });
+            const hotelsRevenueBefore = hotelsBefore.reduce((sum, h) => sum + (Number(h.net_amount) || 0), 0);
+            const hotelsCommissionBefore = hotelsBefore.reduce((sum, h) => sum + (Number(h.commission) || 0), 0);
+
+            const revenueBefore = ticketsRevenueBefore + hotelsRevenueBefore;
+            const commissionBefore = ticketsCommissionBefore + hotelsCommissionBefore;
 
             const adjustmentsBefore = state.allAdjustments.filter(a => {
                 const adjDate = parseSheetDate(a.adjustment_date);

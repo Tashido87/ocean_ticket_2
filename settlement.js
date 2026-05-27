@@ -195,11 +195,16 @@ function inRange(date, start, end) {
  * across all tickets/settlements/adjustments, using the selected basis.
  */
 export function getOpeningBalance(start) {
+    const RESET_DATE = new Date(2026, 2, 1); // March 1, 2026
+    const useReset = start >= RESET_DATE;
+    const filterStartDate = useReset ? RESET_DATE : null;
+
     const tickets = state.allTickets.filter(t => !isExcluded(t));
     let ownerPayable = 0;
     tickets.forEach(t => {
         const d = parseSheetDate(t.issued_date);
         if (!d.getTime() || d.getTime() >= start.getTime()) return;
+        if (useReset && d.getTime() < filterStartDate.getTime()) return;
         ownerPayable += getTicketOwnerPayable(t);
     });
 
@@ -207,6 +212,7 @@ export function getOpeningBalance(start) {
         const d = parseSheetDate(h.checkin);
         if (!d.getTime() || d.getTime() >= start.getTime()) return;
         if (h.source === 'self') return;
+        if (useReset && d.getTime() < filterStartDate.getTime()) return;
         ownerPayable += n(h.net_amount);
     });
 
@@ -214,6 +220,7 @@ export function getOpeningBalance(start) {
     state.allSettlements.forEach(s => {
         const d = parseSheetDate(s.settlement_date);
         if (!d.getTime() || d.getTime() >= start.getTime()) return;
+        if (useReset && d.getTime() < filterStartDate.getTime()) return;
         paidToOwner += n(s.amount_paid);
     });
 
@@ -221,6 +228,7 @@ export function getOpeningBalance(start) {
     state.allAdjustments.forEach(a => {
         const d = parseSheetDate(a.adjustment_date);
         if (!d.getTime() || d.getTime() >= start.getTime()) return;
+        if (useReset && d.getTime() < filterStartDate.getTime()) return;
         adjustments += adjustmentSignedAmount(a);
     });
 
