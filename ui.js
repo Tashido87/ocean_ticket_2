@@ -119,19 +119,22 @@ export function showView(viewName) {
 
     // View-specific cleanup and setup
     if (viewName === 'sell') {
-        document.getElementById('sellForm')?.reset();
-        setSellFormDefaultDates();
-        // Default trip type to One-Way after reset
-        const onewayRadio = document.getElementById('trip_type_oneway');
-        if (onewayRadio) onewayRadio.checked = true;
-        const customizeToggle = document.getElementById('returnCustomizeToggle');
-        if (customizeToggle) customizeToggle.checked = false;
-        const returnBlock = document.getElementById('returnFlightBlock');
-        if (returnBlock) returnBlock.classList.remove('is-customized');
+        const container = document.getElementById('passenger-forms-container');
+        if (!container || container.children.length === 0) {
+            document.getElementById('sellForm')?.reset();
+            setSellFormDefaultDates();
+            // Default trip type to One-Way after reset
+            const onewayRadio = document.getElementById('trip_type_oneway');
+            if (onewayRadio) onewayRadio.checked = true;
+            const customizeToggle = document.getElementById('returnCustomizeToggle');
+            if (customizeToggle) customizeToggle.checked = false;
+            const returnBlock = document.getElementById('returnFlightBlock');
+            if (returnBlock) returnBlock.classList.remove('is-customized');
+            resetPassengerForms();
+        }
 
         populateFlightLocations();
         updateToggleLabels();
-        resetPassengerForms();
         updateSellRoutePreview();
         applyTripTypeToUI();
         setupSellClientAutoSuggest();

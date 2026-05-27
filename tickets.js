@@ -751,7 +751,9 @@ async function confirmAndSaveTicket(form, sharedData, passengerData, returnShare
         await saveTicket(sharedData, passengerData, returnSharedData);
 
         if (state.bookingToUpdate) {
-            await updateBookingStatus(state.bookingToUpdate, 'complete');
+            for (const docId of state.bookingToUpdate) {
+                await deleteDocument('bookings', docId);
+            }
         }
 
         showToast('Ticket(s) saved successfully!', 'success');
