@@ -216,7 +216,7 @@ export function displayTickets(tickets, page = 1) {
     state.currentPage = page;
     const paginated = tickets.slice((page - 1) * state.rowsPerPage, page * state.rowsPerPage);
 
-    paginated.forEach((item) => {
+    paginated.forEach((item, index) => {
         const isGroup = isGrouped && item._grouped;
         const row = tbody.insertRow();
         if (isGroup) row.classList.add('grouped-row');
@@ -253,40 +253,48 @@ export function displayTickets(tickets, page = 1) {
         let extraFareHtml;
         let dateChangeHtml;
 
-        if (state.recordsEditMode && !isGroup) {
+        if (state.recordsEditMode) {
+            const isHotel = isGroup ? Boolean(ticket.tickets[0]?._isHotel) : Boolean(ticket._isHotel);
+            const inputId = isGroup ? `group-${ticket.accountName.replace(/[^a-zA-Z0-9]/g, '_')}-${index}` : ticket.id;
+            const dataId = isGroup ? ticket.tickets.map(t => t.id).join(',') : ticket.id;
+
             netAmountHtml = `<input type="number" 
                 class="net-amount-inline-input inline-excel-input" 
-                id="net-amount-input-${ticket.id}" 
-                data-id="${ticket.id}" 
+                id="net-amount-input-${inputId}" 
+                data-id="${dataId}" 
                 data-field="net_amount"
-                data-is-hotel="${Boolean(ticket._isHotel)}"
+                data-is-hotel="${isHotel}"
+                data-is-grouped="${isGroup}"
                 value="${ticket.net_amount || 0}" 
             />`;
             commissionHtml = `<input type="number" 
                 class="commission-inline-input inline-excel-input" 
-                id="commission-input-${ticket.id}" 
-                data-id="${ticket.id}" 
+                id="commission-input-${inputId}" 
+                data-id="${dataId}" 
                 data-field="commission"
-                data-is-hotel="${Boolean(ticket._isHotel)}"
+                data-is-hotel="${isHotel}"
+                data-is-grouped="${isGroup}"
                 value="${ticket.commission || 0}" 
             />`;
             extraFareHtml = `<input type="number" 
                 class="extra-fare-inline-input inline-excel-input" 
-                id="extra-fare-input-${ticket.id}" 
-                data-id="${ticket.id}" 
+                id="extra-fare-input-${inputId}" 
+                data-id="${dataId}" 
                 data-field="extra_fare"
-                data-is-hotel="${Boolean(ticket._isHotel)}"
+                data-is-hotel="${isHotel}"
+                data-is-grouped="${isGroup}"
                 value="${ticket.extra_fare || 0}" 
-                ${ticket._isHotel ? 'disabled style="background:transparent; border:none; color:var(--text-secondary); cursor:not-allowed;"' : ''}
+                ${isHotel ? 'disabled style="background:transparent; border:none; color:var(--text-secondary); cursor:not-allowed;"' : ''}
             />`;
             dateChangeHtml = `<input type="number" 
                 class="date-change-inline-input inline-excel-input" 
-                id="date-change-input-${ticket.id}" 
-                data-id="${ticket.id}" 
+                id="date-change-input-${inputId}" 
+                data-id="${dataId}" 
                 data-field="date_change"
-                data-is-hotel="${Boolean(ticket._isHotel)}"
+                data-is-hotel="${isHotel}"
+                data-is-grouped="${isGroup}"
                 value="${ticket.date_change || 0}" 
-                ${ticket._isHotel ? 'disabled style="background:transparent; border:none; color:var(--text-secondary); cursor:not-allowed;"' : ''}
+                ${isHotel ? 'disabled style="background:transparent; border:none; color:var(--text-secondary); cursor:not-allowed;"' : ''}
             />`;
         } else {
             netAmountHtml = (ticket.net_amount || 0).toLocaleString();
@@ -296,7 +304,7 @@ export function displayTickets(tickets, page = 1) {
         }
 
         row.innerHTML = `
-            <td>${ticket.issued_date || ticket.dateRange || ''}</td>
+            <td>${formatDateToDMMMY(ticket.issued_date || ticket.dateRange || '')}</td>
             <td>${nameCell}</td>
             <td>${isGroup ? '—' : escapeHtml(ticket.booking_reference || '')}</td>
             <td class="route-cell">${routeText}</td>
@@ -362,13 +370,26 @@ export function displayTickets(tickets, page = 1) {
                     }
                     const ticketId = this.dataset.id;
                     const isHotel = this.dataset.isHotel === 'true';
-                    const oldValue = isHotel 
-                        ? (state.allHotels.find(h => h.id === ticketId)?.[field] || 0)
-                        : (state.allTickets.find(t => t.id === ticketId)?.[field] || 0);
+                    const isGrouped = this.dataset.isGrouped === 'true';
+                    
+                    let oldValue;
+                    if (isGrouped) {
+                        const ids = ticketId.split(',');
+                        oldValue = ids.reduce((sum, id) => {
+                            const t = isHotel 
+                                ? state.allHotels.find(h => h.id === id)
+                                : state.allTickets.find(x => x.id === id);
+                            return sum + (t ? (Number(t[field]) || 0) : 0);
+                        }, 0);
+                    } else {
+                        oldValue = isHotel 
+                            ? (state.allHotels.find(h => h.id === ticketId)?.[field] || 0)
+                            : (state.allTickets.find(t => t.id === ticketId)?.[field] || 0);
+                    }
                     
                     const newValue = Number(this.value) || 0;
                     if (newValue !== oldValue) {
-                        saveFieldUpdate(ticketId, isHotel, field, newValue);
+                        saveFieldUpdate(ticketId, isHotel, field, newValue, isGrouped);
                     }
                 });
 
@@ -378,10 +399,11 @@ export function displayTickets(tickets, page = 1) {
                         
                         const ticketId = this.dataset.id;
                         const isHotel = this.dataset.isHotel === 'true';
+                        const isGrouped = this.dataset.isGrouped === 'true';
                         const newValue = Number(this.value) || 0;
                         
                         // Save asynchronously
-                        saveFieldUpdate(ticketId, isHotel, field, newValue);
+                        saveFieldUpdate(ticketId, isHotel, field, newValue, isGrouped);
                         
                         // Navigate to next row in same column
                         const colInputs = inputs.filter(inp => !inp.disabled);
@@ -419,32 +441,63 @@ export function displayTickets(tickets, page = 1) {
  * Helper to update a ticket or hotel's field value inline.
  * Updates the local state for fast UI feedback, then pushes to Firestore.
  */
-async function saveFieldUpdate(id, isHotel, field, value) {
+async function saveFieldUpdate(id, isHotel, field, value, isGrouped = false) {
     const numericVal = Number(value) || 0;
     
-    // Update local state immediately for snappy response
-    if (isHotel) {
-        const hotel = state.allHotels.find(h => h.id === id);
-        if (hotel) hotel[field] = numericVal;
+    if (isGrouped) {
+        const ids = id.split(',');
+        const perTicketValue = Math.round(numericVal / ids.length);
+        
+        // Update local state immediately for snappy response
+        ids.forEach(singleId => {
+            if (isHotel) {
+                const hotel = state.allHotels.find(h => h.id === singleId);
+                if (hotel) hotel[field] = perTicketValue;
+            } else {
+                const ticket = state.allTickets.find(t => t.id === singleId);
+                if (ticket) ticket[field] = perTicketValue;
+            }
+        });
+
+        try {
+            const updates = ids.map(singleId => ({
+                id: singleId,
+                data: { [field]: perTicketValue }
+            }));
+            await batchUpdateTickets(updates);
+            
+            saveHistory({
+                action: `Edit Group ${field.replace('_', ' ')}`,
+                details: `Inline group ${field.replace('_', ' ')} update to total ${numericVal.toLocaleString()} MMK (${perTicketValue.toLocaleString()} MMK per client)`
+            });
+        } catch (err) {
+            showToast(`Failed to update group ${field.replace('_', ' ')}: ` + err.message, 'error');
+        }
     } else {
-        const ticket = state.allTickets.find(t => t.id === id);
-        if (ticket) ticket[field] = numericVal;
-    }
-    
-    try {
-        const updateData = { [field]: numericVal };
+        // Individual update
         if (isHotel) {
-            await updateHotelReservation(id, updateData);
+            const hotel = state.allHotels.find(h => h.id === id);
+            if (hotel) hotel[field] = numericVal;
         } else {
-            await updateTicket(id, updateData);
+            const ticket = state.allTickets.find(t => t.id === id);
+            if (ticket) ticket[field] = numericVal;
         }
         
-        saveHistory({
-            action: `Edit ${field.replace('_', ' ')}`,
-            details: `Inline ${field.replace('_', ' ')} update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`
-        });
-    } catch (err) {
-        showToast(`Failed to update ${field.replace('_', ' ')}: ` + err.message, 'error');
+        try {
+            const updateData = { [field]: numericVal };
+            if (isHotel) {
+                await updateHotelReservation(id, updateData);
+            } else {
+                await updateTicket(id, updateData);
+            }
+            
+            saveHistory({
+                action: `Edit ${field.replace('_', ' ')}`,
+                details: `Inline ${field.replace('_', ' ')} update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`
+            });
+        } catch (err) {
+            showToast(`Failed to update ${field.replace('_', ' ')}: ` + err.message, 'error');
+        }
     }
 }
 
@@ -1136,6 +1189,7 @@ function groupTicketsByAccount(tickets, startDateVal, endDateVal) {
             accountName: accountName === '—' ? 'No Account' : accountName,
             count: group.length,
             tickets: group,
+            issued_date: first.issued_date || '',
             dateRange: travelDate || first.issued_date || '',
             net_amount: sumField('net_amount'),
             commission: sumField('commission'),
