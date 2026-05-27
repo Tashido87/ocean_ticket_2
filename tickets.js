@@ -448,14 +448,21 @@ async function saveFieldUpdate(id, isHotel, field, value, isGrouped = false) {
         const ids = id.split(',');
         const perTicketValue = Math.round(numericVal / ids.length);
         
+        let firstTicket = null;
         // Update local state immediately for snappy response
         ids.forEach(singleId => {
             if (isHotel) {
                 const hotel = state.allHotels.find(h => h.id === singleId);
-                if (hotel) hotel[field] = perTicketValue;
+                if (hotel) {
+                    hotel[field] = perTicketValue;
+                    if (!firstTicket) firstTicket = hotel;
+                }
             } else {
                 const ticket = state.allTickets.find(t => t.id === singleId);
-                if (ticket) ticket[field] = perTicketValue;
+                if (ticket) {
+                    ticket[field] = perTicketValue;
+                    if (!firstTicket) firstTicket = ticket;
+                }
             }
         });
 
@@ -466,21 +473,28 @@ async function saveFieldUpdate(id, isHotel, field, value, isGrouped = false) {
             }));
             await batchUpdateTickets(updates);
             
-            saveHistory({
-                action: `Edit Group ${field.replace('_', ' ')}`,
-                details: `Inline group ${field.replace('_', ' ')} update to total ${numericVal.toLocaleString()} MMK (${perTicketValue.toLocaleString()} MMK per client)`
-            });
+            await saveHistory(
+                firstTicket || { name: 'Group Update', booking_reference: '—' },
+                `Inline group ${field.replace('_', ' ')} update to total ${numericVal.toLocaleString()} MMK (${perTicketValue.toLocaleString()} MMK per client)`
+            );
         } catch (err) {
             showToast(`Failed to update group ${field.replace('_', ' ')}: ` + err.message, 'error');
         }
     } else {
         // Individual update
+        let itemObj = null;
         if (isHotel) {
             const hotel = state.allHotels.find(h => h.id === id);
-            if (hotel) hotel[field] = numericVal;
+            if (hotel) {
+                hotel[field] = numericVal;
+                itemObj = hotel;
+            }
         } else {
             const ticket = state.allTickets.find(t => t.id === id);
-            if (ticket) ticket[field] = numericVal;
+            if (ticket) {
+                ticket[field] = numericVal;
+                itemObj = ticket;
+            }
         }
         
         try {
@@ -491,10 +505,10 @@ async function saveFieldUpdate(id, isHotel, field, value, isGrouped = false) {
                 await updateTicket(id, updateData);
             }
             
-            saveHistory({
-                action: `Edit ${field.replace('_', ' ')}`,
-                details: `Inline ${field.replace('_', ' ')} update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`
-            });
+            await saveHistory(
+                itemObj || { name: 'Unknown', booking_reference: '—' },
+                `Inline ${field.replace('_', ' ')} update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`
+            );
         } catch (err) {
             showToast(`Failed to update ${field.replace('_', ' ')}: ` + err.message, 'error');
         }
