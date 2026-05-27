@@ -32,7 +32,8 @@ import {
     handleRouteValidation,
     resetPassengerForms,
     addPassengerForm,
-    hideNewBookingForm
+    hideNewBookingForm,
+    populatePassengerCardFromClient
 } from './ui.js';
 
 const BOOKING_STATUS_LABELS = {
@@ -822,7 +823,15 @@ export function sellTicketFromBooking(docIdsStr) {
         const nameParts = passenger.name.split(' ');
         const gender = nameParts.length > 1 && ['MR', 'MS'].includes(nameParts[0].toUpperCase()) ? nameParts.shift() : 'MR';
         const name = nameParts.join(' ');
-        addPassengerForm(name, passenger.id_no, gender);
+        const newForm = addPassengerForm(name, passenger.id_no, gender);
+
+        // Auto-fill from existing client record if available
+        if (Array.isArray(state.allClients)) {
+            const client = state.allClients.find(c => String(c.name || '').trim().toUpperCase() === name.trim().toUpperCase());
+            if (client) {
+                populatePassengerCardFromClient(newForm, client);
+            }
+        }
     });
 
     showToast(`Form pre-filled for ${bookingGroup.passengers.length} passenger(s). Complete financial details.`, 'info');
