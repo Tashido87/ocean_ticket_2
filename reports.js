@@ -172,15 +172,8 @@ export async function exportToPdf() {
         });
     }
 
-    // Ensure self-purchased, fee entries, and canceled tickets are excluded for Agent Report regardless of mode
-    ticketsToExport = ticketsToExport.filter(t => {
-        if (t.source === 'self') return false;
-        const name = String(t.name || '');
-        const remarks = String(t.remarks || '').toLowerCase();
-        const isFee = /\(fees\)\s*$/i.test(name) || remarks.includes('fee entry');
-        const isCanc = remarks.includes('cancel') || remarks.includes('refund');
-        return !isFee && !isCanc;
-    });
+    // Ensure self-purchased tickets are excluded for Agent Report regardless of mode (canceled and fee entries are included)
+    ticketsToExport = ticketsToExport.filter(t => t.source !== 'self');
     hotelsToExport = hotelsToExport.filter(h => h.source !== 'self');
 
     const itemsToExport = ticketsToExport.map(t => ({
@@ -376,7 +369,7 @@ export async function exportToPdf() {
 
             const ticketsLastMonth = state.allTickets.filter(t => {
                 const ticketDate = parseSheetDate(t.issued_date);
-                return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear;
+                return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear && t.source !== 'self';
             });
 
             const revenueLastMonth = ticketsLastMonth.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
@@ -400,7 +393,7 @@ export async function exportToPdf() {
             
             const ticketsBefore = state.allTickets.filter(t => {
                 const ticketDate = parseSheetDate(t.issued_date);
-                return ticketDate >= filterStartDate && ticketDate < startDate;
+                return ticketDate >= filterStartDate && ticketDate < startDate && t.source !== 'self';
             });
             const revenueBefore = ticketsBefore.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
             const commissionBefore = ticketsBefore.reduce((sum, t) => sum + (t.commission || 0), 0);
