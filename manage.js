@@ -536,8 +536,8 @@ function openFinancialModal(docId) {
                     </select>
                 </div>
                 <div class="form-group full-width">
-                    <label for="financial_reason">Financial Reason / Note <span class="req">*</span></label>
-                    <textarea id="financial_reason" rows="2" placeholder="Example: commission confirmed by owner, corrected net amount..." required></textarea>
+                    <label for="financial_reason">Financial Reason / Note</label>
+                    <textarea id="financial_reason" rows="2" placeholder="Example: commission confirmed by owner, corrected net amount..."></textarea>
                 </div>
             </div>
             
@@ -559,15 +559,6 @@ function openFinancialModal(docId) {
                 <div class="form-group">
                     <label for="financial_date_extra_fare">Date Change Extra Fare</label>
                     <input type="number" id="financial_date_extra_fare" placeholder="0" min="0">
-                </div>
-                <div class="form-group full-width" style="margin-top: 0.5rem;">
-                    <div class="toggle-switch-container" style="font-size: 0.85rem;">
-                        <label for="financial_pnr_sync" style="margin-right: 8px;">Apply Travel Date to entire PNR?</label>
-                        <label class="switch" style="transform: scale(0.8);">
-                            <input type="checkbox" id="financial_pnr_sync" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
                 </div>
             </div>
 
@@ -652,10 +643,6 @@ function openFinancialModal(docId) {
     document.getElementById('financialUpdateForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const reason = document.getElementById('financial_reason').value.trim();
-        if (!reason) {
-            showToast('Please add a reason for the financial change.', 'error');
-            return;
-        }
 
         const updateData = {
             base_fare: Number(document.getElementById('financial_base_fare').value) || 0,
@@ -673,8 +660,6 @@ function openFinancialModal(docId) {
         const dateChangePaid = paidChk.checked;
         const dateChangeMethod = dateChangePaid ? formatPaymentMethod(methodSel.value, document.getElementById('financial_date_payment_method_bank')?.value || '') : '';
         const dateChangePaidDate = dateChangePaid ? formatDateForSheet(paidDateIn.value || new Date()) : '';
-        
-        const applyToAll = document.getElementById('financial_pnr_sync').checked;
 
         const changes = [];
         if (updateData.base_fare !== (Number(ticket.base_fare) || 0)) changes.push(`Base Fare: ${ticket.base_fare || 0} to ${updateData.base_fare}`);
@@ -705,20 +690,10 @@ function openFinancialModal(docId) {
             
             if (dateChanged) {
                 updateData.departing_on = newDateFormatted;
-                
-                if (applyToAll) {
-                    const pnrTickets = state.allTickets.filter(t =>
-                        t.booking_reference === ticket.booking_reference && t.id !== ticket.id && !isCanceledTicket(t) && !isFeeEntryRow(t)
-                    );
-                    for (const t of pnrTickets) {
-                        await updateTicket(t.id, { departing_on: newDateFormatted });
-                        await saveHistory(t, `TRAVEL DATE CHANGE (via PNR sync): ${t.departing_on || '—'} to ${newDateVal}`);
-                    }
-                }
             }
             
             await updateTicket(ticket.id, updateData);
-            await saveHistory(ticket, `FINANCIAL & DATE UPDATE: ${changes.join('; ')}. Reason: ${reason}`);
+            await saveHistory(ticket, `FINANCIAL & DATE UPDATE: ${changes.join('; ')}.${reason ? ` Reason: ${reason}` : ''}`);
             
             if (dateChangeFee > 0 || dateChangeComm > 0 || dateChangeExtra > 0) {
                 const today = formatDateForSheet(new Date());
