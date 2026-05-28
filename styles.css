@@ -4429,11 +4429,11 @@ body.material-theme.dark-theme .notification-count {
 
 /* ---------- Service Panels ---------- */
 .service-panel {
-    background: #ffffff;
-    border: 1px solid rgba(36, 36, 43, 0.08);
-    border-radius: 16px;
-    padding: 1.25rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background: var(--surface);
+    border: var(--liquid-border);
+    border-radius: var(--liquid-radius);
+    padding: 1.5rem;
+    box-shadow: var(--liquid-shadow);
 }
 
 .service-panel-header {
@@ -4686,12 +4686,12 @@ body.material-theme.dark-theme .notification-count {
 
 .format-segment input:checked + label {
     color: #fff !important;
-    background: linear-gradient(135deg, #0d9488, #0f766e);
-    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.28);
+    background: var(--primary-accent-dark);
+    box-shadow: 0 4px 12px rgba(128, 213, 201, 0.25);
 }
 
 .format-segment input:focus-visible + label {
-    outline: 2px solid rgba(13, 148, 136, 0.38);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
 }
 
@@ -4723,19 +4723,19 @@ body.material-theme.dark-theme .notification-count {
     transform: translateY(0);
 }
 
-/* Generate — primary orange gradient */
+/* Generate — primary action */
 .btn-generate {
-    background: linear-gradient(135deg, #f97316, #ea580c);
+    background: var(--primary-accent-dark);
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.30);
+    box-shadow: 0 4px 14px rgba(128, 213, 201, 0.25);
     padding: 0.65rem 1.25rem;
     font-size: 0.9rem;
 }
 
 .btn-generate:hover {
-    background: linear-gradient(135deg, #ea580c, #c2410c);
-    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.40);
+    background: var(--primary-accent);
+    box-shadow: 0 6px 20px rgba(128, 213, 201, 0.35);
 }
 
 /* Clear — muted ghost */
@@ -8831,59 +8831,7 @@ body.material-theme .search-skeleton-row span {
     .settle-closed-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* ============================================================
-   OCEAN TRAVEL PASTEL ILLUSTRATION SYSTEM
-   ============================================================ */
-body.material-theme {
-    --app-bg: #fffaf7;
-    --surface: #ffffff;
-    --surface-soft: #fff4ef;
-    --blush: #f8c9cb;
-    --blush-soft: #fde7e5;
-    --coral: #ff6f5e;
-    --coral-dark: #e85b4d;
-    --mint: #dbeebf;
-    --mint-strong: #9fca6b;
-    --butter: #ffe4a8;
-    --peach: #ffd9aa;
-    --lavender: #ddd2f3;
-    --lavender-strong: #9b7bea;
-    --ink: #24242b;
-    --muted: #858585;
-    --line: rgba(36, 36, 43, 0.12);
-    --bg-color: var(--app-bg);
-    --primary-accent: var(--coral);
-    --primary-accent-dark: var(--coral-dark);
-    --secondary-accent: var(--lavender-strong);
-    --success-accent: var(--mint-strong);
-    --danger-accent: var(--coral-dark);
-    --warning-accent: #d59f39;
-    --info-accent: var(--lavender-strong);
-    --text-primary: var(--ink);
-    --text-secondary: var(--muted);
-    --border-color: var(--line);
-    --surface-1: var(--surface);
-    --surface-2: rgba(255, 244, 239, 0.74);
-    --surface-3: rgba(248, 201, 203, 0.30);
-    --shadow-soft: 0 18px 50px rgba(36, 36, 43, 0.08);
-    --shadow-hover: 0 24px 68px rgba(36, 36, 43, 0.12);
-    --liquid-radius: 22px;
-    --liquid-radius-lg: 28px;
-    --chart-text: rgba(36, 36, 43, 0.76);
-    --chart-grid: rgba(36, 36, 43, 0.08);
-    --chart-revenue: var(--coral);
-    --chart-profit: var(--mint-strong);
-    --chart-tickets: var(--lavender-strong);
-}
-
-body.material-theme,
-body.material-theme .main-content {
-    background:
-        radial-gradient(circle at 7% 6%, rgba(248, 201, 203, 0.34), transparent 26rem),
-        radial-gradient(circle at 95% 10%, rgba(255, 228, 168, 0.30), transparent 22rem),
-        radial-gradient(circle at 90% 92%, rgba(221, 210, 243, 0.26), transparent 26rem),
-        var(--app-bg) !important;
-}
+/* Removed overriding PASTEL ILLUSTRATION SYSTEM */
 
 body.material-theme .sidebar,
 body.material-theme .header {
