@@ -1187,7 +1187,7 @@ export function updateDashboardData() {
     // Also gather data for side panels
     const unpaidGroups = groupUnpaidTickets(state.allTickets || []);
     const curUnpaid = unpaidGroups.reduce((sum, group) => sum + group.amount, 0);
-    const upcomingTrips = getUpcomingTripGroups(14);
+    const upcomingTrips = getUpcomingTripGroups(7);
     const activeBookings = getActiveBookings();
     const dueToday = activeBookings.filter(b => {
         const deadline = getBookingDeadline(b);
@@ -1379,7 +1379,7 @@ function renderDashboardTravelSchedule(groups) {
             <div class="dashboard-empty-panel">
                 <span class="mini-travel-illustration" aria-hidden="true"></span>
                 <strong>No upcoming travel</strong>
-                <span>No ticket travel dates are scheduled in the next 14 days.</span>
+                <span>No ticket travel dates are scheduled in the next 7 days.</span>
             </div>
         `;
         return;

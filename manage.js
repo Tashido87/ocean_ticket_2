@@ -8,6 +8,7 @@ import {
 } from './state.js';
 import {
     updateTicket,
+    addTicket,
     addTickets
 } from './db.js';
 import {
@@ -252,6 +253,7 @@ function displayManageResults(tickets) {
                    <button class="manage-action-btn" data-action="payment" data-id="${t.id}"><i class="fa-solid fa-credit-card"></i> Payment</button>`
                 : `<button class="manage-action-btn primary" data-action="financial" data-id="${t.id}"><i class="fa-solid fa-sliders"></i> Financials</button>
                    <button class="manage-action-btn" data-action="payment" data-id="${t.id}"><i class="fa-solid fa-credit-card"></i> Payment</button>
+                   <button class="manage-action-btn" data-action="change-date" data-id="${t.id}"><i class="fa-solid fa-calendar-pen"></i> Date</button>
                    <button class="manage-action-btn" data-action="add-fee" data-id="${t.id}"><i class="fa-solid fa-plus"></i> Fee</button>
                    <button class="manage-action-btn danger" data-action="cancel" data-id="${t.id}"><i class="fa-solid fa-ban"></i></button>
                    <button class="manage-action-btn" data-action="advanced" data-id="${t.id}"><i class="fa-solid fa-gear"></i></button>`;
@@ -297,7 +299,141 @@ function displayManageResults(tickets) {
             if (action === 'cancel') openCancelSubModal(docId);
             if (action === 'details') openManageDetailsModal(docId);
             if (action === 'advanced') openManageModal(docId);
+            if (action === 'change-date') openChangeDateModal(docId);
         });
+    });
+}
+
+/**
+ * Opens a dedicated modal for changing the travel date of a ticket.
+ */
+function openChangeDateModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
+    if (!ticket) return;
+
+    let travelDateForInput = '';
+    if (ticket.departing_on) {
+        const d = parseSheetDate(ticket.departing_on);
+        if (!isNaN(d.getTime()) && d.getTime() !== 0) {
+            travelDateForInput = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+    }
+
+    const content = `
+        <h2>Change Travel Date</h2>
+        <p class="modal-subtitle">${escapeHtml(ticket.name)} · PNR ${ticket.booking_reference}</p>
+        <div class="manage-preview-card">
+            <div><span>Current Travel Date</span><strong>${formatDateToDMMMY(ticket.departing_on) || ticket.departing_on || '—'}</strong></div>
+            <div><span>Route</span><strong>${ticket.departure || '—'} → ${ticket.destination || '—'}</strong></div>
+        </div>
+        <form id="changeDateForm" data-id="${docId}">
+            <div class="form-grid" style="margin-top: 1rem;">
+                <div class="form-group">
+                    <label for="change_new_date">New Travel Date <span class="req">*</span></label>
+                    <input type="text" id="change_new_date" placeholder="DD/MM/YYYY" value="${travelDateForInput}" required>
+                </div>
+                <div class="form-group">
+                    <label for="change_date_fee">Date Change Fee (optional)</label>
+                    <input type="number" id="change_date_fee" placeholder="0" min="0">
+                    <small style="color: var(--text-secondary); font-size: 0.75rem;">If > 0, creates a new fee row for this passenger.</small>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 1rem;">
+                <div class="toggle-switch-container" style="font-size: 0.85rem;">
+                    <label for="change_pnr_sync" style="margin-right: 8px;">Apply to entire PNR?</label>
+                    <label class="switch" style="transform: scale(0.8);">
+                        <input type="checkbox" id="change_pnr_sync" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" id="changeDateCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Date Change</button>
+            </div>
+        </form>
+    `;
+
+    openModal(content, 'small-modal');
+    new Datepicker(document.getElementById('change_new_date'), {
+        format: 'dd/mm/yyyy',
+        autohide: true,
+        todayHighlight: true
+    });
+
+    document.getElementById('changeDateCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('changeDateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newDateVal = document.getElementById('change_new_date').value;
+        const dateChangeFee = parseFloat(document.getElementById('change_date_fee').value) || 0;
+        const applyToAll = document.getElementById('change_pnr_sync').checked;
+
+        if (!newDateVal) {
+            showToast('Please enter a new travel date.', 'error');
+            return;
+        }
+
+        const newDateParsed = parseSheetDate(newDateVal);
+        const oldDateParsed = parseSheetDate(ticket.departing_on);
+        if (newDateParsed.getTime() === oldDateParsed.getTime()) {
+            showToast('New travel date is the same as the current date.', 'info');
+            return;
+        }
+
+        try {
+            showToast('Updating travel date...', 'info');
+            const newDateFormatted = formatDateForSheet(newDateVal);
+
+            if (applyToAll) {
+                // Apply to all non-cancelled tickets in the PNR
+                const pnrTickets = state.allTickets.filter(t =>
+                    t.booking_reference === ticket.booking_reference && !isCanceledTicket(t) && !isFeeEntryRow(t)
+                );
+                for (const t of pnrTickets) {
+                    await updateTicket(t.id, { departing_on: newDateFormatted });
+                    await saveHistory(t, `TRAVEL DATE CHANGE: ${t.departing_on || '—'} to ${newDateVal}`);
+                }
+            } else {
+                await updateTicket(ticket.id, { departing_on: newDateFormatted });
+                await saveHistory(ticket, `TRAVEL DATE CHANGE: ${ticket.departing_on || '—'} to ${newDateVal}`);
+            }
+
+            // Create fee row if date change fee > 0
+            if (dateChangeFee > 0) {
+                const today = formatDateForSheet(new Date());
+                const feeData = {
+                    name: `${ticket.name} (Fees)`,
+                    booking_reference: ticket.booking_reference,
+                    departure: ticket.departure || '',
+                    destination: ticket.destination || '',
+                    departing_on: newDateFormatted,
+                    issued_date: today,
+                    airline: ticket.airline || '',
+                    base_fare: 0,
+                    net_amount: 0,
+                    commission: 0,
+                    extra_fare: 0,
+                    date_change: dateChangeFee,
+                    paid: false,
+                    paid_date: '',
+                    payment_method: '',
+                    remarks: `Fee Entry | Date Change Fee: ${dateChangeFee.toLocaleString()} MMK`,
+                    source: ticket.source || '',
+                    account_name: ticket.account_name || '',
+                    account_type: ticket.account_type || '',
+                    account_link: ticket.account_link || ''
+                };
+                await addTicket(feeData);
+                await saveHistory(ticket, `DATE CHANGE FEE ADDED: ${dateChangeFee.toLocaleString()} MMK for date change`);
+            }
+
+            showToast('Travel date updated successfully!', 'success');
+            closeModal();
+            await reloadManagePnr(ticket.booking_reference);
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to update travel date.', 'error');
+        }
     });
 }
 

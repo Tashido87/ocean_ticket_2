@@ -3404,10 +3404,11 @@ export function handleRouteValidation(e) {
 const MOBILE_BANKING_SUB_OPTIONS = [
     'KBZ Special',
     'KBZ Normal',
+    'AYA Special',
     'AYA Banking',
     'CB Banking',
-    'UAB Pay',
-    'UAB Special Account'
+    'UAB Special',
+    'UAB Pay'
 ];
 
 /**
