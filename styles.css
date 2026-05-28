@@ -3737,8 +3737,8 @@ body.material-theme.dark-theme .date-selectors.date-selectors--mini {
 .dashboard-panel {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 1.1rem;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem;
     min-height: 0;
 }
 
@@ -3817,10 +3817,10 @@ body.material-theme.dark-theme .panel-list::-webkit-scrollbar-thumb {
 /* Notifications (compact + informative) */
 .notification-item {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.6rem;
     align-items: flex-start;
-    padding: 0.7rem 0.75rem;
-    border-radius: 16px;
+    padding: 0.5rem 0.6rem;
+    border-radius: 12px;
     border: 1px solid rgba(15, 23, 42, 0.10);
     background: var(--surface-2);
     transition: transform 0.18s var(--ease), background-color 0.18s var(--ease), border-color 0.18s var(--ease);
@@ -3846,9 +3846,9 @@ body.material-theme.dark-theme .notification-item {
 }
 
 .notification-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
     display: grid;
     place-items: center;
     border: 1px solid var(--border-color);
@@ -3882,7 +3882,7 @@ body.material-theme.dark-theme .notification-item {
 }
 
 .notification-title {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 750;
     margin: 0;
 }
@@ -3912,8 +3912,8 @@ body.material-theme.dark-theme .notification-item {
 
 .notification-meta,
 .notification-sub {
-    margin-top: 0.25rem;
-    font-size: 0.82rem;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -9041,12 +9041,12 @@ body.material-theme tbody tr:hover {
 
 .dashboard-kpis {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
-    gap: 1rem !important;
+    gap: 0.75rem !important;
 }
 
 .dashboard-kpis .info-card {
-    min-height: 150px !important;
-    padding: 1rem 1.05rem !important;
+    min-height: 100px !important;
+    padding: 0.85rem 1rem !important;
     border-left-width: 0 !important;
     overflow: hidden;
 }
@@ -9054,11 +9054,11 @@ body.material-theme tbody tr:hover {
 .dashboard-kpis .info-card::after {
     content: '';
     position: absolute;
-    right: -36px;
-    bottom: -42px;
-    width: 112px;
-    height: 112px;
-    border-radius: 36px;
+    right: -24px;
+    bottom: -24px;
+    width: 80px;
+    height: 80px;
+    border-radius: 24px;
     background: var(--kpi-soft, var(--blush-soft));
     transform: rotate(-12deg);
     opacity: 0.82;
@@ -9081,39 +9081,41 @@ body.material-theme tbody tr:hover {
 
 .dashboard-kpis .stat-head h3 {
     color: var(--kpi-accent) !important;
-    font-size: 0.78rem !important;
+    font-size: 0.7rem !important;
     text-transform: uppercase;
 }
 
 .dashboard-kpis .info-card .main-value,
 .dashboard-kpis .info-card .main-value-wrap .main-value {
     color: var(--ink) !important;
-    font-size: clamp(1.35rem, 2vw, 1.85rem) !important;
-    font-weight: 900 !important;
+    font-size: clamp(1.1rem, 1.5vw, 1.3rem) !important;
+    font-weight: 800 !important;
 }
 
 .dashboard-kpis .info-card .icon {
-    top: 0.9rem !important;
-    right: 0.9rem !important;
+    top: 0.75rem !important;
+    right: 0.75rem !important;
     bottom: auto !important;
-    width: 42px !important;
-    height: 42px !important;
+    width: 32px !important;
+    height: 32px !important;
     display: grid;
     place-items: center;
-    border-radius: 16px;
+    border-radius: 12px;
     background: var(--kpi-soft) !important;
     color: var(--kpi-accent) !important;
     opacity: 1 !important;
+    font-size: 0.85rem !important;
 }
 
 .dashboard-panels-row {
     grid-template-columns: repeat(3, minmax(300px, 1fr)) !important;
     align-items: stretch;
+    gap: 0.75rem !important;
 }
 
 .dashboard-panel {
-    border-radius: 24px !important;
-    min-height: 320px;
+    border-radius: 16px !important;
+    min-height: 240px;
 }
 
 .panel-hint {
@@ -9143,20 +9145,21 @@ body.material-theme tbody tr:hover {
 
 .attention-item {
     display: flex;
-    gap: 0.7rem;
-    padding: 0.72rem;
-    border-radius: 16px;
+    gap: 0.6rem;
+    padding: 0.55rem;
+    border-radius: 12px;
     border: 1px solid rgba(36, 36, 43, 0.08);
     background: #ffffff;
 }
 
 .attention-icon {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     flex: 0 0 auto;
     display: grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
 }
 
 .attention-item.danger .attention-icon { background: var(--blush-soft); color: var(--coral-dark); }
@@ -9167,10 +9170,14 @@ body.material-theme tbody tr:hover {
     display: block;
 }
 
+.attention-item strong {
+    font-size: 0.85rem;
+}
+
 .attention-item span {
-    margin-top: 0.16rem;
+    margin-top: 0.1rem;
     color: var(--muted);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 .attention-empty,
