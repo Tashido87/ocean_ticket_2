@@ -602,12 +602,16 @@ export function showDetails(docId) {
                  <div class="details-item"><i class="fa-solid fa-circle-plus"></i><div class="details-item-content"><div class="label">Extra Fare</div><div class="value">${(ticket.extra_fare || 0).toLocaleString()} MMK</div></div></div>
             </div>
         </div>
-        <div class="form-actions" style="margin-top: 1rem;">
+        <div class="form-actions" style="margin-top: 1rem; gap: 1rem;">
             <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
+            <button class="btn btn-primary" id="modalEditTicketBtn"><i class="fa-solid fa-pen-to-square"></i> Edit Ticket</button>
         </div>
     `;
     openModal(content, 'solid-modal');
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+    document.getElementById('modalEditTicketBtn').addEventListener('click', () => {
+        openEditTicketModal(ticket);
+    });
 
     const clientLink = document.querySelector('.clickable-client-link');
     if (clientLink) {
@@ -1341,6 +1345,12 @@ export function updateUnpaidCount() {
 /* ---------------- Edit / Delete / Group Detail ---------------- */
 
 export function openEditTicketModal(ticket) {
+    let travelDateForInput = ticket.departing_on || '';
+    const d = parseSheetDate(ticket.departing_on);
+    if (!isNaN(d.getTime()) && d.getTime() !== 0) {
+        travelDateForInput = formatDateForSheet(d); // Using YYYY-MM-DD or whatever the standard format is, or better, we can use the original string. Actually wait, formatDateForSheet expects Date, returns YYYY-MM-DD. We will just leave it as ticket.departing_on
+    }
+
     const content = `
         <h3>Edit Ticket</h3>
         <div class="edit-ticket-grid">
@@ -1359,6 +1369,10 @@ export function openEditTicketModal(ticket) {
             <div class="form-group full-width">
                 <label>Route</label>
                 <input type="text" id="editRoute" value="${escapeHtml(routeShort(ticket))}" placeholder="e.g. RGN → BKK">
+            </div>
+            <div class="form-group full-width">
+                <label>Travel Date</label>
+                <input type="text" id="editTravelDate" value="${escapeHtml(ticket.departing_on || '')}" placeholder="DD/MM/YYYY or YYYY-MM-DD">
             </div>
             <div class="form-group">
                 <label>Net Amount</label>
@@ -1383,16 +1397,31 @@ export function openEditTicketModal(ticket) {
         </div>
     `;
     openModal(content);
+    new Datepicker(document.getElementById('editTravelDate'), {
+        format: 'dd/mm/yyyy',
+        autohide: true,
+        todayHighlight: true
+    });
+    
     document.getElementById('editCancelBtn').addEventListener('click', closeModal);
     document.getElementById('editSaveBtn').addEventListener('click', async () => {
         const route = document.getElementById('editRoute').value.trim();
         const [dep, dest] = route.split(/[→\-\s]+/).map(s => s.trim()).filter(Boolean);
+        
+        const rawDate = document.getElementById('editTravelDate').value.trim();
+        const pd = parseSheetDate(rawDate);
+        let finalDate = rawDate;
+        if (!isNaN(pd.getTime()) && pd.getTime() !== 0) {
+            finalDate = formatDateForSheet(pd);
+        }
+
         await updateTicket(ticket.id, {
             name: document.getElementById('editName').value.trim().toUpperCase(),
             booking_reference: document.getElementById('editPnr').value.trim().toUpperCase(),
             airline: document.getElementById('editAirline').value.trim(),
             departure: dep || ticket.departure,
             destination: dest || ticket.destination,
+            departing_on: finalDate,
             net_amount: Number(document.getElementById('editNetAmount').value) || 0,
             commission: Number(document.getElementById('editCommission').value) || 0,
             extra_fare: Number(document.getElementById('editExtraFare').value) || 0,
