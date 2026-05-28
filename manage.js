@@ -550,9 +550,17 @@ function openFinancialModal(docId) {
                 <div class="form-group">
                     <label for="financial_date_fee">Date Change Fee</label>
                     <input type="number" id="financial_date_fee" placeholder="0" min="0">
-                    <small style="color: var(--text-secondary); font-size: 0.75rem;">If > 0, creates a new fee row.</small>
+                    <small style="color: var(--text-secondary); font-size: 0.75rem;">Creates a new fee row.</small>
                 </div>
-                <div class="form-group full-width" style="margin-top: -0.5rem;">
+                <div class="form-group">
+                    <label for="financial_date_commission">Date Change Commission</label>
+                    <input type="number" id="financial_date_commission" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="financial_date_extra_fare">Date Change Extra Fare</label>
+                    <input type="number" id="financial_date_extra_fare" placeholder="0" min="0">
+                </div>
+                <div class="form-group full-width" style="margin-top: 0.5rem;">
                     <div class="toggle-switch-container" style="font-size: 0.85rem;">
                         <label for="financial_pnr_sync" style="margin-right: 8px;">Apply Travel Date to entire PNR?</label>
                         <label class="switch" style="transform: scale(0.8);">
@@ -615,6 +623,8 @@ function openFinancialModal(docId) {
         
         const newDateVal = document.getElementById('financial_new_date').value;
         const dateChangeFee = parseFloat(document.getElementById('financial_date_fee').value) || 0;
+        const dateChangeComm = parseFloat(document.getElementById('financial_date_commission').value) || 0;
+        const dateChangeExtra = parseFloat(document.getElementById('financial_date_extra_fare').value) || 0;
         const applyToAll = document.getElementById('financial_pnr_sync').checked;
 
         const changes = [];
@@ -636,7 +646,7 @@ function openFinancialModal(docId) {
             }
         }
 
-        if (changes.length === 0 && !dateChanged && dateChangeFee === 0) {
+        if (changes.length === 0 && !dateChanged && dateChangeFee === 0 && dateChangeComm === 0 && dateChangeExtra === 0) {
             showToast('No changes were made.', 'info');
             return;
         }
@@ -661,7 +671,7 @@ function openFinancialModal(docId) {
             await updateTicket(ticket.id, updateData);
             await saveHistory(ticket, `FINANCIAL & DATE UPDATE: ${changes.join('; ')}. Reason: ${reason}`);
             
-            if (dateChangeFee > 0) {
+            if (dateChangeFee > 0 || dateChangeComm > 0 || dateChangeExtra > 0) {
                 const today = formatDateForSheet(new Date());
                 const feeData = {
                     name: `${ticket.name} (Fees)`,
@@ -673,20 +683,20 @@ function openFinancialModal(docId) {
                     airline: ticket.airline || '',
                     base_fare: 0,
                     net_amount: 0,
-                    commission: 0,
-                    extra_fare: 0,
+                    commission: dateChangeComm,
+                    extra_fare: dateChangeExtra,
                     date_change: dateChangeFee,
                     paid: false,
                     paid_date: '',
                     payment_method: '',
-                    remarks: `Fee Entry | Date Change Fee: ${dateChangeFee.toLocaleString()} MMK`,
+                    remarks: `Fee Entry | Date Change Fee: ${dateChangeFee.toLocaleString()} MMK, Comm: ${dateChangeComm.toLocaleString()} MMK, Extra: ${dateChangeExtra.toLocaleString()} MMK`,
                     source: ticket.source || '',
                     account_name: ticket.account_name || '',
                     account_type: ticket.account_type || '',
                     account_link: ticket.account_link || ''
                 };
                 await addTicket(feeData);
-                await saveHistory(ticket, `DATE CHANGE FEE ADDED: ${dateChangeFee.toLocaleString()} MMK`);
+                await saveHistory(ticket, `DATE CHANGE FEE ADDED: Fee=${dateChangeFee.toLocaleString()}, Comm=${dateChangeComm.toLocaleString()}, Extra=${dateChangeExtra.toLocaleString()}`);
             }
             
             showToast('Updates saved.', 'success');
