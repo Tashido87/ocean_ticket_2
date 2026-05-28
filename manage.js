@@ -571,6 +571,28 @@ function openFinancialModal(docId) {
                 </div>
             </div>
 
+            <div class="details-section-title" style="margin-top:1rem; margin-bottom:0.5rem;">Date Change Payment</div>
+            <div class="form-grid">
+                <div class="form-group checkbox-group" style="padding-top: 1.5rem;">
+                    <label for="financial_date_paid">Paid</label>
+                    <input type="checkbox" id="financial_date_paid" style="width: 20px; height: 20px;">
+                </div>
+                <div class="form-group">
+                    <label for="financial_date_payment_method">Payment Method</label>
+                    <select id="financial_date_payment_method">
+                        <option value="">Select</option>
+                        <option value="KBZ Pay">KBZ Pay</option>
+                        <option value="Mobile Banking">Mobile Banking</option>
+                        <option value="Aya Pay">Aya Pay</option>
+                        <option value="Cash">Cash</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="financial_date_paid_date">Paid Date</label>
+                    <input type="text" id="financial_date_paid_date" placeholder="DD/MM/YYYY">
+                </div>
+            </div>
+
             <div id="financialImpactPreview" class="manage-impact-preview"></div>
             <div class="form-actions" style="margin-top: 1.5rem;">
                 <button type="button" class="btn btn-secondary" id="financialCancelBtn">Cancel</button>
@@ -586,6 +608,28 @@ function openFinancialModal(docId) {
         autohide: true,
         todayHighlight: true
     });
+    new Datepicker(document.getElementById('financial_date_paid_date'), {
+        format: 'dd/mm/yyyy',
+        autohide: true,
+        todayHighlight: true
+    });
+
+    const paidChk = document.getElementById('financial_date_paid');
+    const methodSel = document.getElementById('financial_date_payment_method');
+    const bankSel = enhanceMobileBankingSelect(methodSel);
+    const paidDateIn = document.getElementById('financial_date_paid_date');
+    const syncPayment = () => {
+        const enabled = paidChk.checked;
+        methodSel.disabled = !enabled;
+        if (bankSel) bankSel.disabled = !enabled;
+        paidDateIn.disabled = !enabled;
+        if (enabled && !paidDateIn.value) {
+            const today = new Date();
+            paidDateIn.value = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+        }
+    };
+    paidChk.addEventListener('change', syncPayment);
+    syncPayment();
 
     const preview = () => {
         const next = {
@@ -625,6 +669,11 @@ function openFinancialModal(docId) {
         const dateChangeFee = parseFloat(document.getElementById('financial_date_fee').value) || 0;
         const dateChangeComm = parseFloat(document.getElementById('financial_date_commission').value) || 0;
         const dateChangeExtra = parseFloat(document.getElementById('financial_date_extra_fare').value) || 0;
+        
+        const dateChangePaid = paidChk.checked;
+        const dateChangeMethod = dateChangePaid ? formatPaymentMethod(methodSel.value, document.getElementById('financial_date_payment_method_bank')?.value || '') : '';
+        const dateChangePaidDate = dateChangePaid ? formatDateForSheet(paidDateIn.value || new Date()) : '';
+        
         const applyToAll = document.getElementById('financial_pnr_sync').checked;
 
         const changes = [];
@@ -686,9 +735,9 @@ function openFinancialModal(docId) {
                     commission: dateChangeComm,
                     extra_fare: dateChangeExtra,
                     date_change: dateChangeFee,
-                    paid: false,
-                    paid_date: '',
-                    payment_method: '',
+                    paid: dateChangePaid,
+                    paid_date: dateChangePaidDate,
+                    payment_method: dateChangeMethod,
                     remarks: `Fee Entry | Date Change Fee: ${dateChangeFee.toLocaleString()} MMK, Comm: ${dateChangeComm.toLocaleString()} MMK, Extra: ${dateChangeExtra.toLocaleString()} MMK`,
                     source: ticket.source || '',
                     account_name: ticket.account_name || '',
@@ -696,7 +745,7 @@ function openFinancialModal(docId) {
                     account_link: ticket.account_link || ''
                 };
                 await addTicket(feeData);
-                await saveHistory(ticket, `DATE CHANGE FEE ADDED: Fee=${dateChangeFee.toLocaleString()}, Comm=${dateChangeComm.toLocaleString()}, Extra=${dateChangeExtra.toLocaleString()}`);
+                await saveHistory(ticket, `DATE CHANGE FEE ADDED: Fee=${dateChangeFee.toLocaleString()}, Comm=${dateChangeComm.toLocaleString()}, Extra=${dateChangeExtra.toLocaleString()} (${dateChangePaid ? 'Paid' : 'Unpaid'})`);
             }
             
             showToast('Updates saved.', 'success');
