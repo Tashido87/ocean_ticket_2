@@ -158,13 +158,14 @@ exports.ocrPassport = onCall(
 /**
  * Scheduled Function: checkBookingDeadlines
  * Runs every 10 minutes to notify via Telegram when an active booking
- * deadline is near (under 1 hour).
+ * deadline is near (under 1 hour). (Trigger redeploy to verify IAM permissions)
  */
 exports.checkBookingDeadlines = onSchedule(
     {
         schedule: '*/10 * * * *',
         timeZone: 'Asia/Yangon',
         memory: '256MiB',
+        serviceAccount: '657934425604-compute@developer.gserviceaccount.com',
     },
     async (event) => {
         const db = admin.firestore();
