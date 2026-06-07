@@ -185,10 +185,28 @@ exports.checkBookingDeadlines = onSchedule(
 
                 const timeLeftMs = deadline.getTime() - now.getTime();
                 const timeLeftMins = Math.round(timeLeftMs / 60000);
+                const cleanName = String(booking.name || 'N/A').replace(/^(MR|MS)\s+/i, '');
 
-                // Alert if the deadline is between 0 and 60 minutes, and we haven't warned yet
-                if (timeLeftMins > 0 && timeLeftMins <= 60 && !booking.notified1hWarning) {
-                    const cleanName = String(booking.name || 'N/A').replace(/^(MR|MS)\s+/i, '');
+                // Case 1: Deadline has passed (expired)
+                if (timeLeftMins <= 0) {
+                    const message = `❌ *HOLD DEADLINE EXPIRED*\n\n` +
+                                    `👤 *Client:* ${cleanName}\n` +
+                                    `✈️ *Route:* ${booking.departure || 'N/A'} ➔ ${booking.destination || 'N/A'}\n` +
+                                    `🎫 *PNR:* ${booking.pnr || 'N/A'}\n` +
+                                    `⏰ *Deadline:* ${booking.enddate || ''} ${booking.endtime || ''}\n\n` +
+                                    `🚫 This booking has passed its hold deadline and is now marked as *EXPIRED*.`;
+
+                    await sendTelegramAlert(message);
+
+                    // Update status in Firestore to expired (matches frontend handleExpiredBookings)
+                    await doc.ref.update({
+                        status: 'expired',
+                        remark: 'end',
+                        expiredAt: now.toISOString()
+                    });
+                }
+                // Case 2: Deadline is near (under 1 hour left)
+                else if (timeLeftMins > 0 && timeLeftMins <= 60 && !booking.notified1hWarning) {
                     const message = `⚠️ *HOLD DEADLINE WARNING* (Less than 1 hour!)\n\n` +
                                     `👤 *Client:* ${cleanName}\n` +
                                     `✈️ *Route:* ${booking.departure || 'N/A'} ➔ ${booking.destination || 'N/A'}\n` +
