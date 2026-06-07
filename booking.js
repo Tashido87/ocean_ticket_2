@@ -389,7 +389,7 @@ export function renderBookingPage(page) {
                 <div class="booking-action-row">
                     <button class="booking-action-btn primary" title="Issue / Sell Ticket" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-ticket"></i> Sell</button>
                     <button class="booking-action-btn success" title="Mark as Issued" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-check"></i> Complete</button>
-                    <button class="booking-action-btn" title="Extend Deadline" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-clock-rotate-left"></i></button>
+                    <button class="booking-action-btn" title="Modify Deadline" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-clock-rotate-left"></i> Deadline</button>
                     <button class="booking-action-btn danger" title="Cancel Booking" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-ban"></i></button>
                     <button class="booking-action-btn" title="View Details"><i class="fa-solid fa-eye"></i></button>
                 </div>
@@ -397,7 +397,7 @@ export function renderBookingPage(page) {
         `;
         row.querySelector('[title="Issue / Sell Ticket"]').addEventListener('click', () => sellTicketFromBooking(docIdsStr));
         row.querySelector('[title="Mark as Issued"]').addEventListener('click', () => handleGetTicket(docIdsStr));
-        row.querySelector('[title="Extend Deadline"]').addEventListener('click', () => openExtendDeadlineModal(docIdsStr));
+        row.querySelector('[title="Modify Deadline"]').addEventListener('click', () => openExtendDeadlineModal(docIdsStr));
         row.querySelector('[title="Cancel Booking"]').addEventListener('click', () => handleCancelBooking(docIdsStr));
         row.querySelector('[title="View Details"]').addEventListener('click', () => showBookingDetails(docIdsStr));
     });
@@ -538,6 +538,16 @@ function openExtendDeadlineModal(docIdsStr) {
     `);
 
     document.getElementById('cancelExtendBookingBtn').addEventListener('click', closeModal);
+    
+    // Initialize Datepicker on the dynamic input field
+    if (window.Datepicker) {
+        new window.Datepicker(document.getElementById('extendBookingDate'), {
+            format: 'dd/mm/yyyy',
+            autohide: true,
+            todayHighlight: true
+        });
+    }
+
     document.getElementById('saveExtendBookingBtn').addEventListener('click', async () => {
         const enddate = document.getElementById('extendBookingDate').value;
         const endtime = `${document.getElementById('extendBookingHour').value}:${document.getElementById('extendBookingMinute').value} ${document.getElementById('extendBookingAmpm').value}`;
@@ -601,6 +611,7 @@ function showBookingDetails(docIdsStr) {
             <p><strong>Notes:</strong> ${escapeHtml(bookingGroup.notes || 'N/A')}</p>
             <div class="form-actions" style="margin-top: 1.5rem;">
                 ${isActive ? `<button class="btn btn-primary" id="modalIssueBtn" style="background-color: var(--teal-dark); border-color: var(--teal-dark); margin-right: 0.5rem;"><i class="fa-solid fa-check"></i> Mark as Issued</button>` : ''}
+                ${isActive ? `<button class="btn btn-secondary" id="modalExtendBtn" style="margin-right: 0.5rem;"><i class="fa-solid fa-clock-rotate-left"></i> Modify Deadline</button>` : ''}
                 <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
             </div>
         `;
@@ -611,6 +622,13 @@ function showBookingDetails(docIdsStr) {
             issueBtn.addEventListener('click', () => {
                 closeModal();
                 handleGetTicket(docIdsStr);
+            });
+        }
+        const extendBtn = document.getElementById('modalExtendBtn');
+        if (extendBtn) {
+            extendBtn.addEventListener('click', () => {
+                closeModal();
+                openExtendDeadlineModal(docIdsStr);
             });
         }
     }
