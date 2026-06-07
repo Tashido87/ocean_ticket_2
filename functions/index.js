@@ -15,6 +15,7 @@
  */
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const { defineString } = require('firebase-functions/params');
 const admin = require('firebase-admin');
@@ -153,3 +154,80 @@ exports.ocrPassport = onCall(
         }
     }
 );
+
+/**
+ * Scheduled Function: checkBookingDeadlines
+ * Runs every 10 minutes to notify via Telegram when an active booking
+ * deadline is near (under 1 hour).
+ */
+exports.checkBookingDeadlines = onSchedule(
+    {
+        schedule: '*/10 * * * *',
+        timeZone: 'Asia/Yangon',
+        memory: '256MiB',
+    },
+    async (event) => {
+        const db = admin.firestore();
+        const now = new Date();
+
+        try {
+            const snapshot = await db.collection('bookings')
+                .where('status', '==', 'active')
+                .get();
+
+            for (const doc of snapshot.docs) {
+                const booking = doc.data();
+                if (!booking.deadlineAt) continue;
+
+                const deadline = new Date(booking.deadlineAt);
+                if (Number.isNaN(deadline.getTime())) continue;
+
+                const timeLeftMs = deadline.getTime() - now.getTime();
+                const timeLeftMins = Math.round(timeLeftMs / 60000);
+
+                // Alert if the deadline is between 0 and 60 minutes, and we haven't warned yet
+                if (timeLeftMins > 0 && timeLeftMins <= 60 && !booking.notified1hWarning) {
+                    const cleanName = String(booking.name || 'N/A').replace(/^(MR|MS)\s+/i, '');
+                    const message = `⚠️ *HOLD DEADLINE WARNING* (Less than 1 hour!)\n\n` +
+                                    `👤 *Client:* ${cleanName}\n` +
+                                    `✈️ *Route:* ${booking.departure || 'N/A'} ➔ ${booking.destination || 'N/A'}\n` +
+                                    `🎫 *PNR:* ${booking.pnr || 'N/A'}\n` +
+                                    `⏰ *Deadline:* ${booking.enddate || ''} ${booking.endtime || ''}\n` +
+                                    `⏳ *Time Left:* ${timeLeftMins} mins`;
+
+                    await sendTelegramAlert(message);
+
+                    // Mark document so we don't send duplicate notifications
+                    await doc.ref.update({ notified1hWarning: true });
+                }
+            }
+        } catch (error) {
+            console.error('Error in checkBookingDeadlines scheduler:', error);
+        }
+    }
+);
+
+async function sendTelegramAlert(text) {
+    const BOT_TOKEN = '8156964921:AAHDYIjKgVbqsShuRGyIJlgL80NNqqSWi0Y';
+    const CHAT_ID = '1101682157';
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: CHAT_ID,
+                text: text,
+                parse_mode: 'Markdown'
+            })
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error(`Telegram API responded with status ${response.status}: ${errText}`);
+        }
+    } catch (error) {
+        console.error('Failed to send Telegram notification:', error);
+    }
+}
+
