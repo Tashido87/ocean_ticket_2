@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/css/datepicker.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.3.4/dist/js/datepicker-full.min.js"></script>
+</head>
+<body>
+    <input type="text" id="date1" placeholder="Date 1">
+    <script>
+        const el = document.getElementById('date1');
+        const dp = new Datepicker(el, { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true });
+        el.addEventListener('showDatepicker', () => {
+            if (!el.value) {
+                dp.setDate(new Date());
+            }
+        });
+    </script>
+</body>
+</html>

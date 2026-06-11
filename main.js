@@ -142,6 +142,15 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// Auto-select today's date when a Datepicker is opened and the field is empty
+document.addEventListener('show', (e) => {
+    if (e.target.tagName === 'INPUT' && e.target.datepicker) {
+        if (!e.target.value) {
+            e.target.datepicker.setDate(new Date(), { autohide: false });
+        }
+    }
+}, true);
+
 /**
  * Main application initialization function. Called after authentication.
  * @export
