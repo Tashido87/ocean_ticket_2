@@ -1355,6 +1355,10 @@ export function openEditTicketModal(ticket) {
         <h3>Edit Ticket</h3>
         <div class="edit-ticket-grid">
             <div class="form-group full-width">
+                <label>Issued Date</label>
+                <input type="text" id="editIssuedDate" value="${escapeHtml(ticket.issued_date || '')}" placeholder="DD/MM/YYYY or YYYY-MM-DD">
+            </div>
+            <div class="form-group full-width">
                 <label>Name</label>
                 <input type="text" id="editName" value="${escapeHtml(ticket.name || '')}">
             </div>
@@ -1402,6 +1406,11 @@ export function openEditTicketModal(ticket) {
         autohide: true,
         todayHighlight: true
     });
+    new Datepicker(document.getElementById('editIssuedDate'), {
+        format: 'dd/mm/yyyy',
+        autohide: true,
+        todayHighlight: true
+    });
     
     document.getElementById('editCancelBtn').addEventListener('click', closeModal);
     document.getElementById('editSaveBtn').addEventListener('click', async () => {
@@ -1415,7 +1424,15 @@ export function openEditTicketModal(ticket) {
             finalDate = formatDateForSheet(pd);
         }
 
+        const rawIssuedDate = document.getElementById('editIssuedDate').value.trim();
+        const pid = parseSheetDate(rawIssuedDate);
+        let finalIssuedDate = rawIssuedDate;
+        if (!isNaN(pid.getTime()) && pid.getTime() !== 0) {
+            finalIssuedDate = formatDateForSheet(pid);
+        }
+
         await updateTicket(ticket.id, {
+            issued_date: finalIssuedDate,
             name: document.getElementById('editName').value.trim().toUpperCase(),
             booking_reference: document.getElementById('editPnr').value.trim().toUpperCase(),
             airline: document.getElementById('editAirline').value.trim(),

@@ -46,8 +46,7 @@ setGlobalOptions({
     region: 'us-central1',
     memory: '512MiB',
     timeoutSeconds: 60,
-    maxInstances: 10,
-    serviceAccount: PARAM_SERVICE_ACCOUNT
+    maxInstances: 10
 });
 
 // Re-use the client across invocations (faster cold start of subsequent calls).
@@ -72,12 +71,8 @@ function getClient(location) {
 exports.ocrPassport = onCall(
     {
         cors: true,
-        // Browser clients must be able to reach the Cloud Run endpoint. The
-        // function body below still enforces Firebase Auth before calling DocAI.
         invoker: 'public',
-        // Cap body size — Document AI sync API limit is ~20 MB.
-        // Tune this lower if you only expect compressed phone photos.
-        // Note: callable functions accept up to 10 MB by default.
+        serviceAccount: PARAM_SERVICE_ACCOUNT
     },
     async (request) => {
         if (!request.auth) {
@@ -165,7 +160,6 @@ exports.checkBookingDeadlines = onSchedule(
         schedule: '*/10 * * * *',
         timeZone: 'Asia/Yangon',
         memory: '256MiB',
-        serviceAccount: '657934425604-compute@developer.gserviceaccount.com',
     },
     async (event) => {
         const db = admin.firestore();
