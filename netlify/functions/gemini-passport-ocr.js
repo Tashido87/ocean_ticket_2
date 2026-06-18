@@ -59,7 +59,7 @@ Rules:
 `;
 
     const generatePromise = ai.models.generateContent({
-      model: 'gemini-flash-latest',
+      model: 'gemini-3.5-flash',
       contents: [
         {
           role: 'user',
