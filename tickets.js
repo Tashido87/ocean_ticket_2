@@ -834,6 +834,9 @@ async function confirmAndSaveTicket(form, sharedData, passengerData, returnShare
 
         showToast('Ticket(s) saved successfully!', 'success');
         form.reset();
+        // Clear the matched client chip so it doesn't persist
+        const matchChip = document.getElementById('phone_match_chip');
+        if (matchChip) matchChip.style.display = 'none';
         resetPassengerForms();
         populateFlightLocations();
         updateToggleLabels();

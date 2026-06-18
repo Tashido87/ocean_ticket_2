@@ -1444,8 +1444,7 @@ export function setupSellClientAutoSuggest() {
                 return;
             }
             const matches = state.allClients.filter(c =>
-                String(c.account_name || '').toLowerCase().includes(query) ||
-                String(c.name || '').toLowerCase().includes(query)
+                String(c.account_name || '').toLowerCase().includes(query)
             );
             renderClientSuggestions(accountInput, accountBox, matches, fillSellClientFields);
         });

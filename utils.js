@@ -40,7 +40,13 @@ export function showToast(message, type = 'info') {
  */
 export function formatDateForSheet(dateString) {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    // If already in DD/MM/YYYY format, return as-is
+    const ddmmyyyy = String(dateString).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ddmmyyyy) {
+        return `${ddmmyyyy[1].padStart(2, '0')}/${ddmmyyyy[2].padStart(2, '0')}/${ddmmyyyy[3]}`;
+    }
+    // For Date objects or other formats, parse and convert
+    const date = (dateString instanceof Date) ? dateString : new Date(dateString);
     return isNaN(date.getTime()) ? dateString : `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 }
 
