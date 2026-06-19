@@ -2948,7 +2948,10 @@ body.material-theme #monthly-commission-box,
 body.material-theme #monthly-extra-fare-box,
 body.material-theme #settlement-net-amount-box,
 body.material-theme #settlement-monthly-due-box,
-body.material-theme #settlement-commission-box {
+body.material-theme #settlement-commission-box,
+body.material-theme #total-profit-box,
+body.material-theme #owner-payable-box,
+body.material-theme #self-purchased-box {
     background-color: #ffffff !important;
 }
 
@@ -2968,7 +2971,10 @@ body.material-theme.dark-theme #monthly-commission-box,
 body.material-theme.dark-theme #monthly-extra-fare-box,
 body.material-theme.dark-theme #settlement-net-amount-box,
 body.material-theme.dark-theme #settlement-monthly-due-box,
-body.material-theme.dark-theme #settlement-commission-box {
+body.material-theme.dark-theme #settlement-commission-box,
+body.material-theme.dark-theme #total-profit-box,
+body.material-theme.dark-theme #owner-payable-box,
+body.material-theme.dark-theme #self-purchased-box {
     background-color: #1a1917 !important;
 }
 
@@ -3323,14 +3329,19 @@ body.material-theme {
 /* --- Design tokens (Dark) --- */
 body.material-theme.dark-theme {
     --bg-color: #2b2b2b;
+    --app-bg: #2b2b2b;
     --surface: #333333;
     --surface-2: #3d3d3d;
+    --surface-soft: #3c3c3c;
 
     --text-primary: #e8e5e0;
     --text-secondary: rgba(232, 229, 224, 0.55);
 
     --border-color: rgba(255, 255, 255, 0.10);
     --border-color-strong: rgba(255, 255, 255, 0.18);
+    --line: rgba(255, 255, 255, 0.08);
+    --ink: #e8e5e0;
+    --muted: rgba(232, 229, 224, 0.55);
 
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.60), 0 10px 30px rgba(0, 0, 0, 0.35);
     --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.60), 0 24px 60px rgba(0, 0, 0, 0.45);
@@ -9074,8 +9085,9 @@ body.material-theme tbody tr:hover {
 
 #total-tickets-box { --kpi-accent: var(--lavender-strong); --kpi-soft: var(--lavender); }
 #monthly-revenue-box { --kpi-accent: var(--coral); --kpi-soft: var(--blush-soft); }
-#monthly-profit-box { --kpi-accent: var(--mint-strong); --kpi-soft: var(--mint); }
+#total-profit-box { --kpi-accent: var(--mint-strong); --kpi-soft: var(--mint); }
 #owner-payable-box { --kpi-accent: #d59f39; --kpi-soft: var(--butter); }
+#self-purchased-box { --kpi-accent: var(--lavender-strong); --kpi-soft: var(--lavender); }
 #unpaid-amount-box { --kpi-accent: var(--coral-dark); --kpi-soft: var(--blush); }
 #active-bookings-box { --kpi-accent: var(--mint-strong); --kpi-soft: var(--mint); }
 #booking-deadlines-box { --kpi-accent: #d59f39; --kpi-soft: var(--peach); }
@@ -10293,4 +10305,72 @@ td .airline-name,
 .suggestion-meta .airline-name,
 .details-status-badge .airline-name {
     max-width: 180px;
+}
+
+/* ============================================================
+   Material Dark Theme Overrides for Ruined Styles
+   ============================================================ */
+body.material-theme.dark-theme .sidebar,
+body.material-theme.dark-theme .header {
+    background: #1a1917 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.material-theme.dark-theme .glass-card,
+body.material-theme.dark-theme .settings-card,
+body.material-theme.dark-theme .modal-content,
+body.material-theme.dark-theme .results-section,
+body.material-theme.dark-theme .form-container {
+    background: #333333 !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+body.material-theme.dark-theme .glass-card:hover {
+    background: #2e2d2a !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.material-theme.dark-theme .btn-secondary,
+body.material-theme.dark-theme .btn.btn-ghost {
+    background: #333333 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: var(--text-primary) !important;
+}
+
+body.material-theme.dark-theme .btn-secondary:hover,
+body.material-theme.dark-theme .btn.btn-ghost:hover {
+    background: #3d3d3d !important;
+}
+
+body.material-theme.dark-theme input,
+body.material-theme.dark-theme select,
+body.material-theme.dark-theme textarea,
+body.material-theme.dark-theme .global-search-box {
+    background: #333333 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: var(--text-primary) !important;
+}
+
+body.material-theme.dark-theme input:focus,
+body.material-theme.dark-theme select:focus,
+body.material-theme.dark-theme textarea:focus {
+    border-color: var(--primary-accent) !important;
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.25) !important;
+}
+
+body.material-theme.dark-theme th {
+    background: #3d3d3d !important;
+    color: var(--text-secondary) !important;
+}
+
+body.material-theme.dark-theme tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+body.material-theme.dark-theme .dashboard-hero {
+    background:
+        linear-gradient(135deg, rgba(51, 51, 51, 0.96), rgba(60, 60, 60, 0.88)),
+        radial-gradient(circle at 88% 18%, rgba(185, 28, 28, 0.15), transparent 12rem) !important;
 }
