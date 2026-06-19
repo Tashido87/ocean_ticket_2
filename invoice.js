@@ -20,8 +20,8 @@ const BRANDS = {
     ocean: {
         key: 'ocean',
         selectorLabel: 'Ocean',
-        displayName: 'Ocean Ticket',
-        legalName: 'OCEAN TICKET',
+        displayName: 'Ocean Travel',
+        legalName: 'OCEAN TRAVEL',
         logoUrl: './ocean-travel-logo.png',
         documentCode: 'OC',
         addressLines: [
