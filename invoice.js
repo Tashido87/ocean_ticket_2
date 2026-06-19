@@ -225,8 +225,8 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
         }
         .inv-brand img {
             display: block;
-            width: 170px;
-            max-height: 88px;
+            width: 240px;
+            max-height: 200px;
             object-fit: contain;
             object-position: left top;
         }
@@ -694,9 +694,9 @@ function renderInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
 
     let logoBottom = 30;
     if (logoAsset && logoAsset.dataUrl) {
-        const fitted = fitWithinBox(logoAsset.width, logoAsset.height, 54, 28);
-        doc.addImage(logoAsset.dataUrl, 'PNG', 15, 14, fitted.width, fitted.height);
-        logoBottom = 14 + fitted.height;
+        const fitted = fitWithinBox(logoAsset.width, logoAsset.height, 80, 50);
+        doc.addImage(logoAsset.dataUrl, 'PNG', 15, 10, fitted.width, fitted.height);
+        logoBottom = 10 + fitted.height;
     } else {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);

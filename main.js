@@ -19,7 +19,7 @@ import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js'; 
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=7'; 
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
@@ -193,6 +193,9 @@ export async function initializeApp() {
                 updateNotifications();
                 buildClientList();
                 updateDashboardData();
+                if (typeof updateInvoiceAdjustmentsSection === 'function') {
+                    updateInvoiceAdjustmentsSection();
+                }
             })
         );
 
@@ -648,7 +651,8 @@ function setupEventListeners() {
                 // Outbound leg as default if leg is not tagged
                 g.others.forEach((t, i) => {
                     const route = `${(t.departure || '').split(' ')[0]}→${(t.destination || '').split(' ')[0]}`;
-                    const fg = createAdjustmentField(g.name, g.pnr, t.leg || `other_${i}`, `${route}`);
+                    const legVal = t.leg || (i === 0 ? 'outbound' : `other_${i}`);
+                    const fg = createAdjustmentField(g.name, g.pnr, legVal, `${route}`);
                     inputsEl.appendChild(fg);
                 });
             }
@@ -663,6 +667,8 @@ function setupEventListeners() {
     if (pnrListInput) {
         pnrListInput.addEventListener('input', updateInvoiceAdjustmentsSection);
         pnrListInput.addEventListener('change', updateInvoiceAdjustmentsSection);
+        // Sync on initialization
+        updateInvoiceAdjustmentsSection();
     }
 
     async function runInvoiceGeneration() {

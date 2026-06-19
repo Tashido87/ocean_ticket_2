@@ -1,12 +1,24 @@
 {
   "hosting": {
     "public": ".",
+    "site": "ocean-ticket-bf235",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
       "**/scratch*.js",
       "**/check_amounts.js"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(html|js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      }
     ]
   },
   "functions": [
