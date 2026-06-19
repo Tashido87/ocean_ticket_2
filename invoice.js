@@ -497,7 +497,7 @@ function buildInvoiceLineItems(groupTickets, mode) {
         return Object.values(itemMap)
             .sort((a, b) => {
                 if (a.isFee !== b.isFee) return a.isFee ? 1 : -1;
-                return new Date(a.rawDate) - new Date(b.rawDate);
+                return parseSheetDate(a.rawDate) - parseSheetDate(b.rawDate);
             })
             .map((item, index) => {
                 item.index = index + 1;
@@ -507,7 +507,7 @@ function buildInvoiceLineItems(groupTickets, mode) {
 
     return groupTickets.map(ticket => processTicket(ticket)).sort((a, b) => {
         if (a.isFee !== b.isFee) return a.isFee ? 1 : -1;
-        return new Date(a.rawDate) - new Date(b.rawDate);
+        return parseSheetDate(a.rawDate) - parseSheetDate(b.rawDate);
     }).map((item, index) => {
         item.index = index + 1;
         return item;
