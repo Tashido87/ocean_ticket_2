@@ -381,12 +381,12 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #6b7280;
+            color: ${theme.accentHex};
         }
         .inv-account-name {
             margin: 0 0 12px;
             font-size: 11px;
-            color: #6b7280;
+            color: #000000;
         }
         .inv-bank-list {
             display: grid;
@@ -396,12 +396,13 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
         }
         .inv-bank-item {
             font-size: 11px;
-            color: #2e2f38;
+            color: #000000;
             line-height: 1.45;
         }
         .inv-bank-item strong {
             display: block;
             font-weight: 700;
+            color: ${theme.accentHex};
         }
     `;
 }
@@ -662,12 +663,13 @@ function renderPaymentSection(doc, startY, theme = INVOICE_THEME) {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
-    doc.setTextColor(...theme.mutedRgb);
+    doc.setTextColor(...theme.accentRgb);
     doc.text('PAYMENT METHODS', 15, y + 12);
 
     let currentY = y + 18;
     if (accountNameLine) {
         doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
         doc.text(accountNameLine, 15, currentY);
         currentY += 6;
     }
@@ -679,11 +681,11 @@ function renderPaymentSection(doc, startY, theme = INVOICE_THEME) {
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.setTextColor(...theme.textRgb);
+        doc.setTextColor(...theme.accentRgb);
         doc.text(bank.bank, x, lineY);
 
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...theme.mutedRgb);
+        doc.setTextColor(0, 0, 0);
         doc.text(`${bank.account} (${bank.name})`, x, lineY + 3.8);
     });
 }
