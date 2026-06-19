@@ -7,11 +7,11 @@ import { formatDateToDMMMY, parseSheetDate, showToast, isFeeEntryRow } from './u
 import { state } from './state.js';
 
 const INVOICE_THEME = {
-    accentHex: '#1CB5AD',
-    accentRgb: [28, 181, 173],
-    accentSoftRgb: [232, 248, 247],
-    accentBorderRgb: [190, 225, 223],
-    textRgb: [46, 47, 56],
+    accentHex: '#B91C1C',
+    accentRgb: [185, 28, 28],
+    accentSoftRgb: [254, 226, 226],
+    accentBorderRgb: [252, 165, 165],
+    textRgb: [60, 60, 60],
     mutedRgb: [107, 114, 128],
     lineRgb: [229, 231, 235]
 };
@@ -29,7 +29,16 @@ const BRANDS = {
             'Upper Pansodan Street, Mingalar Taungnyunt Township, Yangon.'
         ],
         phones: ['09964403435', '09740862500'],
-        email: 'oceanmobile.bmo@gmail.com'
+        email: 'oceanmobile.bmo@gmail.com',
+        theme: {
+            accentHex: '#B91C1C',
+            accentRgb: [185, 28, 28],
+            accentSoftRgb: [254, 226, 226],
+            accentBorderRgb: [252, 165, 165],
+            textRgb: [60, 60, 60],
+            mutedRgb: [107, 114, 128],
+            lineRgb: [229, 231, 235]
+        }
     },
     magical_land: {
         key: 'magical_land',
@@ -43,7 +52,16 @@ const BRANDS = {
             'Upper Pansodan St, Mingalar Taungnyunt Township, Yangon.'
         ],
         phones: ['09964026208'],
-        email: 'magicalandticket@gmail.com'
+        email: 'magicalandticket@gmail.com',
+        theme: {
+            accentHex: '#1CB5AD',
+            accentRgb: [28, 181, 173],
+            accentSoftRgb: [232, 248, 247],
+            accentBorderRgb: [190, 225, 223],
+            textRgb: [46, 47, 56],
+            mutedRgb: [107, 114, 128],
+            lineRgb: [229, 231, 235]
+        }
     }
 };
 
@@ -174,7 +192,11 @@ function loadHtml2Canvas() {
     });
 }
 
-function getInvoiceCSS() {
+function getInvoiceCSS(theme = INVOICE_THEME) {
+    const accentSoftHtml = `rgb(${theme.accentSoftRgb.join(',')})`;
+    const accentBorderHtml = `rgb(${theme.accentBorderRgb.join(',')})`;
+    const lineHtml = `rgb(${theme.lineRgb.join(',')})`;
+
     return `
         .invoice-container {
             width: 794px;
@@ -218,6 +240,8 @@ function getInvoiceCSS() {
             font-size: 14px;
             font-weight: 700;
             letter-spacing: 0.06em;
+            color: #2e2f38;
+            word-break: break-word;
         }
         .inv-company p {
             margin: 0 0 4px;
@@ -263,7 +287,7 @@ function getInvoiceCSS() {
             letter-spacing: 0.12em;
             text-transform: uppercase;
             text-align: right;
-            color: ${INVOICE_THEME.accentHex};
+            color: ${theme.accentHex};
         }
         .inv-detail-row {
             display: flex;
@@ -285,9 +309,9 @@ function getInvoiceCSS() {
         }
         .inv-table th {
             padding: 8px 10px;
-            background: #e8f8f7;
-            border-top: 1px solid #bee1df;
-            border-bottom: 1px solid #bee1df;
+            background: ${accentSoftHtml};
+            border-top: 1px solid ${accentBorderHtml};
+            border-bottom: 1px solid ${accentBorderHtml};
             font-size: 11px;
             font-weight: 700;
             color: #2e2f38;
@@ -325,7 +349,7 @@ function getInvoiceCSS() {
             justify-content: space-between;
             gap: 16px;
             padding: 7px 0;
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid ${lineHtml};
             font-size: 12px;
             color: #6b7280;
         }
@@ -334,11 +358,11 @@ function getInvoiceCSS() {
             font-weight: 600;
         }
         .inv-total-row.balance {
-            color: ${INVOICE_THEME.accentHex};
+            color: ${theme.accentHex};
             font-weight: 700;
         }
         .inv-total-row.balance span:last-child {
-            color: ${INVOICE_THEME.accentHex};
+            color: ${theme.accentHex};
             font-weight: 700;
         }
         .inv-payment-area {
@@ -349,9 +373,10 @@ function getInvoiceCSS() {
             margin: 0 0 14px;
             font-size: 12px;
             color: #2e2f38;
+            line-height: 1.55;
         }
         .inv-payment-title {
-            margin: 0 0 8px;
+            margin: 0 0 10px;
             font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.08em;
@@ -614,17 +639,17 @@ function buildInvoiceHtml(data) {
     `;
 }
 
-function drawDetailRow(doc, label, value, x, y, maxWidth) {
+function drawDetailRow(doc, label, value, x, y, maxWidth, theme = INVOICE_THEME) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(...INVOICE_THEME.mutedRgb);
+    doc.setTextColor(...theme.mutedRgb);
     doc.text(label, x, y);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...INVOICE_THEME.textRgb);
+    doc.setTextColor(...theme.textRgb);
     doc.text(doc.splitTextToSize(value, maxWidth), 195, y, { align: 'right' });
 }
 
-function renderPaymentSection(doc, startY) {
+function renderPaymentSection(doc, startY, theme = INVOICE_THEME) {
     const pageHeight = doc.internal.pageSize.getHeight();
     const y = Math.min(startY, pageHeight - 44);
     const rightColumnX = 108;
@@ -632,12 +657,12 @@ function renderPaymentSection(doc, startY) {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(...INVOICE_THEME.textRgb);
+    doc.setTextColor(...theme.textRgb);
     doc.text('Thank you.', 15, y);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
-    doc.setTextColor(...INVOICE_THEME.mutedRgb);
+    doc.setTextColor(...theme.mutedRgb);
     doc.text('PAYMENT METHODS', 15, y + 12);
 
     let currentY = y + 18;
@@ -654,16 +679,16 @@ function renderPaymentSection(doc, startY) {
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.setTextColor(...INVOICE_THEME.textRgb);
+        doc.setTextColor(...theme.textRgb);
         doc.text(bank.bank, x, lineY);
 
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...INVOICE_THEME.mutedRgb);
+        doc.setTextColor(...theme.mutedRgb);
         doc.text(`${bank.account} (${bank.name})`, x, lineY + 3.8);
     });
 }
 
-function renderInvoicePage(doc, data, logoAsset) {
+function renderInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
     const { brand, type, group, lineItems, totalAmount, formattedDate, documentId, documentStatusLabel, documentStatusValue, balanceLabel } = data;
     const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -675,19 +700,19 @@ function renderInvoicePage(doc, data, logoAsset) {
     } else {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.setTextColor(...INVOICE_THEME.textRgb);
+        doc.setTextColor(...theme.textRgb);
         doc.text(brand.displayName, 15, 22);
         logoBottom = 24;
     }
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.setTextColor(...INVOICE_THEME.textRgb);
+    doc.setTextColor(...theme.textRgb);
     doc.text(brand.legalName, 195, 18, { align: 'right' });
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.setTextColor(...INVOICE_THEME.mutedRgb);
+    doc.setTextColor(...theme.mutedRgb);
     const companyLines = [
         ...brand.addressLines,
         ...brand.phones,
@@ -698,38 +723,38 @@ function renderInvoicePage(doc, data, logoAsset) {
     const companyBottom = 23 + (splitCompanyLines.length * 3.8);
 
     const dividerY = Math.max(logoBottom, companyBottom) + 7;
-    doc.setDrawColor(...INVOICE_THEME.lineRgb);
+    doc.setDrawColor(...theme.lineRgb);
     doc.setLineWidth(0.2);
     doc.line(15, dividerY, 195, dividerY);
 
     const billTopY = dividerY + 11;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
-    doc.setTextColor(...INVOICE_THEME.mutedRgb);
+    doc.setTextColor(...theme.mutedRgb);
     doc.text('BILL TO', 15, billTopY);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.setTextColor(...INVOICE_THEME.textRgb);
+    doc.setTextColor(...theme.textRgb);
     const splitClientName = doc.splitTextToSize(group.clientName, 92);
     doc.text(splitClientName, 15, billTopY + 7);
 
     const billBottomY = billTopY + 7 + (splitClientName.length * 4.5);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.setTextColor(...INVOICE_THEME.mutedRgb);
+    doc.setTextColor(...theme.mutedRgb);
     const splitPnr = doc.splitTextToSize(`PNR: ${group.pnrs.join(', ')}`, 92);
     doc.text(splitPnr, 15, billBottomY + 6);
     const pnrBottomY = billBottomY + 6 + (splitPnr.length * 3.8);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.setTextColor(...INVOICE_THEME.accentRgb);
+    doc.setTextColor(...theme.accentRgb);
     doc.text(type.toUpperCase(), 195, billTopY + 1, { align: 'right' });
 
-    drawDetailRow(doc, `${type} #`, documentId, 130, billTopY + 10, 54);
-    drawDetailRow(doc, `${type} Date`, formattedDate, 130, billTopY + 16, 54);
-    drawDetailRow(doc, documentStatusLabel, documentStatusValue, 130, billTopY + 22, 54);
+    drawDetailRow(doc, `${type} #`, documentId, 130, billTopY + 10, 54, theme);
+    drawDetailRow(doc, `${type} Date`, formattedDate, 130, billTopY + 16, 54, theme);
+    drawDetailRow(doc, documentStatusLabel, documentStatusValue, 130, billTopY + 22, 54, theme);
     const detailsBottomY = billTopY + 24;
 
     doc.autoTable({
@@ -744,17 +769,17 @@ function renderInvoicePage(doc, data, logoAsset) {
         ]),
         theme: 'grid',
         headStyles: {
-            fillColor: INVOICE_THEME.accentSoftRgb,
-            textColor: INVOICE_THEME.textRgb,
+            fillColor: theme.accentSoftRgb,
+            textColor: theme.textRgb,
             fontStyle: 'bold',
-            lineColor: INVOICE_THEME.accentBorderRgb,
+            lineColor: theme.accentBorderRgb,
             lineWidth: 0.2
         },
         styles: {
             fontSize: 8.5,
             cellPadding: { top: 3.5, right: 3, bottom: 3.5, left: 3 },
-            textColor: INVOICE_THEME.textRgb,
-            lineColor: INVOICE_THEME.lineRgb,
+            textColor: theme.textRgb,
+            lineColor: theme.lineRgb,
             lineWidth: 0.15,
             valign: 'middle'
         },
@@ -777,14 +802,14 @@ function renderInvoicePage(doc, data, logoAsset) {
     const totalsX = 128;
     const totalsWidth = 67;
     const totalRows = [
-        { label: 'Sub Total', value: formatCurrency(totalAmount), color: INVOICE_THEME.mutedRgb },
-        { label: 'Total', value: formatCurrency(totalAmount), color: INVOICE_THEME.textRgb, bold: true },
-        { label: balanceLabel, value: formatCurrency(totalAmount), color: INVOICE_THEME.accentRgb, bold: true }
+        { label: 'Sub Total', value: formatCurrency(totalAmount), color: theme.mutedRgb },
+        { label: 'Total', value: formatCurrency(totalAmount), color: theme.textRgb, bold: true },
+        { label: balanceLabel, value: formatCurrency(totalAmount), color: theme.accentRgb, bold: true }
     ];
 
     totalRows.forEach((row, index) => {
         const rowY = totalsY + (index * 8);
-        doc.setDrawColor(...INVOICE_THEME.lineRgb);
+        doc.setDrawColor(...theme.lineRgb);
         doc.line(totalsX, rowY, totalsX + totalsWidth, rowY);
 
         doc.setFont('helvetica', row.bold ? 'bold' : 'normal');
@@ -797,9 +822,9 @@ function renderInvoicePage(doc, data, logoAsset) {
     const paymentStartY = totalsY + (totalRows.length * 8) + 18;
     if (paymentStartY > pageHeight - 44) {
         doc.addPage();
-        renderPaymentSection(doc, 28);
+        renderPaymentSection(doc, 28, theme);
     } else {
-        renderPaymentSection(doc, paymentStartY);
+        renderPaymentSection(doc, paymentStartY, theme);
     }
 }
 
@@ -884,13 +909,27 @@ export function analyzeInvoiceScenario(pnrList) {
     return { code: 'DEFAULT', type: 'COMBINED', canChoose: false };
 }
 
-export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean') {
+export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null) {
     const cleanPnrs = pnrList.map((pnr) => pnr.trim().toUpperCase()).filter(Boolean);
-    const tickets = state.allTickets.filter((ticket) => cleanPnrs.includes(ticket.booking_reference));
+    let tickets = state.allTickets.filter((ticket) => cleanPnrs.includes(ticket.booking_reference));
 
     if (tickets.length === 0) {
         showToast('No tickets found.', 'error');
         return;
+    }
+
+    // Apply optional adjustments
+    if (adjustments) {
+        tickets = tickets.map(ticket => {
+            const key = `${ticket.name}_${ticket.booking_reference}_${ticket.leg || 'outbound'}`;
+            if (adjustments[key] !== undefined && adjustments[key] !== '') {
+                return {
+                    ...ticket,
+                    extra_fare: (ticket.extra_fare || 0) + (Number(adjustments[key]) || 0)
+                };
+            }
+            return ticket;
+        });
     }
 
     let mode = forcedMode;
@@ -905,6 +944,7 @@ export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null,
 
     const invoiceGroups = buildInvoiceGroups(tickets, mode);
     const brand = getBrandConfig(brandKey);
+    const theme = brand.theme || INVOICE_THEME;
     const logoAsset = await loadImageAsset(brand.logoUrl);
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
@@ -912,7 +952,7 @@ export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null,
     invoiceGroups.forEach((group, index) => {
         if (index > 0) doc.addPage();
         const data = buildInvoiceDocumentData(group, type, brand, dateStr, index, invoiceGroups.length, mode);
-        renderInvoicePage(doc, data, logoAsset);
+        renderInvoicePage(doc, data, logoAsset, theme);
     });
 
     const safeName = invoiceGroups[0].clientName.split(',')[0].replace(/[^a-z0-9]/gi, '_');
@@ -920,7 +960,7 @@ export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null,
     doc.save(`${safeName}_${safeBrand}_${type}.pdf`);
 }
 
-export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean') {
+export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null) {
     try {
         await loadHtml2Canvas();
     } catch (error) {
@@ -929,11 +969,25 @@ export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = 
     }
 
     const cleanPnrs = pnrList.map((pnr) => pnr.trim().toUpperCase()).filter(Boolean);
-    const tickets = state.allTickets.filter((ticket) => cleanPnrs.includes(ticket.booking_reference));
+    let tickets = state.allTickets.filter((ticket) => cleanPnrs.includes(ticket.booking_reference));
 
     if (tickets.length === 0) {
         showToast('No tickets found.', 'error');
         return;
+    }
+
+    // Apply optional adjustments
+    if (adjustments) {
+        tickets = tickets.map(ticket => {
+            const key = `${ticket.name}_${ticket.booking_reference}_${ticket.leg || 'outbound'}`;
+            if (adjustments[key] !== undefined && adjustments[key] !== '') {
+                return {
+                    ...ticket,
+                    extra_fare: (ticket.extra_fare || 0) + (Number(adjustments[key]) || 0)
+                };
+            }
+            return ticket;
+        });
     }
 
     let mode = forcedMode;
@@ -948,6 +1002,7 @@ export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = 
 
     const invoiceGroups = buildInvoiceGroups(tickets, mode);
     const brand = getBrandConfig(brandKey);
+    const theme = brand.theme || INVOICE_THEME;
     const logoAsset = await loadImageAsset(brand.logoUrl);
     const logoSrc = logoAsset?.dataUrl || brand.logoUrl;
 
@@ -957,7 +1012,7 @@ export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = 
     container.style.left = '-9999px';
 
     const style = document.createElement('style');
-    style.innerHTML = getInvoiceCSS();
+    style.innerHTML = getInvoiceCSS(theme);
     document.head.appendChild(style);
     document.body.appendChild(container);
 

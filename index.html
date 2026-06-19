@@ -1077,6 +1077,10 @@
                                     <label for="invoice_date">Date</label>
                                     <input type="text" id="invoice_date" placeholder="DD/MM/YYYY" required autocomplete="off">
                                 </div>
+                                <div id="invoice_adjustments_wrapper" style="display: none; grid-column: 1 / -1; margin-top: 0.5rem; padding: 1rem; border-top: 1px solid var(--line); background: var(--surface-soft); border-radius: 8px;">
+                                    <h3 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase; color: var(--text-secondary);">Price Adjustments (Optional)</h3>
+                                    <div id="invoice_adjustments_list" style="display: grid; gap: 0.75rem;"></div>
+                                </div>
                             </form>
 
                             <div class="service-actions">

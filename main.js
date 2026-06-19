@@ -526,6 +526,145 @@ function setupEventListeners() {
     const invoiceClearBtn = document.getElementById('invoiceClearBtn');
     const invoiceForm = document.getElementById('invoiceForm');
 
+    // Dynamic price adjustments display logic
+    function createAdjustmentField(name, pnr, leg, label) {
+        const fg = document.createElement('div');
+        fg.style.display = 'flex';
+        fg.style.flexDirection = 'column';
+        fg.style.gap = '0.25rem';
+        fg.style.flex = '1';
+        fg.style.minWidth = '140px';
+        
+        const lbl = document.createElement('label');
+        lbl.style.fontSize = '0.75rem';
+        lbl.style.color = 'var(--text-secondary)';
+        lbl.textContent = label;
+        
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.placeholder = 'e.g. +5000 or -2000';
+        input.className = 'invoice-adjust-input';
+        input.dataset.name = name;
+        input.dataset.pnr = pnr;
+        input.dataset.leg = leg;
+        input.style.padding = '0.35rem 0.5rem';
+        input.style.fontSize = '0.8rem';
+        input.style.border = '1px solid var(--border-color)';
+        input.style.borderRadius = '4px';
+        input.style.width = '100%';
+        input.style.background = 'var(--surface)';
+        input.style.color = 'var(--text-primary)';
+        
+        fg.appendChild(lbl);
+        fg.appendChild(input);
+        return fg;
+    }
+
+    function updateInvoiceAdjustmentsSection() {
+        const pnrInput = document.getElementById('invoice_pnr_list').value;
+        const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim().toUpperCase()).filter(p => p);
+        const wrapper = document.getElementById('invoice_adjustments_wrapper');
+        const container = document.getElementById('invoice_adjustments_list');
+        
+        if (!wrapper || !container) return;
+        
+        if (pnrList.length === 0) {
+            wrapper.style.display = 'none';
+            container.innerHTML = '';
+            return;
+        }
+        
+        // Find tickets matching PNRs
+        const tickets = state.allTickets.filter(t => pnrList.includes((t.booking_reference || '').toUpperCase()));
+        
+        if (tickets.length === 0) {
+            wrapper.style.display = 'none';
+            container.innerHTML = '';
+            return;
+        }
+        
+        wrapper.style.display = 'block';
+        container.innerHTML = '';
+        
+        // Group tickets by passenger name + booking_reference
+        const grouped = {};
+        tickets.forEach(ticket => {
+            const key = `${ticket.name}_${ticket.booking_reference}`;
+            if (!grouped[key]) {
+                grouped[key] = {
+                    name: ticket.name,
+                    pnr: ticket.booking_reference,
+                    outbound: null,
+                    return: null,
+                    others: []
+                };
+            }
+            if (ticket.leg === 'outbound') {
+                grouped[key].outbound = ticket;
+            } else if (ticket.leg === 'return') {
+                grouped[key].return = ticket;
+            } else {
+                grouped[key].others.push(ticket);
+            }
+        });
+        
+        // Render inputs
+        Object.values(grouped).forEach(g => {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'invoice-adjustment-item';
+            itemEl.style.display = 'flex';
+            itemEl.style.flexDirection = 'column';
+            itemEl.style.gap = '0.5rem';
+            itemEl.style.padding = '0.5rem';
+            itemEl.style.border = '1px solid var(--border-color)';
+            itemEl.style.borderRadius = '6px';
+            itemEl.style.boxShadow = 'var(--shadow-soft)';
+            itemEl.style.background = 'var(--surface)';
+            
+            const headerEl = document.createElement('div');
+            headerEl.style.fontWeight = 'bold';
+            headerEl.style.fontSize = '0.85rem';
+            headerEl.style.color = 'var(--text-primary)';
+            headerEl.textContent = `${g.name} (${g.pnr})`;
+            itemEl.appendChild(headerEl);
+            
+            const inputsEl = document.createElement('div');
+            inputsEl.style.display = 'flex';
+            inputsEl.style.gap = '1rem';
+            inputsEl.style.flexWrap = 'wrap';
+            
+            if (g.outbound || g.return) {
+                if (g.outbound) {
+                    const route = `${(g.outbound.departure || '').split(' ')[0]}→${(g.outbound.destination || '').split(' ')[0]}`;
+                    const fg = createAdjustmentField(g.name, g.pnr, 'outbound', `Outbound (${route})`);
+                    inputsEl.appendChild(fg);
+                }
+                if (g.return) {
+                    const route = `${(g.return.departure || '').split(' ')[0]}→${(g.return.destination || '').split(' ')[0]}`;
+                    const fg = createAdjustmentField(g.name, g.pnr, 'return', `Return (${route})`);
+                    inputsEl.appendChild(fg);
+                }
+            } else {
+                // Outbound leg as default if leg is not tagged
+                g.others.forEach((t, i) => {
+                    const route = `${(t.departure || '').split(' ')[0]}→${(t.destination || '').split(' ')[0]}`;
+                    const fg = createAdjustmentField(g.name, g.pnr, t.leg || `other_${i}`, `${route}`);
+                    inputsEl.appendChild(fg);
+                });
+            }
+            
+            itemEl.appendChild(inputsEl);
+            container.appendChild(itemEl);
+        });
+    }
+
+    // Attach listeners to input to dynamically load adjustment fields
+    const pnrListInput = document.getElementById('invoice_pnr_list');
+    if (pnrListInput) {
+        pnrListInput.addEventListener('input', updateInvoiceAdjustmentsSection);
+        pnrListInput.addEventListener('change', updateInvoiceAdjustmentsSection);
+    }
+
     async function runInvoiceGeneration() {
         const pnrInput = document.getElementById('invoice_pnr_list').value;
         const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim()).filter(p => p);
@@ -553,14 +692,24 @@ function setupEventListeners() {
             if (ok) addRecentActivity('invoice', `${type} — ${pnrList.join(', ')}`, format.toUpperCase());
         };
 
+        // Collect adjustments
+        const adjustments = {};
+        document.querySelectorAll('.invoice-adjust-input').forEach(input => {
+            const val = input.value;
+            if (val !== '' && !isNaN(val)) {
+                const key = `${input.dataset.name}_${input.dataset.pnr}_${input.dataset.leg}`;
+                adjustments[key] = Number(val);
+            }
+        });
+
         try {
             if (scenario.canChoose) {
                 showInvoiceOptionModal(async (selectedMode) => {
                     try {
                         if (format === 'photo') {
-                            await generateInvoiceImage(pnrList, type, date, selectedMode, brand);
+                            await generateInvoiceImage(pnrList, type, date, selectedMode, brand, adjustments);
                         } else {
-                            await generateInvoice(pnrList, type, date, selectedMode, brand);
+                            await generateInvoice(pnrList, type, date, selectedMode, brand, adjustments);
                         }
                         onDone(true, `${type} generated successfully!`);
                     } catch (err) {
@@ -570,9 +719,9 @@ function setupEventListeners() {
                 });
             } else {
                 if (format === 'photo') {
-                    await generateInvoiceImage(pnrList, type, date, 'auto', brand);
+                    await generateInvoiceImage(pnrList, type, date, 'auto', brand, adjustments);
                 } else {
-                    await generateInvoice(pnrList, type, date, 'auto', brand);
+                    await generateInvoice(pnrList, type, date, 'auto', brand, adjustments);
                 }
                 onDone(true, `${type} generated successfully!`);
             }
@@ -591,6 +740,10 @@ function setupEventListeners() {
             document.getElementById('invoice_date').value = '';
             document.getElementById('document_type').value = 'Invoice';
             document.getElementById('invoice_brand').value = 'ocean';
+            const wrapper = document.getElementById('invoice_adjustments_wrapper');
+            if (wrapper) wrapper.style.display = 'none';
+            const container = document.getElementById('invoice_adjustments_list');
+            if (container) container.innerHTML = '';
             hideServiceToast('invoiceToast');
         });
     }
