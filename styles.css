@@ -3410,9 +3410,11 @@ body.material-theme .logo-icon {
     filter: drop-shadow(0 8px 18px rgba(13, 148, 136, 0.20));
 }
 
+/* NOTE: The Ocean Travel logo is full-color on white, so we keep it as-is
+   in dark mode instead of inverting it to a white silhouette. */
 body.dark-theme .brand-logo,
 body.material-theme.dark-theme .brand-logo {
-    filter: brightness(0) invert(1);
+    filter: none;
 }
 
 body.material-theme .title {
