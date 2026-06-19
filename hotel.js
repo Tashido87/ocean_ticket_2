@@ -940,7 +940,7 @@ function setupHotelSuggestions() {
 
         box.innerHTML = matches.map(h => `
             <div class="autosuggest-item" data-hotel-name="${escapeHtml(h.name)}" data-hotel-country="${escapeHtml(h.country)}" data-hotel-city="${escapeHtml(h.city)}" style="padding: 10px 15px; cursor: pointer;">
-                <div style="font-weight: 600; font-size: 0.9rem;"><i class="fa-solid fa-hotel" style="color: #0d9488; margin-right: 5px;"></i> ${escapeHtml(h.name)}</div>
+                <div style="font-weight: 600; font-size: 0.9rem;"><i class="fa-solid fa-hotel" style="color: #B91C1C; margin-right: 5px;"></i> ${escapeHtml(h.name)}</div>
                 <div style="font-size: 0.75rem; color: #666; margin-top: 2px;">${escapeHtml(h.city)}, ${escapeHtml(h.country)}</div>
             </div>
         `).join('');
@@ -1223,7 +1223,7 @@ export function renderHotelReservations() {
                 ${res.other_names ? `<div style="font-size: 0.76rem; color: var(--muted); margin-top: 2px;">${!isNaN(parseInt(res.other_names, 10)) ? `Total Guests (incl. Lead): ${escapeHtml(res.other_names)}` : `Guests: ${escapeHtml(res.other_names)}`}</div>` : ''}
             `;
             const hotelCell = `
-                <div style="font-weight: 700; color: var(--ink);"><i class="fa-solid fa-hotel" style="color: #0d9488; margin-right: 4px; font-size: 0.8rem;"></i> ${escapeHtml(res.hotel_name)}</div>
+                <div style="font-weight: 700; color: var(--ink);"><i class="fa-solid fa-hotel" style="color: #B91C1C; margin-right: 4px; font-size: 0.8rem;"></i> ${escapeHtml(res.hotel_name)}</div>
                 <div style="font-size: 0.76rem; color: var(--muted); margin-top: 2px;">${escapeHtml(res.city)}, ${escapeHtml(res.country)}</div>
             `;
             const dateCell = `
@@ -1247,7 +1247,7 @@ export function renderHotelReservations() {
                     <td style="padding: 1rem 0.75rem; vertical-align: top;">${hotelCell}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${dateCell}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top;">${costCell}</td>
-                    <td style="padding: 1rem 0.75rem; vertical-align: top; font-weight: 700; color: #0d9488; text-align: right;">${(res.commission || 0).toLocaleString()} MMK</td>
+                    <td style="padding: 1rem 0.75rem; vertical-align: top; font-weight: 700; color: #B91C1C; text-align: right;">${(res.commission || 0).toLocaleString()} MMK</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${statusBadge}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;" class="search-row-actions">
                         <div style="display: flex; gap: 0.25rem; justify-content: center;">

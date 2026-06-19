@@ -247,10 +247,10 @@ export function displayTickets(tickets, page = 1) {
 
         const airlineText = isGroup 
             ? (ticket.tickets[0]?._isHotel 
-                ? `<span style="font-weight:600; color:#0d9488;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
+                ? `<span style="font-weight:600; color:#B91C1C;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
                 : renderAirlineName(ticket.tickets[0]?.airline || ''))
             : (ticket._isHotel 
-                ? `<span style="font-weight:600; color:#0d9488;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
+                ? `<span style="font-weight:600; color:#B91C1C;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
                 : renderAirlineName(ticket.airline || ''));
 
         let netAmountHtml;

@@ -206,7 +206,7 @@
 
 .pax-status.status-complete {
     background: rgba(31, 138, 101, 0.10);
-    color: var(--success-accent, #1f8a65);
+    color: var(--success-accent, #3C3C3C);
 }
 
 .pax-status.status-incomplete {
@@ -342,10 +342,10 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 /* Member ID optional panel */
 .pax-panel-member {
-    border: 1.5px dashed rgba(13, 148, 136, 0.25);
+    border: 1.5px dashed rgba(185, 28, 28, 0.25);
     border-radius: 10px;
     padding: 0.85rem 1rem;
-    background: rgba(13, 148, 136, 0.02);
+    background: rgba(185, 28, 28, 0.02);
 }
 
 .member-id-header {
@@ -358,7 +358,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .member-id-optional {
     font-size: 0.68rem;
     font-weight: 500;
-    color: var(--primary-accent, #0d9488);
+    color: var(--primary-accent, #B91C1C);
     opacity: 0.7;
     text-transform: none;
     letter-spacing: 0;
@@ -372,9 +372,9 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     padding: 0.3rem 0.85rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--primary-accent, #0d9488);
+    color: var(--primary-accent, #B91C1C);
     background: transparent;
-    border: 1.5px solid var(--primary-accent, #0d9488);
+    border: 1.5px solid var(--primary-accent, #B91C1C);
     border-radius: 999px;
     cursor: pointer;
     white-space: nowrap;
@@ -382,7 +382,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .member-id-toggle-btn:hover {
-    background: var(--primary-accent, #0d9488);
+    background: var(--primary-accent, #B91C1C);
     color: #fff;
 }
 
@@ -435,9 +435,9 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     padding: 0.35rem 0.9rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--primary-accent, #0d9488);
+    color: var(--primary-accent, #B91C1C);
     background: transparent;
-    border: 1.5px dashed var(--primary-accent, #0d9488);
+    border: 1.5px dashed var(--primary-accent, #B91C1C);
     border-radius: 8px;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
@@ -445,7 +445,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .member-id-add-more:hover {
-    background: rgba(13, 148, 136, 0.08);
+    background: rgba(185, 28, 28, 0.08);
     opacity: 1;
 }
 
@@ -501,7 +501,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .gender-segment input:checked + label {
     background: var(--primary-accent);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(13, 148, 136, 0.3);
+    box-shadow: 0 1px 2px rgba(185, 28, 28, 0.3);
 }
 
 .gender-segment label:hover {
@@ -605,7 +605,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 .nrc-input:focus-within {
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
 }
 
 .nrc-input input {
@@ -674,7 +674,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .passport-photo-zone:hover,
 .passport-photo-zone.is-dragover {
     border-color: var(--primary-accent);
-    background: rgba(13, 148, 136, 0.03);
+    background: rgba(185, 28, 28, 0.03);
 }
 
 .passport-photo-zone .pz-icon {
@@ -751,13 +751,13 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 .pz-ocr-status.is-scanning {
     opacity: 1;
-    color: var(--primary-accent, #0d9488);
+    color: var(--primary-accent, #B91C1C);
     animation: ocrPulse 1.5s ease-in-out infinite;
 }
 
 .pz-ocr-status.is-success {
     opacity: 1;
-    color: var(--success-accent, #1f8a65);
+    color: var(--success-accent, #3C3C3C);
     animation: none;
 }
 
@@ -912,7 +912,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 .pricing-totals .value {
     font-weight: 700;
-    color: var(--success-accent, #1f8a65);
+    color: var(--success-accent, #3C3C3C);
     font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
 }
 
@@ -981,7 +981,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .summary-stat .stat-value.is-positive {
-    color: var(--success-accent, #1f8a65);
+    color: var(--success-accent, #3C3C3C);
 }
 
 .summary-stat .stat-value.is-muted {
@@ -1035,7 +1035,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     margin-top: 0.4rem;
     padding: 0.2rem 0.55rem;
     background: rgba(31, 138, 101, 0.08);
-    color: var(--success-accent, #1f8a65);
+    color: var(--success-accent, #3C3C3C);
     border-radius: 999px;
     font-size: 0.72rem;
     font-weight: 600;
@@ -1163,7 +1163,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .trip-type-segment input:checked + label {
     background: var(--primary-accent);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(13, 148, 136, 0.3);
+    box-shadow: 0 1px 2px rgba(185, 28, 28, 0.3);
 }
 
 .trip-type-segment label:hover {
@@ -1178,8 +1178,8 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .return-flight-block {
     margin-top: 1.25rem;
     padding: 1.25rem;
-    background: rgba(13, 148, 136, 0.04);
-    border: 1px solid rgba(13, 148, 136, 0.14);
+    background: rgba(185, 28, 28, 0.04);
+    border: 1px solid rgba(185, 28, 28, 0.14);
     border-radius: 10px;
     animation: returnSlideDown 0.3s ease;
 }
@@ -1200,7 +1200,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: rgba(13, 148, 136, 0.12);
+    background: rgba(185, 28, 28, 0.12);
     color: var(--primary-accent);
     display: inline-flex;
     align-items: center;
@@ -1289,7 +1289,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     font-size: 0.72rem;
     font-weight: 700;
     color: inherit;
-    background: rgba(13, 148, 136, 0.08);
+    background: rgba(185, 28, 28, 0.08);
     padding: 0.1rem 0.5rem;
     border-radius: 999px;
     font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
@@ -1309,7 +1309,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 /* Subtotal lines (per leg) */
 .pricing-totals.is-grand {
     margin-top: 0.5rem;
-    background: rgba(13, 148, 136, 0.06);
+    background: rgba(185, 28, 28, 0.06);
 }
 
 .pricing-totals.is-grand .value {
@@ -1419,20 +1419,20 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: linear-gradient(135deg, rgba(13, 148, 136, 0.14), rgba(8, 145, 178, 0.10));
-    color: #0d9488;
+    background: linear-gradient(135deg, rgba(185, 28, 28, 0.14), rgba(60, 60, 60, 0.10));
+    color: #B91C1C;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 1rem;
     flex-shrink: 0;
-    box-shadow: inset 0 0 0 1px rgba(13, 148, 136, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.12);
 }
 
 #sell-view #section-client .sell-section-header .section-icon {
-    background: linear-gradient(135deg, rgba(8, 145, 178, 0.14), rgba(31, 138, 101, 0.10));
-    color: #0d9488;
-    box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.12);
+    background: linear-gradient(135deg, rgba(60, 60, 60, 0.14), rgba(31, 138, 101, 0.10));
+    color: #B91C1C;
+    box-shadow: inset 0 0 0 1px rgba(60, 60, 60, 0.12);
 }
 
 #sell-view #section-passengers .sell-section-header .section-icon {
@@ -1475,15 +1475,15 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 #sell-view .form-group select:focus,
 #sell-view .form-group textarea:focus {
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
     transform: none;
 }
 
 /* ---------- Route preview — softer chip ---------- */
 #sell-view .route-preview {
     padding: 0.35rem 0.75rem;
-    background: linear-gradient(135deg, rgba(8, 145, 178, 0.10), rgba(31, 138, 101, 0.10));
-    border: 1px solid rgba(8, 145, 178, 0.20);
+    background: linear-gradient(135deg, rgba(60, 60, 60, 0.10), rgba(31, 138, 101, 0.10));
+    border: 1px solid rgba(60, 60, 60, 0.20);
     color: var(--sell-teal);
     font-size: 0.78rem;
     box-shadow: var(--sell-shadow-pill);
@@ -1570,8 +1570,8 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 #sell-view .pax-card-header .pax-avatar {
     width: 38px;
     height: 38px;
-    background: linear-gradient(135deg, rgba(13, 148, 136, 0.14), rgba(8, 145, 178, 0.10));
-    box-shadow: inset 0 0 0 1px rgba(13, 148, 136, 0.12);
+    background: linear-gradient(135deg, rgba(185, 28, 28, 0.14), rgba(60, 60, 60, 0.10));
+    box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.12);
     font-size: 0.85rem;
 }
 
@@ -1643,7 +1643,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 #sell-view .pax-panel-title::after {
-    background: linear-gradient(90deg, rgba(13, 148, 136, 0.12), transparent);
+    background: linear-gradient(90deg, rgba(185, 28, 28, 0.12), transparent);
 }
 
 /* Compact gender + tabs */
@@ -1656,7 +1656,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 #sell-view .gender-segment input:checked + label {
     color: #fff;
     background: var(--primary-accent);
-    box-shadow: 0 1px 2px rgba(13, 148, 136, 0.3);
+    box-shadow: 0 1px 2px rgba(185, 28, 28, 0.3);
 }
 
 #sell-view .doc-tab,
@@ -1688,9 +1688,9 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 #sell-view .return-flight-icon {
-    background: linear-gradient(135deg, rgba(8, 145, 178, 0.14), rgba(13, 148, 136, 0.10));
-    color: #0d9488;
-    box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.12);
+    background: linear-gradient(135deg, rgba(60, 60, 60, 0.14), rgba(185, 28, 28, 0.10));
+    color: #B91C1C;
+    box-shadow: inset 0 0 0 1px rgba(60, 60, 60, 0.12);
 }
 
 /* ---------- Sticky summary bar — VERTICAL right sidebar ---------- */
@@ -1835,18 +1835,18 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 /* Active / checked state */
 .paid-switch input:checked + .paid-slider {
-    background: linear-gradient(135deg, var(--primary-accent, #0d9488), var(--secondary-accent, #1f8a65));
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    background: linear-gradient(135deg, var(--primary-accent, #B91C1C), var(--secondary-accent, #3C3C3C));
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15);
 }
 
 .paid-switch input:checked + .paid-slider::before {
     transform: translateX(20px);
-    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35);
+    box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
 }
 
 .paid-switch input:checked + .paid-slider::after {
     transform: translateX(20px);
-    color: var(--primary-accent, #0d9488);
+    color: var(--primary-accent, #B91C1C);
 }
 
 /* Hover effect */
@@ -1855,12 +1855,12 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .paid-switch input:checked + .paid-slider:hover {
-    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.12);
+    box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.12);
 }
 
 /* Focus ring for accessibility */
 .paid-switch input:focus-visible + .paid-slider {
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3);
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.3);
 }
 
 /* Label text */
@@ -1873,7 +1873,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .paid-toggle:has(input:checked) .paid-label {
-    color: var(--primary-accent, #0d9488);
+    color: var(--primary-accent, #B91C1C);
 }
 
 .sticky-summary-bar .summary-payment-controls .form-group {
@@ -2031,9 +2031,9 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     font-size: 0.95rem;
-    background: linear-gradient(135deg, rgba(8, 145, 178, 0.14), rgba(13, 148, 136, 0.08));
+    background: linear-gradient(135deg, rgba(60, 60, 60, 0.14), rgba(185, 28, 28, 0.08));
     color: var(--sell-teal);
-    box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(60, 60, 60, 0.18);
 }
 
 .summary-stat .stat-label { grid-row: 1; grid-column: 2; }
@@ -2096,8 +2096,8 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .sticky-summary-bar .paid-toggle:has(input:checked) {
-    border-color: rgba(13, 148, 136, 0.25);
-    box-shadow: 0 1px 2px rgba(13, 148, 136, 0.08), 0 0 0 2px rgba(13, 148, 136, 0.06);
+    border-color: rgba(185, 28, 28, 0.25);
+    box-shadow: 0 1px 2px rgba(185, 28, 28, 0.08), 0 0 0 2px rgba(185, 28, 28, 0.06);
 }
 
 /* "Add Passenger / Existing" buttons — softer */
@@ -2111,14 +2111,14 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 #sell-view #addPassengerBtn {
-    background: linear-gradient(135deg, var(--primary-accent), #0f766e);
+    background: linear-gradient(135deg, var(--primary-accent), #991B1B);
     color: #fff;
     border-color: transparent;
 }
 
 #sell-view #addPassengerBtn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.30);
+    box-shadow: 0 4px 14px rgba(185, 28, 28, 0.30);
 }
 
 /* Passenger count badge — coral, like the reference */
@@ -2341,7 +2341,7 @@ body.material-theme.dark-theme #sell-view .nrc-input .nrc-sep {
 
 body.dark-theme #sell-view .nrc-input:focus-within,
 body.material-theme.dark-theme #sell-view .nrc-input:focus-within {
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.25);
 }
 
 /* ---------- Mobile — keep things readable ---------- */
