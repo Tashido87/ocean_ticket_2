@@ -1394,7 +1394,9 @@ function renderDashboardTravelSchedule(groups) {
         return;
     }
 
-    container.innerHTML = groups.slice(0, 6).map(group => {
+    // Render every upcoming trip; the panel itself is height-locked so only
+    // ~5 rows are visible and the rest are reached via internal vertical scroll.
+    container.innerHTML = groups.map(group => {
         const date = formatDashboardShortDate(group.date);
         const progress = group.passengers ? Math.round((group.paidPassengers / group.passengers) * 100) : 0;
         const hasUnpaid = group.unpaidAmount > 0;

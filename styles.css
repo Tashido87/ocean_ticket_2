@@ -9437,7 +9437,19 @@ body.material-theme {
 
 #travel-schedule-box {
     grid-column: span 5;
-    min-height: 374px;
+    height: 420px;       /* lock the box so it never grows unbounded */
+    min-height: 420px;
+    max-height: 420px;
+}
+
+/* Height-locked panels: the inner list scrolls vertically instead of the
+   whole card stretching. ~5 rows are visible by default. */
+#travel-schedule-box .travel-schedule-list,
+#dashboardTravelSchedule {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 #dashboard-unpaid-box {
