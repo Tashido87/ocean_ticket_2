@@ -37,13 +37,13 @@ input, button, select, textarea {
     --blush-soft: #ffe4de;
     --coral: #FF7B57;
     --coral-dark: #e86343;
-    --mint: #80D5C9;
-    --mint-strong: #0E857E;
+    --mint: #FEE2E2;
+    --mint-strong: #B91C1C;
     --butter: #F8C772;
     --peach: #FCA772;
     --sage: #ADC865;
     --lavender: #dbe4ef;
-    --lavender-strong: #80D5C9; /* Remapped to mint for consistency */
+    --lavender-strong: #FEE2E2; /* Remapped to crimson soft for consistency */
     --ink: #252833;
     --muted: #7A7F89;
     --line: #E8EFED;
@@ -57,7 +57,7 @@ input, button, select, textarea {
     --success-accent: #35B88F;
     --danger-accent: #F45B5B;
     --warning-accent: #F5A93B;
-    --info-accent: #159A92;
+    --info-accent: #B91C1C;
     --text-primary: var(--ink);
     --text-secondary: var(--muted);
     --border-color: var(--line);
@@ -2812,8 +2812,8 @@ td .icon-btn-table {
 /* Material Theme - Update to use Cursor warm cream palette */
 body.material-theme {
     --bg-color: #f2f1ed;
-    --primary-accent: #0d9488;
-    --primary-accent-dark: #0f766e;
+    --primary-accent: #B91C1C;
+    --primary-accent-dark: #991B1B;
     --secondary-accent: #1f8a65;
     --danger-accent: #cf2d56;
 
@@ -2833,7 +2833,7 @@ body.material-theme {
 
     --chart-text: rgba(38, 37, 30, 0.75);
     --chart-grid: rgba(38, 37, 30, 0.08);
-    --chart-revenue: #0d9488;
+    --chart-revenue: #B91C1C;
     --chart-profit: #1f8a65;
     --chart-tickets: #7c3aed;
 }
@@ -2841,8 +2841,8 @@ body.material-theme {
 body.material-theme.dark-theme {
     /* Cursor dark variant — charcoal black */
     --bg-color: #2b2b2b;
-    --primary-accent: #0d9488;
-    --primary-accent-dark: #0f766e;
+    --primary-accent: #B91C1C;
+    --primary-accent-dark: #991B1B;
     --secondary-accent: #34d399;
     --danger-accent: #cf2d56;
 
@@ -2859,7 +2859,7 @@ body.material-theme.dark-theme {
 
     --chart-text: rgba(255, 255, 255, 0.78);
     --chart-grid: rgba(255, 255, 255, 0.12);
-    --chart-revenue: #0d9488;
+    --chart-revenue: #B91C1C;
     --chart-profit: #34d399;
     --chart-tickets: #a78bfa;
 }
