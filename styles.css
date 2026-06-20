@@ -10514,3 +10514,185 @@ body.material-theme.dark-theme .dashboard-hero {
         linear-gradient(135deg, rgba(51, 51, 51, 0.96), rgba(60, 60, 60, 0.88)),
         radial-gradient(circle at 88% 18%, rgba(185, 28, 28, 0.15), transparent 12rem) !important;
 }
+
+/* Dark mode overrides for statistical summary cards, presets, and action buttons */
+body.dark-theme .booking-kpi-card,
+body.material-theme.dark-theme .booking-kpi-card,
+body.dark-theme .kpi-card,
+body.material-theme.dark-theme .kpi-card,
+body.dark-theme .travel-schedule-row,
+body.material-theme.dark-theme .travel-schedule-row {
+    background: var(--surface) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+body.dark-theme .unpaid-summary-grid > div,
+body.material-theme.dark-theme .unpaid-summary-grid > div {
+    background: linear-gradient(135deg, var(--surface), rgba(185, 28, 28, 0.12)) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .dashboard-period-btn,
+body.material-theme.dark-theme .dashboard-period-btn,
+body.dark-theme .records-preset-btn,
+body.material-theme.dark-theme .records-preset-btn {
+    background: var(--surface-2) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+
+body.dark-theme .dashboard-period-btn:hover,
+body.material-theme.dark-theme .dashboard-period-btn:hover,
+body.dark-theme .records-preset-btn:hover,
+body.material-theme.dark-theme .records-preset-btn:hover {
+    background: var(--surface-3) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .dashboard-period-btn.active,
+body.material-theme.dark-theme .dashboard-period-btn.active,
+body.dark-theme .records-preset-btn.active,
+body.material-theme.dark-theme .records-preset-btn.active {
+    background: var(--brand) !important;
+    border-color: var(--brand) !important;
+    color: #ffffff !important;
+}
+
+body.dark-theme .booking-action-btn:not(.primary):not(.danger):not(.success),
+body.material-theme.dark-theme .booking-action-btn:not(.primary):not(.danger):not(.success) {
+    background: var(--surface-2) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .booking-action-btn:not(.primary):not(.danger):not(.success):hover:not(:disabled),
+body.material-theme.dark-theme .booking-action-btn:not(.primary):not(.danger):not(.success):hover:not(:disabled) {
+    background: var(--surface-3) !important;
+    border-color: var(--brand) !important;
+    color: var(--brand) !important;
+}
+
+body.dark-theme .dashboard-row-action,
+body.material-theme.dark-theme .dashboard-row-action {
+    background: var(--surface-2) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .dashboard-row-action:hover,
+body.material-theme.dark-theme .dashboard-row-action:hover {
+    background: var(--surface-3) !important;
+    border-color: var(--brand) !important;
+    color: var(--brand) !important;
+}
+
+body.dark-theme .dashboard-auto-task,
+body.material-theme.dark-theme .dashboard-auto-task,
+body.dark-theme .dashboard-task-item.manual,
+body.material-theme.dark-theme .dashboard-task-item.manual {
+    background: var(--surface) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .dashboard-auto-task:hover,
+body.material-theme.dark-theme .dashboard-auto-task:hover,
+body.dark-theme .dashboard-task-item.manual:hover,
+body.material-theme.dark-theme .dashboard-task-item.manual:hover {
+    background: var(--surface-2) !important;
+    border-color: rgba(185, 28, 28, 0.22) !important;
+}
+
+body.dark-theme .dashboard-auto-task.danger,
+body.material-theme.dark-theme .dashboard-auto-task.danger,
+body.dark-theme .dashboard-task-item.manual.danger,
+body.material-theme.dark-theme .dashboard-task-item.manual.danger {
+    background: rgba(185, 28, 28, 0.15) !important;
+    border-color: rgba(185, 28, 28, 0.35) !important;
+}
+
+body.dark-theme .dashboard-auto-task.warning,
+body.material-theme.dark-theme .dashboard-auto-task.warning,
+body.dark-theme .dashboard-task-item.manual.warning,
+body.material-theme.dark-theme .dashboard-task-item.manual.warning {
+    background: rgba(192, 133, 50, 0.15) !important;
+    border-color: rgba(192, 133, 50, 0.35) !important;
+}
+
+body.dark-theme .dashboard-task-item.manual.done,
+body.dark-theme .dashboard-task-item.manual.is-done,
+body.material-theme.dark-theme .dashboard-task-item.manual.done,
+body.material-theme.dark-theme .dashboard-task-item.manual.is-done {
+    opacity: 0.5;
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+body.dark-theme .task-mini-title small,
+body.material-theme.dark-theme .task-mini-title small {
+    color: var(--primary-accent) !important;
+}
+
+/* Datepicker Dark Theme Overrides */
+body.dark-theme .datepicker-picker,
+body.material-theme.dark-theme .datepicker-picker {
+    background-color: var(--surface) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-2) !important;
+}
+
+body.dark-theme .datepicker-picker .datepicker-controls .button,
+body.dark-theme .datepicker-picker .datepicker-controls .view-switch,
+body.material-theme.dark-theme .datepicker-picker .datepicker-controls .button,
+body.material-theme.dark-theme .datepicker-picker .datepicker-controls .view-switch {
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .datepicker-picker .datepicker-controls .button:hover,
+body.dark-theme .datepicker-picker .datepicker-controls .view-switch:hover,
+body.material-theme.dark-theme .datepicker-picker .datepicker-controls .button:hover,
+body.material-theme.dark-theme .datepicker-picker .datepicker-controls .view-switch:hover {
+    background-color: var(--surface-3) !important;
+    color: var(--primary-accent) !important;
+}
+
+body.dark-theme .datepicker-view .dow,
+body.material-theme.dark-theme .datepicker-view .dow {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-theme .datepicker-view .days .day,
+body.dark-theme .datepicker-view .months .month,
+body.dark-theme .datepicker-view .years .year,
+body.material-theme.dark-theme .datepicker-view .days .day,
+body.material-theme.dark-theme .datepicker-view .months .month,
+body.material-theme.dark-theme .datepicker-view .years .year {
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .datepicker-view .days .day:not(.disabled):not(.selected):hover,
+body.dark-theme .datepicker-view .months .month:not(.disabled):not(.selected):hover,
+body.dark-theme .datepicker-view .years .year:not(.disabled):not(.selected):hover,
+body.material-theme.dark-theme .datepicker-view .days .day:not(.disabled):not(.selected):hover,
+body.material-theme.dark-theme .datepicker-view .months .month:not(.disabled):not(.selected):hover,
+body.material-theme.dark-theme .datepicker-view .years .year:not(.disabled):not(.selected):hover {
+    background-color: rgba(185, 28, 28, 0.20) !important;
+}
+
+body.dark-theme .datepicker-view .day.prev,
+body.dark-theme .datepicker-view .day.next,
+body.material-theme.dark-theme .datepicker-view .day.prev,
+body.material-theme.dark-theme .datepicker-view .day.next {
+    color: var(--text-secondary) !important;
+    opacity: 0.4 !important;
+}
+
+body.dark-theme .datepicker-view .day.disabled,
+body.dark-theme .datepicker-view .months .month.disabled,
+body.dark-theme .datepicker-view .years .year.disabled,
+body.material-theme.dark-theme .datepicker-view .day.disabled,
+body.material-theme.dark-theme .datepicker-view .months .month.disabled,
+body.material-theme.dark-theme .datepicker-view .years .year.disabled {
+    color: rgba(255, 255, 255, 0.15) !important;
+}
