@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { showToast, formatDateToDMMMY, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, escapeHtml } from './utils.js';
+import { showToast, formatDateToDMMMY, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, escapeHtml, parseSheetDate } from './utils.js';
 import { addHotelReservation, updateHotelReservation, deleteHotelReservation } from './db.js';
 
 /* =========================================
@@ -188,7 +188,8 @@ async function generateVoucher(format) {
     // 3. Format Dates (e.g., "Nov 12, 2025")
     const formatDate = (dateString) => {
         if (!dateString) return '';
-        const date = new Date(dateString);
+        const date = parseSheetDate(dateString);
+        if (isNaN(date.getTime()) || date.getTime() === 0) return dateString;
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
     const arrival = formatDate(arrivalDateStr);
