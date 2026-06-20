@@ -29,58 +29,198 @@ input, button, select, textarea {
 }
 
 :root {
-    /* Ocean Travel Astrum System */
-    --app-bg: #F9F7F7;
-    --surface: #FFFFFF;
-    --surface-soft: #FFF5F5;
-    --blush: #FF7B57; /* Coral orange */
-    --blush-soft: #ffe4de;
-    --coral: #FF7B57;
-    --coral-dark: #e86343;
-    --mint: #FEE2E2;
-    --mint-strong: #B91C1C;
-    --butter: #F8C772;
-    --peach: #FCA772;
-    --sage: #ADC865;
-    --lavender: #dbe4ef;
-    --lavender-strong: #FEE2E2; /* Remapped to crimson soft for consistency */
-    --ink: #252833;
-    --muted: #7A7F89;
-    --line: #EDE8E8;
-    --shadow-soft: 0 12px 36px rgba(37, 40, 51, 0.04);
-    --shadow-hover: 0 18px 48px rgba(37, 40, 51, 0.08);
+    /* ============================================================
+       Ocean Travel — Design Token System (v2)
+       Single source of truth for type, spacing, radius, shadow,
+       and color semantics. Light theme is the default.
+       ============================================================ */
 
-    --bg-color: var(--app-bg);
-    --primary-accent: var(--mint);
-    --primary-accent-dark: var(--mint-strong);
-    --secondary-accent: var(--coral);
-    --success-accent: #16A34A;
-    --danger-accent: #F45B5B;
-    --warning-accent: #F5A93B;
-    --info-accent: #B91C1C;
-    --text-primary: var(--ink);
-    --text-secondary: var(--muted);
-    --border-color: var(--line);
-    --glass-bg: #FFFFFF;
-    --glass-bg-hover: #FFFFFF;
-    --glass-border: 1px solid var(--line);
-    --shadow: rgba(37, 40, 51, 0.05);
-    --liquid-radius: 24px;
-    --liquid-border: 1px solid var(--line);
-    --liquid-shadow: var(--shadow-soft);
+    /* --- Brand (crimson, from logo #AD0304) --- */
+    --brand: #B91C1C;
+    --brand-hover: #991B1B;
+    --brand-active: #7F1D1D;
+    --brand-soft: #FEE2E2;
+    --brand-tint: rgba(185, 28, 28, 0.10);
+    --brand-tint-strong: rgba(185, 28, 28, 0.16);
+    --brand-ring: rgba(185, 28, 28, 0.18);
 
+    /* --- Neutral surfaces & text (slate scale) --- */
+    --bg: #F8FAFC;            /* slate-50 — app background */
+    --app-bg: var(--bg);
+    --surface: #FFFFFF;       /* cards, panels */
+    --surface-2: #F1F5F9;     /* subtle raised/soft surface, slate-100 */
+    --surface-3: #E2E8F0;     /* slate-200 */
+    --surface-soft: #F8FAFC;  /* hover wash, input fill */
+    --overlay: rgba(15, 23, 42, 0.50); /* modal scrim */
+
+    --border: #E2E8F0;        /* slate-200 */
+    --border-strong: #CBD5E1; /* slate-300 */
+    --line: #E2E8F0;
+
+    --text: #0F172A;          /* slate-900 */
+    --text-muted: #64748B;    /* slate-500 */
+    --text-faint: #94A3B8;    /* slate-400 */
+    --ink: var(--text);
+    --muted: var(--text-muted);
+
+    /* --- Status (kept distinct from brand crimson) --- */
+    --success: #16A34A;
+    --success-soft: #DCFCE7;
+    --warning: #D97706;
+    --warning-soft: #FEF3C7;
+    --danger: #DC2626;
+    --danger-soft: #FEE2E2;
+
+    /* --- Data visualization (distinct hues for charts) --- */
+    --chart-revenue: #B91C1C;     /* brand */
+    --chart-profit: #16A34A;      /* success green */
+    --chart-tickets: #D97706;     /* amber */
+    --chart-coral: #F97316;       /* orange */
+    --chart-lavender: #8B5CF6;    /* violet */
+    --chart-sky: #0EA5E9;         /* sky */
+    --chart-text: var(--text-muted);
+    --chart-grid: #E2E8F0;
+
+    /* --- Backwards-compatible aliases (existing rules consume these) --- */
+    --mint-strong: var(--brand);
+    --mint: var(--brand-soft);
+    --primary-accent: var(--brand);
+    --primary-accent-dark: var(--brand-hover);
+    --secondary-accent: var(--success);
+    --success-accent: var(--success);
+    --warning-accent: var(--warning);
+    --danger-accent: var(--danger);
+    --info-accent: var(--brand);
+    --coral: var(--chart-coral);
+    --coral-dark: #EA580C;
+    --blush: var(--chart-coral);
+    --blush-soft: #FFEDD5;
+    --butter: var(--warning);
+    --peach: #FED7AA;
+    --sage: var(--success);
+    --lavender: #EDE9FE;
+    --lavender-strong: var(--chart-lavender);
+    --sky-soft: #E0F2FE;
+    --blue-accent: var(--chart-sky);
+    --text-primary: var(--text);
+    --text-secondary: var(--text-muted);
+    --border-color: var(--border);
+    --border-color-strong: var(--border-strong);
+
+    /* --- Type scale (8 steps) --- */
+    --fs-xs: 0.75rem;     /* 12px — captions, hints */
+    --fs-sm: 0.875rem;    /* 14px — body, inputs, table cells */
+    --fs-base: 1rem;      /* 16px */
+    --fs-lg: 1.125rem;    /* 18px — card titles */
+    --fs-xl: 1.25rem;     /* 20px — section headers */
+    --fs-2xl: 1.5rem;     /* 24px — page headers */
+    --fs-3xl: 1.875rem;   /* 30px — KPI numbers */
+    --fs-4xl: 2.25rem;    /* 36px — hero */
+
+    /* --- Spacing (4px grid) --- */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+    --sp-12: 48px;
+
+    /* --- Radius (4 values) --- */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+    --liquid-radius: var(--radius-lg);
+    --liquid-radius-lg: var(--radius-lg);
+
+    /* --- Shadow (3 levels) --- */
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+    --shadow-soft: var(--shadow-sm);
+    --shadow-hover: var(--shadow-md);
+    --shadow-1: var(--shadow-sm);
+    --shadow-2: var(--shadow-md);
+    --liquid-shadow: var(--shadow-sm);
+    --liquid-border: 1px solid var(--border);
+    --glass-bg: var(--surface);
+    --glass-bg-hover: var(--surface);
+    --glass-border: 1px solid var(--border);
+    --focus-ring: 0 0 0 3px var(--brand-ring);
+
+    /* --- Motion --- */
     --ease-smooth: cubic-bezier(0.2, 0, 0, 1);
     --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease: cubic-bezier(0.2, 0, 0, 1);
     --duration-fast: 140ms;
-    --duration: 220ms;
-    --font-main: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --duration: 200ms;
 
-    /* Chart Colors */
-    --chart-text: var(--muted);
-    --chart-grid: var(--line);
-    --chart-revenue: var(--mint);
-    --chart-profit: var(--sage);
-    --chart-tickets: var(--butter);
+    /* --- Font --- */
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    --bg-color: var(--bg);
+    --shadow: rgba(15, 23, 42, 0.05);
+}
+
+/* ============================================================
+   Dark theme tokens — proper slate dark palette
+   ============================================================ */
+body.material-theme.dark-theme,
+body.dark-theme {
+    --bg: #0F172A;            /* slate-900 */
+    --app-bg: var(--bg);
+    --surface: #1E293B;       /* slate-800 */
+    --surface-2: #334155;     /* slate-700 */
+    --surface-3: #475569;     /* slate-600 */
+    --surface-soft: #1E293B;
+
+    --border: #334155;        /* slate-700 */
+    --border-strong: #475569; /* slate-600 */
+    --line: #334155;
+
+    --text: #F1F5F9;          /* slate-100 */
+    --text-muted: #94A3B8;    /* slate-400 */
+    --text-faint: #64748B;    /* slate-500 */
+    --ink: var(--text);
+    --muted: var(--text-muted);
+
+    --brand-soft: rgba(185, 28, 28, 0.18);
+    --brand-tint: rgba(185, 28, 28, 0.14);
+    --brand-tint-strong: rgba(185, 28, 28, 0.22);
+    --brand-ring: rgba(185, 28, 28, 0.30);
+
+    --success-soft: rgba(22, 163, 74, 0.18);
+    --warning-soft: rgba(217, 119, 6, 0.18);
+    --danger-soft: rgba(220, 38, 38, 0.18);
+
+    --overlay: rgba(0, 0, 0, 0.60);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --shadow-soft: var(--shadow-sm);
+    --shadow-hover: var(--shadow-md);
+    --shadow-1: var(--shadow-sm);
+    --shadow-2: var(--shadow-md);
+    --liquid-shadow: var(--shadow-sm);
+
+    --chart-text: var(--text-muted);
+    --chart-grid: #334155;
+
+    --focus-ring: 0 0 0 3px var(--brand-ring);
+
+    --coral: var(--chart-coral);
+    --coral-dark: #FB923C;
+    --blush: #FB923C;
+    --blush-soft: rgba(249, 115, 22, 0.18);
+    --butter: var(--warning);
+    --peach: rgba(217, 119, 6, 0.22);
+    --lavender: rgba(139, 92, 246, 0.18);
+    --lavender-strong: #A78BFA;
+    --sky-soft: rgba(14, 165, 233, 0.18);
+    --mint: var(--brand-soft);
 }
 
 /* Dark Text Theme — not needed in Cursor palette (already dark text on light bg) */
