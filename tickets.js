@@ -793,17 +793,84 @@ export async function handleSellTicket(e) {
         : '';
 
     const confirmationMessage = `
-        <h3>Confirm Submission</h3>
-        <p>Please review the details before submitting:</p>
-        <ul style="list-style: none; padding-left: 0; margin: 1rem 0;">
-            <li><strong>Trip Type:</strong> ${sharedData.trip_type}</li>
-            <li><strong>PNR Code:</strong> ${sharedData.booking_reference}</li>
-            <li><strong>Flight Type:</strong> ${sharedData.flight_type}</li>
-            <li><strong>Total Passengers:</strong> ${passengerData.length}${sharedData.is_round_trip ? ` (${totalRowCount} tickets)` : ''}</li>
-            ${returnLine}
-            <li><strong>Grand Total:</strong> ${totalAmount.toLocaleString()} MMK</li>
-            <li><strong>Payment Status:</strong> ${sharedData.paid ? `Paid via ${sharedData.payment_method}` : 'Not Paid'}</li>
-        </ul>
+        <div class="confirm-submission-container">
+            <div class="confirm-header">
+                <div class="confirm-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <h3>Confirm Submission</h3>
+                <p>Please review the details before submitting:</p>
+            </div>
+
+            <div class="confirm-meta-grid">
+                <div class="meta-item">
+                    <span class="meta-label">PNR Code</span>
+                    <span class="meta-value pnr-pill">${sharedData.booking_reference}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Trip Type</span>
+                    <span class="meta-value badge">${sharedData.trip_type}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Flight Type</span>
+                    <span class="meta-value badge">${sharedData.flight_type}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Total Passengers</span>
+                    <span class="meta-value">${passengerData.length} pax ${sharedData.is_round_trip ? `<small>(${totalRowCount} tickets)</small>` : ''}</span>
+                </div>
+            </div>
+
+            <div class="confirm-flights-container">
+                <!-- Outbound Flight Card -->
+                <div class="confirm-flight-card departure">
+                    <div class="flight-card-header">
+                        <span class="leg-badge"><i class="fa-solid fa-plane-departure"></i> Departure Flight</span>
+                        <span class="flight-airline">${renderAirlineName(sharedData.airline, { size: 'xs' })}</span>
+                    </div>
+                    <div class="flight-card-route">
+                        <span class="airport-code">${sharedData.departure}</span>
+                        <span class="route-arrow"><i class="fa-solid fa-arrow-right-long"></i></span>
+                        <span class="airport-code">${sharedData.destination}</span>
+                    </div>
+                    <div class="flight-card-footer">
+                        <span class="flight-date"><i class="fa-regular fa-calendar"></i> ${formatDateToDMMMY(sharedData.departing_on) || sharedData.departing_on}</span>
+                        <span class="flight-subtotal">Subtotal: <strong>${outboundTotal.toLocaleString()} MMK</strong></span>
+                    </div>
+                </div>
+
+                <!-- Return Flight Card -->
+                ${sharedData.is_round_trip ? `
+                <div class="confirm-flight-card return">
+                    <div class="flight-card-header">
+                        <span class="leg-badge"><i class="fa-solid fa-plane-arrival"></i> Return Flight</span>
+                        <span class="flight-airline">${renderAirlineName(returnSharedData.airline, { size: 'xs' })}</span>
+                    </div>
+                    <div class="flight-card-route">
+                        <span class="airport-code">${returnSharedData.departure}</span>
+                        <span class="route-arrow"><i class="fa-solid fa-arrow-right-long"></i></span>
+                        <span class="airport-code">${returnSharedData.destination}</span>
+                    </div>
+                    <div class="flight-card-footer">
+                        <span class="flight-date"><i class="fa-regular fa-calendar"></i> ${formatDateToDMMMY(returnSharedData.departing_on) || returnSharedData.departing_on}</span>
+                        <span class="flight-subtotal">Subtotal: <strong>${returnTotal.toLocaleString()} MMK</strong></span>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+
+            <div class="confirm-summary-panel">
+                <div class="summary-row grand-total-row">
+                    <span>Grand Total</span>
+                    <strong class="grand-total">${totalAmount.toLocaleString()} <span class="currency">MMK</span></strong>
+                </div>
+                <div class="summary-row payment-status-row">
+                    <span>Payment Status</span>
+                    <span class="payment-badge ${sharedData.paid ? 'paid' : 'unpaid'}">
+                        <i class="fa-solid ${sharedData.paid ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i>
+                        ${sharedData.paid ? `Paid via ${sharedData.payment_method}` : 'Not Paid'}
+                    </span>
+                </div>
+            </div>
+        </div>
     `;
 
     showConfirmModal(confirmationMessage, () => {
