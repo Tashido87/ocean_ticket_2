@@ -19,8 +19,8 @@ import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=13'; 
-import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=13'; 
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=14'; 
+import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=14'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules
@@ -1602,7 +1602,7 @@ function renderDashboardUnpaidTickets(groups) {
         return;
     }
 
-    const rows = groups.slice(0, 6).map(group => {
+    const rows = groups.map(group => {
         return `
             <tr>
                 <td><strong><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></strong></td>
