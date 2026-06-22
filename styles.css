@@ -11199,3 +11199,379 @@ body.dark-theme .pnr-badge-container {
 body.dark-theme .trip-detail-card.financial-summary-card {
     background: linear-gradient(135deg, var(--surface-2), rgba(185, 28, 28, 0.08)) !important;
 }
+
+/* Premium Trip Details Modal styling */
+.trip-ticket-header {
+    background: linear-gradient(135deg, var(--brand, #B91C1C) 0%, #881337 100%);
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 6px 20px rgba(185, 28, 28, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.trip-ticket-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.ticket-route-section {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-grow: 1;
+}
+
+.route-point {
+    display: flex;
+    flex-direction: column;
+}
+
+.route-point .airport-code {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #ffffff;
+    line-height: 1;
+}
+
+.route-line-connector {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 90px;
+    justify-content: center;
+}
+
+.route-line-dashed {
+    flex-grow: 1;
+    border-top: 2px dashed rgba(255, 255, 255, 0.4);
+    height: 0;
+}
+
+.route-plane-icon {
+    font-size: 1.1rem;
+    color: #ffffff;
+    margin: 0 0.5rem;
+    transform: rotate(90deg);
+    animation: flightPulse 3s infinite ease-in-out;
+}
+
+@keyframes flightPulse {
+    0%, 100% { transform: rotate(90deg) translateY(0); opacity: 0.8; }
+    50% { transform: rotate(90deg) translateY(-3px); opacity: 1; }
+}
+
+.ticket-meta-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pnr-badge {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+}
+
+.pnr-badge .pnr-title {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+}
+
+.pnr-code {
+    font-size: 1.1rem;
+    font-weight: 800;
+    font-family: monospace;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.airline-badge {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 6px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    max-height: 44px;
+}
+
+.airline-badge .airline-name {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.airline-badge .airline-name-text {
+    font-size: 0.85rem;
+}
+
+.airline-badge .airline-logo-mark {
+    filter: brightness(0) invert(1);
+}
+
+/* Lead client section */
+.trip-lead-client-section {
+    background: var(--surface-2, #f9fafb);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+    border-radius: 10px;
+    padding: 0.9rem 1.25rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.trip-lead-client-section .lead-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-muted, #6B7280);
+    letter-spacing: 0.05em;
+}
+
+.trip-lead-client-section .client-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary, #111827);
+    text-decoration: none !important;
+}
+
+.trip-lead-client-section a.client-name:hover {
+    color: var(--brand, #B91C1C) !important;
+}
+
+/* Overview flat grid */
+.overview-flat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.flat-grid-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.flat-grid-item .item-label {
+    font-size: 0.75rem;
+    color: var(--text-muted, #6B7280);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.flat-grid-item .item-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary, #111827);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.flat-grid-item .item-value i {
+    color: var(--brand, #B91C1C);
+    font-size: 0.95rem;
+}
+
+/* Passengers List Premium */
+.passengers-list-premium {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.pax-row-premium {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+    border-radius: 10px;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
+}
+
+.pax-row-premium:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.04);
+    border-color: rgba(185, 28, 28, 0.15);
+}
+
+.pax-avatar {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, var(--brand, #B91C1C) 0%, #991B1B 100%);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 5px rgba(185, 28, 28, 0.15);
+    flex-shrink: 0;
+}
+
+.pax-avatar.fee-avatar {
+    background: linear-gradient(135deg, #4b5563 0%, #1f2937 100%);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.pax-details-premium {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.pax-name-premium {
+    font-size: 0.95rem;
+    font-weight: 750;
+    color: var(--text-primary);
+    text-decoration: none !important;
+}
+
+a.pax-name-premium:hover {
+    color: var(--brand, #B91C1C) !important;
+}
+
+.pax-ticket-premium {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pax-finance-premium {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.pax-amount-premium {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.pax-status-badge-premium {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+}
+
+.pax-status-badge-premium.paid {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+}
+
+.pax-status-badge-premium.unpaid {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+/* Premium summary card */
+.premium-summary-card {
+    background: linear-gradient(135deg, var(--surface, #ffffff), rgba(185, 28, 28, 0.015)) !important;
+    border-left: 3px solid var(--brand, #B91C1C) !important;
+}
+
+.financial-summary-grid-premium {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.fin-summary-item-premium {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+}
+
+.fin-label-premium {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.fin-val-premium {
+    font-size: 1.3rem;
+    font-weight: 850;
+    color: var(--text-primary);
+    line-height: 1.1;
+}
+
+.fin-val-premium.unpaid-highlight {
+    color: #EF4444;
+}
+
+.fin-val-premium.paid-highlight {
+    color: #10B981;
+}
+
+.curr-premium {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 0.1rem;
+}
+
+/* Dark mode compatibility */
+body.dark-theme .trip-lead-client-section {
+    background: var(--surface-3, #222222) !important;
+    border-color: var(--border-color, rgba(255,255,255,0.06)) !important;
+}
+
+body.dark-theme .pax-row-premium {
+    background: var(--surface-3, #222222) !important;
+    border-color: var(--border-color, rgba(255,255,255,0.06)) !important;
+}
+
+body.dark-theme .pax-row-premium:hover {
+    border-color: rgba(185, 28, 28, 0.3) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+}
+
+body.dark-theme .premium-summary-card {
+    background: linear-gradient(135deg, var(--surface-2, #1e1e1e), rgba(185, 28, 28, 0.08)) !important;
+}
