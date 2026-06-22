@@ -935,7 +935,7 @@ function openManageModal(docId) {
     if (ticket.departing_on) {
         const d = parseSheetDate(ticket.departing_on);
         if (!isNaN(d.getTime()) && d.getTime() !== 0) {
-            travelDateForInput = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
+            travelDateForInput = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
         }
     }
 
@@ -943,7 +943,7 @@ function openManageModal(docId) {
     if (ticket.paid_date) {
         const pd = parseSheetDate(ticket.paid_date);
         if (!isNaN(pd.getTime()) && pd.getTime() !== 0) {
-            paidDateForInput = `${String(pd.getMonth() + 1).padStart(2, '0')}/${String(pd.getDate()).padStart(2, '0')}/${pd.getFullYear()}`;
+            paidDateForInput = `${String(pd.getDate()).padStart(2, '0')}/${String(pd.getMonth() + 1).padStart(2, '0')}/${pd.getFullYear()}`;
         } else {
             paidDateForInput = ticket.paid_date;
         }
