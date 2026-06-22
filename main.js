@@ -19,8 +19,8 @@ import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=18'; 
-import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=18'; 
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=19'; 
+import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=19'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules
@@ -1440,18 +1440,18 @@ function showTripPlanDetail(pnr) {
         const matchedClient = state.allClients.find(c => String(c.name || '').toLowerCase() === p.baseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
         const ck = matchedClient?.client_key || '';
         const nameHtml = ck
-            ? `<a href="#" class="clickable-client-link" data-client-key="${dashboardEscapeHtml(ck)}" style="color:var(--teal-dark);text-decoration:underline;font-weight:700">${dashboardEscapeHtml(p.name)}</a>`
-            : `<span style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(p.name)}</span>`;
+            ? `<a href="#" class="clickable-client-link pax-name" data-client-key="${dashboardEscapeHtml(ck)}">${dashboardEscapeHtml(p.name)}</a>`
+            : `<span class="pax-name">${dashboardEscapeHtml(p.name)}</span>`;
         const ticketList = p.tickets.filter(tn => tn !== 'N/A').join(', ') || 'N/A';
         return `
-            <div class="details-item" style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
-                <div>
-                    <div>${nameHtml}</div>
-                    <div style="font-size:0.72rem;color:var(--muted)">Ticket: ${dashboardEscapeHtml(ticketList)}</div>
+            <div class="passenger-row">
+                <div class="pax-info">
+                    ${nameHtml}
+                    <div class="pax-meta">Ticket: ${dashboardEscapeHtml(ticketList)}</div>
                 </div>
-                <div style="text-align:right">
-                    <div style="font-weight:700">${formatDashboardAmount(p.amount)} MMK</div>
-                    <span class="dashboard-status ${p.allPaid ? 'success' : 'danger'}" style="font-size:0.65rem">${p.allPaid ? 'Paid' : 'Unpaid'}</span>
+                <div class="pax-pay">
+                    <div class="pax-amount">${formatDashboardAmount(p.amount)} MMK</div>
+                    <span class="pax-status-badge ${p.allPaid ? 'paid' : 'unpaid'}">${p.allPaid ? 'Paid' : 'Unpaid'}</span>
                 </div>
             </div>
         `;
@@ -1464,17 +1464,17 @@ function showTripPlanDetail(pnr) {
         const matchedClient = state.allClients.find(c => String(c.name || '').toLowerCase() === baseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
         const ck = matchedClient?.client_key || '';
         const nameHtml = ck
-            ? `<a href="#" class="clickable-client-link" data-client-key="${dashboardEscapeHtml(ck)}" style="color:var(--teal-dark);text-decoration:underline;font-weight:700">${dashboardEscapeHtml(t.name || 'Fee')}</a>`
-            : `<span style="font-weight:700;color:var(--ink)">${dashboardEscapeHtml(t.name || 'Fee')}</span>`;
+            ? `<a href="#" class="clickable-client-link fee-name" data-client-key="${dashboardEscapeHtml(ck)}">${dashboardEscapeHtml(t.name || 'Fee')}</a>`
+            : `<span class="fee-name">${dashboardEscapeHtml(t.name || 'Fee')}</span>`;
         return `
-            <div class="details-item" style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(0,0,0,0.06)">
-                <div>
-                    <div>${nameHtml}</div>
-                    <div style="font-size:0.72rem;color:var(--muted)">${dashboardEscapeHtml(t.remarks || 'Date/Extra Change')}</div>
+            <div class="fee-row-item">
+                <div class="fee-info">
+                    ${nameHtml}
+                    <div class="fee-meta">${dashboardEscapeHtml(t.remarks || 'Date/Extra Change')}</div>
                 </div>
-                <div style="text-align:right">
-                    <div style="font-weight:700">${formatDashboardAmount(amount)} MMK</div>
-                    <span class="dashboard-status ${paid ? 'success' : 'danger'}" style="font-size:0.65rem">${paid ? 'Paid' : 'Unpaid'}</span>
+                <div class="fee-pay">
+                    <div class="fee-amount">${formatDashboardAmount(amount)} MMK</div>
+                    <span class="fee-status-badge ${paid ? 'paid' : 'unpaid'}">${paid ? 'Paid' : 'Unpaid'}</span>
                 </div>
             </div>
         `;
@@ -1487,39 +1487,92 @@ function showTripPlanDetail(pnr) {
     const leadClient = state.allClients.find(c => String(c.name || '').toLowerCase() === leadBaseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
     const leadClientKey = leadClient?.client_key || '';
     const leadNameHtml = leadClientKey
-        ? `<a href="#" class="clickable-client-link client-name" data-client-key="${dashboardEscapeHtml(leadClientKey)}" style="cursor:pointer;color:var(--teal-dark);text-decoration:underline">${dashboardEscapeHtml(leadBaseName || 'Trip Plan')}</a>`
+        ? `<a href="#" class="clickable-client-link client-name" data-client-key="${dashboardEscapeHtml(leadClientKey)}">${dashboardEscapeHtml(leadBaseName || 'Trip Plan')}</a>`
         : `<div class="client-name">${dashboardEscapeHtml(leadBaseName || 'Trip Plan')}</div>`;
     const content = `
-        <div class="details-header">
-            <div>
-                ${leadNameHtml}
-                <div class="pnr-code">PNR: ${dashboardEscapeHtml(pnr)}</div>
+        <div class="trip-detail-modal-container">
+            <div class="trip-detail-header">
+                <div class="header-left">
+                    ${leadNameHtml}
+                    <div class="pnr-badge-container">
+                        <span class="pnr-label">PNR</span>
+                        <span class="pnr-value">${dashboardEscapeHtml(pnr)}</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    ${renderAirlineName(lead.airline || 'Airline', { size: 'md' })}
+                </div>
             </div>
-            <div class="details-status-badge confirmed">${renderAirlineName(lead.airline || 'Airline', { size: 'xs' })}</div>
-        </div>
-        <div class="details-section">
-            <div class="details-section-title">Trip Overview</div>
-            <div class="details-grid">
-                <div class="details-item"><i class="fa-solid fa-plane-departure"></i><div class="details-item-content"><div class="label">From</div><div class="value">${dashboardEscapeHtml(lead.departure || 'N/A')}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-plane-arrival"></i><div class="details-item-content"><div class="label">To</div><div class="value">${dashboardEscapeHtml(lead.destination || 'N/A')}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-calendar-days"></i><div class="details-item-content"><div class="label">Travel Date</div><div class="value">${dashboardEscapeHtml(lead.departing_on || 'N/A')}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-ticket"></i><div class="details-item-content"><div class="label">Passengers</div><div class="value">${uniquePassengers.length}</div></div></div>
+            
+            <div class="trip-detail-card">
+                <div class="card-title"><i class="fa-solid fa-compass"></i> Trip Overview</div>
+                <div class="overview-grid">
+                    <div class="overview-item">
+                        <div class="overview-icon"><i class="fa-solid fa-plane-departure"></i></div>
+                        <div class="overview-content">
+                            <span class="overview-label">From</span>
+                            <span class="overview-value">${dashboardEscapeHtml(lead.departure || 'N/A')}</span>
+                        </div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-icon"><i class="fa-solid fa-plane-arrival"></i></div>
+                        <div class="overview-content">
+                            <span class="overview-label">To</span>
+                            <span class="overview-value">${dashboardEscapeHtml(lead.destination || 'N/A')}</span>
+                        </div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                        <div class="overview-content">
+                            <span class="overview-label">Travel Date</span>
+                            <span class="overview-value">${dashboardEscapeHtml(lead.departing_on || 'N/A')}</span>
+                        </div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-icon"><i class="fa-solid fa-users"></i></div>
+                        <div class="overview-content">
+                            <span class="overview-label">Passengers</span>
+                            <span class="overview-value">${uniquePassengers.length}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="details-section">
-            <div class="details-section-title">Passengers</div>
-            ${passengerList || '<div style="color:var(--muted);padding:0.5rem 0">No passenger tickets found.</div>'}
-        </div>
-        ${feeList ? `<div class="details-section"><div class="details-section-title">Fees & Changes</div>${feeList}</div>` : ''}
-        <div class="details-section">
-            <div class="details-section-title">Financial Summary</div>
-            <div class="details-grid">
-                <div class="details-item"><i class="fa-solid fa-receipt"></i><div class="details-item-content"><div class="label">Total Amount</div><div class="value">${formatDashboardAmount(totalAmount)} MMK</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-hand-holding-dollar"></i><div class="details-item-content"><div class="label">Total Unpaid</div><div class="value ${totalUnpaid > 0 ? 'text-risk' : 'text-success'}">${formatDashboardAmount(totalUnpaid)} MMK</div></div></div>
+            
+            <div class="trip-detail-card">
+                <div class="card-title"><i class="fa-solid fa-user-tie"></i> Passengers</div>
+                <div class="passengers-list">
+                    ${passengerList || '<div class="empty-list-msg">No passenger tickets found.</div>'}
+                </div>
             </div>
-        </div>
-        <div class="form-actions" style="margin-top:1rem">
-            <button class="btn btn-secondary" id="tripPlanCloseBtn">Close</button>
+            
+            ${feeList ? `
+            <div class="trip-detail-card">
+                <div class="card-title"><i class="fa-solid fa-file-invoice-dollar"></i> Fees & Changes</div>
+                <div class="fees-list">
+                    ${feeList}
+                </div>
+            </div>
+            ` : ''}
+            
+            <div class="trip-detail-card financial-summary-card">
+                <div class="card-title"><i class="fa-solid fa-calculator"></i> Financial Summary</div>
+                <div class="financial-grid">
+                    <div class="financial-item">
+                        <span class="fin-label">Total Amount</span>
+                        <strong class="fin-value total">${formatDashboardAmount(totalAmount)} <span class="curr">MMK</span></strong>
+                    </div>
+                    <div class="financial-item">
+                        <span class="fin-label">Total Unpaid</span>
+                        <strong class="fin-value unpaid ${totalUnpaid > 0 ? 'outstanding' : 'cleared'}">
+                            ${formatDashboardAmount(totalUnpaid)} <span class="curr">MMK</span>
+                        </strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions" style="margin-top:1.5rem; justify-content: center;">
+                <button class="btn btn-secondary" id="tripPlanCloseBtn" style="padding: 0.6rem 2.5rem; font-weight: 600;">Close</button>
+            </div>
         </div>
     `;
     openModal(content, 'solid-modal');

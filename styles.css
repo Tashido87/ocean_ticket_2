@@ -10936,3 +10936,266 @@ body.dark-theme .confirm-meta-grid {
 body.dark-theme .confirm-summary-panel {
     background: linear-gradient(135deg, var(--surface-3), rgba(185, 28, 28, 0.12)) !important;
 }
+
+/* Trip Details Modal (Dashboard) */
+.trip-detail-modal-container {
+    font-family: var(--font-family, inherit);
+    color: var(--text-primary);
+}
+
+.trip-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.trip-detail-header .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.trip-detail-header .client-name {
+    font-size: 1.5rem;
+    font-weight: 750;
+    color: var(--text-primary);
+    text-decoration: none !important;
+}
+
+.trip-detail-header a.client-name:hover {
+    color: var(--brand, #B91C1C) !important;
+    text-decoration: underline !important;
+}
+
+.pnr-badge-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--surface-2, #f5f5f5);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+    border-radius: 4px;
+    padding: 2px 8px;
+    width: fit-content;
+}
+
+.pnr-badge-container .pnr-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.pnr-badge-container .pnr-value {
+    font-family: monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--brand, #B91C1C);
+}
+
+.trip-detail-card {
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.05));
+    border-left: 3px solid var(--border-color, rgba(0, 0, 0, 0.08));
+}
+
+.trip-detail-card.financial-summary-card {
+    border-left-color: var(--brand, #B91C1C);
+    background: linear-gradient(135deg, var(--surface), rgba(185, 28, 28, 0.02));
+}
+
+.trip-detail-card .card-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.trip-detail-card .card-title i {
+    color: var(--brand, #B91C1C);
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.overview-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.overview-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(185, 28, 28, 0.06);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--brand, #B91C1C);
+    font-size: 0.95rem;
+}
+
+.overview-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.overview-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.overview-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.passengers-list, .fees-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.passenger-row, .fee-row-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+}
+
+.passenger-row:last-child, .fee-row-item:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.pax-info, .fee-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.pax-name, .fee-name {
+    font-size: 0.95rem;
+    font-weight: 750;
+    color: var(--text-primary);
+    text-decoration: none !important;
+}
+
+.pax-name:hover, .fee-name:hover {
+    color: var(--brand, #B91C1C) !important;
+    text-decoration: underline !important;
+}
+
+.pax-meta, .fee-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.pax-pay, .fee-pay {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.pax-amount, .fee-amount {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.pax-status-badge, .fee-status-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+
+.pax-status-badge.paid, .fee-status-badge.paid {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+}
+
+.pax-status-badge.unpaid, .fee-status-badge.unpaid {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+}
+
+.financial-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.financial-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.fin-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.fin-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.fin-value.total {
+    color: var(--text-primary);
+}
+
+.fin-value.unpaid.outstanding {
+    color: #EF4444;
+}
+
+.fin-value.unpaid.cleared {
+    color: #10B981;
+}
+
+.fin-value .curr {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.empty-list-msg {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* Dark mode overrides for details modal */
+body.dark-theme .trip-detail-card {
+    background: var(--surface-2) !important;
+}
+body.dark-theme .pnr-badge-container {
+    background: var(--surface-3) !important;
+}
+body.dark-theme .trip-detail-card.financial-summary-card {
+    background: linear-gradient(135deg, var(--surface-2), rgba(185, 28, 28, 0.08)) !important;
+}
