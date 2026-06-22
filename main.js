@@ -19,8 +19,8 @@ import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=17'; 
-import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=17'; 
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=18'; 
+import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=18'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules

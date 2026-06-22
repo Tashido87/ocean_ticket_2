@@ -615,8 +615,16 @@ function openFinancialModal(docId) {
         const base = Number(document.getElementById('financial_base_fare').value) || 0;
         const net = Number(document.getElementById('financial_net_amount').value) || 0;
         const comm = Number(document.getElementById('financial_commission').value) || 0;
-        const profit = base - net + comm;
-        const payable = net - comm;
+        
+        const tempTicket = {
+            ...ticket,
+            base_fare: base,
+            net_amount: net,
+            commission: comm
+        };
+        
+        const profit = profitAmount(tempTicket);
+        const payable = ownerPayable(tempTicket);
         
         const previewDiv = document.querySelector('.manage-preview-card');
         if (previewDiv) {
