@@ -19,8 +19,8 @@ import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=21'; 
-import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=21'; 
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=22'; 
+import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules
@@ -1506,17 +1506,17 @@ function showTripPlanDetail(pnr) {
                         <span class="airport-code">${dashboardEscapeHtml(lead.destination || 'N/A')}</span>
                     </div>
                 </div>
-                <div class="ticket-meta-section">
-                    <div class="airline-badge">
-                        ${renderAirlineName(lead.airline || 'Airline', { size: 'xs' })}
-                    </div>
-                </div>
             </div>
 
-            <!-- PNR Section -->
-            <div class="trip-lead-client-section">
-                <span class="lead-label">Booking Reference (PNR)</span>
-                <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
+            <!-- PNR & Airline Section -->
+            <div class="trip-pnr-card-premium">
+                <div class="pnr-card-left">
+                    <span class="pnr-label-premium">Booking Reference (PNR)</span>
+                    <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
+                </div>
+                <div class="pnr-card-right">
+                    ${renderAirlineName(lead.airline || 'Airline', { size: 'sm' })}
+                </div>
             </div>
 
             <!-- Overview Card -->
