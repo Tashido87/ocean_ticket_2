@@ -11363,6 +11363,14 @@ body.dark-theme .trip-detail-card.financial-summary-card {
     color: var(--brand, #B91C1C) !important;
 }
 
+.trip-lead-client-section .pnr-value-large {
+    font-family: monospace;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--brand, #B91C1C);
+    letter-spacing: 2px;
+}
+
 /* Overview flat grid */
 .overview-flat-grid {
     display: grid;

@@ -19,8 +19,8 @@ import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=20'; 
-import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=20'; 
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=21'; 
+import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=21'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
 // UI Modules
@@ -1490,12 +1490,6 @@ function showTripPlanDetail(pnr) {
     const totalUnpaid = allRows.filter(t => !isTicketPaid(t)).reduce((s, t) => s + ticketSalesAmount(t), 0);
     const totalAmount = allRows.reduce((s, t) => s + ticketSalesAmount(t), 0);
 
-    const leadBaseName = String(lead.name || '').replace(/\s*\(fees\)\s*$/i, '').trim();
-    const leadClient = state.allClients.find(c => String(c.name || '').toLowerCase() === leadBaseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
-    const leadClientKey = leadClient?.client_key || '';
-    const leadNameHtml = leadClientKey
-        ? `<a href="#" class="clickable-client-link client-name" data-client-key="${dashboardEscapeHtml(leadClientKey)}">${dashboardEscapeHtml(leadBaseName || 'Trip Plan')}</a>`
-        : `<div class="client-name">${dashboardEscapeHtml(leadBaseName || 'Trip Plan')}</div>`;
     const content = `
         <div class="trip-detail-modal-container">
             <!-- Ticket Header Card -->
@@ -1513,20 +1507,16 @@ function showTripPlanDetail(pnr) {
                     </div>
                 </div>
                 <div class="ticket-meta-section">
-                    <div class="pnr-badge">
-                        <span class="pnr-title">PNR</span>
-                        <span class="pnr-code">${dashboardEscapeHtml(pnr)}</span>
-                    </div>
                     <div class="airline-badge">
                         ${renderAirlineName(lead.airline || 'Airline', { size: 'xs' })}
                     </div>
                 </div>
             </div>
 
-            <!-- Lead Client Section -->
+            <!-- PNR Section -->
             <div class="trip-lead-client-section">
-                <span class="lead-label">Lead Booking Client</span>
-                ${leadNameHtml}
+                <span class="lead-label">Booking Reference (PNR)</span>
+                <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
             </div>
 
             <!-- Overview Card -->
