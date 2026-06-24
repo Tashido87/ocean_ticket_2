@@ -350,6 +350,7 @@ body::before {
     gap: 1rem;
     text-align: left;
     width: 100%;
+    text-decoration: none;
 }
 
 .sidebar-nav .nav-btn i {

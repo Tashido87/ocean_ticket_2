@@ -363,7 +363,13 @@ function handlePopState(e) {
  */
 function setupEventListeners() {
     // Navigation & Settings
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', (e) => showView(e.currentTarget.dataset.view)));
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+        if (e.currentTarget.dataset.view) {
+            e.preventDefault();
+            showView(e.currentTarget.dataset.view);
+        }
+    }));
     const authBtn = document.getElementById('authorize_button');
     if (authBtn) authBtn.addEventListener('click', handleAuthClick);
     const sidebarToggle = document.getElementById('sidebarToggle');

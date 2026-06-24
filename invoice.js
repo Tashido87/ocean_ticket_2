@@ -29,7 +29,7 @@ const BRANDS = {
             'Upper Pansodan Street, Mingalar Taungnyunt Township, Yangon.'
         ],
         phones: ['09964403435', '09740862500'],
-        email: 'oceanmobile.bmo@gmail.com',
+        email: 'oceantravel.mm@gmail.com',
         theme: {
             accentHex: '#B91C1C',
             accentRgb: [185, 28, 28],
