@@ -9,7 +9,8 @@ import {
 import {
     updateTicket,
     addTicket,
-    addTickets
+    addTickets,
+    batchUpdateTickets
 } from './db.js';
 import {
     showToast,
@@ -192,6 +193,14 @@ function displayManageResults(tickets) {
     }
 
     const summary = getPnrSummary(tickets);
+    
+    // Check if there is more than one client under this PNR to allow splitting
+    const activeOriginalTickets = tickets.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t));
+    const uniqueClients = [...new Set(activeOriginalTickets.map(t => 
+        String(t.name || '').replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim().toLowerCase()
+    ))];
+    const canSplit = uniqueClients.length > 1;
+
     const issueHtml = summary.issues.length
         ? `<div class="manage-issue-list">${summary.issues.slice(0, 5).map(issue => `<div class="manage-issue ${issue.tone}"><i class="fa-solid fa-triangle-exclamation"></i>${issue.text}</div>`).join('')}</div>`
         : `<div class="manage-issue-list"><div class="manage-issue ok"><i class="fa-solid fa-circle-check"></i>No obvious financial review issue for this PNR.</div></div>`;
@@ -253,6 +262,7 @@ function displayManageResults(tickets) {
                    <button class="manage-action-btn" data-action="payment" data-id="${t.id}"><i class="fa-solid fa-credit-card"></i> Payment</button>`
                 : `<button class="manage-action-btn primary" data-action="financial" data-id="${t.id}"><i class="fa-solid fa-sliders"></i> Financials</button>
                    <button class="manage-action-btn" data-action="payment" data-id="${t.id}"><i class="fa-solid fa-credit-card"></i> Payment</button>
+                   ${canSplit ? `<button class="manage-action-btn" data-action="split-pnr" data-id="${t.id}"><i class="fa-solid fa-scissors"></i> Split PNR</button>` : ''}
                    <button class="manage-action-btn" data-action="add-fee" data-id="${t.id}"><i class="fa-solid fa-plus"></i> Fee</button>
                    <button class="manage-action-btn danger" data-action="cancel" data-id="${t.id}"><i class="fa-solid fa-ban"></i> Void</button>`;
 
@@ -297,6 +307,7 @@ function displayManageResults(tickets) {
             if (action === 'cancel') openCancelSubModal(docId);
             if (action === 'details') openManageDetailsModal(docId);
             if (action === 'advanced') openManageModal(docId);
+            if (action === 'split-pnr') openSplitPnrModal(docId);
         });
     });
 }
@@ -988,6 +999,210 @@ function openAddFeeModal(docId) {
     });
 }
 
+
+/**
+ * Opens a modal to split a passenger/client to a new PNR based on travel dates.
+ */
+function openSplitPnrModal(docId) {
+    const ticket = state.allTickets.find(t => t.id === docId);
+    if (!ticket) {
+        showToast('Ticket not found.', 'error');
+        return;
+    }
+
+    const passengerName = ticket.name || '';
+    const nameCleaned = String(passengerName).replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim();
+    const parentPnr = ticket.booking_reference || '';
+
+    // Find all tickets for this passenger under this PNR
+    const passengerTickets = state.allTickets.filter(t => 
+        normalizePnr(t.booking_reference) === normalizePnr(parentPnr) &&
+        String(t.name || '').replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim().toLowerCase() === nameCleaned.toLowerCase()
+    );
+
+    const originalPassTickets = passengerTickets.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t));
+    let outboundTicket = null;
+    let returnTicket = null;
+    let isRoundTrip = false;
+    
+    if (originalPassTickets.length >= 2) {
+        const sorted = [...originalPassTickets].sort((a, b) => parseSheetDate(a.departing_on) - parseSheetDate(b.departing_on));
+        outboundTicket = sorted[0];
+        returnTicket = sorted[1];
+        isRoundTrip = true;
+    } else if (originalPassTickets.length === 1) {
+        const t = originalPassTickets[0];
+        if (t.trip_type === 'Round-Trip' || t.leg) {
+            isRoundTrip = true;
+            if (t.leg === 'return') {
+                returnTicket = t;
+            } else {
+                outboundTicket = t;
+            }
+        } else {
+            outboundTicket = t;
+        }
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const isFuture = (t) => {
+        if (!t || !t.departing_on) return false;
+        const d = parseSheetDate(t.departing_on);
+        return d && !isNaN(d.getTime()) && d >= today;
+    };
+
+    const outboundNotUsed = outboundTicket ? isFuture(outboundTicket) : false;
+    const returnNotUsed = returnTicket ? isFuture(returnTicket) : false;
+
+    // Determine target PNR for each ticket based on leg status
+    const actionsMap = [];
+
+    passengerTickets.forEach(t => {
+        if (isCanceledTicket(t)) {
+            actionsMap.push({ ticket: t, action: 'keep', reason: 'Ticket is canceled/voided' });
+            return;
+        }
+
+        const isFee = isFeeEntryRow(t);
+        let legType = 'outbound';
+
+        // Match fee/balance rows to their respective leg based on route/sectors
+        if (isFee) {
+            if (returnTicket && t.departure === returnTicket.departure && t.destination === returnTicket.destination) {
+                legType = 'return';
+            } else {
+                legType = 'outbound';
+            }
+        } else {
+            legType = (returnTicket && t.id === returnTicket.id) ? 'return' : 'outbound';
+        }
+
+        if (isRoundTrip) {
+            if (outboundNotUsed && returnNotUsed) {
+                actionsMap.push({ ticket: t, action: 'new', reason: `Round-trip leg: ${legType} (both legs upcoming)` });
+            } else if (returnNotUsed && !outboundNotUsed) {
+                if (legType === 'return') {
+                    actionsMap.push({ ticket: t, action: 'new', reason: 'Return leg is upcoming (departure is past)' });
+                } else {
+                    actionsMap.push({ ticket: t, action: 'keep', reason: 'Departure leg is already past (completed)' });
+                }
+            } else if (outboundNotUsed && !returnNotUsed) {
+                if (legType === 'outbound') {
+                    actionsMap.push({ ticket: t, action: 'new', reason: 'Outbound leg is upcoming (return is past)' });
+                } else {
+                    actionsMap.push({ ticket: t, action: 'keep', reason: 'Return leg is already past (completed)' });
+                }
+            } else {
+                // Both are past, but since they clicked split, move both
+                actionsMap.push({ ticket: t, action: 'new', reason: 'Both round-trip legs are completed' });
+            }
+        } else {
+            // One-way leg
+            actionsMap.push({ ticket: t, action: 'new', reason: 'One-Way ticket / Fee' });
+        }
+    });
+
+    const newPnrRows = actionsMap.filter(a => a.action === 'new');
+    const keepPnrRows = actionsMap.filter(a => a.action === 'keep');
+
+    const content = `
+        <h2>Split Passenger PNR</h2>
+        <p class="modal-subtitle">Splitting passenger <strong>${escapeHtml(nameCleaned)}</strong> from PNR <strong>${escapeHtml(parentPnr)}</strong></p>
+        
+        <form id="splitPnrForm">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="new_split_pnr" style="font-weight: bold; margin-bottom: 8px; display: block;">Enter New PNR <span class="req">*</span></label>
+                <input type="text" id="new_split_pnr" required placeholder="e.g. 1XYZ99" style="text-transform: uppercase; font-size: 1.1rem; padding: 10px; width: 100%;">
+            </div>
+
+            <div class="manage-split-preview" style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.1);">
+                <h4 style="margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;"><i class="fa-solid fa-list-check"></i> Split Preview</h4>
+                
+                <div style="margin-top: 1rem;">
+                    <div style="font-weight: bold; color: #38bdf8; margin-bottom: 8px;"><i class="fa-solid fa-plane-departure"></i> Moving to New PNR:</div>
+                    ${newPnrRows.length > 0 ? `
+                        <ul style="margin: 0; padding-left: 20px; font-size: 0.95rem; list-style-type: disc;">
+                            ${newPnrRows.map(a => `
+                                <li style="margin-bottom: 6px;">
+                                    <strong>${escapeHtml(a.ticket.name)}</strong> - ${escapeHtml(a.ticket.departure || '')} → ${escapeHtml(a.ticket.destination || '')}
+                                    <br><span style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Reason: ${escapeHtml(a.reason)}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    ` : '<div style="color: rgba(255,255,255,0.4); font-size: 0.9rem; padding-left: 20px;">No tickets will move.</div>'}
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <div style="font-weight: bold; color: #f87171; margin-bottom: 8px;"><i class="fa-solid fa-lock"></i> Remaining under Parent PNR (${parentPnr}):</div>
+                    ${keepPnrRows.length > 0 ? `
+                        <ul style="margin: 0; padding-left: 20px; font-size: 0.95rem; list-style-type: disc;">
+                            ${keepPnrRows.map(a => `
+                                <li style="margin-bottom: 6px;">
+                                    <strong>${escapeHtml(a.ticket.name)}</strong> - ${escapeHtml(a.ticket.departure || '')} → ${escapeHtml(a.ticket.destination || '')}
+                                    <br><span style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Reason: ${escapeHtml(a.reason)}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    ` : '<div style="color: rgba(255,255,255,0.4); font-size: 0.9rem; padding-left: 20px;">No tickets will remain under the parent PNR.</div>'}
+                </div>
+            </div>
+
+            <div class="form-actions" style="justify-content: flex-end; gap: 12px; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" id="splitCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-arrows-split-up-and-left"></i> Confirm Split</button>
+            </div>
+        </form>
+    `;
+
+    openModal(content, 'large-modal');
+
+    document.getElementById('splitCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('splitPnrForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPnr = document.getElementById('new_split_pnr').value.trim().toUpperCase();
+        if (!newPnr) {
+            showToast('Please enter a valid PNR.', 'error');
+            return;
+        }
+
+        try {
+            showToast('Splitting passenger PNR...', 'info');
+
+            const updates = [];
+            const historyMessages = [];
+
+            newPnrRows.forEach(a => {
+                updates.push({
+                    id: a.ticket.id,
+                    data: { booking_reference: newPnr }
+                });
+                historyMessages.push({
+                    ticket: a.ticket,
+                    msg: `PNR Split: ${parentPnr} to ${newPnr} (${a.reason})`
+                });
+            });
+
+            if (updates.length > 0) {
+                await batchUpdateTickets(updates);
+                
+                for (const h of historyMessages) {
+                    await saveHistory(h.ticket, h.msg);
+                }
+
+                showToast('Passenger successfully split from PNR!', 'success');
+                closeModal();
+                await reloadManagePnr(parentPnr);
+            } else {
+                showToast('No tickets to update.', 'warning');
+            }
+        } catch (error) {
+            console.error('[Split PNR Error]:', error);
+            showToast('Failed to split passenger from PNR.', 'error');
+        }
+    });
+}
 
 /**
  * Opens the modal for managing a specific ticket (Original Ticket Logic).
