@@ -130,9 +130,22 @@ function ticketsForClient(clientKey) {
     return state.allTickets
         .filter(t => clientKeyFromTicket(t) === clientKey)
         .sort((a, b) => {
-            const dateA = parseSheetDate(a.departing_on || a.issued_date);
-            const dateB = parseSheetDate(b.departing_on || b.issued_date);
-            return dateB - dateA;
+            const dateA = parseSheetDate(a.issued_date);
+            const dateB = parseSheetDate(b.issued_date);
+            
+            const timeA = dateA && !isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+            const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+            
+            if (timeA !== timeB) {
+                return timeB - timeA;
+            }
+            
+            const depA = parseSheetDate(a.departing_on);
+            const depB = parseSheetDate(b.departing_on);
+            const depTimeA = depA && !isNaN(depA.getTime()) ? depA.getTime() : 0;
+            const depTimeB = depB && !isNaN(depB.getTime()) ? depB.getTime() : 0;
+            
+            return depTimeB - depTimeA;
         });
 }
 
