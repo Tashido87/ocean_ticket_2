@@ -151,6 +151,64 @@ document.addEventListener('show', (e) => {
     }
 }, true);
 
+let ticketsSanitized = false;
+
+async function sanitizeTickets(tickets) {
+    if (ticketsSanitized) return;
+    ticketsSanitized = true;
+
+    const updates = [];
+    for (const ticket of tickets) {
+        const nameCleaned = String(ticket.name || '').replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim();
+        if (!nameCleaned) continue;
+        
+        const hasBadPhone = !ticket.phone || ticket.phone === 'undefined';
+        if (hasBadPhone) {
+            const goodTicket = tickets.find(t => {
+                const n = String(t.name || '').replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim();
+                return n.toLowerCase() === nameCleaned.toLowerCase() && t.phone && t.phone !== 'undefined';
+            });
+            
+            if (goodTicket) {
+                const updateData = {};
+                if (!ticket.phone || ticket.phone === 'undefined') {
+                    updateData.phone = goodTicket.phone;
+                }
+                if (!ticket.id_no && goodTicket.id_no) {
+                    updateData.id_no = goodTicket.id_no;
+                }
+                if (!ticket.gender && goodTicket.gender) {
+                    updateData.gender = goodTicket.gender;
+                }
+                if ((!ticket.account_name || ticket.account_name === 'undefined') && goodTicket.account_name) {
+                    updateData.account_name = goodTicket.account_name;
+                }
+                if ((!ticket.account_type || ticket.account_type === 'undefined') && goodTicket.account_type) {
+                    updateData.account_type = goodTicket.account_type;
+                }
+                if ((!ticket.account_link || ticket.account_link === 'undefined') && goodTicket.account_link) {
+                    updateData.account_link = goodTicket.account_link;
+                }
+                
+                if (Object.keys(updateData).length > 0) {
+                    updates.push({ id: ticket.id, data: updateData });
+                }
+            }
+        }
+    }
+
+    if (updates.length > 0) {
+        console.log(`[Sanitizer] Found ${updates.length} tickets to heal. Starting batch update...`);
+        try {
+            await batchUpdateTickets(updates);
+            console.log(`[Sanitizer] Successfully healed ${updates.length} tickets.`);
+        } catch (e) {
+            console.error('[Sanitizer] Failed to run batch update:', e);
+            ticketsSanitized = false;
+        }
+    }
+}
+
 /**
  * Main application initialization function. Called after authentication.
  * @export
@@ -187,6 +245,7 @@ export async function initializeApp() {
         state.unsubscribers.push(
             onTicketsChange((tickets) => {
                 state.allTickets = tickets;
+                sanitizeTickets(tickets);
                 populateSearchAirlines();
                 updateUnpaidCount();
                 displayInitialTickets(state.currentPage);

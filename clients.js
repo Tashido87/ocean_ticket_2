@@ -46,7 +46,12 @@ export function buildClientList() {
     const clients = {};
     state.allTickets.forEach(ticket => {
         const baseName = String(ticket.name || '').replace(/\(fees\)\s*$/i, '').trim();
-        const clientKey = `${baseName}|${ticket.phone}|${ticket.account_name}`;
+        const phone = ticket.phone && ticket.phone !== 'undefined' ? ticket.phone : '';
+        const accountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name : '';
+        const accountType = ticket.account_type && ticket.account_type !== 'undefined' ? ticket.account_type : '';
+        const accountLink = ticket.account_link && ticket.account_link !== 'undefined' ? ticket.account_link : '';
+        
+        const clientKey = `${baseName}|${phone}|${accountName}`;
         const lowerRemarks = ticket.remarks?.toLowerCase() || '';
         const ticketNrc = looksLikeNrc(ticket.nrc_no) ? ticket.nrc_no : (looksLikeNrc(ticket.id_no) ? ticket.id_no : '');
         const ticketPassport = ticket.passport_no
@@ -56,10 +61,10 @@ export function buildClientList() {
             clients[clientKey] = {
                 client_key: clientKey,
                 name: baseName,
-                phone: ticket.phone,
-                account_name: ticket.account_name,
-                account_type: ticket.account_type,
-                account_link: ticket.account_link,
+                phone: phone,
+                account_name: accountName,
+                account_type: accountType,
+                account_link: accountLink,
                 id_no: ticket.id_no,
                 nrc_no: ticketNrc || '',
                 document_type: ticketPassport ? 'Passport' : 'NRC',

@@ -112,7 +112,9 @@ function splitNrcDisplay(value) {
 
 function clientKeyFromTicket(ticket) {
     const baseName = String(ticket.name || '').replace(/\(fees\)\s*$/i, '').trim();
-    return `${baseName}|${ticket.phone}|${ticket.account_name}`;
+    const phone = ticket.phone && ticket.phone !== 'undefined' ? ticket.phone : '';
+    const accountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name : '';
+    return `${baseName}|${phone}|${accountName}`;
 }
 
 function getClientForTicket(ticket) {

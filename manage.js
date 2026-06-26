@@ -754,7 +754,10 @@ function openFinancialModal(docId) {
                         source: t.source || '',
                         account_name: t.account_name || '',
                         account_type: t.account_type || '',
-                        account_link: t.account_link || ''
+                        account_link: t.account_link || '',
+                        phone: t.phone || '',
+                        id_no: t.id_no || '',
+                        gender: t.gender || ''
                     };
                     await addTicket(feeData);
                     await saveHistory(t, `DATE CHANGE FEE ADDED: Fee=${dateChangeFee.toLocaleString()}, Comm=${dateChangeComm.toLocaleString()}, Extra=${dateChangeExtra.toLocaleString()} (${dateChangePaid ? 'Paid' : 'Unpaid'})`);
