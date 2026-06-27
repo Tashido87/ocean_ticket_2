@@ -11933,7 +11933,7 @@ body.dark-theme .premium-summary-card {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     gap: 1.5rem;
-    align-items: start;
+    align-items: stretch;
 }
 
 @media (max-width: 1024px) {
@@ -12091,7 +12091,21 @@ body.dark-theme .premium-summary-card {
 .client-detail-new .docs-stack {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
+    height: 100%;
+}
+
+.client-detail-new .docs-stack .doc-card:last-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.client-detail-new .docs-stack .doc-card:last-child .doc-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .client-detail-new .doc-card {
@@ -12110,7 +12124,7 @@ body.dark-theme .premium-summary-card {
 }
 
 .client-detail-new .doc-card-header {
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 1.25rem;
     border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
@@ -12140,10 +12154,10 @@ body.dark-theme .premium-summary-card {
 }
 
 .client-detail-new .doc-card-body {
-    padding: 1.25rem 1.5rem;
+    padding: 0.85rem 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .client-detail-new .doc-row-subitems {
@@ -12157,7 +12171,7 @@ body.dark-theme .premium-summary-card {
 
 /* Passport photo attachment */
 .client-detail-new .passport-attachment-box {
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
     border: 1px solid #e2e8f0;
     border-radius: 0.75rem;
     overflow: hidden;
@@ -12176,7 +12190,7 @@ body.dark-theme .premium-summary-card {
 
 .client-detail-new .passport-thumbnail-img {
     width: 100%;
-    height: 120px;
+    height: 70px;
     object-fit: cover;
     display: block;
 }
@@ -12187,9 +12201,9 @@ body.dark-theme .premium-summary-card {
     left: 0;
     right: 0;
     background: rgba(15, 23, 42, 0.75);
-    padding: 0.5rem;
+    padding: 0.35rem;
     color: #ffffff;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 500;
     text-align: center;
     display: flex;
@@ -12199,7 +12213,7 @@ body.dark-theme .premium-summary-card {
 }
 
 .client-detail-new .passport-empty-block {
-    padding: 1.25rem;
+    padding: 0.65rem 1rem;
     text-align: center;
     background: #f8fafc;
     border: 1px dashed #cbd5e1;
@@ -12208,23 +12222,23 @@ body.dark-theme .premium-summary-card {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
 }
 
 .client-detail-new .passport-empty-icon {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: #94a3b8;
 }
 
 .client-detail-new .passport-empty-title {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #475569;
     margin: 0;
 }
 
 .client-detail-new .passport-empty-desc {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #64748b;
     margin: 0;
 }
@@ -12232,7 +12246,7 @@ body.dark-theme .premium-summary-card {
 .client-detail-new .passport-actions {
     display: flex;
     gap: 0.5rem;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
 }
 
 .client-detail-new .btn-doc-inline {
@@ -12241,7 +12255,7 @@ body.dark-theme .premium-summary-card {
     align-items: center;
     justify-content: center;
     gap: 0.35rem;
-    padding: 0.5rem;
+    padding: 0.44rem 0.5rem;
     border-radius: 0.5rem;
     border: 1px solid #e2e8f0;
     background: #ffffff;
@@ -12263,7 +12277,7 @@ body.dark-theme .premium-summary-card {
     align-items: center;
     justify-content: center;
     gap: 0.35rem;
-    padding: 0.5rem;
+    padding: 0.44rem 0.5rem;
     border-radius: 0.5rem;
     border: none;
     background: var(--brand-600);
@@ -12285,11 +12299,11 @@ body.dark-theme .premium-summary-card {
 
 /* Expiry alerts */
 .client-detail-new .passport-warning-banner {
-    margin-top: 0.5rem;
-    padding: 0.75rem 1rem;
+    margin-top: 0.25rem;
+    padding: 0.5rem 0.75rem;
     border-radius: 0.75rem;
-    font-size: 0.75rem;
-    line-height: 1.4;
+    font-size: 0.72rem;
+    line-height: 1.35;
     display: flex;
     gap: 0.5rem;
 }
