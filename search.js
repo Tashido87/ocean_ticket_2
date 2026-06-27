@@ -1431,16 +1431,6 @@ function documentsCard(c) {
                     <span class="kv-label">NRC Number</span>
                     <p class="kv-value" style="font-family: monospace; font-size: 0.9rem;">${escapeHtml((nrcNo || '—').toUpperCase())}</p>
                 </div>
-                <div class="doc-row-subitems">
-                    <div class="kv-item">
-                        <span class="kv-label">State / Region</span>
-                        <p class="kv-value">${escapeHtml(stateRegion)}</p>
-                    </div>
-                    <div class="kv-item">
-                        <span class="kv-label">Township</span>
-                        <p class="kv-value">${escapeHtml(township)}</p>
-                    </div>
-                </div>
             </div>
         </div>
 
