@@ -1652,12 +1652,7 @@ function ticketHistorySection(client, tickets) {
                     <p class="text-bold-slate" style="margin: 0; font-size: 0.85rem;">${fmtDateOrDash(t.departing_on)}</p>
                 </td>
                 <td>
-                    <div class="airline-chip-box">
-                        <div class="airline-logo-thumb ${logoClass}">
-                            <span>${escapeHtml(airAbbr)}</span>
-                        </div>
-                        <span style="font-size: 0.85rem; color: #475569;">${escapeHtml(renderAirlineName(t.airline || '—'))}</span>
-                    </div>
+                    ${renderAirlineName(t.airline || '—')}
                 </td>
                 <td class="num-right-align">
                     <p style="margin: 0; font-weight: 600; font-size: 0.85rem;">${outstandingVal ? outstandingVal.toLocaleString() : '—'}</p>
