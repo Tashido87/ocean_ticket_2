@@ -1059,11 +1059,21 @@ function refreshSearchView(useDelay = true) {
 function showListView() {
     document.getElementById('searchListContainer')?.removeAttribute('hidden');
     document.getElementById('searchClientDetail')?.setAttribute('hidden', '');
+    const headerEl = document.getElementById('searchViewHeader');
+    if (headerEl) {
+        headerEl.classList.remove('is-detail');
+        headerEl.removeAttribute('hidden');
+    }
 }
 
 function showDetailView() {
     document.getElementById('searchListContainer')?.setAttribute('hidden', '');
     document.getElementById('searchClientDetail')?.removeAttribute('hidden');
+    const headerEl = document.getElementById('searchViewHeader');
+    if (headerEl) {
+        headerEl.classList.add('is-detail');
+        headerEl.setAttribute('hidden', '');
+    }
 }
 
 /* ----------------------- client detail view ----------------------------- */
