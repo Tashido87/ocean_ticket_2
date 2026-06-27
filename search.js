@@ -1242,10 +1242,10 @@ function renderClientDetailView() {
             <!-- Two Column Layout: Client Overview + Travel Documents -->
             <div class="two-col-grid animate-in delay-3">
                 <!-- Left Stack: Overview + Insights + Payment -->
-                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem; height: 100%;">
                     ${overviewCard(client)}
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; flex: 1;">
                         ${insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet)}
                         ${paymentCard(paidCount, unpaidTickets.length, outstanding, preferredPayment)}
                     </div>
