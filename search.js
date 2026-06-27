@@ -1457,23 +1457,25 @@ function documentsCard(c) {
                 <button class="doc-btn-edit" data-doc-action="edit" title="Edit Passport"><i class="fa-solid fa-pen"></i></button>
             </div>
             <div class="doc-card-body">
-                <div class="kv-item">
-                    <span class="kv-label">Passport No.</span>
-                    <p class="kv-value" style="font-family: monospace; font-size: 0.9rem;">${escapeHtml((passportNo || '—').toUpperCase())}</p>
-                </div>
                 <div class="doc-row-subitems">
+                    <div class="kv-item">
+                        <span class="kv-label">Passport No.</span>
+                        <p class="kv-value" style="font-family: monospace; font-size: 0.9rem;">${escapeHtml((passportNo || '—').toUpperCase())}</p>
+                    </div>
                     <div class="kv-item">
                         <span class="kv-label">Expiry Date</span>
                         <p class="kv-value">${escapeHtml(expiry || '—')}</p>
+                    </div>
+                </div>
+                <div class="doc-row-subitems">
+                    <div class="kv-item">
+                        <span class="kv-label">Date of Birth</span>
+                        <p class="kv-value">${escapeHtml(dob || '—')}</p>
                     </div>
                     <div class="kv-item">
                         <span class="kv-label">Country</span>
                         <p class="kv-value">${escapeHtml(c.nationality || 'Myanmar')}</p>
                     </div>
-                </div>
-                <div class="kv-item">
-                    <span class="kv-label">Date of Birth</span>
-                    <p class="kv-value">${escapeHtml(dob || '—')}</p>
                 </div>
 
                 <!-- Passport Photo Attachment -->

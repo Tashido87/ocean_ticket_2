@@ -11703,7 +11703,7 @@ body.dark-theme .premium-summary-card {
     height: 76px;
     border-radius: 50%;
     padding: 3px;
-    background: conic-gradient(#DC2626 0deg, #DC2626 270deg, #E2E8F0 270deg, #E2E8F0 360deg);
+    background: #DC2626;
 }
 
 .client-detail-new .avatar-inner {
@@ -11834,14 +11834,14 @@ body.dark-theme .premium-summary-card {
 /* Stats Cards Grid */
 .client-detail-new .stats-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
 }
 
 .client-detail-new .stat-card {
     background: #ffffff;
     border-radius: 1rem;
-    padding: 1.5rem;
+    padding: 0.875rem 1.25rem;
     border: 1px solid rgba(226, 232, 240, 0.8);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     position: relative;
@@ -11875,15 +11875,15 @@ body.dark-theme .premium-summary-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     position: relative;
     z-index: 1;
 }
 
 .client-detail-new .stat-icon-box {
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 0.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.625rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -11895,10 +11895,10 @@ body.dark-theme .premium-summary-card {
 .client-detail-new .icon-blue { background-color: #eff6ff; color: #2563eb; }
 
 .client-detail-new .stat-badge {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.5rem;
+    padding: 0.175rem 0.375rem;
+    border-radius: 0.375rem;
 }
 
 .client-detail-new .badge-green-accent { color: #16a34a; background-color: #f0fdf4; }
@@ -11911,10 +11911,10 @@ body.dark-theme .premium-summary-card {
 }
 
 .client-detail-new .stat-number {
-    font-size: 1.875rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: #0f172a;
-    line-height: 1.25;
+    line-height: 1.2;
     letter-spacing: -0.02em;
 }
 
@@ -11923,9 +11923,9 @@ body.dark-theme .premium-summary-card {
 }
 
 .client-detail-new .stat-card-label {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: #64748b;
-    margin-top: 0.25rem;
+    margin-top: 0.175rem;
 }
 
 /* Two Column Grid */
