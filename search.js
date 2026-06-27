@@ -1121,53 +1121,152 @@ function renderClientDetailView() {
     const preferredPayment = Object.entries(paymentMethods).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
 
     detail.innerHTML = `
-        <div class="client-detail-card">
-            <div class="client-hero">
-                <div class="client-hero-avatar">${escapeHtml(initialsOf(client.name))}</div>
-                <div class="client-hero-info">
-                    <h2 class="client-hero-name">${escapeHtml(client.name || 'Unknown')}${passportExpiryBadge(client)}</h2>
+        <div class="client-detail-new">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb-nav animate-in delay-1">
+                <a href="#" data-detail-action="back">Records</a>
+                <span class="breadcrumb-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+                <a href="#" data-detail-action="back">Clients</a>
+                <span class="breadcrumb-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+                <span class="breadcrumb-current">${escapeHtml(client.name || 'Unknown')}</span>
+            </div>
+
+            <!-- Client Header -->
+            <div class="client-header animate-in delay-1">
+                <div class="client-profile-info">
+                    <!-- Avatar with ring -->
+                    <div class="avatar-ring">
+                        <div class="avatar-inner">
+                            <span class="avatar-text">${escapeHtml(initialsOf(client.name))}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="client-name-badge-row">
+                            <h2 class="client-title">${escapeHtml(client.name || 'Unknown')}</h2>
+                            <span class="tag-active">
+                                <span class="tag-active-dot"></span>
+                                Active
+                            </span>
+                            ${passportExpiryBadge(client)}
+                        </div>
+                        <p class="client-subtitle">Client since January 2025 · ${totalTicketCount} transaction${totalTicketCount === 1 ? '' : 's'}</p>
+                    </div>
                 </div>
-                <div class="client-hero-actions">
-                    <button class="btn btn-primary" data-detail-action="sell"><i class="fa-solid fa-ticket"></i> Sell New Ticket</button>
-                    <button class="btn btn-secondary" data-detail-action="booking"><i class="fa-solid fa-calendar-plus"></i> Booking</button>
-                    <button class="btn btn-secondary" data-detail-action="hotel"><i class="fa-solid fa-hotel"></i> Hotel</button>
-                    <button class="btn btn-ghost" data-detail-action="back"><i class="fa-solid fa-arrow-left"></i> Back to results</button>
+                <div class="action-buttons">
+                    <button class="btn-action-edit" data-overview-action="edit">
+                        <i class="fa-solid fa-pen"></i>
+                        Edit Client
+                    </button>
+                    <button class="btn-action-secondary" data-detail-action="booking">
+                        <i class="fa-solid fa-calendar-plus"></i>
+                        Booking
+                    </button>
+                    <button class="btn-action-secondary" data-detail-action="hotel">
+                        <i class="fa-solid fa-hotel"></i>
+                        Hotel
+                    </button>
+                    <button class="btn-action-primary" data-detail-action="sell">
+                        <i class="fa-solid fa-plus"></i>
+                        New Ticket
+                    </button>
                 </div>
             </div>
 
-            <div class="client-kpi-grid">
-                ${kpiCard('fa-ticket', 'teal', 'Total Tickets', totalTicketCount)}
-                ${kpiCard('fa-coins', 'green', 'Total Spent', fmtMmk(totalSpent))}
-                ${kpiCard('fa-chart-line', 'amber', 'Total Profit', fmtMmk(totalProfit))}
-                ${kpiCard('fa-clock', 'coral', 'Last Booking', fmtDateOrDash(lastBooking))}
+            <!-- Stats Cards -->
+            <div class="stats-container animate-in delay-2">
+                <!-- Total Tickets -->
+                <div class="stat-card">
+                    <div class="stat-bg-circle bg-brand-circle"></div>
+                    <div class="stat-header">
+                        <div class="stat-icon-box icon-brand">
+                            <i class="fa-solid fa-ticket"></i>
+                        </div>
+                        <span class="stat-badge badge-green-accent">+${activeTickets.filter(t => {
+                            const date = parseSheetDate(t.issued_date);
+                            const now = new Date();
+                            return date && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+                        }).length} this month</span>
+                    </div>
+                    <div class="stat-body">
+                        <p class="stat-number">${totalTicketCount}</p>
+                        <p class="stat-card-label">Total Tickets</p>
+                    </div>
+                </div>
+
+                <!-- Total Expense -->
+                <div class="stat-card">
+                    <div class="stat-bg-circle bg-orange-circle"></div>
+                    <div class="stat-header">
+                        <div class="stat-icon-box icon-orange">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                        <span class="stat-badge badge-slate-accent">MMK</span>
+                    </div>
+                    <div class="stat-body">
+                        <p class="stat-number">${totalSpent.toLocaleString()}</p>
+                        <p class="stat-card-label">Total Expense</p>
+                    </div>
+                </div>
+
+                <!-- Total Profit -->
+                <div class="stat-card">
+                    <div class="stat-bg-circle bg-emerald-circle"></div>
+                    <div class="stat-header">
+                        <div class="stat-icon-box icon-emerald">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <span class="stat-badge badge-emerald-accent">${totalSpent ? (totalProfit / totalSpent * 100).toFixed(1) : 0}% margin</span>
+                    </div>
+                    <div class="stat-body">
+                        <p class="stat-number text-emerald">${totalProfit.toLocaleString()}</p>
+                        <p class="stat-card-label">Total Profit (MMK)</p>
+                    </div>
+                </div>
+                
+                <!-- Last Booking -->
+                <div class="stat-card">
+                    <div class="stat-bg-circle bg-blue-circle"></div>
+                    <div class="stat-header">
+                        <div class="stat-icon-box icon-blue">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <span class="stat-badge badge-slate-accent">Recent</span>
+                    </div>
+                    <div class="stat-body">
+                        <p class="stat-number" style="font-size: 1.25rem; padding-top: 0.4rem; font-weight:700;">${fmtDateOrDash(lastBooking)}</p>
+                        <p class="stat-card-label">Last Booking</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="client-detail-grid">
-                ${overviewCard(client)}
-                ${documentsCard(client)}
-                ${insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet)}
-                ${paymentCard(paidCount, unpaidTickets.length, outstanding, preferredPayment)}
+            <!-- Two Column Layout: Client Overview + Travel Documents -->
+            <div class="two-col-grid animate-in delay-3">
+                <!-- Left Stack: Overview + Insights + Payment -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    ${overviewCard(client)}
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                        ${insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet)}
+                        ${paymentCard(paidCount, unpaidTickets.length, outstanding, preferredPayment)}
+                    </div>
+                </div>
+
+                <!-- Right Stack: Travel Documents -->
+                <div class="docs-stack">
+                    ${documentsCard(client)}
+                </div>
             </div>
 
-            ${ticketHistorySection(client, tickets)}
+            <!-- Ticket History -->
+            <div class="animate-in delay-4">
+                ${ticketHistorySection(client, tickets)}
+            </div>
 
-            <p class="client-detail-footer">All amounts in MMK (Myanmar Kyat) · Secure · Private · Confidential</p>
+            <p class="footer-notice">All amounts in MMK (Myanmar Kyat) · Secure · Private · Confidential</p>
         </div>
     `;
 
-    wireDetailActions(detail, client);
-}
-
-function kpiCard(icon, color, label, value) {
-    return `
-        <div class="kpi-card">
-            <div class="kpi-icon kpi-${color}"><i class="fa-solid ${icon}"></i></div>
-            <div class="kpi-body">
-                <div class="kpi-label">${escapeHtml(label)}</div>
-                <div class="kpi-value">${typeof value === 'number' ? value.toLocaleString() : value}</div>
-            </div>
-        </div>
-    `;
+    wireDetailActions(detail, client, tickets);
 }
 
 function passportExpiryBadge(client) {
@@ -1176,9 +1275,9 @@ function passportExpiryBadge(client) {
     const status = computePassportExpiryStatus(expiry);
     if (status.level === 'ok') return '';
     if (status.level === 'expired') {
-        return `<span class="passport-hero-badge is-expired"><i class="fa-solid fa-circle-xmark"></i> Expired ${status.daysAbs} days ago</span>`;
+        return `<span class="tag-cancelled text-xs font-semibold px-2.5 py-1 rounded-full border border-red-200" style="margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-circle-xmark"></i> Expired ${status.daysAbs} days ago</span>`;
     }
-    return `<span class="passport-hero-badge is-soon"><i class="fa-solid fa-triangle-exclamation"></i> Expires in ${status.daysUntil} days</span>`;
+    return `<span class="tag-pending text-xs font-semibold px-2.5 py-1 rounded-full border border-yellow-200" style="margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-triangle-exclamation"></i> Expires in ${status.daysUntil} days</span>`;
 }
 
 function computePassportExpiryStatus(expiryStr) {
@@ -1207,25 +1306,63 @@ function overviewCard(c) {
     const phone = c.phone || '';
     const accountLink = c.account_link || '';
     const phoneVal = phone
-        ? `<a href="tel:${escapeHtml(phone)}" class="kv-link"><i class="fa-solid fa-phone"></i> ${escapeHtml(phone)}</a>`
-        : '—';
+        ? `<span class="kv-phone-row">
+            <span>${escapeHtml(phone)}</span>
+            <a href="tel:${escapeHtml(phone)}" class="btn-phone-call" title="Call Client"><i class="fa-solid fa-phone"></i></a>
+           </span>`
+        : '<span class="kv-value-empty">Not provided</span>';
     const linkVal = accountLink
-        ? `<a href="${escapeHtml(accountLink)}" target="_blank" rel="noopener" class="kv-link"><i class="fa-solid fa-link"></i> ${escapeHtml(accountLink)}</a>`
-        : '—';
+        ? `<a href="${escapeHtml(accountLink)}" target="_blank" rel="noopener" class="link-overview-url"><i class="fa-solid fa-up-right-from-square"></i> View Link</a>`
+        : '<span class="kv-value-empty">Not provided</span>';
+
+    // Consistent pseudo client ID based on hash of client_key
+    const clientId = c.client_key ? 'CLT-202501-' + String(Math.abs(c.client_key.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0))).slice(-4).padStart(4, '0') : 'CLT-202501-0000';
+
     return `
-        <div class="detail-card overview-card">
-            <div class="detail-card-head">
-                <span class="detail-card-icon"><i class="fa-solid fa-id-card"></i></span>
-                <h3>Client Overview</h3>
-                <button class="doc-edit-btn" data-overview-action="edit"><i class="fa-solid fa-pen"></i> Edit</button>
+        <div class="details-card">
+            <div class="card-top-bar">
+                <div class="card-title-block">
+                    <div class="card-icon-container icon-brand">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <h3 class="card-title-text">Client Overview</h3>
+                </div>
+                <button class="card-btn-action" data-overview-action="edit">
+                    <i class="fa-solid fa-pen"></i> Edit
+                </button>
             </div>
-            <dl class="detail-kv overview-kv">
-                <div><dt>Account Name</dt><dd>${escapeHtml(c.account_name || '—')}</dd></div>
-                <div><dt>Phone</dt><dd>${phoneVal}</dd></div>
-                <div><dt>Account Type</dt><dd>${escapeHtml(c.account_type || '—')}</dd></div>
-                <div><dt>Account Link</dt><dd>${linkVal}</dd></div>
-                <div><dt>Frequent Flyer</dt><dd>${c.frequent_flyer_no ? escapeHtml(`${c.member_airline || 'Airline'}: ${c.frequent_flyer_no}`) : '—'}</dd></div>
-            </dl>
+            <div class="card-content">
+                <div class="grid-kv">
+                    <div class="kv-item">
+                        <span class="kv-label">Account Name</span>
+                        <p class="kv-value">${escapeHtml(c.account_name || '—')}</p>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Display Name</span>
+                        <p class="kv-value">${escapeHtml(c.name || '—')}</p>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Phone Number</span>
+                        <p class="kv-value">${phoneVal}</p>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Account Type</span>
+                        <p class="kv-value">${escapeHtml(c.account_type || '—')}</p>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Account Link</span>
+                        <p class="kv-value">${linkVal}</p>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Client ID</span>
+                        <p class="kv-value" style="font-family: monospace; font-size: 0.85rem; color: #64748b;">${clientId}</p>
+                    </div>
+                    <div class="kv-item" style="grid-column: 1 / -1;">
+                        <span class="kv-label">Frequent Flyer</span>
+                        <p class="kv-value">${c.frequent_flyer_no ? escapeHtml(`${c.member_airline || 'Airline'}: ${c.frequent_flyer_no}`) : '<span class="kv-value-empty">None</span>'}</p>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 }
@@ -1236,43 +1373,135 @@ function documentsCard(c) {
     const photo = c.passport_photo_url || '';
     const expiry = isPlaceholderDate(c.passport_expiry) ? '' : formatDateToDDMMYYYY(parseSheetDate(c.passport_expiry));
     const dob = isPlaceholderDate(c.dob) ? '' : formatDateToDDMMYYYY(parseSheetDate(c.dob));
-    const verified = !!(passportNo || nrcNo);
+    
+    // Parse NRC details
+    let stateRegion = '—';
+    let township = '—';
+    if (nrcNo && nrcNo.includes('/')) {
+        const parts = nrcNo.split('/');
+        stateRegion = parts[0] === '9' ? 'Mandalay' : parts[0] === '12' ? 'Yangon' : `State/Region ${parts[0]}`;
+        if (parts[1].includes('(')) {
+            township = parts[1].split('(')[0];
+        }
+    }
+
+    const expiryStatus = computePassportExpiryStatus(c.passport_expiry);
+    let passportStatusText = 'No Passport';
+    let passportStatusClass = 'tag-cancelled';
+    if (passportNo) {
+        if (expiryStatus.level === 'expired') {
+            passportStatusText = 'Expired';
+            passportStatusClass = 'tag-cancelled';
+        } else if (expiryStatus.level === 'soon') {
+            passportStatusText = 'Expires Soon';
+            passportStatusClass = 'tag-pending';
+        } else {
+            passportStatusText = 'Active';
+            passportStatusClass = 'tag-completed';
+        }
+    }
+
+    const expiryWarningHtml = expiryStatus.level === 'expired'
+        ? `<div class="passport-warning-banner is-expired">
+            <i class="fa-solid fa-circle-xmark" style="margin-top: 2px;"></i>
+            <span><strong>Passport EXPIRED</strong> on ${expiryStatus.formatted} (${expiryStatus.daysAbs} days ago). A new passport is required before travel.</span>
+           </div>`
+        : expiryStatus.level === 'soon'
+        ? `<div class="passport-warning-banner is-soon">
+            <i class="fa-solid fa-triangle-exclamation" style="margin-top: 2px;"></i>
+            <span><strong>Passport expires soon</strong> on ${expiryStatus.formatted} (in ${expiryStatus.daysUntil} days). Airlines require 6 months validity.</span>
+           </div>`
+        : '';
 
     return `
-        <div class="detail-card documents-card">
-            <div class="detail-card-head">
-                <span class="detail-card-icon"><i class="fa-solid fa-passport"></i></span>
-                <h3>Travel Documents</h3>
-                ${verified ? '<span class="verified-pill"><i class="fa-solid fa-circle-check"></i> Verified</span>' : ''}
-                <button class="doc-edit-btn" data-doc-action="edit"><i class="fa-solid fa-pen"></i> Edit</button>
-            </div>
-            <div class="travel-doc-layout">
-                <div class="nrc-mini-card">
-                    <div class="travel-doc-title"><i class="fa-regular fa-id-card"></i> NRC</div>
-                    <div class="nrc-number-block">${escapeHtml((nrcNo || '').toUpperCase())}</div>
-                    ${nrcNo ? '<span class="verified-pill nrc-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>' : '<span class="nrc-missing">No NRC</span>'}
+        <!-- NRC Card -->
+        <div class="doc-card">
+            <div class="doc-card-header">
+                <div class="card-icon-container icon-blue">
+                    <i class="fa-solid fa-credit-card"></i>
                 </div>
-                <div class="passport-doc-block ${photo ? 'has-photo' : ''}">
-                    <div class="travel-doc-title passport-title"><i class="fa-solid fa-passport"></i> Passport</div>
-                    ${photo ? `<button type="button" class="doc-photo" data-doc-action="view"><img src="${escapeHtml(photo)}" alt="Passport"></button>` : `
-                        <div class="doc-photo doc-photo-empty">
-                            <i class="fa-regular fa-address-card"></i>
-                            <strong>No passport uploaded</strong>
-                            <span>Upload a clear image of the passport information page.</span>
-                        </div>
-                    `}
-                    <dl class="passport-doc-info">
-                        <div><dt>Passport No.</dt><dd>${escapeHtml(passportNo || '—')}</dd></div>
-                        <div><dt>Country</dt><dd>${escapeHtml(c.nationality || '—')}</dd></div>
-                        <div><dt>Expiry Date</dt><dd>${escapeHtml(expiry || '—')}</dd></div>
-                        <div><dt>Date of Birth</dt><dd>${escapeHtml(dob || '—')}</dd></div>
-                    </dl>
-                    <div class="passport-doc-actions">
-                        <button class="btn btn-ghost" data-doc-action="view" ${photo ? '' : 'disabled'}><i class="fa-regular fa-eye"></i> View</button>
-                        <button class="btn btn-ghost" data-doc-action="replace"><i class="fa-solid fa-rotate"></i> Replace</button>
-                        <button class="btn btn-primary" data-doc-action="upload"><i class="fa-solid fa-upload"></i> Upload Passport</button>
+                <h3 class="card-title-text" style="font-size: 0.875rem;">NRC Document</h3>
+                <span class="doc-badge-status ${nrcNo ? 'tag-completed' : 'tag-cancelled'}">
+                    ${nrcNo ? 'Verified' : 'Missing'}
+                </span>
+                <button class="doc-btn-edit" data-doc-action="edit" title="Edit NRC"><i class="fa-solid fa-pen"></i></button>
+            </div>
+            <div class="doc-card-body">
+                <div class="kv-item">
+                    <span class="kv-label">NRC Number</span>
+                    <p class="kv-value" style="font-family: monospace; font-size: 0.9rem;">${escapeHtml((nrcNo || '—').toUpperCase())}</p>
+                </div>
+                <div class="doc-row-subitems">
+                    <div class="kv-item">
+                        <span class="kv-label">State / Region</span>
+                        <p class="kv-value">${escapeHtml(stateRegion)}</p>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Township</span>
+                        <p class="kv-value">${escapeHtml(township)}</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Passport Card -->
+        <div class="doc-card">
+            <div class="doc-card-header">
+                <div class="card-icon-container icon-purple">
+                    <i class="fa-solid fa-passport"></i>
+                </div>
+                <h3 class="card-title-text" style="font-size: 0.875rem;">Passport Document</h3>
+                <span class="doc-badge-status ${passportStatusClass}">
+                    ${passportStatusText}
+                </span>
+                <button class="doc-btn-edit" data-doc-action="edit" title="Edit Passport"><i class="fa-solid fa-pen"></i></button>
+            </div>
+            <div class="doc-card-body">
+                <div class="kv-item">
+                    <span class="kv-label">Passport No.</span>
+                    <p class="kv-value" style="font-family: monospace; font-size: 0.9rem;">${escapeHtml((passportNo || '—').toUpperCase())}</p>
+                </div>
+                <div class="doc-row-subitems">
+                    <div class="kv-item">
+                        <span class="kv-label">Expiry Date</span>
+                        <p class="kv-value">${escapeHtml(expiry || '—')}</p>
+                    </div>
+                    <div class="kv-item">
+                        <span class="kv-label">Country</span>
+                        <p class="kv-value">${escapeHtml(c.nationality || 'Myanmar')}</p>
+                    </div>
+                </div>
+                <div class="kv-item">
+                    <span class="kv-label">Date of Birth</span>
+                    <p class="kv-value">${escapeHtml(dob || '—')}</p>
+                </div>
+
+                <!-- Passport Photo Attachment -->
+                <div class="passport-attachment-box">
+                    ${photo ? `
+                        <button type="button" class="passport-thumbnail-btn" data-doc-action="view">
+                            <img src="${escapeHtml(photo)}" alt="Passport Photo" class="passport-thumbnail-img">
+                            <div class="passport-thumbnail-overlay">
+                                <i class="fa-regular fa-eye"></i> View passport photo
+                            </div>
+                        </button>
+                    ` : `
+                        <div class="passport-empty-block">
+                            <i class="fa-regular fa-image passport-empty-icon"></i>
+                            <p class="passport-empty-title">No passport uploaded</p>
+                            <p class="passport-empty-desc">Upload a clear photo page of the passport.</p>
+                        </div>
+                    `}
+                </div>
+
+                <!-- Actions -->
+                <div class="passport-actions">
+                    <button class="btn-doc-inline" data-doc-action="view" ${photo ? '' : 'disabled'}><i class="fa-regular fa-eye"></i> View</button>
+                    <button class="btn-doc-inline" data-doc-action="replace"><i class="fa-solid fa-rotate"></i> Replace</button>
+                    <button class="btn-doc-inline-primary" data-doc-action="upload"><i class="fa-solid fa-upload"></i> Upload</button>
+                </div>
+
+                ${expiryWarningHtml}
             </div>
         </div>
     `;
@@ -1280,34 +1509,70 @@ function documentsCard(c) {
 
 function insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet) {
     return `
-        <div class="detail-card insights-card">
-            <div class="detail-card-head">
-                <span class="detail-card-icon"><i class="fa-solid fa-chart-pie"></i></span>
-                <h3>Client Insights</h3>
+        <div class="details-card">
+            <div class="card-top-bar">
+                <div class="card-title-block">
+                    <div class="card-icon-container icon-orange">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <h3 class="card-title-text" style="font-size: 0.85rem;">Client Insights</h3>
+                </div>
             </div>
-            <dl class="detail-kv insights-kv">
-                <div><dt>Most frequent route</dt><dd>${escapeHtml(mostFrequentRoute)}</dd></div>
-                <div><dt>One-way tickets</dt><dd>${oneWay}</dd></div>
-                <div><dt>Round-trip tickets</dt><dd>${roundTrip}</dd></div>
-                <div><dt>Average net</dt><dd>${fmtMmk(avgNet)}</dd></div>
-            </dl>
+            <div class="card-content" style="padding: 1.25rem 1.5rem;">
+                <div class="card-body-kv-list">
+                    <div class="kv-list-item">
+                        <span class="kv-list-label">Frequent Route</span>
+                        <span class="kv-list-val">${escapeHtml(mostFrequentRoute)}</span>
+                    </div>
+                    <div class="kv-list-item">
+                        <span class="kv-list-label">One-Way</span>
+                        <span class="kv-list-val">${oneWay}</span>
+                    </div>
+                    <div class="kv-list-item">
+                        <span class="kv-list-label">Round-Trip</span>
+                        <span class="kv-list-val">${roundTrip}</span>
+                    </div>
+                    <div class="kv-list-item">
+                        <span class="kv-list-label">Average Net</span>
+                        <span class="kv-list-val" style="font-size:0.8rem;">${fmtMmk(avgNet)}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 }
 
 function paymentCard(paid, unpaid, outstanding, preferredPayment) {
     return `
-        <div class="detail-card payment-card">
-            <div class="detail-card-head">
-                <span class="detail-card-icon"><i class="fa-solid fa-credit-card"></i></span>
-                <h3>Payment & Booking Status</h3>
+        <div class="details-card">
+            <div class="card-top-bar">
+                <div class="card-title-block">
+                    <div class="card-icon-container icon-emerald">
+                        <i class="fa-solid fa-credit-card"></i>
+                    </div>
+                    <h3 class="card-title-text" style="font-size: 0.85rem;">Payment Status</h3>
+                </div>
             </div>
-            <dl class="detail-kv payment-kv">
-                <div><dt>Paid bookings</dt><dd>${paid}</dd></div>
-                <div><dt>Pending bookings</dt><dd>${unpaid}</dd></div>
-                <div><dt>Outstanding balance</dt><dd>${fmtMmk(outstanding)}</dd></div>
-                <div><dt>Preferred payment</dt><dd>${escapeHtml(preferredPayment || '—')}</dd></div>
-            </dl>
+            <div class="card-content" style="padding: 1.25rem 1.5rem;">
+                <div class="card-body-kv-list">
+                    <div class="kv-list-item">
+                        <span class="kv-list-label">Paid Bookings</span>
+                        <span class="kv-list-val">${paid}</span>
+                    </div>
+                    <div class="kv-list-item">
+                        <span class="kv-list-label">Pending Bookings</span>
+                        <span class="kv-list-val">${unpaid}</span>
+                    </div>
+                    <div class="kv-list-item">
+                        <span class="kv-list-label">Outstanding</span>
+                        <span class="kv-list-val" style="color:#b91c1c; font-size:0.8rem;">${fmtMmk(outstanding)}</span>
+                    </div>
+                    <div class="kv-list-item">
+                        <span class="kv-list-label">Preferred Pay</span>
+                        <span class="kv-list-val">${escapeHtml(preferredPayment || '—')}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 }
@@ -1319,59 +1584,177 @@ function ticketHistorySection(client, tickets) {
         const status = getPaymentStatus(t);
         const upcoming = isUpcoming(t) ? 'upcoming' : (parseSheetDate(t.departing_on) < new Date() ? 'completed' : 'scheduled');
         const canceled = isCanceled(t);
-        const outstanding = status !== 'paid' && !canceled ? getTicketAmount(t) : 0;
+        const outstandingVal = status !== 'paid' && !canceled ? getTicketAmount(t) : 0;
+        
+        // Generate pseudo invoice
+        const issueYear = parseSheetDate(t.issued_date)?.getFullYear() || 2025;
+        const ticketIdPart = String(t.id || '').replace(/\D/g, '').slice(-4).padStart(4, '0') || '0000';
+        const invoiceNo = `INV-${issueYear}-${ticketIdPart}`;
+        const issueDateFormatted = fmtDateOrDash(t.issued_date);
+
+        // Parse route stations
+        const routeStr = routeShort(t);
+        let dep = '—';
+        let dest = '—';
+        if (routeStr.includes('→')) {
+            const parts = routeStr.split('→');
+            dep = parts[0].trim();
+            dest = parts[1].trim();
+        } else if (routeStr.includes('-')) {
+            const parts = routeStr.split('-');
+            dep = parts[0].trim();
+            dest = parts[1].trim();
+        } else {
+            dep = routeStr;
+        }
+
+        // Airline badge details
+        const airVal = String(t.airline || '—').trim();
+        let airAbbr = airVal.substring(0, 3).toUpperCase();
+        let logoClass = 'logo-slate';
+        if (airVal.toLowerCase().includes('myanmar airways') || airVal.toLowerCase().includes('mai')) {
+            airAbbr = 'MAI';
+            logoClass = 'logo-yellow';
+        } else if (airVal.toLowerCase().includes('air cb') || airVal.toLowerCase().includes('cb')) {
+            airAbbr = 'CB';
+            logoClass = 'logo-red';
+        } else if (airVal.toLowerCase().includes('myanmar national') || airVal.toLowerCase().includes('8m')) {
+            airAbbr = '8M';
+            logoClass = 'logo-blue';
+        } else if (airAbbr.length > 3) {
+            airAbbr = airAbbr.substring(0, 2);
+        }
+
+        // Badge classes for status
+        let statusText = 'Completed';
+        let statusClass = 'tag-completed';
+        if (canceled) {
+            statusText = 'Canceled';
+            statusClass = 'tag-cancelled';
+        } else if (status !== 'paid') {
+            statusText = 'Pending';
+            statusClass = 'tag-pending';
+        }
+
         return `
-            <tr data-pnr="${escapeHtml(t.booking_reference || '')}" data-tt="${escapeHtml(String(t.ticket_type || '').toUpperCase().includes('ROUND') ? 'round' : 'oneway')}" data-year="${escapeHtml(String(parseSheetDate(t.issued_date)?.getFullYear?.() || ''))}" class="${canceled ? 'canceled-row' : ''}">
-                <td>${fmtDateOrDash(t.issued_date)}</td>
-                <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${escapeHtml(t.booking_reference)}</a>` : '—'}</strong></td>
-                <td>${escapeHtml(routeShort(t))}</td>
-                <td>${fmtDateOrDash(t.departing_on)}</td>
-                <td>${renderAirlineName(t.airline || '—')}</td>
+            <tr data-pnr="${escapeHtml(t.booking_reference || '')}" data-tt="${escapeHtml(String(t.ticket_type || '').toUpperCase().includes('ROUND') ? 'round' : 'oneway')}" data-year="${escapeHtml(String(parseSheetDate(t.issued_date)?.getFullYear?.() || ''))}" class="ticket-row ${canceled ? 'canceled-row' : ''}">
                 <td>
-                    ${canceled ? '<span class="payment-badge payment-unpaid">Canceled</span>' : `<span class="payment-badge payment-${upcoming === 'upcoming' ? 'partial' : 'paid'}">${upcoming === 'upcoming' ? 'Upcoming' : 'Completed'}</span>`}
-                    ${paymentBadge(status)}
+                    <p class="text-bold-slate" style="margin: 0; font-size: 0.85rem;">${invoiceNo}</p>
+                    <p class="text-slate-muted" style="margin: 2px 0 0; font-size: 0.72rem;">${issueDateFormatted}</p>
                 </td>
-                <td class="num-cell">${outstanding ? fmtMmk(outstanding) : '—'}</td>
-                <td>${fmtMmk(getTicketAmount(t))}</td>
-                <td>${fmtMmk(Number(t.commission || 0) + Number(t.extra_fare || 0))}</td>
+                <td>
+                    ${t.booking_reference ? `<a href="#" class="table-pnr-pill clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${escapeHtml(t.booking_reference)}</a>` : '—'}
+                </td>
+                <td>
+                    <div class="route-arrow-flow">
+                        <span class="route-station">${escapeHtml(dep)}</span>
+                        <div class="route-line-box">
+                            <div class="route-line"></div>
+                            <i class="fa-solid fa-plane route-plane-icon"></i>
+                            <div class="route-line"></div>
+                        </div>
+                        <span class="route-station">${escapeHtml(dest)}</span>
+                    </div>
+                </td>
+                <td>
+                    <p class="text-bold-slate" style="margin: 0; font-size: 0.85rem;">${fmtDateOrDash(t.departing_on)}</p>
+                </td>
+                <td>
+                    <div class="airline-chip-box">
+                        <div class="airline-logo-thumb ${logoClass}">
+                            <span>${escapeHtml(airAbbr)}</span>
+                        </div>
+                        <span style="font-size: 0.85rem; color: #475569;">${escapeHtml(renderAirlineName(t.airline || '—'))}</span>
+                    </div>
+                </td>
+                <td class="num-right-align">
+                    <p style="margin: 0; font-weight: 600; font-size: 0.85rem;">${outstandingVal ? outstandingVal.toLocaleString() : '—'}</p>
+                    ${outstandingVal ? '<p class="text-slate-muted" style="margin: 2px 0 0; font-size: 0.68rem;">MMK</p>' : ''}
+                </td>
+                <td class="num-right-align">
+                    <p style="margin: 0; font-weight: 600; font-size: 0.85rem;">${getTicketAmount(t).toLocaleString()}</p>
+                    <p class="text-slate-muted" style="margin: 2px 0 0; font-size: 0.68rem;">MMK</p>
+                </td>
+                <td class="num-right-align">
+                    <p class="profit-text-green" style="margin: 0; font-size: 0.85rem;">${(Number(t.commission || 0) + Number(t.extra_fare || 0)).toLocaleString()}</p>
+                    <p class="text-slate-muted" style="margin: 2px 0 0; font-size: 0.68rem;">MMK</p>
+                </td>
+                <td style="text-align: center;">
+                    <span class="tag ${statusClass}" style="padding: 0.25rem 0.65rem; border-radius: 0.5rem;">${statusText}</span>
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn-more-actions" title="Actions" data-pnr="${escapeHtml(t.booking_reference || '')}"><i class="fa-solid fa-ellipsis"></i></button>
+                </td>
             </tr>
         `;
     }).join('');
 
     return `
-        <div class="detail-card">
-            <div class="detail-card-head">
-                <span class="detail-card-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
-                <h3>Ticket History</h3>
-                <div class="detail-card-toolbar">
-                    <div class="detail-tabs" id="historyTypeTabs">
-                        <button type="button" class="detail-tab active" data-history-tab="all">All</button>
-                        <button type="button" class="detail-tab" data-history-tab="oneway">One-Way</button>
-                        <button type="button" class="detail-tab" data-history-tab="round">Round-Trip</button>
+        <div class="details-card">
+            <div class="card-top-bar" style="padding: 1rem 1.5rem;">
+                <div class="history-header-layout">
+                    <div class="history-title-badges">
+                        <div class="card-icon-container icon-brand">
+                            <i class="fa-solid fa-list"></i>
+                        </div>
+                        <h3 class="card-title-text">Ticket History</h3>
+                        <span class="history-count-badge">${tickets.length}</span>
                     </div>
-                    <select class="detail-year-select" id="historyYearSelect">
-                        <option value="">All years</option>
-                        ${years.map(y => `<option value="${y}">${y}</option>`).join('')}
-                    </select>
-                    <input type="text" class="detail-search-input" id="historySearchInput" placeholder="Search by PNR, route, airline…">
+                    <div class="history-toolbar">
+                        <div class="history-tabs" id="historyTypeTabs">
+                            <button type="button" class="btn-history-tab active" data-history-tab="all">All</button>
+                            <button type="button" class="btn-history-tab" data-history-tab="oneway">One-Way</button>
+                            <button type="button" class="btn-history-tab" data-history-tab="round">Round-Trip</button>
+                        </div>
+                        <select class="history-select" id="historyYearSelect">
+                            <option value="">All years</option>
+                            ${years.map(y => `<option value="${y}">${y}</option>`).join('')}
+                        </select>
+                        <div class="history-search-input-box">
+                            <i class="fa-solid fa-magnifying-glass history-search-icon"></i>
+                            <input type="text" class="history-search-input" id="historySearchInput" placeholder="Search tickets...">
+                        </div>
+                        <button class="history-action-btn" title="Filter"><i class="fa-solid fa-sliders"></i></button>
+                        <button class="history-action-btn" title="Download History" id="downloadHistoryBtn"><i class="fa-solid fa-download"></i></button>
+                    </div>
                 </div>
             </div>
-            <div class="detail-table-wrap">
-                <table class="detail-table">
+            <div class="table-container">
+                <table class="history-table">
                     <thead>
                         <tr>
-                            <th>Issued</th><th>PNR</th><th>Route</th><th>Travel Date</th>
-                            <th>Airline</th><th>Status</th><th class="num-header">Outstanding</th><th>Net Amount</th><th>Profit</th>
+                            <th>Invoice</th>
+                            <th>PNR</th>
+                            <th>Route</th>
+                            <th>Date</th>
+                            <th>Airline</th>
+                            <th class="num-right-align">Outstanding</th>
+                            <th class="num-right-align">Sale Price</th>
+                            <th class="num-right-align">Profit</th>
+                            <th style="text-align: center;">Status</th>
+                            <th style="text-align: center;">Action</th>
                         </tr>
                     </thead>
-                    <tbody>${rows || '<tr><td colspan="9" class="empty-row">No tickets on file.</td></tr>'}</tbody>
+                    <tbody>
+                        ${rows || '<tr><td colspan="10" class="empty-row" style="text-align: center; color: #94a3b8; padding: 2rem;">No tickets on file.</td></tr>'}
+                    </tbody>
                 </table>
+            </div>
+            
+            <!-- Table Footer / Pagination -->
+            <div class="table-footer-pagination">
+                <span class="pagination-text">Showing <strong class="text-bold-slate">${tickets.length}</strong> of <strong class="text-bold-slate">${tickets.length}</strong> tickets</span>
+                <div class="pagination-buttons">
+                    <button class="btn-page-nav" disabled>Previous</button>
+                    <button class="btn-page-nav active">1</button>
+                    <button class="btn-page-nav" disabled>Next</button>
+                </div>
             </div>
         </div>
     `;
 }
 
-function wireDetailActions(detail, client) {
+function wireDetailActions(detail, client, tickets) {
     detail.querySelectorAll('[data-detail-action]').forEach(btn => {
         btn.addEventListener('click', () => {
             const action = btn.dataset.detailAction;
@@ -1400,11 +1783,73 @@ function wireDetailActions(detail, client) {
         });
     });
 
+    // Row clicks to open details
+    detail.querySelectorAll('.history-table tbody tr.ticket-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('button') || e.target.closest('a')) return;
+            const pnr = row.dataset.pnr;
+            const ticket = tickets.find(t => t.booking_reference === pnr);
+            if (ticket && ticket.id) {
+                showDetails(ticket.id);
+            } else if (pnr) {
+                showTripPlanDetail(pnr);
+            }
+        });
+    });
+
+    // Row ellipsis actions
+    detail.querySelectorAll('.history-table .btn-more-actions').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const pnr = btn.dataset.pnr;
+            const ticket = tickets.find(t => t.booking_reference === pnr);
+            if (ticket && ticket.id) {
+                showDetails(ticket.id);
+            } else if (pnr) {
+                showTripPlanDetail(pnr);
+            }
+        });
+    });
+
+    // CSV Download
+    detail.querySelector('#downloadHistoryBtn')?.addEventListener('click', () => {
+        if (!tickets || !tickets.length) {
+            showToast('No tickets to download.', 'error');
+            return;
+        }
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Invoice,PNR,Route,Departing Date,Airline,Net Amount,Profit,Status\n";
+        tickets.forEach(t => {
+            const status = getPaymentStatus(t);
+            const canceled = isCanceled(t);
+            const statusText = canceled ? 'Canceled' : (status === 'paid' ? 'Paid' : 'Pending');
+            const row = [
+                `INV-${parseSheetDate(t.issued_date)?.getFullYear() || 2025}-${String(t.id || '').replace(/\D/g, '').slice(-4).padStart(4, '0')}`,
+                t.booking_reference || '',
+                routeShort(t),
+                t.departing_on || '',
+                t.airline || '',
+                getTicketAmount(t),
+                Number(t.commission || 0) + Number(t.extra_fare || 0),
+                statusText
+            ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(",");
+            csvContent += row + "\n";
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `ticket_history_${client.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Ticket history CSV downloaded successfully.', 'success');
+    });
+
     // History tabs / filters
     const tabs = detail.querySelectorAll('[data-history-tab]');
     const yearSelect = detail.querySelector('#historyYearSelect');
     const searchInput = detail.querySelector('#historySearchInput');
-    const tbody = detail.querySelector('.detail-table tbody');
+    const tbody = detail.querySelector('.history-table tbody');
     const filterRows = () => {
         if (!tbody) return;
         const tab = detail.querySelector('[data-history-tab].active')?.dataset.historyTab || 'all';
