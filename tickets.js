@@ -13,6 +13,7 @@ import { updateDashboardData } from './main.js';
 import { buildClientList } from './clients.js';
 import { saveHistory } from './history.js';
 import { togglePrivateReportButton } from './reports.js';
+import { CITIES } from './config.js';
 // The import from 'manage.js' is now handled dynamically below.
 
 /**
@@ -540,82 +541,487 @@ export function showDetails(docId) {
     const ticket = state.allTickets.find(t => t.id === docId);
     if (!ticket) return;
 
-    let statusClass = 'confirmed';
-    let statusText = `Issued on ${formatDateToDMMMY(ticket.issued_date) || 'N/A'}`;
+    // Helper functions
+    function isCanceledTicket(t) {
+        const r = String(t.remarks || '').toLowerCase();
+        return r.includes('refund') || r.includes('cancel');
+    }
 
-    if (ticket.remarks) {
-        const lowerRemarks = ticket.remarks.toLowerCase();
-        const dateRegex = /(\d{1,2}[\/-]\d{1,2}[\/-]\d{4})/;
-        const match = lowerRemarks.match(dateRegex);
-        const actionDate = match ? formatDateToDMMMY(match[1]) : 'an unknown date';
-        if (lowerRemarks.includes('full refund')) {
-            statusClass = 'canceled';
-            statusText = `Full Refund on ${actionDate}`;
-        } else if (lowerRemarks.includes('cancel')) {
-            statusClass = 'canceled';
-            statusText = `Canceled on ${actionDate}`;
+    function getTicketAmount(t) {
+        return (Number(t.net_amount) || 0) + (Number(t.extra_fare) || 0) + (Number(t.date_change) || 0);
+    }
+
+    function getAirportCodeAndCity(locationName) {
+        if (!locationName) return { city: 'N/A', code: '' };
+        const cleanName = String(locationName).trim();
+        const parenthesizedMatch = cleanName.match(/^(.+?)\s*\((.+?)\)$/);
+        if (parenthesizedMatch) {
+            return { city: parenthesizedMatch[1].trim(), code: parenthesizedMatch[2].trim().toUpperCase() };
         }
+        const allLocations = (typeof CITIES !== 'undefined' ? [...(CITIES.DOMESTIC || []), ...(CITIES.INTERNATIONAL || [])] : []);
+        const match = allLocations.find(loc => loc.toLowerCase().includes(cleanName.toLowerCase()));
+        if (match) {
+            const parts = match.match(/^(.+?)\s*\((.+?)\)$/);
+            if (parts) {
+                return { city: parts[1].trim(), code: parts[2].trim().toUpperCase() };
+            }
+        }
+        return { city: cleanName, code: '' };
     }
 
-    let clientKey = '';
-    const baseTicketName = String(ticket.name || '').replace(/\s*\(fees\)\s*$/i, '').trim();
-    if (baseTicketName) {
-        const c = state.allClients.find(c =>
-            String(c.name || '').toLowerCase() === baseTicketName.toLowerCase() &&
-            !String(c.name || '').includes('(Fees)')
+    // Parse PNR tickets
+    const pnr = String(ticket.booking_reference || '').trim();
+    let pnrTickets = [];
+    if (pnr && pnr !== 'No PNR') {
+        pnrTickets = state.allTickets.filter(t => 
+            String(t.booking_reference || '').trim() === pnr && 
+            !isCanceledTicket(t)
         );
-        if (c) clientKey = c.client_key;
     }
+    if (!pnrTickets.length) {
+        pnrTickets = [ticket];
+    }
+
+    // Totals
+    const bookingTotal = pnrTickets.reduce((sum, t) => sum + getTicketAmount(t), 0);
+    const totalPaid = pnrTickets.filter(t => isTicketPaid(t)).reduce((sum, t) => sum + getTicketAmount(t), 0);
+    const totalOutstanding = bookingTotal - totalPaid;
+
+    // Routes
+    const depInfo = getAirportCodeAndCity(ticket.departure);
+    const destInfo = getAirportCodeAndCity(ticket.destination);
 
     const content = `
-        <div class="details-header">
-            <div>
-                <div class="client-name ${clientKey ? 'clickable-client-link' : ''}" data-client-key="${clientKey || ''}" ${clientKey ? 'style="cursor:pointer; color:var(--teal-dark); text-decoration:underline;" title="View Client"' : ''}>${escapeHtml(baseTicketName || ticket.name || 'N/A')}${/\(fees\)\s*$/i.test(ticket.name || '') ? ' <span style="color:var(--muted);font-weight:600">(Fees)</span>' : ''}</div>
-                <div class="pnr-code">PNR: ${escapeHtml(ticket.booking_reference || 'N/A')}</div>
+        <style>
+            /* Styling for the aesthetic details modal */
+            .solid-modal {
+                background: #F8FAFC !important;
+                padding: 0 !important;
+                border-radius: 18px !important;
+                overflow: hidden !important;
+                max-width: 500px !important;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+                border: none !important;
+            }
+            
+            .solid-modal .modal-content {
+                padding: 0 !important;
+            }
+
+            .aesthetic-details-container {
+                font-family: 'Inter', system-ui, -apple-system, sans-serif;
+                color: #1e293b;
+                background: #f8fafc;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Red gradient header */
+            .aesthetic-header-banner {
+                background: linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%);
+                padding: 1.75rem 1.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                color: #ffffff;
+                position: relative;
+            }
+
+            .aesthetic-header-banner .route-city-box {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+            }
+
+            .aesthetic-header-banner .route-city-box.align-right {
+                align-items: flex-end;
+            }
+
+            .aesthetic-header-banner .city-name {
+                font-size: 1.5rem;
+                font-weight: 800;
+                letter-spacing: -0.02em;
+                line-height: 1.15;
+            }
+
+            .aesthetic-header-banner .city-code {
+                font-size: 1.2rem;
+                font-weight: 700;
+                opacity: 0.85;
+                margin-top: 0.15rem;
+                text-transform: uppercase;
+            }
+
+            .aesthetic-header-banner .route-connector {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                flex: 1.2;
+                opacity: 0.85;
+            }
+
+            .aesthetic-header-banner .connector-dots {
+                letter-spacing: 0.15em;
+                font-weight: 300;
+                font-size: 0.95rem;
+                opacity: 0.5;
+            }
+
+            .aesthetic-header-banner .plane-icon {
+                font-size: 1.1rem;
+            }
+
+            /* Cards block */
+            .aesthetic-body-content {
+                padding: 1.25rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.85rem;
+                max-height: 65vh;
+                overflow-y: auto;
+            }
+
+            .aesthetic-card {
+                background: #ffffff;
+                border-radius: 14px;
+                padding: 1.1rem 1.25rem;
+                border: 1px solid rgba(226, 232, 240, 0.8);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            }
+
+            .aesthetic-card .card-label-tiny {
+                font-size: 0.68rem;
+                font-weight: 700;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 0.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.35rem;
+            }
+
+            .aesthetic-card .card-pnr-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .aesthetic-card .pnr-value {
+                font-size: 1.35rem;
+                font-weight: 800;
+                color: #DC2626;
+                letter-spacing: 0.02em;
+                font-family: monospace;
+            }
+
+            .aesthetic-card .airline-badge-container {
+                display: flex;
+                align-items: center;
+            }
+
+            /* Grid items */
+            .card-grid-two-cols {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+
+            .grid-col-item {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .grid-col-item .grid-label {
+                font-size: 0.68rem;
+                font-weight: 700;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .grid-col-item .grid-val-bold {
+                font-size: 0.95rem;
+                font-weight: 700;
+                color: #1e293b;
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+            }
+
+            .grid-col-item .grid-val-bold i {
+                color: #64748b;
+                font-size: 0.85rem;
+            }
+
+            /* Roster */
+            .roster-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .roster-row {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .roster-avatar {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                background: #DC2626;
+                color: #ffffff;
+                font-weight: 700;
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .roster-info {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .roster-info .name {
+                font-size: 0.9rem;
+                font-weight: 700;
+                color: #0f172a;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .roster-info .sub {
+                font-size: 0.72rem;
+                color: #64748b;
+                margin-top: 0.1rem;
+            }
+
+            .roster-price-status {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.25rem;
+                flex-shrink: 0;
+            }
+
+            .roster-price-status .price {
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: #0f172a;
+            }
+
+            .status-badge-pill {
+                font-size: 0.65rem;
+                font-weight: 700;
+                padding: 0.1rem 0.45rem;
+                border-radius: 9999px;
+                letter-spacing: 0.02em;
+            }
+
+            .status-badge-pill.is-paid {
+                background: #ecfdf5;
+                color: #047857;
+                border: 1px solid #a7f3d0;
+            }
+
+            .status-badge-pill.is-unpaid {
+                background: #fef2f2;
+                color: #b91c1c;
+                border: 1px solid #fecaca;
+            }
+
+            /* Outstanding color */
+            .outstanding-text {
+                font-weight: 700;
+            }
+            .outstanding-text.green { color: #047857; }
+            .outstanding-text.red { color: #b91c1c; }
+
+            /* Roster item list */
+            .aesthetic-body-content::-webkit-scrollbar {
+                width: 6px;
+            }
+            .aesthetic-body-content::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .aesthetic-body-content::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 3px;
+            }
+
+            /* Actions */
+            .aesthetic-actions {
+                padding: 1rem 1.25rem 1.25rem;
+                background: #ffffff;
+                border-top: 1px solid #f1f5f9;
+                display: flex;
+                gap: 0.75rem;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .btn-aesthetic-close {
+                padding: 0.625rem 1.5rem;
+                border-radius: 9999px;
+                background: #ffffff;
+                border: 1px solid #cbd5e1;
+                color: #475569;
+                font-size: 0.875rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                outline: none;
+            }
+
+            .btn-aesthetic-close:hover {
+                background: #f8fafc;
+                border-color: #94a3b8;
+                color: #1e293b;
+            }
+
+            .btn-aesthetic-edit {
+                padding: 0.625rem 1.5rem;
+                border-radius: 9999px;
+                background: #DC2626;
+                border: none;
+                color: #ffffff;
+                font-size: 0.875rem;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+                outline: none;
+            }
+
+            .btn-aesthetic-edit:hover {
+                background: #b91c1c;
+                box-shadow: 0 4px 16px rgba(220, 38, 38, 0.25);
+            }
+        </style>
+
+        <div class="aesthetic-details-container">
+            <!-- Header Banner -->
+            <div class="aesthetic-header-banner">
+                <div class="route-city-box">
+                    <span class="city-name">${escapeHtml(depInfo.city)}</span>
+                    ${depInfo.code ? `<span class="city-code">(${escapeHtml(depInfo.code)})</span>` : ''}
+                </div>
+                <div class="route-connector">
+                    <span class="connector-dots">-----</span>
+                    <i class="fa-solid fa-plane plane-icon"></i>
+                    <span class="connector-dots">-----</span>
+                </div>
+                <div class="route-city-box align-right">
+                    <span class="city-name">${escapeHtml(destInfo.city)}</span>
+                    ${destInfo.code ? `<span class="city-code">(${escapeHtml(destInfo.code)})</span>` : ''}
+                </div>
             </div>
-            <div class="details-status-badge ${statusClass}">${statusText}</div>
-        </div>
-        <div class="details-section">
-            <div class="details-section-title">Client Information</div>
-            <div class="details-grid">
-                <div class="details-item"><i class="fa-solid fa-id-card"></i><div class="details-item-content"><div class="label">ID No.</div><div class="value">${escapeHtml(ticket.id_no || 'N/A')}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-phone"></i><div class="details-item-content"><div class="label">Phone</div><div class="value">${makeClickable(ticket.phone) || 'N/A'}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-hashtag"></i><div class="details-item-content"><div class="label">Social Media</div><div class="value">${escapeHtml(ticket.account_name || 'N/A')} (${escapeHtml(ticket.account_type || 'N/A')})</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-link"></i><div class="details-item-content"><div class="label">Account Link</div><div class="value">${makeClickable(ticket.account_link) || 'N/A'}</div></div></div>
+
+            <!-- Body Contents -->
+            <div class="aesthetic-body-content">
+                <!-- Booking PNR -->
+                <div class="aesthetic-card">
+                    <div class="card-label-tiny">BOOKING REFERENCE (PNR)</div>
+                    <div class="card-pnr-row">
+                        <span class="pnr-value">${escapeHtml(ticket.booking_reference || 'N/A')}</span>
+                        <div class="airline-badge-container">
+                            ${renderAirlineName(ticket.airline || 'N/A', { size: 'xs' })}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule & Overview -->
+                <div class="aesthetic-card">
+                    <div class="card-label-tiny"><i class="fa-solid fa-calendar-days"></i> SCHEDULE & OVERVIEW</div>
+                    <div class="card-grid-two-cols">
+                        <div class="grid-col-item">
+                            <span class="grid-label">TRAVEL DATE</span>
+                            <span class="grid-val-bold"><i class="fa-regular fa-clock"></i> ${escapeHtml(ticket.departing_on || 'N/A')}</span>
+                        </div>
+                        <div class="grid-col-item">
+                            <span class="grid-label">PASSENGERS</span>
+                            <span class="grid-val-bold"><i class="fa-solid fa-users"></i> ${pnrTickets.length} ${pnrTickets.length > 1 ? 'Travellers' : 'Traveller'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Passenger Roster -->
+                <div class="aesthetic-card">
+                    <div class="card-label-tiny"><i class="fa-solid fa-user-tie"></i> PASSENGER ROSTER</div>
+                    <div class="roster-list">
+                        ${pnrTickets.map(t => {
+                            const initials = String(t.name || 'N').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+                            const ticketNo = t.ticket_number || t.ticket_no || 'N/A';
+                            const passengerPrice = getTicketAmount(t);
+                            const isPaid = isTicketPaid(t);
+                            return `
+                                <div class="roster-row">
+                                    <div class="roster-avatar">${escapeHtml(initials)}</div>
+                                    <div class="roster-info">
+                                        <span class="roster-name">${escapeHtml(t.name || 'Passenger')}</span>
+                                        <span class="roster-sub">Ticket: ${escapeHtml(ticketNo)}</span>
+                                    </div>
+                                    <div class="roster-price-status">
+                                        <span class="price">${passengerPrice.toLocaleString()} MMK</span>
+                                        <span class="status-badge-pill ${isPaid ? 'is-paid' : 'is-unpaid'}">${isPaid ? 'PAID' : 'UNPAID'}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Settlement Details -->
+                <div class="aesthetic-card">
+                    <div class="card-label-tiny"><i class="fa-solid fa-sack-dollar"></i> SETTLEMENT DETAILS</div>
+                    <div class="card-grid-two-cols">
+                        <div class="grid-col-item">
+                            <span class="grid-label">BOOKING TOTAL</span>
+                            <span class="grid-val-bold">${bookingTotal.toLocaleString()} MMK</span>
+                        </div>
+                        <div class="grid-col-item">
+                            <span class="grid-label">OUTSTANDING BALANCE</span>
+                            <span class="grid-val-bold outstanding-text ${totalOutstanding > 0 ? 'red' : 'green'}">${totalOutstanding.toLocaleString()} MMK</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Information -->
+                <div class="aesthetic-card">
+                    <div class="card-label-tiny"><i class="fa-solid fa-credit-card"></i> PAYMENT INFORMATION</div>
+                    <div class="card-grid-two-cols">
+                        <div class="grid-col-item">
+                            <span class="grid-label">PAYMENT METHOD</span>
+                            <span class="grid-val-bold">${escapeHtml(ticket.payment_method || '—')}</span>
+                        </div>
+                        <div class="grid-col-item">
+                            <span class="grid-label">PAYMENT DATE</span>
+                            <span class="grid-val-bold">${escapeHtml(ticket.paid_date || '—')}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="details-section">
-            <div class="details-section-title">Flight Details</div>
-            <div class="details-grid">
-                <div class="details-item"><i class="fa-solid fa-plane-departure"></i><div class="details-item-content"><div class="label">From</div><div class="value">${escapeHtml(ticket.departure || 'N/A')}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-plane-arrival"></i><div class="details-item-content"><div class="label">To</div><div class="value">${escapeHtml(ticket.destination || 'N/A')}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-calendar-days"></i><div class="details-item-content"><div class="label">Travel Date</div><div class="value">${escapeHtml(ticket.departing_on || 'N/A')}</div></div></div>
-                <div class="details-item"><i class="fa-solid fa-plane"></i><div class="details-item-content"><div class="label">Airline</div><div class="value">${renderAirlineName(ticket.airline || 'N/A', { size: 'md' })}</div></div></div>
+
+            <!-- Actions Footer -->
+            <div class="aesthetic-actions">
+                <button class="btn-aesthetic-close" id="modalCloseBtn">Close Detail</button>
+                <button class="btn-aesthetic-edit" id="modalEditTicketBtn"><i class="fa-solid fa-pen-to-square"></i> Edit Ticket</button>
             </div>
-        </div>
-        <div class="details-section">
-            <div class="details-section-title">Financials</div>
-            <div class="details-grid">
-                 <div class="details-item"><i class="fa-solid fa-receipt"></i><div class="details-item-content"><div class="label">Net Amount</div><div class="value">${(ticket.net_amount || 0).toLocaleString()} MMK</div></div></div>
-                 <div class="details-item"><i class="fa-solid fa-hand-holding-dollar"></i><div class="details-item-content"><div class="label">Commission</div><div class="value">${(ticket.commission || 0).toLocaleString()} MMK</div></div></div>
-                 <div class="details-item"><i class="fa-solid fa-money-bill-transfer"></i><div class="details-item-content"><div class="label">Date Change Fees</div><div class="value">${(ticket.date_change || 0).toLocaleString()} MMK</div></div></div>
-                 <div class="details-item"><i class="fa-solid fa-circle-plus"></i><div class="details-item-content"><div class="label">Extra Fare</div><div class="value">${(ticket.extra_fare || 0).toLocaleString()} MMK</div></div></div>
-            </div>
-        </div>
-        <div class="details-section">
-            <div class="details-section-title">Payment Information</div>
-            <div class="details-grid">
-                 <div class="details-item"><i class="fa-solid fa-circle-dollar-to-slot"></i><div class="details-item-content"><div class="label">Status</div><div class="value">${ticket.paid ? '<span style="color:var(--teal-dark); font-weight:700;">Paid</span>' : '<span style="color:#cf2d56; font-weight:700;">Unpaid</span>'}</div></div></div>
-                 <div class="details-item"><i class="fa-solid fa-credit-card"></i><div class="details-item-content"><div class="label">Payment Method</div><div class="value">${escapeHtml(ticket.payment_method || '—')}</div></div></div>
-                 <div class="details-item"><i class="fa-solid fa-calendar-check"></i><div class="details-item-content"><div class="label">Payment Date</div><div class="value">${escapeHtml(ticket.paid_date || '—')}</div></div></div>
-                 <div class="details-item"><i class="fa-solid fa-receipt"></i><div class="details-item-content"><div class="label">Transaction ID</div><div class="value">${escapeHtml(ticket.payment_transaction_id || '—')}</div></div></div>
-            </div>
-        </div>
-        <div class="form-actions" style="margin-top: 1rem; gap: 1rem;">
-            <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
-            <button class="btn btn-primary" id="modalEditTicketBtn"><i class="fa-solid fa-pen-to-square"></i> Edit Ticket</button>
         </div>
     `;
+
     openModal(content, 'solid-modal');
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
     document.getElementById('modalEditTicketBtn').addEventListener('click', () => {
