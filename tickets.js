@@ -602,6 +602,15 @@ export function showDetails(docId) {
                  <div class="details-item"><i class="fa-solid fa-circle-plus"></i><div class="details-item-content"><div class="label">Extra Fare</div><div class="value">${(ticket.extra_fare || 0).toLocaleString()} MMK</div></div></div>
             </div>
         </div>
+        <div class="details-section">
+            <div class="details-section-title">Payment Information</div>
+            <div class="details-grid">
+                 <div class="details-item"><i class="fa-solid fa-circle-dollar-to-slot"></i><div class="details-item-content"><div class="label">Status</div><div class="value">${ticket.paid ? '<span style="color:var(--teal-dark); font-weight:700;">Paid</span>' : '<span style="color:#cf2d56; font-weight:700;">Unpaid</span>'}</div></div></div>
+                 <div class="details-item"><i class="fa-solid fa-credit-card"></i><div class="details-item-content"><div class="label">Payment Method</div><div class="value">${escapeHtml(ticket.payment_method || '—')}</div></div></div>
+                 <div class="details-item"><i class="fa-solid fa-calendar-check"></i><div class="details-item-content"><div class="label">Payment Date</div><div class="value">${escapeHtml(ticket.paid_date || '—')}</div></div></div>
+                 <div class="details-item"><i class="fa-solid fa-receipt"></i><div class="details-item-content"><div class="label">Transaction ID</div><div class="value">${escapeHtml(ticket.payment_transaction_id || '—')}</div></div></div>
+            </div>
+        </div>
         <div class="form-actions" style="margin-top: 1rem; gap: 1rem;">
             <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
             <button class="btn btn-primary" id="modalEditTicketBtn"><i class="fa-solid fa-pen-to-square"></i> Edit Ticket</button>
