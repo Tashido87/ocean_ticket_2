@@ -569,23 +569,12 @@ export function showDetails(docId) {
         return { city: cleanName, code: '' };
     }
 
-    // Parse PNR tickets
-    const pnr = String(ticket.booking_reference || '').trim();
-    let pnrTickets = [];
-    if (pnr && pnr !== 'No PNR') {
-        pnrTickets = state.allTickets.filter(t => 
-            String(t.booking_reference || '').trim() === pnr && 
-            !isCanceledTicket(t)
-        );
-    }
-    if (!pnrTickets.length) {
-        pnrTickets = [ticket];
-    }
+    // Selected row only
+    const pnrTickets = [ticket];
 
-    // Totals
-    const bookingTotal = pnrTickets.reduce((sum, t) => sum + getTicketAmount(t), 0);
-    const totalPaid = pnrTickets.filter(t => isTicketPaid(t)).reduce((sum, t) => sum + getTicketAmount(t), 0);
-    const totalOutstanding = bookingTotal - totalPaid;
+    // Totals for this specific row
+    const bookingTotal = getTicketAmount(ticket);
+    const totalOutstanding = ticket.paid ? 0 : (ticket.outstanding_amount !== undefined ? (Number(ticket.outstanding_amount) || 0) : bookingTotal);
 
     // Routes
     const depInfo = getAirportCodeAndCity(ticket.departure);
