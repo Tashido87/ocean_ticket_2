@@ -569,8 +569,21 @@ export function showDetails(docId) {
         return { city: cleanName, code: '' };
     }
 
-    // Selected row only
+    // Selected row only for Roster
     const pnrTickets = [ticket];
+
+    // Total passenger count sharing this PNR
+    const pnr = String(ticket.booking_reference || '').trim();
+    let totalPnrPassengerCount = 1;
+    if (pnr && pnr !== 'No PNR') {
+        const allSharingTickets = state.allTickets.filter(t => 
+            String(t.booking_reference || '').trim() === pnr && 
+            !isCanceledTicket(t)
+        );
+        if (allSharingTickets.length > 0) {
+            totalPnrPassengerCount = allSharingTickets.length;
+        }
+    }
 
     // Totals for this specific row
     const bookingTotal = getTicketAmount(ticket);
@@ -941,7 +954,7 @@ export function showDetails(docId) {
                         </div>
                         <div class="grid-col-item">
                             <span class="grid-label">PASSENGERS</span>
-                            <span class="grid-val-bold"><i class="fa-solid fa-users"></i> ${pnrTickets.length} ${pnrTickets.length > 1 ? 'Travellers' : 'Traveller'}</span>
+                            <span class="grid-val-bold"><i class="fa-solid fa-users"></i> ${totalPnrPassengerCount} ${totalPnrPassengerCount > 1 ? 'Travellers' : 'Traveller'}</span>
                         </div>
                     </div>
                 </div>
