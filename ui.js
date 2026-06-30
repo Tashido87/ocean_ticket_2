@@ -3404,10 +3404,8 @@ const MOBILE_BANKING_SUB_OPTIONS = [
     'KBZ Special',
     'KBZ Normal',
     'AYA Special',
-    'AYA Banking',
-    'CB Banking',
     'UAB Special',
-    'UAB Pay'
+    'CB Special'
 ];
 
 /**

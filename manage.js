@@ -809,8 +809,8 @@ function openPaymentModal(docId) {
                     <input type="checkbox" id="payment_paid" ${isTicketPaid(ticket) ? 'checked' : ''} style="width: 20px; height: 20px;">
                 </div>
                 <div class="form-group">
-                    <label for="payment_method">Payment Method</label>
-                    <select id="payment_method">
+                    <label for="payment_update_method">Payment Method</label>
+                    <select id="payment_update_method">
                         <option value="">Select</option>
                         <option value="KBZ Pay" ${pmBase === 'KBZ Pay' ? 'selected' : ''}>KBZ Pay</option>
                         <option value="Mobile Banking" ${pmBase === 'Mobile Banking' ? 'selected' : ''}>Mobile Banking</option>
@@ -835,7 +835,7 @@ function openPaymentModal(docId) {
     openModal(content, 'large-modal');
     new Datepicker(document.getElementById('payment_paid_date'), { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true });
     const paidChk = document.getElementById('payment_paid');
-    const methodSel = document.getElementById('payment_method');
+    const methodSel = document.getElementById('payment_update_method');
     const bankSel = enhanceMobileBankingSelect(methodSel, { defaultBank: pmBank });
     const paidDateIn = document.getElementById('payment_paid_date');
     const sync = () => {
@@ -856,7 +856,7 @@ function openPaymentModal(docId) {
         
         const updateData = {
             paid,
-            payment_method: paid ? formatPaymentMethod(methodSel.value, document.getElementById('payment_method_bank')?.value || '') : '',
+            payment_method: paid ? formatPaymentMethod(methodSel.value, document.getElementById('payment_update_method_bank')?.value || '') : '',
             paid_date: paid ? formatDateForSheet(paidDateIn.value || new Date()) : '',
             payment_transaction_id: paid ? document.getElementById('payment_transaction_id').value.trim() : '',
             payment_note: document.getElementById('payment_note').value.trim()
