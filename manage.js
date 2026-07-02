@@ -197,7 +197,7 @@ function displayManageResults(tickets) {
     // Check if there is more than one client under this PNR to allow splitting
     const activeOriginalTickets = tickets.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t));
     const uniqueClients = [...new Set(activeOriginalTickets.map(t => 
-        String(t.name || '').replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim().toLowerCase()
+        String(t.name || '').replace(/\([^)]+\)\s*$/i, '').trim().toLowerCase()
     ))];
     const canSplit = uniqueClients.length > 1;
 
@@ -270,7 +270,7 @@ function displayManageResults(tickets) {
             <tr class="${canceled ? 'canceled-row' : ''} ${isFee ? 'fee-row' : ''}">
                 <td>
                     <span class="manage-row-type ${isFee ? 'fee' : ''}">${rowType}</span>
-                    <strong>${escapeHtml(String(t.name || 'Passenger').replace(/\(fees\)\s*$/i, '').trim())}</strong>
+                    <strong>${escapeHtml(String(t.name || 'Passenger').replace(/\([^)]+\)\s*$/i, '').trim())}</strong>
                     <small>${t.id_no || ''}</small>
                 </td>
             <td>
@@ -1011,13 +1011,13 @@ function openSplitPnrModal(docId) {
     }
 
     const passengerName = ticket.name || '';
-    const nameCleaned = String(passengerName).replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim();
+    const nameCleaned = String(passengerName).replace(/\([^)]+\)\s*$/i, '').trim();
     const parentPnr = ticket.booking_reference || '';
 
     // Find all tickets for this passenger under this PNR
     const passengerTickets = state.allTickets.filter(t => 
         normalizePnr(t.booking_reference) === normalizePnr(parentPnr) &&
-        String(t.name || '').replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim().toLowerCase() === nameCleaned.toLowerCase()
+        String(t.name || '').replace(/\([^)]+\)\s*$/i, '').trim().toLowerCase() === nameCleaned.toLowerCase()
     );
 
     const originalPassTickets = passengerTickets.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t));

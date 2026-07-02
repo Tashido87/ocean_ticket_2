@@ -45,7 +45,7 @@ function looksLikePassport(value) {
 export function buildClientList() {
     const clients = {};
     state.allTickets.forEach(ticket => {
-        const baseName = String(ticket.name || '').replace(/\(fees\)\s*$/i, '').trim();
+        const baseName = String(ticket.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
         const phone = ticket.phone && ticket.phone !== 'undefined' ? ticket.phone : '';
         const accountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name : '';
         const accountType = ticket.account_type && ticket.account_type !== 'undefined' ? ticket.account_type : '';

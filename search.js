@@ -110,8 +110,12 @@ function splitNrcDisplay(value) {
     return { prefix: raw, serial: '' };
 }
 
+function normalizeName(name) {
+    return String(name || '').toUpperCase().replace(/\([^)]+\)\s*$/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function clientKeyFromTicket(ticket) {
-    const baseName = String(ticket.name || '').replace(/\(fees\)\s*$/i, '').trim();
+    const baseName = String(ticket.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
     const phone = ticket.phone && ticket.phone !== 'undefined' ? ticket.phone : '';
     const accountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name : '';
     return `${baseName}|${phone}|${accountName}`;
@@ -121,7 +125,7 @@ function getClientForTicket(ticket) {
     const key = clientKeyFromTicket(ticket);
     return state.allClients.find(c => c.client_key === key)
         || state.allClients.find(c =>
-            normalize(c.name) === normalize(ticket.name)
+            normalizeName(c.name) === normalizeName(ticket.name)
             && digitsOnly(c.phone) === digitsOnly(ticket.phone)
         );
 }
@@ -932,7 +936,7 @@ function renderRow(result) {
             <td class="strong-cell">
                 <div class="cell-with-avatar">
                     <span class="cell-avatar ticket-avatar"><i class="fa-solid fa-ticket"></i></span>
-                    <span class="${clientKey ? 'clickable-client-link' : ''}" data-client-key="${escapeHtml(clientKey)}" ${clientKey ? 'style="cursor:pointer; color:var(--primary-accent);"' : ''} title="${clientKey ? 'View Client' : ''}">${highlightText(String(t.name || '—').replace(/\\(fees\\)\\s*$/i, '').trim())}</span>
+                    <span class="${clientKey ? 'clickable-client-link' : ''}" data-client-key="${escapeHtml(clientKey)}" ${clientKey ? 'style="cursor:pointer; color:var(--primary-accent);"' : ''} title="${clientKey ? 'View Client' : ''}">${highlightText(String(t.name || '—').replace(/\([^)]+\)\s*$/i, '').trim())}</span>
                 </div>
             </td>
             <td>${highlightText(t.account_name || '—')}</td>

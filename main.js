@@ -159,13 +159,13 @@ async function sanitizeTickets(tickets) {
 
     const updates = [];
     for (const ticket of tickets) {
-        const nameCleaned = String(ticket.name || '').replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim();
+        const nameCleaned = String(ticket.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
         if (!nameCleaned) continue;
         
         const hasBadPhone = !ticket.phone || ticket.phone === 'undefined';
         if (hasBadPhone) {
             const goodTicket = tickets.find(t => {
-                const n = String(t.name || '').replace(/\(fees\)\s*$/i, '').replace(/\(balance\)\s*$/i, '').trim();
+                const n = String(t.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
                 return n.toLowerCase() === nameCleaned.toLowerCase() && t.phone && t.phone !== 'undefined';
             });
             
@@ -1334,7 +1334,7 @@ function groupUnpaidTickets(rows) {
             // Use the passenger row (non-fee) for display name/route/dates
             const passengerTicket = tickets.find(t => !isFeeEntryRow(t)) || tickets[0];
             const displayName = String(passengerTicket.name || tickets[0]?.name || '')
-                .replace(/\(fees\)\s*$/i, '')
+                .replace(/\([^)]+\)\s*$/i, '')
                 .trim();
             groups.set(pnr, {
                 pnr,
