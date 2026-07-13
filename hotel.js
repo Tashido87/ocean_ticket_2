@@ -242,11 +242,11 @@ async function generateVoucher(format) {
     const container = document.getElementById('voucher-render-container');
     if (!container) return;
 
-    if (format === 'png') {
+    if (format === 'photo' || format === 'png') {
         container.innerHTML = city === 'BKK' ? getBKKHtml(data) : getKULHtml(data);
         await downloadPNG(container, `Hotel_Voucher_${city}_${data.refNum}`);
         container.innerHTML = ''; 
-        showToast(`${city} Voucher (PNG) generated!`, 'success');
+        showToast(`${city} Voucher (Photo) generated!`, 'success');
     } else {
         // True PDF
         try {
