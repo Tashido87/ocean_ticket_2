@@ -366,8 +366,33 @@ function buildTicketResult(ticket, query = searchState.query) {
 }
 
 function buildAllRankedResults(query = searchState.query) {
-    const clients = state.allClients.map(c => buildClientResult(c, query)).filter(Boolean);
-    const tickets = state.allTickets.map(t => buildTicketResult(t, query)).filter(Boolean);
+    const q = normalize(query);
+    
+    // Check if the query is an exact match for any PNR code in active tickets or bookings
+    const hasExactPnr = q && (
+        state.allTickets.some(t => normalize(t.booking_reference) === q) ||
+        (state.allBookings && state.allBookings.some(b => normalize(b.pnr) === q))
+    );
+
+    let clients = [];
+    let tickets = [];
+
+    if (hasExactPnr) {
+        // Only return exact matching tickets
+        const matchingTickets = state.allTickets.filter(t => normalize(t.booking_reference) === q);
+        tickets = matchingTickets.map(t => buildTicketResult(t, query)).filter(Boolean);
+
+        // Find keys of clients who own these tickets
+        const matchingClientKeys = new Set(matchingTickets.map(t => clientKeyFromTicket(t)));
+        clients = state.allClients
+            .filter(c => matchingClientKeys.has(c.client_key))
+            .map(c => buildClientResult(c, query))
+            .filter(Boolean);
+    } else {
+        clients = state.allClients.map(c => buildClientResult(c, query)).filter(Boolean);
+        tickets = state.allTickets.map(t => buildTicketResult(t, query)).filter(Boolean);
+    }
+
     return [...clients, ...tickets]
         .filter(result => {
             if (!query) return true;
