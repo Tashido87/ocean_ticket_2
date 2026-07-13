@@ -265,6 +265,14 @@ function sortBookingGroups(a, b) {
     const bRank = deadlineRank[b.deadlineMeta.state] ?? 5;
     if (aRank !== bRank) return aRank - bRank;
 
+    // For expired bookings, sort by deadline descending (latest expired on top)
+    if (a.deadlineMeta.state === 'expired') {
+        const aDeadline = a.deadlineMeta.deadline ? a.deadlineMeta.deadline.getTime() : 0;
+        const bDeadline = b.deadlineMeta.deadline ? b.deadlineMeta.deadline.getTime() : 0;
+        if (aDeadline !== bDeadline) return bDeadline - aDeadline;
+        return parseSheetDate(b.departing_on) - parseSheetDate(a.departing_on);
+    }
+
     const aPriority = PRIORITY_WEIGHT[a.priority] ?? PRIORITY_WEIGHT.Normal;
     const bPriority = PRIORITY_WEIGHT[b.priority] ?? PRIORITY_WEIGHT.Normal;
     if (aPriority !== bPriority) return aPriority - bPriority;
