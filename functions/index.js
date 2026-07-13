@@ -170,50 +170,122 @@ exports.checkBookingDeadlines = onSchedule(
                 .where('status', '==', 'active')
                 .get();
 
-            for (const doc of snapshot.docs) {
-                const booking = doc.data();
-                if (!booking.deadlineAt) continue;
+            const bookings = snapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() }));
+            
+            // Group bookings by: (PNR + normalized name) if PNR is present and valid,
+            // otherwise keep them separate (to prevent grouping different client bookings without PNRs).
+            const groups = [];
+            const processedIds = new Set();
 
-                const deadline = new Date(booking.deadlineAt);
+            for (const b of bookings) {
+                if (processedIds.has(b.id)) continue;
+
+                const pnrVal = String(b.pnr || '').trim().toUpperCase();
+                const clientName = String(b.name || '').trim().replace(/^(MR|MS)\s+/i, '').toLowerCase();
+
+                if (pnrVal && pnrVal !== 'NO PNR' && pnrVal !== '—' && pnrVal !== '-') {
+                    // Find all legs sharing this PNR and same client
+                    const legs = bookings.filter(other => 
+                        !processedIds.has(other.id) &&
+                        String(other.pnr || '').trim().toUpperCase() === pnrVal &&
+                        String(other.name || '').trim().replace(/^(MR|MS)\s+/i, '').toLowerCase() === clientName
+                    );
+
+                    legs.forEach(leg => processedIds.add(leg.id));
+                    groups.push({
+                        pnr: pnrVal,
+                        clientName: String(b.name || '').replace(/^(MR|MS)\s+/i, ''),
+                        legs,
+                        deadlineAt: b.deadlineAt,
+                        enddate: b.enddate,
+                        endtime: b.endtime,
+                        notified1hWarning: legs.some(leg => leg.notified1hWarning)
+                    });
+                } else {
+                    processedIds.add(b.id);
+                    groups.push({
+                        pnr: '',
+                        clientName: String(b.name || '').replace(/^(MR|MS)\s+/i, ''),
+                        legs: [b],
+                        deadlineAt: b.deadlineAt,
+                        enddate: b.enddate,
+                        endtime: b.endtime,
+                        notified1hWarning: b.notified1hWarning
+                    });
+                }
+            }
+
+            for (const group of groups) {
+                if (!group.deadlineAt) continue;
+
+                const deadline = new Date(group.deadlineAt);
                 if (Number.isNaN(deadline.getTime())) continue;
 
                 const timeLeftMs = deadline.getTime() - now.getTime();
                 const timeLeftMins = Math.round(timeLeftMs / 60000);
-                const cleanName = String(booking.name || 'N/A').replace(/^(MR|MS)\s+/i, '');
+
+                // Format Route & Date Info
+                let routeInfo = '';
+                if (group.legs.length > 1) {
+                    // Sort legs by departing_on date to order them (outbound -> return)
+                    const sortedLegs = [...group.legs].sort((x, y) => {
+                        const parseDate = (dStr) => {
+                            if (!dStr) return 0;
+                            const parts = String(dStr).split('/');
+                            if (parts.length === 3) {
+                                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+                            }
+                            return 0;
+                        };
+                        return parseDate(x.departing_on) - parseDate(y.departing_on);
+                    });
+
+                    sortedLegs.forEach((leg, index) => {
+                        const label = index === 0 ? 'OB' : (index === 1 ? 'RT' : `Leg ${index + 1}`);
+                        routeInfo += `✈️ *Route (${label}):* ${leg.departure || 'N/A'} ➔ ${leg.destination || 'N/A'}\n` +
+                                     `📅 *Departure Date (${label}):* ${leg.departing_on || 'N/A'}\n`;
+                    });
+                } else {
+                    const leg = group.legs[0];
+                    routeInfo += `✈️ *Route:* ${leg.departure || 'N/A'} ➔ ${leg.destination || 'N/A'}\n` +
+                                 `📅 *Departure Date:* ${leg.departing_on || 'N/A'}\n`;
+                }
 
                 // Case 1: Deadline has passed (expired)
                 if (timeLeftMins <= 0) {
                     const message = `❌ *HOLD DEADLINE EXPIRED*\n\n` +
-                                    `👤 *Client:* ${cleanName}\n` +
-                                    `✈️ *Route:* ${booking.departure || 'N/A'} ➔ ${booking.destination || 'N/A'}\n` +
-                                    `📅 *Departure Date:* ${booking.departing_on || 'N/A'}\n` +
-                                    `🎫 *PNR:* ${booking.pnr || 'N/A'}\n` +
-                                    `⏰ *Deadline:* ${booking.enddate || ''} ${booking.endtime || ''}\n\n` +
+                                    `👤 *Client:* ${group.clientName}\n` +
+                                    routeInfo +
+                                    `🎫 *PNR:* ${group.pnr || 'N/A'}\n` +
+                                    `⏰ *Deadline:* ${group.enddate || ''} ${group.endtime || ''}\n\n` +
                                     `🚫 This booking has passed its hold deadline and is now marked as *EXPIRED*.`;
 
                     await sendTelegramAlert(message);
 
-                    // Update status in Firestore to expired (matches frontend handleExpiredBookings)
-                    await doc.ref.update({
-                        status: 'expired',
-                        remark: 'end',
-                        expiredAt: now.toISOString()
-                    });
+                    // Update status in Firestore for all legs in the group
+                    for (const leg of group.legs) {
+                        await db.collection('bookings').doc(leg.id).update({
+                            status: 'expired',
+                            remark: 'end',
+                            expiredAt: now.toISOString()
+                        });
+                    }
                 }
                 // Case 2: Deadline is near (under 1 hour left)
-                else if (timeLeftMins > 0 && timeLeftMins <= 60 && !booking.notified1hWarning) {
+                else if (timeLeftMins > 0 && timeLeftMins <= 60 && !group.notified1hWarning) {
                     const message = `⚠️ *HOLD DEADLINE WARNING* (Less than 1 hour!)\n\n` +
-                                    `👤 *Client:* ${cleanName}\n` +
-                                    `✈️ *Route:* ${booking.departure || 'N/A'} ➔ ${booking.destination || 'N/A'}\n` +
-                                    `📅 *Departure Date:* ${booking.departing_on || 'N/A'}\n` +
-                                    `🎫 *PNR:* ${booking.pnr || 'N/A'}\n` +
-                                    `⏰ *Deadline:* ${booking.enddate || ''} ${booking.endtime || ''}\n` +
+                                    `👤 *Client:* ${group.clientName}\n` +
+                                    routeInfo +
+                                    `🎫 *PNR:* ${group.pnr || 'N/A'}\n` +
+                                    `⏰ *Deadline:* ${group.enddate || ''} ${group.endtime || ''}\n` +
                                     `⏳ *Time Left:* ${timeLeftMins} mins`;
 
                     await sendTelegramAlert(message);
 
-                    // Mark document so we don't send duplicate notifications
-                    await doc.ref.update({ notified1hWarning: true });
+                    // Mark all legs in the group so we don't send duplicate notifications
+                    for (const leg of group.legs) {
+                        await db.collection('bookings').doc(leg.id).update({ notified1hWarning: true });
+                    }
                 }
             }
         } catch (error) {
