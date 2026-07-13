@@ -680,6 +680,13 @@ export async function handleNewBookingSubmit(e) {
         return;
     }
 
+    const isRoundTrip = document.getElementById('booking_trip_type_round')?.checked;
+    const returningOn = document.getElementById('booking_returning_on')?.value;
+    if (isRoundTrip && !returningOn) {
+        showToast('Return date is required for round-trip bookings.', 'error');
+        return;
+    }
+
     const deadline = sharedData.enddate && sharedData.endtime ? parseDeadline(sharedData.enddate, sharedData.endtime) : null;
     if (sharedData.enddate && sharedData.endtime && !deadline) {
         showToast('Please enter a valid booking deadline date and time.', 'error');
@@ -708,8 +715,9 @@ export async function handleNewBookingSubmit(e) {
         <p>Please review the details before submitting:</p>
         <ul style="list-style: none; padding-left: 0; margin: 1rem 0; text-align: left;">
             <li><strong>Client:</strong> ${passengerData.map(p => p.name).join(', ')}</li>
-            <li><strong>Route:</strong> ${sharedData.departure.split('(')[0]} -> ${sharedData.destination.split('(')[0]}</li>
-            <li><strong>Travel Date:</strong> ${sharedData.departing_on}</li>
+            <li><strong>Trip Type:</strong> ${isRoundTrip ? 'Round-Trip' : 'One-Way'}</li>
+            <li><strong>Route:</strong> ${sharedData.departure.split('(')[0]} -> ${sharedData.destination.split('(')[0]}${isRoundTrip ? ` (Return: ${sharedData.destination.split('(')[0]} -> ${sharedData.departure.split('(')[0]})` : ''}</li>
+            <li><strong>Travel Date:</strong> ${sharedData.departing_on}${isRoundTrip ? ` (Return: ${returningOn})` : ''}</li>
             <li><strong>Deadline:</strong> ${sharedData.enddate && sharedData.endtime ? `${sharedData.enddate} ${sharedData.endtime}` : 'No deadline'}</li>
             <li><strong>Priority:</strong> ${sharedData.priority}</li>
             <li><strong>Total Passengers:</strong> ${passengerData.length}</li>
@@ -722,27 +730,61 @@ export async function handleNewBookingSubmit(e) {
         closeModal();
 
         try {
-            const groupId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `booking-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-            const bookingObjects = passengerData.map(passenger => ({
-                groupId,
-                name: `${passenger.gender} ${passenger.name}`,
-                id_no: passenger.nrc_no || passenger.passport_no || '',
-                phone: sharedData.phone,
-                account_name: sharedData.account_name,
-                account_type: sharedData.account_type,
-                account_link: sharedData.account_link,
-                departure: sharedData.departure,
-                destination: sharedData.destination,
-                departing_on: sharedData.departing_on,
-                pnr: sharedData.pnr,
-                status: 'active',
-                remark: '',
-                enddate: sharedData.enddate,
-                endtime: sharedData.endtime,
-                deadlineAt: deadline ? deadline.toISOString() : '',
-                priority: sharedData.priority,
-                notes: sharedData.notes
-            }));
+            const bookingObjects = [];
+            const outboundGroupId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `booking-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+            passengerData.forEach(passenger => {
+                bookingObjects.push({
+                    groupId: outboundGroupId,
+                    name: `${passenger.gender} ${passenger.name}`,
+                    id_no: passenger.nrc_no || passenger.passport_no || '',
+                    phone: sharedData.phone,
+                    account_name: sharedData.account_name,
+                    account_type: sharedData.account_type,
+                    account_link: sharedData.account_link,
+                    departure: sharedData.departure,
+                    destination: sharedData.destination,
+                    departing_on: sharedData.departing_on,
+                    pnr: sharedData.pnr,
+                    status: 'active',
+                    remark: '',
+                    enddate: sharedData.enddate,
+                    endtime: sharedData.endtime,
+                    deadlineAt: deadline ? deadline.toISOString() : '',
+                    priority: sharedData.priority,
+                    notes: sharedData.notes,
+                    trip_type: isRoundTrip ? 'Round-Trip' : 'One-Way',
+                    leg: 'outbound'
+                });
+            });
+
+            if (isRoundTrip && returningOn) {
+                const returnGroupId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `booking-${Date.now()}-ret-${Math.random().toString(16).slice(2)}`;
+                passengerData.forEach(passenger => {
+                    bookingObjects.push({
+                        groupId: returnGroupId,
+                        name: `${passenger.gender} ${passenger.name}`,
+                        id_no: passenger.nrc_no || passenger.passport_no || '',
+                        phone: sharedData.phone,
+                        account_name: sharedData.account_name,
+                        account_type: sharedData.account_type,
+                        account_link: sharedData.account_link,
+                        departure: sharedData.destination,
+                        destination: sharedData.departure,
+                        departing_on: returningOn,
+                        pnr: sharedData.pnr,
+                        status: 'active',
+                        remark: '',
+                        enddate: sharedData.enddate,
+                        endtime: sharedData.endtime,
+                        deadlineAt: deadline ? deadline.toISOString() : '',
+                        priority: sharedData.priority,
+                        notes: sharedData.notes,
+                        trip_type: 'Round-Trip',
+                        leg: 'return'
+                    });
+                });
+            }
 
             await addBookings(bookingObjects);
             showToast(`Booking for ${passengerData.length} passenger(s) saved!`, 'success');

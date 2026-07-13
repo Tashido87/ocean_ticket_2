@@ -641,11 +641,23 @@
                            <div class="form-group"><label for="booking_account_name">Social Account Name</label><input type="text" id="booking_account_name" autocomplete="off"></div>
                            <div class="form-group"><label for="booking_account_type">Social Account Type</label><select id="booking_account_type"><option value="" disabled selected>Select Type</option><option value="Facebook Page">Facebook Page</option><option value="Messenger">Messenger</option><option value="Viber">Viber</option><option value="Telegram">Telegram</option><option value="WeChat">WeChat</option><option value="Phone">Phone</option></select></div>
                            <div class="form-group"><label for="booking_account_link">Account Link</label><input type="text" id="booking_account_link" placeholder="URL, phone or @username"></div>
+                           <div class="form-group">
+                               <label>Trip Type</label>
+                               <div style="display: flex; gap: 1rem; margin-top: 0.5rem; height: 38px; align-items: center;">
+                                   <label style="display: flex; align-items: center; gap: 0.35rem; font-weight: normal; cursor: pointer; color: white;">
+                                       <input type="radio" name="booking_trip_type" value="one-way" checked id="booking_trip_type_oneway"> One-Way
+                                   </label>
+                                   <label style="display: flex; align-items: center; gap: 0.35rem; font-weight: normal; cursor: pointer; color: white;">
+                                       <input type="radio" name="booking_trip_type" value="round-trip" id="booking_trip_type_round"> Round-Trip
+                                   </label>
+                               </div>
+                           </div>
                            <div class="form-group"><label for="booking_departure">Departure</label><select id="booking_departure" required><option value="" disabled selected>Select Departure</option>
                         </select></div>
                            <div class="form-group"><label for="booking_destination">Destination</label><select id="booking_destination" required><option value="" disabled selected>Select Destination</option>
                         </select></div>
-                           <div class="form-group"><label for="booking_departing_on">Travel Date</label><input type="text" id="booking_departing_on" placeholder="DD/MM/YYYY" required autocomplete="off"></div>
+                           <div class="form-group"><label for="booking_departing_on" id="booking_departing_label">Travel Date</label><input type="text" id="booking_departing_on" placeholder="DD/MM/YYYY" required autocomplete="off"></div>
+                           <div class="form-group" id="booking_returning_group" style="display: none;"><label for="booking_returning_on">Return Date <span class="req">*</span></label><input type="text" id="booking_returning_on" placeholder="DD/MM/YYYY" autocomplete="off"></div>
                            <div class="form-group"><label for="booking_end_date">Booking End Date</label><input type="text" id="booking_end_date" placeholder="DD/MM/YYYY" autocomplete="off"></div>
                            <div class="form-group">
                                 <label for="booking_end_time_hour">Booking End Time</label>

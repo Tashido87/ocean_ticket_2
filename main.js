@@ -583,6 +583,31 @@ function setupEventListeners() {
     document.getElementById('bookingSearchBtn').addEventListener('click', performBookingSearch);
     document.getElementById('bookingClearBtn').addEventListener('click', clearBookingSearch);
 
+    // Booking Trip Type Toggle
+    const bookingOnewayRadio = document.getElementById('booking_trip_type_oneway');
+    const bookingRoundRadio = document.getElementById('booking_trip_type_round');
+    const bookingReturningGroup = document.getElementById('booking_returning_group');
+    const bookingReturningOn = document.getElementById('booking_returning_on');
+    const bookingDepartingLabel = document.getElementById('booking_departing_label');
+
+    function toggleBookingTripType() {
+        if (bookingRoundRadio && bookingRoundRadio.checked) {
+            if (bookingReturningGroup) bookingReturningGroup.style.display = 'block';
+            if (bookingReturningOn) bookingReturningOn.required = true;
+            if (bookingDepartingLabel) bookingDepartingLabel.textContent = 'Departure Date';
+        } else {
+            if (bookingReturningGroup) bookingReturningGroup.style.display = 'none';
+            if (bookingReturningOn) {
+                bookingReturningOn.required = false;
+                bookingReturningOn.value = '';
+            }
+            if (bookingDepartingLabel) bookingDepartingLabel.textContent = 'Travel Date';
+        }
+    }
+
+    if (bookingOnewayRadio) bookingOnewayRadio.addEventListener('change', toggleBookingTripType);
+    if (bookingRoundRadio) bookingRoundRadio.addEventListener('change', toggleBookingTripType);
+
     // Settlement is wired by initSettlementView() in initializeApp().
 
     // Hotel Service Initialization

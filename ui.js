@@ -275,7 +275,7 @@ export function initializeDatepickers() {
         todayHighlight: true
     };
     // Added 'hotel-arrival' and 'hotel-departure' to the list below
-    const allDatePickers = ['searchStartDate', 'searchEndDate', 'searchTravelDate', 'booking_departing_on', 'exportStartDate', 'exportEndDate', 'issued_date', 'departing_on', 'return_date', 'paid_date', 'booking_end_date', 'update_departing_on', 'update_paid_date', 'invoice_date', 'hotel-arrival', 'hotel-departure'];
+    const allDatePickers = ['searchStartDate', 'searchEndDate', 'searchTravelDate', 'booking_departing_on', 'booking_returning_on', 'exportStartDate', 'exportEndDate', 'issued_date', 'departing_on', 'return_date', 'paid_date', 'booking_end_date', 'update_departing_on', 'update_paid_date', 'invoice_date', 'hotel-arrival', 'hotel-departure'];
     
     allDatePickers.forEach(id => {
         const el = document.getElementById(id);
@@ -1150,6 +1150,16 @@ export function hideNewBookingForm() {
     document.getElementById('booking-form-container').style.display = 'none';
     document.getElementById('booking-display-container').style.display = 'block';
     document.getElementById('newBookingForm').reset();
+    
+    const returningGroup = document.getElementById('booking_returning_group');
+    if (returningGroup) returningGroup.style.display = 'none';
+    const returningOn = document.getElementById('booking_returning_on');
+    if (returningOn) {
+        returningOn.required = false;
+        returningOn.value = '';
+    }
+    const departingLabel = document.getElementById('booking_departing_label');
+    if (departingLabel) departingLabel.textContent = 'Travel Date';
 }
 
 // ====================================================================

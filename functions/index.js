@@ -186,6 +186,7 @@ exports.checkBookingDeadlines = onSchedule(
                     const message = `❌ *HOLD DEADLINE EXPIRED*\n\n` +
                                     `👤 *Client:* ${cleanName}\n` +
                                     `✈️ *Route:* ${booking.departure || 'N/A'} ➔ ${booking.destination || 'N/A'}\n` +
+                                    `📅 *Departure Date:* ${booking.departing_on || 'N/A'}\n` +
                                     `🎫 *PNR:* ${booking.pnr || 'N/A'}\n` +
                                     `⏰ *Deadline:* ${booking.enddate || ''} ${booking.endtime || ''}\n\n` +
                                     `🚫 This booking has passed its hold deadline and is now marked as *EXPIRED*.`;
@@ -204,6 +205,7 @@ exports.checkBookingDeadlines = onSchedule(
                     const message = `⚠️ *HOLD DEADLINE WARNING* (Less than 1 hour!)\n\n` +
                                     `👤 *Client:* ${cleanName}\n` +
                                     `✈️ *Route:* ${booking.departure || 'N/A'} ➔ ${booking.destination || 'N/A'}\n` +
+                                    `📅 *Departure Date:* ${booking.departing_on || 'N/A'}\n` +
                                     `🎫 *PNR:* ${booking.pnr || 'N/A'}\n` +
                                     `⏰ *Deadline:* ${booking.enddate || ''} ${booking.endtime || ''}\n` +
                                     `⏳ *Time Left:* ${timeLeftMins} mins`;
