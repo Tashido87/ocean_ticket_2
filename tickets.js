@@ -623,12 +623,11 @@ export function showDetails(docId) {
     
     let ticketDisplayHtml = '';
     if (isRoundTrip) {
-        ticketDisplayHtml = `
-            <div class="roster-ticket-row">OB Ticket: ${escapeHtml(outboundTicketNo || 'N/A')}</div>
-            <div class="roster-ticket-row">RT Ticket: ${escapeHtml(returnTicketNo || 'N/A')}</div>
-        `;
+        const obPart = outboundTicketNo ? `<div class="roster-ticket-row">OB Ticket: ${escapeHtml(outboundTicketNo)}</div>` : '';
+        const rtPart = returnTicketNo ? `<div class="roster-ticket-row">RT Ticket: ${escapeHtml(returnTicketNo)}</div>` : '';
+        ticketDisplayHtml = (obPart || rtPart) ? (obPart + rtPart) : `<div class="roster-ticket-row" style="color: #94a3b8; font-style: italic;">Not issued yet</div>`;
     } else {
-        ticketDisplayHtml = `<div class="roster-ticket-row">Ticket: ${escapeHtml(outboundTicketNo || 'N/A')}</div>`;
+        ticketDisplayHtml = outboundTicketNo ? `<div class="roster-ticket-row">Ticket: ${escapeHtml(outboundTicketNo)}</div>` : `<div class="roster-ticket-row" style="color: #94a3b8; font-style: italic;">Not issued yet</div>`;
     }
 
     // Routes
