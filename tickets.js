@@ -569,29 +569,71 @@ export function showDetails(docId) {
         return { city: cleanName, code: '' };
     }
 
-    // Selected row only for Roster
-    const pnrTickets = [ticket];
-
-    // Total passenger count sharing this PNR
+    // Find all sharing tickets for this PNR (non-canceled)
     const pnr = String(ticket.booking_reference || '').trim();
-    let totalPnrPassengerCount = 1;
+    let allSharingTickets = [];
     if (pnr && pnr !== 'No PNR') {
-        const allSharingTickets = state.allTickets.filter(t => 
+        allSharingTickets = state.allTickets.filter(t => 
             String(t.booking_reference || '').trim() === pnr && 
             !isCanceledTicket(t)
         );
-        if (allSharingTickets.length > 0) {
-            totalPnrPassengerCount = allSharingTickets.length;
-        }
+    }
+    if (!allSharingTickets.length) {
+        allSharingTickets = [ticket];
     }
 
-    // Totals for this specific row
-    const bookingTotal = getTicketAmount(ticket);
-    const totalOutstanding = ticket.paid ? 0 : (ticket.outstanding_amount !== undefined ? (Number(ticket.outstanding_amount) || 0) : bookingTotal);
+    // Find passenger sharing tickets (specifically for this passenger's name) under this PNR
+    const basePassengerName = String(ticket.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
+    const passengerSharingTickets = allSharingTickets.filter(t => 
+        String(t.name || '').replace(/\([^)]+\)\s*$/i, '').trim().toLowerCase() === basePassengerName.toLowerCase()
+    );
+
+    // Sort tickets by departing date to order legs
+    const sortedLegs = [...passengerSharingTickets].sort((a, b) => parseSheetDate(a.departing_on) - parseSheetDate(b.departing_on));
+    const outboundLeg = sortedLegs[0] || ticket;
+    const returnLeg = sortedLegs.length > 1 ? sortedLegs[1] : null;
+    const isRoundTrip = !!returnLeg;
+
+    // Unique passenger count under this PNR (ignoring suffix variations)
+    const uniquePassengerNames = [...new Set(allSharingTickets.map(t => 
+        String(t.name || '').replace(/\([^)]+\)\s*$/i, '').trim().toLowerCase()
+    ))];
+    const totalPnrPassengerCount = uniquePassengerNames.length;
+
+    // Totals for this specific passenger (outbound + return if round-trip)
+    const bookingTotal = getTicketAmount(outboundLeg) + (returnLeg ? getTicketAmount(returnLeg) : 0);
+    
+    const outboundOutstanding = outboundLeg.paid ? 0 : (outboundLeg.outstanding_amount !== undefined ? (Number(outboundLeg.outstanding_amount) || 0) : getTicketAmount(outboundLeg));
+    const returnOutstanding = returnLeg ? (returnLeg.paid ? 0 : (returnLeg.outstanding_amount !== undefined ? (Number(returnLeg.outstanding_amount) || 0) : getTicketAmount(returnLeg))) : 0;
+    const totalOutstanding = outboundOutstanding + returnOutstanding;
+
+    // Payment stats for roster rendering
+    let isPaid = false;
+    let paymentStatusLabel = 'UNPAID';
+    if (outboundLeg.paid && (!returnLeg || returnLeg.paid)) {
+        isPaid = true;
+        paymentStatusLabel = 'PAID';
+    } else if (outboundLeg.paid || (returnLeg && returnLeg.paid)) {
+        paymentStatusLabel = 'PARTIAL';
+    }
+
+    // Ticket numbers display
+    const outboundTicketNo = outboundLeg.ticket_number || outboundLeg.ticket_no || '';
+    const returnTicketNo = returnLeg ? (returnLeg.ticket_number || returnLeg.ticket_no || '') : '';
+    
+    let ticketDisplayHtml = '';
+    if (isRoundTrip) {
+        ticketDisplayHtml = `
+            <div class="roster-ticket-row">OB Ticket: ${escapeHtml(outboundTicketNo || 'N/A')}</div>
+            <div class="roster-ticket-row">RT Ticket: ${escapeHtml(returnTicketNo || 'N/A')}</div>
+        `;
+    } else {
+        ticketDisplayHtml = `<div class="roster-ticket-row">Ticket: ${escapeHtml(outboundTicketNo || 'N/A')}</div>`;
+    }
 
     // Routes
-    const depInfo = getAirportCodeAndCity(ticket.departure);
-    const destInfo = getAirportCodeAndCity(ticket.destination);
+    const depInfo = getAirportCodeAndCity(outboundLeg.departure);
+    const destInfo = getAirportCodeAndCity(outboundLeg.destination);
 
     const content = `
         <style>
@@ -805,6 +847,7 @@ export function showDetails(docId) {
                 font-size: 0.72rem;
                 color: #64748b;
                 margin-top: 0.1rem;
+                line-height: 1.3;
             }
 
             .roster-price-status {
@@ -833,6 +876,12 @@ export function showDetails(docId) {
                 background: #ecfdf5;
                 color: #047857;
                 border: 1px solid #a7f3d0;
+            }
+
+            .status-badge-pill.is-partial {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
             }
 
             .status-badge-pill.is-unpaid {
@@ -922,7 +971,7 @@ export function showDetails(docId) {
                 </div>
                 <div class="route-connector">
                     <span class="connector-dots">-----</span>
-                    <i class="fa-solid fa-plane plane-icon"></i>
+                    <i class="fa-solid ${isRoundTrip ? 'fa-right-left' : 'fa-plane'} plane-icon" ${isRoundTrip ? 'style="transform:none; font-size:1rem;"' : ''}></i>
                     <span class="connector-dots">-----</span>
                 </div>
                 <div class="route-city-box align-right">
@@ -947,41 +996,69 @@ export function showDetails(docId) {
                 <!-- Schedule & Overview -->
                 <div class="aesthetic-card">
                     <div class="card-label-tiny"><i class="fa-solid fa-calendar-days"></i> SCHEDULE & OVERVIEW</div>
-                    <div class="card-grid-two-cols">
-                        <div class="grid-col-item">
-                            <span class="grid-label">TRAVEL DATE</span>
-                            <span class="grid-val-bold"><i class="fa-regular fa-clock"></i> ${escapeHtml(ticket.departing_on || 'N/A')}</span>
+                    ${isRoundTrip ? `
+                        <!-- Outbound Flight -->
+                        <div class="leg-detail-row" style="margin-bottom: 0.65rem; border-bottom: 1px dashed rgba(226,232,240,0.8); padding-bottom: 0.65rem;">
+                            <div style="font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Outbound Flight</div>
+                            <div class="card-grid-two-cols">
+                                <div class="grid-col-item">
+                                    <span class="grid-label">DEPARTURE DATE</span>
+                                    <span class="grid-val-bold"><i class="fa-regular fa-calendar"></i> ${escapeHtml(outboundLeg.departing_on || '—')}</span>
+                                </div>
+                                <div class="grid-col-item">
+                                    <span class="grid-label">OUTBOUND ROUTE</span>
+                                    <span class="grid-val-bold"><i class="fa-solid fa-plane-departure"></i> ${escapeHtml(outboundLeg.departure)} → ${escapeHtml(outboundLeg.destination)}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="grid-col-item">
-                            <span class="grid-label">PASSENGERS</span>
-                            <span class="grid-val-bold"><i class="fa-solid fa-users"></i> ${totalPnrPassengerCount} ${totalPnrPassengerCount > 1 ? 'Travellers' : 'Traveller'}</span>
+                        <!-- Return Flight -->
+                        <div class="leg-detail-row" style="margin-bottom: 0.65rem; border-bottom: 1px dashed rgba(226,232,240,0.8); padding-bottom: 0.65rem;">
+                            <div style="font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Return Flight</div>
+                            <div class="card-grid-two-cols">
+                                <div class="grid-col-item">
+                                    <span class="grid-label">RETURN DATE</span>
+                                    <span class="grid-val-bold"><i class="fa-regular fa-calendar"></i> ${escapeHtml(returnLeg.departing_on || '—')}</span>
+                                </div>
+                                <div class="grid-col-item">
+                                    <span class="grid-label">RETURN ROUTE</span>
+                                    <span class="grid-val-bold"><i class="fa-solid fa-plane-arrival"></i> ${escapeHtml(returnLeg.departure)} → ${escapeHtml(returnLeg.destination)}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                        <!-- Passengers Count -->
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="grid-label" style="font-size: 0.68rem; font-weight: 700; color: #94a3b8;">TOTAL PASSENGERS</span>
+                            <span class="grid-val-bold" style="font-size: 0.95rem; font-weight: 700; color: #1e293b;"><i class="fa-solid fa-users"></i> ${totalPnrPassengerCount} ${totalPnrPassengerCount > 1 ? 'Travellers' : 'Traveller'}</span>
+                        </div>
+                    ` : `
+                        <div class="card-grid-two-cols">
+                            <div class="grid-col-item">
+                                <span class="grid-label">TRAVEL DATE</span>
+                                <span class="grid-val-bold"><i class="fa-regular fa-clock"></i> ${escapeHtml(ticket.departing_on || 'N/A')}</span>
+                            </div>
+                            <div class="grid-col-item">
+                                <span class="grid-label">PASSENGERS</span>
+                                <span class="grid-val-bold"><i class="fa-solid fa-users"></i> ${totalPnrPassengerCount} ${totalPnrPassengerCount > 1 ? 'Travellers' : 'Traveller'}</span>
+                            </div>
+                        </div>
+                    `}
                 </div>
 
                 <!-- Passenger Roster -->
                 <div class="aesthetic-card">
                     <div class="card-label-tiny"><i class="fa-solid fa-user-tie"></i> PASSENGER ROSTER</div>
                     <div class="roster-list">
-                        ${pnrTickets.map(t => {
-                            const initials = String(t.name || 'N').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
-                            const ticketNo = t.ticket_number || t.ticket_no || 'N/A';
-                            const passengerPrice = getTicketAmount(t);
-                            const isPaid = isTicketPaid(t);
-                            return `
-                                <div class="roster-row">
-                                    <div class="roster-avatar">${escapeHtml(initials)}</div>
-                                    <div class="roster-info">
-                                        <span class="roster-name">${escapeHtml(t.name || 'Passenger')}</span>
-                                        <span class="roster-sub">Ticket: ${escapeHtml(ticketNo)}</span>
-                                    </div>
-                                    <div class="roster-price-status">
-                                        <span class="price">${passengerPrice.toLocaleString()} MMK</span>
-                                        <span class="status-badge-pill ${isPaid ? 'is-paid' : 'is-unpaid'}">${isPaid ? 'PAID' : 'UNPAID'}</span>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
+                        <div class="roster-row">
+                            <div class="roster-avatar">${escapeHtml(String(outboundLeg.name || 'N').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase())}</div>
+                            <div class="roster-info">
+                                <span class="roster-name">${escapeHtml(outboundLeg.name || 'Passenger')}</span>
+                                <span class="roster-sub">${ticketDisplayHtml}</span>
+                            </div>
+                            <div class="roster-price-status">
+                                <span class="price">${bookingTotal.toLocaleString()} MMK</span>
+                                <span class="status-badge-pill ${isPaid ? 'is-paid' : (paymentStatusLabel === 'PARTIAL' ? 'is-partial' : 'is-unpaid')}">${paymentStatusLabel}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1003,16 +1080,39 @@ export function showDetails(docId) {
                 <!-- Payment Information -->
                 <div class="aesthetic-card">
                     <div class="card-label-tiny"><i class="fa-solid fa-credit-card"></i> PAYMENT INFORMATION</div>
-                    <div class="card-grid-two-cols">
-                        <div class="grid-col-item">
-                            <span class="grid-label">PAYMENT METHOD</span>
-                            <span class="grid-val-bold">${escapeHtml(ticket.payment_method || '—')}</span>
+                    ${isRoundTrip ? `
+                        <div class="card-grid-two-cols" style="margin-bottom: 0.5rem; border-bottom: 1px dashed rgba(226,232,240,0.8); padding-bottom: 0.5rem;">
+                            <div class="grid-col-item">
+                                <span class="grid-label">OB PAYMENT METHOD</span>
+                                <span class="grid-val-bold">${escapeHtml(outboundLeg.payment_method || '—')}</span>
+                            </div>
+                            <div class="grid-col-item">
+                                <span class="grid-label">OB PAYMENT DATE</span>
+                                <span class="grid-val-bold">${escapeHtml(outboundLeg.paid_date || '—')}</span>
+                            </div>
                         </div>
-                        <div class="grid-col-item">
-                            <span class="grid-label">PAYMENT DATE</span>
-                            <span class="grid-val-bold">${escapeHtml(ticket.paid_date || '—')}</span>
+                        <div class="card-grid-two-cols">
+                            <div class="grid-col-item">
+                                <span class="grid-label">RT PAYMENT METHOD</span>
+                                <span class="grid-val-bold">${escapeHtml(returnLeg.payment_method || '—')}</span>
+                            </div>
+                            <div class="grid-col-item">
+                                <span class="grid-label">RT PAYMENT DATE</span>
+                                <span class="grid-val-bold">${escapeHtml(returnLeg.paid_date || '—')}</span>
+                            </div>
                         </div>
-                    </div>
+                    ` : `
+                        <div class="card-grid-two-cols">
+                            <div class="grid-col-item">
+                                <span class="grid-label">PAYMENT METHOD</span>
+                                <span class="grid-val-bold">${escapeHtml(ticket.payment_method || '—')}</span>
+                            </div>
+                            <div class="grid-col-item">
+                                <span class="grid-label">PAYMENT DATE</span>
+                                <span class="grid-val-bold">${escapeHtml(ticket.paid_date || '—')}</span>
+                            </div>
+                        </div>
+                    `}
                 </div>
             </div>
 
