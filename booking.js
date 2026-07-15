@@ -574,7 +574,8 @@ function openExtendDeadlineModal(docIdsStr) {
                 deadlineAt: deadline.toISOString(),
                 notes,
                 status: 'active',
-                remark: ''
+                remark: '',
+                notified1hWarning: false
             })));
             showToast('Booking deadline updated.', 'success');
             // Data and UI will update automatically via real-time listeners
