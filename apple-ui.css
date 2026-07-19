@@ -41,8 +41,8 @@ body.material-theme {
     --surface-soft: #f2f2f7;
     --surface-2: #e9e9ee;
     --surface-3: #dedee5;
-    --primary-accent: var(--apple-blue);
-    --primary-accent-dark: var(--apple-blue-pressed);
+    --primary-accent: #B91C1C;
+    --primary-accent-dark: #991B1B;
     --secondary-accent: var(--apple-green);
     --success-accent: var(--apple-green);
     --warning-accent: var(--apple-orange);
@@ -60,10 +60,10 @@ body.material-theme {
     --liquid-shadow: var(--apple-shadow);
     --shadow-soft: var(--apple-shadow);
     --shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.1);
-    --focus-ring: 0 0 0 3px rgba(0, 122, 255, 0.24);
+    --focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.24);
     --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
     background:
-        radial-gradient(circle at 86% -10%, rgba(0, 122, 255, 0.11), transparent 26rem),
+        radial-gradient(circle at 86% -10%, rgba(185, 28, 28, 0.08), transparent 26rem),
         radial-gradient(circle at 12% 100%, rgba(88, 86, 214, 0.065), transparent 30rem),
         var(--apple-canvas);
     color: var(--apple-label);
@@ -120,7 +120,7 @@ body.material-theme .section-subtitle {
 }
 
 body.material-theme ::selection {
-    background: rgba(0, 122, 255, 0.25);
+    background: rgba(185, 28, 28, 0.25);
 }
 
 /* Application shell */
@@ -196,8 +196,8 @@ body.material-theme .sidebar-nav .nav-btn:hover {
 }
 
 body.material-theme .sidebar-nav .nav-btn.active {
-    background: rgba(0, 122, 255, 0.14);
-    color: var(--apple-blue);
+    background: rgba(185, 28, 28, 0.12) !important;
+    color: var(--primary-accent) !important;
     font-weight: 600;
 }
 
@@ -325,7 +325,7 @@ body.material-theme .booking-kpi-card:hover,
 body.material-theme .settle-kpi-card:hover {
     transform: translateY(-1px);
     background: var(--apple-card);
-    border-color: rgba(0, 122, 255, 0.22);
+    border-color: rgba(185, 28, 28, 0.22);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035), 0 12px 30px rgba(0, 0, 0, 0.09);
 }
 
@@ -455,8 +455,8 @@ body.material-theme .settle-section-icon {
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: rgba(0, 122, 255, 0.1) !important;
-    color: var(--apple-blue) !important;
+    background: rgba(185, 28, 28, 0.1);
+    color: var(--primary-accent);
     opacity: 1;
 }
 
@@ -524,9 +524,9 @@ body.material-theme .search-inputs :is(input, select):focus,
 body.material-theme .form-group :is(input, select, textarea):focus,
 body.material-theme :is(.settle-search-input, .settle-select):focus {
     outline: 0;
-    border-color: rgba(0, 122, 255, 0.72);
+    border-color: rgba(185, 28, 28, 0.72);
     background: var(--apple-card);
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.2);
     transform: none;
 }
 
@@ -556,7 +556,7 @@ body.material-theme .global-search-box {
 
 body.material-theme .global-search-box:focus-within {
     background: var(--apple-card);
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.18);
 }
 
 body.material-theme .global-search-box input,
@@ -607,16 +607,16 @@ body.material-theme .btn-page-nav {
 body.material-theme .btn-primary,
 body.material-theme .btn-generate,
 body.material-theme .btn-page-nav.active {
-    background: var(--apple-blue);
+    background: var(--primary-accent);
     color: #fff;
 }
 
 body.material-theme .btn-primary:hover,
 body.material-theme .btn-generate:hover,
 body.material-theme .btn-page-nav.active:hover {
-    background: var(--apple-blue-pressed);
+    background: var(--primary-accent-dark);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.24);
+    box-shadow: 0 4px 12px rgba(185, 28, 28, 0.24);
 }
 
 body.material-theme .btn-secondary,
@@ -627,7 +627,7 @@ body.material-theme .history-action-btn,
 body.material-theme .btn-page-nav:not(.active),
 body.material-theme .settle-row-btn {
     background: var(--apple-fill);
-    color: var(--apple-blue);
+    color: var(--primary-accent);
 }
 
 body.material-theme .btn-secondary:hover,
@@ -638,7 +638,7 @@ body.material-theme .history-action-btn:hover,
 body.material-theme .btn-page-nav:not(.active):hover,
 body.material-theme .settle-row-btn:hover {
     background: var(--apple-fill-strong);
-    color: var(--apple-blue-pressed);
+    color: var(--primary-accent-dark);
 }
 
 body.material-theme .records-preset-btn.active,
@@ -719,7 +719,7 @@ body.material-theme .client-detail-new .history-table td {
 body.material-theme tbody tr:hover,
 body.material-theme .settle-table tbody tr:hover,
 body.material-theme .client-detail-new .history-table tr.ticket-row:hover {
-    background: rgba(0, 122, 255, 0.055);
+    background: rgba(185, 28, 28, 0.045);
 }
 
 body.material-theme .table-header,
@@ -785,12 +785,12 @@ body.material-theme .pax-card-header {
 }
 
 body.material-theme .pax-card-header:hover {
-    background: rgba(0, 122, 255, 0.045);
+    background: rgba(185, 28, 28, 0.045);
 }
 
 body.material-theme .pax-card-header .pax-avatar {
-    background: rgba(0, 122, 255, 0.12);
-    color: var(--apple-blue);
+    background: rgba(185, 28, 28, 0.12);
+    color: var(--primary-accent);
 }
 
 body.material-theme .service-panel-header h2,
@@ -822,7 +822,7 @@ body.material-theme .settle-health-status {
 
 body.material-theme .settle-eyebrow,
 body.material-theme .settle-link {
-    color: var(--apple-blue);
+    color: var(--primary-accent);
 }
 
 /* Overlays, feedback and calendar */
@@ -877,7 +877,7 @@ body.material-theme .datepicker-view .day.selected,
 body.material-theme .datepicker-view .month.selected,
 body.material-theme .datepicker-view .year.selected {
     border-radius: 8px;
-    background: var(--apple-blue);
+    background: var(--primary-accent);
     color: #fff;
 }
 
@@ -925,9 +925,9 @@ body.material-theme .landing-signin-btn {
     padding: 12px 20px;
     border: 0;
     border-radius: 12px;
-    background: var(--apple-blue);
+    background: var(--primary-accent);
     color: #fff;
-    box-shadow: 0 5px 14px rgba(0, 122, 255, 0.28);
+    box-shadow: 0 5px 14px rgba(185, 28, 28, 0.28);
     font-size: 0.9375rem;
     font-weight: 600;
     transition: background-color 150ms var(--apple-ease), transform 100ms ease-out, box-shadow 150ms var(--apple-ease);
@@ -941,8 +941,8 @@ body.material-theme .landing-signin-btn::after {
 body.material-theme .landing-signin-btn:hover {
     transform: none;
     border: 0;
-    background: var(--apple-blue-pressed);
-    box-shadow: 0 7px 18px rgba(0, 102, 214, 0.32);
+    background: var(--primary-accent-dark);
+    box-shadow: 0 7px 18px rgba(153, 27, 27, 0.32);
 }
 
 body.material-theme .landing-signin-btn:active {
@@ -1067,4 +1067,51 @@ body.material-theme .landing-signin-btn:active {
     body.material-theme .table-container {
         border-color: var(--apple-secondary-label);
     }
+}
+
+/* Light mode dashboard hero text and picker contrast adjustments */
+body.material-theme:not(.dark-theme) .dashboard-hero {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(254, 226, 226, 0.54)) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 8px 24px rgba(185, 28, 28, 0.05);
+    color: var(--apple-label);
+}
+
+body.material-theme:not(.dark-theme) .dashboard-hero h1 {
+    color: #1c1c1e !important;
+}
+
+body.material-theme:not(.dark-theme) .dashboard-hero p {
+    color: #48484a !important;
+}
+
+body.material-theme:not(.dark-theme) .dashboard-eyebrow {
+    background: rgba(185, 28, 28, 0.08) !important;
+    color: #b91c1c !important;
+}
+
+body.material-theme:not(.dark-theme) .dashboard-period-controls {
+    background: rgba(120, 120, 128, 0.12) !important;
+    border-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+body.material-theme:not(.dark-theme) .dashboard-period-btn {
+    color: #48484a !important;
+}
+
+body.material-theme:not(.dark-theme) .dashboard-period-btn:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+    color: #1c1c1e !important;
+}
+
+body.material-theme:not(.dark-theme) .dashboard-period-btn.active {
+    background: #ffffff !important;
+    color: #b91c1c !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+body.material-theme:not(.dark-theme) .dashboard-custom-range input {
+    background: #ffffff !important;
+    color: #1c1c1e !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
 }
