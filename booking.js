@@ -567,8 +567,20 @@ function openExtendDeadlineModal(docIdsStr) {
 
         const notes = document.getElementById('extendBookingNotes').value;
         closeModal();
+
+        // Collect all booking document IDs that share the same PNR (if present and valid)
+        const bookingsToUpdate = [...docIds];
+        const pnrVal = String(bookingGroup.pnr || '').trim().toUpperCase();
+        if (pnrVal && pnrVal !== 'NO PNR' && pnrVal !== '—' && pnrVal !== '-') {
+            const relatedBookings = (state.allBookings || []).filter(b => 
+                String(b.pnr || '').trim().toUpperCase() === pnrVal &&
+                !bookingsToUpdate.includes(b.id)
+            );
+            relatedBookings.forEach(b => bookingsToUpdate.push(b.id));
+        }
+
         try {
-            await Promise.all(docIds.map(id => updateBooking(id, {
+            await Promise.all(bookingsToUpdate.map(id => updateBooking(id, {
                 enddate,
                 endtime,
                 deadlineAt: deadline.toISOString(),
