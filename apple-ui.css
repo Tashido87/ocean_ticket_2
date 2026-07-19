@@ -1,0 +1,1071 @@
+/*
+ * Ocean Travel — Apple-style UI layer
+ * Loaded last so it can refine presentation without changing application markup or behavior.
+ */
+
+:root {
+    color-scheme: light;
+    --apple-blue: #007aff;
+    --apple-blue-pressed: #0066d6;
+    --apple-red: #ff3b30;
+    --apple-green: #34c759;
+    --apple-orange: #ff9500;
+    --apple-indigo: #5856d6;
+    --apple-label: #1d1d1f;
+    --apple-secondary-label: #6e6e73;
+    --apple-tertiary-label: #8e8e93;
+    --apple-separator: rgba(60, 60, 67, 0.18);
+    --apple-fill: rgba(120, 120, 128, 0.12);
+    --apple-fill-strong: rgba(120, 120, 128, 0.2);
+    --apple-canvas: #f5f5f7;
+    --apple-card: #ffffff;
+    --apple-toolbar: rgba(249, 249, 251, 0.8);
+    --apple-sidebar: rgba(246, 246, 248, 0.78);
+    --apple-shadow: 0 1px 1px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.07);
+    --apple-shadow-floating: 0 18px 48px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+    --apple-radius: 18px;
+    --apple-radius-small: 10px;
+    --apple-ease: cubic-bezier(0.2, 0, 0, 1);
+    --apple-appear: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+    background: var(--apple-canvas);
+    font-size: 16px;
+}
+
+body.material-theme {
+    --bg-color: var(--apple-canvas);
+    --app-bg: var(--apple-canvas);
+    --surface: var(--apple-card);
+    --surface-soft: #f2f2f7;
+    --surface-2: #e9e9ee;
+    --surface-3: #dedee5;
+    --primary-accent: var(--apple-blue);
+    --primary-accent-dark: var(--apple-blue-pressed);
+    --secondary-accent: var(--apple-green);
+    --success-accent: var(--apple-green);
+    --warning-accent: var(--apple-orange);
+    --danger-accent: var(--apple-red);
+    --info-accent: var(--apple-blue);
+    --text-primary: var(--apple-label);
+    --text-secondary: var(--apple-secondary-label);
+    --text-faint: var(--apple-tertiary-label);
+    --ink: var(--apple-label);
+    --border-color: var(--apple-separator);
+    --line: var(--apple-separator);
+    --liquid-radius: var(--apple-radius);
+    --liquid-radius-lg: 22px;
+    --liquid-border: 1px solid var(--apple-separator);
+    --liquid-shadow: var(--apple-shadow);
+    --shadow-soft: var(--apple-shadow);
+    --shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.1);
+    --focus-ring: 0 0 0 3px rgba(0, 122, 255, 0.24);
+    --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    background:
+        radial-gradient(circle at 86% -10%, rgba(0, 122, 255, 0.11), transparent 26rem),
+        radial-gradient(circle at 12% 100%, rgba(88, 86, 214, 0.065), transparent 30rem),
+        var(--apple-canvas);
+    color: var(--apple-label);
+    font-family: var(--font-main);
+    font-optical-sizing: auto;
+    letter-spacing: -0.01em;
+    line-height: 1.45;
+}
+
+body.material-theme.dark-theme {
+    color-scheme: dark;
+    --apple-label: #f5f5f7;
+    --apple-secondary-label: #a1a1a6;
+    --apple-tertiary-label: #7c7c80;
+    --apple-separator: rgba(84, 84, 88, 0.65);
+    --apple-fill: rgba(118, 118, 128, 0.24);
+    --apple-fill-strong: rgba(118, 118, 128, 0.34);
+    --apple-canvas: #000000;
+    --apple-card: #1c1c1e;
+    --apple-toolbar: rgba(28, 28, 30, 0.78);
+    --apple-sidebar: rgba(28, 28, 30, 0.82);
+    --apple-shadow: 0 1px 1px rgba(0, 0, 0, 0.4), 0 12px 30px rgba(0, 0, 0, 0.25);
+    --apple-shadow-floating: 0 20px 52px rgba(0, 0, 0, 0.52);
+    --bg-color: var(--apple-canvas);
+    --app-bg: var(--apple-canvas);
+    --surface: var(--apple-card);
+    --surface-soft: #2c2c2e;
+    --surface-2: #363638;
+    --surface-3: #48484a;
+    --text-primary: var(--apple-label);
+    --text-secondary: var(--apple-secondary-label);
+    --border-color: var(--apple-separator);
+    --line: var(--apple-separator);
+    background:
+        radial-gradient(circle at 88% -10%, rgba(10, 132, 255, 0.17), transparent 26rem),
+        radial-gradient(circle at 10% 100%, rgba(94, 92, 230, 0.13), transparent 31rem),
+        var(--apple-canvas);
+}
+
+body.material-theme * {
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.material-theme :is(h1, h2, h3, h4) {
+    color: var(--apple-label);
+    font-weight: 700;
+    letter-spacing: -0.022em;
+}
+
+body.material-theme p,
+body.material-theme .settings-help,
+body.material-theme .section-subtitle {
+    color: var(--apple-secondary-label);
+}
+
+body.material-theme ::selection {
+    background: rgba(0, 122, 255, 0.25);
+}
+
+/* Application shell */
+body.material-theme .main-container {
+    min-height: 100dvh;
+}
+
+body.material-theme .sidebar {
+    width: 264px;
+    min-width: 264px;
+    padding: 16px 12px 14px;
+    background: var(--apple-sidebar);
+    border-right: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 1px 0 0 var(--apple-separator);
+    backdrop-filter: blur(28px) saturate(155%);
+    -webkit-backdrop-filter: blur(28px) saturate(155%);
+    transition: transform 340ms var(--apple-appear), width 340ms var(--apple-appear);
+}
+
+body.material-theme.dark-theme .sidebar {
+    border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+body.material-theme .sidebar-brand {
+    justify-content: flex-start;
+    min-height: 72px;
+    padding: 8px 12px 18px;
+    margin: 0 0 12px;
+    border: 0;
+}
+
+body.material-theme .sidebar-brand .brand-logo {
+    width: 156px;
+    max-height: 52px;
+    object-fit: contain;
+    object-position: left center;
+}
+
+body.material-theme.dark-theme .sidebar-brand .brand-logo {
+    filter: invert(1) grayscale(1) contrast(1.15);
+}
+
+body.material-theme .sidebar-nav {
+    gap: 3px;
+}
+
+body.material-theme .sidebar-nav-footer {
+    padding-top: 12px;
+    border-color: var(--apple-separator);
+}
+
+body.material-theme .sidebar-nav .nav-btn,
+body.material-theme .nav-btn {
+    min-height: 38px;
+    padding: 8px 11px;
+    border-radius: 9px;
+    color: var(--apple-label);
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    transition: background-color 150ms var(--apple-ease), color 150ms var(--apple-ease), transform 100ms ease-out;
+}
+
+body.material-theme .sidebar-nav .nav-btn i {
+    width: 20px;
+    color: var(--apple-secondary-label);
+    font-size: 0.95rem;
+    transition: color 150ms var(--apple-ease);
+}
+
+body.material-theme .sidebar-nav .nav-btn:hover {
+    background: var(--apple-fill);
+    color: var(--apple-label);
+}
+
+body.material-theme .sidebar-nav .nav-btn.active {
+    background: rgba(0, 122, 255, 0.14);
+    color: var(--apple-blue);
+    font-weight: 600;
+}
+
+body.material-theme .sidebar-nav .nav-btn.active i,
+body.material-theme .sidebar-nav .nav-btn:hover i {
+    color: currentColor;
+}
+
+body.material-theme .app-body {
+    margin-left: 264px;
+    min-width: 0;
+    transition: margin-left 340ms var(--apple-appear);
+}
+
+body.material-theme.sidebar-collapsed .app-body {
+    margin-left: 0;
+}
+
+body.material-theme .header {
+    height: 64px;
+    padding: 10px 24px;
+    background: var(--apple-toolbar);
+    border: 0;
+    box-shadow: inset 0 -1px var(--apple-separator);
+    backdrop-filter: blur(24px) saturate(155%);
+    -webkit-backdrop-filter: blur(24px) saturate(155%);
+}
+
+body.material-theme .header::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: -18px;
+    left: 0;
+    height: 18px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(245, 245, 247, 0.28), transparent);
+}
+
+body.material-theme.dark-theme .header::after {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), transparent);
+}
+
+body.material-theme .header-today-date {
+    gap: 8px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--apple-secondary-label);
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+body.material-theme .header-today-date i {
+    color: var(--apple-secondary-label);
+    font-size: 0.875rem;
+}
+
+body.material-theme .sidebar-toggle,
+body.material-theme .icon-btn {
+    color: var(--apple-blue);
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    box-shadow: none;
+    transition: background-color 150ms var(--apple-ease), transform 100ms ease-out;
+}
+
+body.material-theme .sidebar-toggle:hover,
+body.material-theme .icon-btn:hover {
+    background: var(--apple-fill);
+    color: var(--apple-blue);
+}
+
+body.material-theme .main-content {
+    padding: 26px 28px 40px;
+    background: transparent;
+}
+
+body.material-theme .view.view-enter {
+    animation: apple-view-enter 360ms var(--apple-appear) both;
+}
+
+body.material-theme .view.view-leave {
+    animation: apple-view-leave 180ms var(--apple-ease) both;
+}
+
+@keyframes apple-view-enter {
+    from { opacity: 0; transform: translateY(8px) scale(0.992); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes apple-view-leave {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(5px); }
+}
+
+/* Surfaces, typography and widgets */
+body.material-theme .glass-card,
+body.material-theme .settings-card,
+body.material-theme .form-container,
+body.material-theme .service-panel,
+body.material-theme .booking-kpi-card,
+body.material-theme .settle-kpi-card {
+    background: var(--apple-card);
+    border: 1px solid var(--apple-separator);
+    border-radius: var(--apple-radius);
+    box-shadow: var(--apple-shadow);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+body.material-theme .glass-card::before,
+body.material-theme .settings-card::before,
+body.material-theme .service-panel::before {
+    display: none;
+}
+
+body.material-theme .glass-card:hover,
+body.material-theme .settings-card:hover,
+body.material-theme .service-panel:hover,
+body.material-theme .booking-kpi-card:hover,
+body.material-theme .settle-kpi-card:hover {
+    transform: translateY(-1px);
+    background: var(--apple-card);
+    border-color: rgba(0, 122, 255, 0.22);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.035), 0 12px 30px rgba(0, 0, 0, 0.09);
+}
+
+body.material-theme .dashboard-content-wrapper,
+body.material-theme .settle-wrapper {
+    gap: 20px;
+}
+
+body.material-theme .dashboard-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    align-items: center;
+    min-height: 198px;
+    overflow: hidden;
+    padding: 30px 32px;
+    color: #fff;
+    background:
+        radial-gradient(circle at 90% 18%, rgba(117, 190, 255, 0.9), transparent 10rem),
+        linear-gradient(125deg, #0a4dad 0%, #006ee6 48%, #00a5e4 100%);
+    border: 0;
+    box-shadow: 0 14px 36px rgba(0, 91, 190, 0.27);
+}
+
+body.material-theme .dashboard-hero:hover {
+    transform: none;
+    border-color: transparent;
+    background:
+        radial-gradient(circle at 90% 18%, rgba(117, 190, 255, 0.9), transparent 10rem),
+        linear-gradient(125deg, #0a4dad 0%, #006ee6 48%, #00a5e4 100%);
+    box-shadow: 0 14px 36px rgba(0, 91, 190, 0.27);
+}
+
+body.material-theme .dashboard-eyebrow {
+    display: inline-flex;
+    margin-bottom: 7px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+body.material-theme .dashboard-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+}
+
+body.material-theme .dashboard-hero p {
+    max-width: 44rem;
+    margin: 10px 0 20px;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.94rem;
+}
+
+body.material-theme .dashboard-period-controls {
+    display: inline-flex;
+    width: fit-content;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.23);
+    border-radius: 10px;
+    background: rgba(0, 35, 100, 0.18);
+}
+
+body.material-theme .dashboard-period-btn {
+    min-height: 28px;
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.86);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 150ms var(--apple-ease), color 150ms var(--apple-ease), transform 100ms ease-out;
+}
+
+body.material-theme .dashboard-period-btn.active {
+    background: #fff;
+    color: #0757b8;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+body.material-theme .dashboard-hero-illustration {
+    width: min(100%, 220px);
+    justify-self: end;
+    opacity: 0.94;
+    filter: brightness(0) invert(1);
+}
+
+body.material-theme .dashboard-kpis,
+body.material-theme .booking-kpi-grid,
+body.material-theme .settle-kpi-grid {
+    gap: 14px;
+}
+
+body.material-theme .info-card {
+    min-height: 138px;
+    padding: 18px;
+}
+
+body.material-theme .info-card .stat-head {
+    margin-bottom: 16px;
+}
+
+body.material-theme .info-card h3,
+body.material-theme .booking-kpi-label,
+body.material-theme .settle-kpi-label {
+    color: var(--apple-secondary-label);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    text-transform: none;
+}
+
+body.material-theme .info-card .icon,
+body.material-theme .booking-kpi-icon,
+body.material-theme .settle-kpi-icon,
+body.material-theme .service-panel-icon,
+body.material-theme .sell-section-header .section-icon,
+body.material-theme .settle-section-icon {
+    position: static;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(0, 122, 255, 0.1) !important;
+    color: var(--apple-blue) !important;
+    opacity: 1;
+}
+
+body.material-theme .info-card .main-value,
+body.material-theme .booking-kpi-value,
+body.material-theme .settle-kpi-value {
+    color: var(--apple-label);
+    font-size: clamp(1.65rem, 2.3vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+body.material-theme .info-card .sub-value,
+body.material-theme .booking-kpi-hint,
+body.material-theme .settle-kpi-support,
+body.material-theme .panel-hint {
+    color: var(--apple-secondary-label);
+}
+
+body.material-theme .dashboard-panel {
+    padding: 20px;
+}
+
+body.material-theme .dashboard-panel h3,
+body.material-theme .table-header h3,
+body.material-theme .results-header h3,
+body.material-theme .form-header h2,
+body.material-theme .clients-header h2,
+body.material-theme .settings-title {
+    color: var(--apple-label);
+    font-weight: 700;
+}
+
+/* Native control language */
+body.material-theme :is(input, select, textarea),
+body.material-theme .search-inputs :is(input, select),
+body.material-theme .form-group :is(input, select, textarea),
+body.material-theme .booking-search-section select,
+body.material-theme .client-search-box input,
+body.material-theme :is(.settle-search-input, .settle-select) {
+    min-height: 38px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: var(--apple-fill);
+    color: var(--apple-label);
+    box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.05);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    transition: background-color 150ms var(--apple-ease), box-shadow 150ms var(--apple-ease), border-color 150ms var(--apple-ease);
+}
+
+body.material-theme :is(input, select, textarea)::placeholder {
+    color: var(--apple-tertiary-label);
+    opacity: 1;
+}
+
+body.material-theme :is(input, select, textarea):hover {
+    background: var(--apple-fill-strong);
+}
+
+body.material-theme :is(input, select, textarea):focus,
+body.material-theme .search-inputs :is(input, select):focus,
+body.material-theme .form-group :is(input, select, textarea):focus,
+body.material-theme :is(.settle-search-input, .settle-select):focus {
+    outline: 0;
+    border-color: rgba(0, 122, 255, 0.72);
+    background: var(--apple-card);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+    transform: none;
+}
+
+body.material-theme .form-group label,
+body.material-theme .settle-form label,
+body.material-theme .records-filter-grid .toggle-switch label:first-child {
+    margin-bottom: 6px;
+    color: var(--apple-secondary-label);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+body.material-theme textarea {
+    min-height: 94px;
+    resize: vertical;
+}
+
+body.material-theme .global-search-box {
+    max-width: 470px;
+    min-height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--apple-fill);
+    box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.05);
+}
+
+body.material-theme .global-search-box:focus-within {
+    background: var(--apple-card);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+}
+
+body.material-theme .global-search-box input,
+body.material-theme .global-search-box input:focus {
+    min-height: 36px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--apple-label);
+    font-size: 0.875rem;
+}
+
+body.material-theme .global-search-box .search-icon,
+body.material-theme .global-search-clear {
+    color: var(--apple-secondary-label);
+}
+
+body.material-theme .global-search-suggestions {
+    margin-top: 7px;
+    border: 1px solid var(--apple-separator);
+    border-radius: 12px;
+    background: var(--apple-card);
+    box-shadow: var(--apple-shadow-floating);
+    overflow: hidden;
+}
+
+/* Buttons and segmented controls */
+body.material-theme .btn,
+body.material-theme .btn-service,
+body.material-theme .settle-row-btn,
+body.material-theme .records-preset-btn,
+body.material-theme .btn-history-tab,
+body.material-theme .history-action-btn,
+body.material-theme .btn-page-nav {
+    min-height: 34px;
+    padding: 7px 13px;
+    border: 0;
+    border-radius: 9px;
+    box-shadow: none;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    transition: background-color 150ms var(--apple-ease), color 150ms var(--apple-ease), transform 100ms ease-out, box-shadow 150ms var(--apple-ease);
+}
+
+body.material-theme .btn-primary,
+body.material-theme .btn-generate,
+body.material-theme .btn-page-nav.active {
+    background: var(--apple-blue);
+    color: #fff;
+}
+
+body.material-theme .btn-primary:hover,
+body.material-theme .btn-generate:hover,
+body.material-theme .btn-page-nav.active:hover {
+    background: var(--apple-blue-pressed);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.24);
+}
+
+body.material-theme .btn-secondary,
+body.material-theme .btn-clear,
+body.material-theme .records-preset-btn,
+body.material-theme .btn-history-tab,
+body.material-theme .history-action-btn,
+body.material-theme .btn-page-nav:not(.active),
+body.material-theme .settle-row-btn {
+    background: var(--apple-fill);
+    color: var(--apple-blue);
+}
+
+body.material-theme .btn-secondary:hover,
+body.material-theme .btn-clear:hover,
+body.material-theme .records-preset-btn:hover,
+body.material-theme .btn-history-tab:hover,
+body.material-theme .history-action-btn:hover,
+body.material-theme .btn-page-nav:not(.active):hover,
+body.material-theme .settle-row-btn:hover {
+    background: var(--apple-fill-strong);
+    color: var(--apple-blue-pressed);
+}
+
+body.material-theme .records-preset-btn.active,
+body.material-theme .btn-history-tab.active,
+body.material-theme .format-segment input:checked + label,
+body.material-theme .view-toggle input:checked + label {
+    background: var(--apple-card);
+    color: var(--apple-label);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.13);
+}
+
+body.material-theme :is(.dashboard-period-btn, .btn, .btn-service, .icon-btn, .nav-btn, .records-preset-btn, .settle-row-btn, .history-action-btn, .btn-page-nav):active {
+    transform: scale(0.97);
+    transition-duration: 80ms;
+}
+
+body.material-theme .format-segment,
+body.material-theme .view-toggle,
+body.material-theme .client-detail-new .history-tabs {
+    gap: 2px;
+    padding: 3px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--apple-fill);
+}
+
+/* Data-heavy screens */
+body.material-theme .records-filters,
+body.material-theme .booking-search-section,
+body.material-theme .settle-toolbar,
+body.material-theme .search-filter-bar,
+body.material-theme .search-more-filters {
+    border: 1px solid var(--apple-separator);
+    border-radius: 14px;
+    background: var(--apple-card);
+    box-shadow: var(--apple-shadow);
+}
+
+body.material-theme .records-filters {
+    padding: 16px;
+}
+
+body.material-theme .table-container,
+body.material-theme .settle-table-wrap,
+body.material-theme .client-detail-new .table-container {
+    overflow: auto;
+    border: 1px solid var(--apple-separator);
+    border-radius: 14px;
+    background: var(--apple-card);
+    box-shadow: var(--apple-shadow);
+}
+
+body.material-theme table {
+    font-size: 0.8125rem;
+}
+
+body.material-theme th,
+body.material-theme .settle-table thead th,
+body.material-theme .client-detail-new .history-table th {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--apple-separator);
+    background: #f8f8fa;
+    color: var(--apple-secondary-label);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+}
+
+body.material-theme td,
+body.material-theme .settle-table td,
+body.material-theme .client-detail-new .history-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--apple-separator);
+    color: var(--apple-label);
+}
+
+body.material-theme tbody tr:hover,
+body.material-theme .settle-table tbody tr:hover,
+body.material-theme .client-detail-new .history-table tr.ticket-row:hover {
+    background: rgba(0, 122, 255, 0.055);
+}
+
+body.material-theme .table-header,
+body.material-theme .results-header,
+body.material-theme .search-view-header {
+    margin-bottom: 16px;
+}
+
+body.material-theme .search-view-wrapper {
+    max-width: 1500px;
+    padding: 0;
+}
+
+body.material-theme .search-view-header h2 {
+    color: var(--apple-label);
+    font-size: clamp(1.7rem, 2.7vw, 2.25rem);
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+}
+
+body.material-theme .search-subtitle {
+    color: var(--apple-secondary-label);
+}
+
+body.material-theme .table-pnr-pill,
+body.material-theme .history-count-badge,
+body.material-theme .route-preview,
+body.material-theme .settle-header-chips span,
+body.material-theme .dashboard-badge {
+    border: 0;
+    border-radius: 999px;
+    background: var(--apple-fill);
+    color: var(--apple-secondary-label);
+    font-weight: 600;
+}
+
+/* Form and specialty panels */
+body.material-theme .form-container,
+body.material-theme .settings-card,
+body.material-theme .service-panel,
+body.material-theme .sell-section,
+body.material-theme .passenger-form {
+    padding: 22px;
+}
+
+body.material-theme .sell-section,
+body.material-theme .passenger-form {
+    background: var(--apple-card);
+    border: 1px solid var(--apple-separator);
+    border-radius: var(--apple-radius);
+    box-shadow: var(--apple-shadow);
+}
+
+body.material-theme .sell-section-header,
+body.material-theme .pax-card-header,
+body.material-theme .service-panel-header {
+    border-color: var(--apple-separator);
+}
+
+body.material-theme .pax-card-header {
+    padding: 13px 16px;
+    background: transparent;
+}
+
+body.material-theme .pax-card-header:hover {
+    background: rgba(0, 122, 255, 0.045);
+}
+
+body.material-theme .pax-card-header .pax-avatar {
+    background: rgba(0, 122, 255, 0.12);
+    color: var(--apple-blue);
+}
+
+body.material-theme .service-panel-header h2,
+body.material-theme .settings-section-title {
+    color: var(--apple-label);
+    font-weight: 700;
+}
+
+body.material-theme .service-panel-desc {
+    color: var(--apple-secondary-label);
+}
+
+body.material-theme .settings-section + .settings-section,
+body.material-theme .service-panel + .service-panel {
+    border-color: var(--apple-separator);
+}
+
+body.material-theme .settle-header {
+    padding: 26px;
+    background: var(--apple-card);
+}
+
+body.material-theme .settle-header-text h2,
+body.material-theme .settle-section-titles h3,
+body.material-theme .settle-reconcile-title,
+body.material-theme .settle-health-status {
+    color: var(--apple-label);
+}
+
+body.material-theme .settle-eyebrow,
+body.material-theme .settle-link {
+    color: var(--apple-blue);
+}
+
+/* Overlays, feedback and calendar */
+body.material-theme .modal {
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+body.material-theme .modal-content {
+    max-height: min(88dvh, 900px);
+    overflow: auto;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 20px;
+    background: var(--apple-card);
+    box-shadow: var(--apple-shadow-floating);
+}
+
+body.material-theme.dark-theme .modal-content {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.material-theme .modal.show .modal-content {
+    animation: apple-modal-in 300ms var(--apple-appear) both;
+}
+
+@keyframes apple-modal-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.975); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+body.material-theme #toast,
+body.material-theme .service-toast.is-visible {
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 12px;
+    background: rgba(28, 28, 30, 0.92);
+    box-shadow: var(--apple-shadow-floating);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+body.material-theme .datepicker-picker {
+    border: 1px solid var(--apple-separator);
+    border-radius: 14px;
+    background: var(--apple-card);
+    box-shadow: var(--apple-shadow-floating);
+    color: var(--apple-label);
+}
+
+body.material-theme .datepicker-view .day.selected,
+body.material-theme .datepicker-view .month.selected,
+body.material-theme .datepicker-view .year.selected {
+    border-radius: 8px;
+    background: var(--apple-blue);
+    color: #fff;
+}
+
+/* Sign-in screen remains intentionally calm and separate from the workspace. */
+body.material-theme .landing-bg {
+    filter: saturate(0.78) contrast(0.94) brightness(0.8);
+    transform: scale(1.025);
+}
+
+body.material-theme .landing-page::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(145deg, rgba(4, 20, 40, 0.35), rgba(4, 20, 40, 0.08) 50%, rgba(255, 255, 255, 0.13));
+}
+
+body.material-theme .landing-stack {
+    z-index: 1;
+    width: min(92vw, 420px);
+    padding: 42px 42px 34px;
+    gap: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.52);
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+}
+
+body.material-theme .landing-corner-logo {
+    width: min(100%, 285px);
+    filter: none;
+    animation: apple-view-enter 520ms var(--apple-appear) both;
+}
+
+body.material-theme .landing-content {
+    width: 100%;
+    animation: apple-view-enter 520ms var(--apple-appear) 70ms both;
+}
+
+body.material-theme .landing-signin-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 46px;
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--apple-blue);
+    color: #fff;
+    box-shadow: 0 5px 14px rgba(0, 122, 255, 0.28);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    transition: background-color 150ms var(--apple-ease), transform 100ms ease-out, box-shadow 150ms var(--apple-ease);
+}
+
+body.material-theme .landing-signin-btn::before,
+body.material-theme .landing-signin-btn::after {
+    display: none;
+}
+
+body.material-theme .landing-signin-btn:hover {
+    transform: none;
+    border: 0;
+    background: var(--apple-blue-pressed);
+    box-shadow: 0 7px 18px rgba(0, 102, 214, 0.32);
+}
+
+body.material-theme .landing-signin-btn:active {
+    transform: scale(0.98);
+}
+
+/* Narrow layouts maintain clear touch targets and predictable navigation. */
+@media (max-width: 980px) {
+    body.material-theme .sidebar {
+        transform: translateX(-100%);
+        box-shadow: 12px 0 30px rgba(0, 0, 0, 0.12);
+    }
+
+    body.material-theme:not(.sidebar-collapsed) .sidebar {
+        transform: translateX(0);
+    }
+
+    body.material-theme .app-body,
+    body.material-theme.sidebar-collapsed .app-body {
+        margin-left: 0;
+    }
+
+    body.material-theme .sidebar-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+    }
+
+    body.material-theme .dashboard-hero {
+        grid-template-columns: 1fr;
+    }
+
+    body.material-theme .dashboard-hero-illustration {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    body.material-theme .header {
+        height: 58px;
+        padding: 9px 14px;
+    }
+
+    body.material-theme .header-today-date {
+        display: none;
+    }
+
+    body.material-theme .main-content {
+        padding: 16px 14px 28px;
+    }
+
+    body.material-theme .global-search-box {
+        max-width: none;
+    }
+
+    body.material-theme .dashboard-hero,
+    body.material-theme .form-container,
+    body.material-theme .settings-card,
+    body.material-theme .service-panel,
+    body.material-theme .sell-section,
+    body.material-theme .settle-header {
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    body.material-theme .dashboard-period-controls {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    body.material-theme .dashboard-period-btn {
+        flex: 1 1 auto;
+    }
+
+    body.material-theme .modal {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    body.material-theme .modal-content {
+        width: 100%;
+        max-height: 90dvh;
+        border-radius: 20px 20px 0 0;
+    }
+
+    body.material-theme .landing-stack {
+        padding: 32px 24px 24px;
+        border-radius: 24px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.material-theme *,
+    body.material-theme *::before,
+    body.material-theme *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    body.material-theme .sidebar,
+    body.material-theme .header,
+    body.material-theme .landing-stack {
+        background: var(--apple-card);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+@media (prefers-contrast: more) {
+    body.material-theme .glass-card,
+    body.material-theme .settings-card,
+    body.material-theme .form-container,
+    body.material-theme .service-panel,
+    body.material-theme :is(input, select, textarea),
+    body.material-theme .table-container {
+        border-color: var(--apple-secondary-label);
+    }
+}
