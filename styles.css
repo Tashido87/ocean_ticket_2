@@ -1788,7 +1788,18 @@ td .action-checkbox {
 }
 
 .deadline-warning:hover {
-    background-color: rgba(38, 37, 30, 0.10) !important;
+    background-color: rgba(254, 242, 242, 0.9) !important;
+}
+
+body.dark-theme .deadline-warning,
+body.material-theme.dark-theme .deadline-warning {
+    background-color: rgba(220, 38, 38, 0.18) !important;
+    color: #fca5a5 !important;
+}
+
+body.dark-theme .deadline-warning:hover,
+body.material-theme.dark-theme .deadline-warning:hover {
+    background-color: rgba(220, 38, 38, 0.26) !important;
 }
 
 .deadline-warning td {
@@ -1910,14 +1921,30 @@ td .action-checkbox {
     box-shadow: 0 8px 18px rgba(185, 28, 28, 0.20);
 }
 
-.booking-action-btn.danger:hover:not(:disabled) {
-    border-color: rgba(244, 63, 94, 0.28);
+.booking-action-btn.danger {
+    background: rgba(244, 63, 94, 0.1);
+    border-color: rgba(244, 63, 94, 0.2);
     color: #be123c;
 }
 
-.booking-action-btn.success:hover:not(:disabled) {
-    border-color: rgba(16, 185, 129, 0.28);
+.booking-action-btn.danger:hover:not(:disabled) {
+    background: rgba(244, 63, 94, 0.2);
+    border-color: rgba(244, 63, 94, 0.4);
+    color: #9f1239;
+    transform: translateY(-1px);
+}
+
+.booking-action-btn.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.2);
     color: #047857;
+}
+
+.booking-action-btn.success:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #065f46;
+    transform: translateY(-1px);
 }
 
 .booking-action-btn:disabled {
@@ -10572,6 +10599,34 @@ body.material-theme.dark-theme .booking-action-btn:not(.primary):not(.danger):no
     background: var(--surface-3) !important;
     border-color: var(--brand) !important;
     color: var(--brand) !important;
+}
+
+body.dark-theme .booking-action-btn.danger,
+body.material-theme.dark-theme .booking-action-btn.danger {
+    background: rgba(244, 63, 94, 0.15) !important;
+    border-color: rgba(244, 63, 94, 0.3) !important;
+    color: #f87171 !important;
+}
+
+body.dark-theme .booking-action-btn.danger:hover:not(:disabled),
+body.material-theme.dark-theme .booking-action-btn.danger:hover:not(:disabled) {
+    background: rgba(244, 63, 94, 0.25) !important;
+    border-color: rgba(244, 63, 94, 0.5) !important;
+    color: #fca5a5 !important;
+}
+
+body.dark-theme .booking-action-btn.success,
+body.material-theme.dark-theme .booking-action-btn.success {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+    color: #34d399 !important;
+}
+
+body.dark-theme .booking-action-btn.success:hover:not(:disabled),
+body.material-theme.dark-theme .booking-action-btn.success:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.25) !important;
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    color: #6ee7b7 !important;
 }
 
 body.dark-theme .dashboard-row-action,
