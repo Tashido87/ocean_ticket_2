@@ -39,19 +39,21 @@ function assertPassport(actual, expected) {
     assert.equal(actual.validations.mrzStructureValid, true);
 }
 
-assert.equal(formatMrzDate('000517', true, REFERENCE_DATE), '05/17/2000');
-assert.equal(formatMrzDate('580114', true, REFERENCE_DATE), '01/14/1958');
-assert.equal(formatMrzDate('131118', true, REFERENCE_DATE), '11/18/2013');
-assert.equal(formatMrzDate('970211', true, REFERENCE_DATE), '02/11/1997');
-assert.equal(formatMrzDate('221227', true, REFERENCE_DATE), '12/27/2022');
+// formatMrzDate
+// YYMMDD -> DD/MM/YYYY
+assert.equal(formatMrzDate('000517', true, REFERENCE_DATE), '17/05/2000');
+assert.equal(formatMrzDate('580114', true, REFERENCE_DATE), '14/01/1958');
+assert.equal(formatMrzDate('131118', true, REFERENCE_DATE), '18/11/2013');
+assert.equal(formatMrzDate('970211', true, REFERENCE_DATE), '11/02/1997');
+assert.equal(formatMrzDate('221227', true, REFERENCE_DATE), '27/12/2022');
 
 assertPassport(
     parseFromMrz(makeLine1('KYIN YEE'), makeLine2('MJ091278', '580114', 'F', '290529')),
     {
         fullName: 'KYIN YEE',
         passportNo: 'MJ091278',
-        dob: '01/14/1958',
-        expiry: '05/29/2029',
+        dob: '14/01/1958',
+        expiry: '29/05/2029',
         sex: 'F',
         title: 'MS'
     }
@@ -65,8 +67,8 @@ assertPassport(
     {
         fullName: 'YE MIN KHANT',
         passportNo: 'MF971828',
-        dob: '05/17/2000',
-        expiry: '05/30/2027',
+        dob: '17/05/2000',
+        expiry: '30/05/2027',
         sex: 'M',
         title: 'MR'
     }
@@ -77,8 +79,8 @@ assertPassport(
     {
         fullName: 'MOE MOE',
         passportNo: 'MK412423',
-        dob: '11/18/2013',
-        expiry: '09/24/2030',
+        dob: '18/11/2013',
+        expiry: '24/09/2030',
         sex: 'F',
         title: 'MS'
     }
@@ -89,8 +91,8 @@ assertPassport(
     {
         fullName: 'SUTT NAW AUNG',
         passportNo: 'MG336792',
-        dob: '02/11/1997',
-        expiry: '08/21/2027',
+        dob: '11/02/1997',
+        expiry: '21/08/2027',
         sex: 'M',
         title: 'MR'
     }
@@ -104,8 +106,8 @@ assertPassport(
     {
         fullName: 'SWAN PHONE MYAT OO',
         passportNo: 'MH649431',
-        dob: '12/27/2022',
-        expiry: '06/29/2028',
+        dob: '27/12/2022',
+        expiry: '29/06/2028',
         sex: 'M',
         title: 'MSTR'
     }
@@ -151,8 +153,8 @@ const visualFallback = mergePassportOcr({
 });
 assert.equal(visualFallback.fullName, 'YE MIN KHANT');
 assert.equal(visualFallback.passportNo, 'MF971828');
-assert.equal(visualFallback.dob, '05/17/2000');
-assert.equal(visualFallback.expiry, '05/30/2027');
+assert.equal(visualFallback.dob, '17/05/2000');
+assert.equal(visualFallback.expiry, '30/05/2027');
 assert.equal(visualFallback.sex, 'M');
 assert.equal(visualFallback.title, 'MR');
 assert.equal(visualFallback.source.expiry, 'visual');

@@ -161,7 +161,7 @@ function formatDate(mm, dd, yyyy) {
 
     const date = new Date(Date.UTC(year, month - 1, day));
     if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '';
-    return `${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}/${year}`;
+    return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 }
 
 export function formatMrzDate(yymmdd, isBirth, referenceDate = new Date()) {
@@ -199,8 +199,8 @@ export function calculateAge(dobStr, referenceDate = new Date()) {
     const parts = String(dobStr || '').split('/');
     if (parts.length !== 3) return null;
 
-    const month = Number(parts[0]);
-    const day = Number(parts[1]);
+    const day = Number(parts[0]);
+    const month = Number(parts[1]);
     const year = Number(parts[2]);
     const dob = new Date(year, month - 1, day);
     if (Number.isNaN(dob.getTime())) return null;
