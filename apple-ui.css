@@ -417,6 +417,10 @@ body.material-theme .dashboard-hero-illustration {
     width: min(100%, 220px);
     justify-self: end;
     opacity: 0.94;
+    filter: none;
+}
+
+body.material-theme.dark-theme .dashboard-hero-illustration {
     filter: brightness(0) invert(1);
 }
 
