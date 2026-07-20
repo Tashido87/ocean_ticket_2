@@ -116,8 +116,24 @@ function getDeadlineMeta(booking) {
 }
 
 function getGroupKey(booking) {
-    return booking.groupId || [
-        booking.pnr,
+    const pnr = String(booking.pnr || '').trim().toUpperCase();
+    const hasPnr = pnr && pnr !== 'NO PNR' && pnr !== '—' && pnr !== '-';
+    const clientName = String(booking.name || '').replace(/^(MR|MS|MSTR|MISS)\s+/i, '').trim().toLowerCase();
+    const phone = normalizeText(booking.phone);
+    const clientKey = clientName || phone;
+
+    if (hasPnr) {
+        const dep = normalizeText(booking.departure);
+        const dest = normalizeText(booking.destination);
+        const date = normalizeText(booking.departing_on);
+        return `pnr|${pnr}|${dep}|${dest}|${date}|${clientKey}`;
+    }
+
+    if (booking.groupId) {
+        return booking.groupId;
+    }
+
+    return [
         booking.departure,
         booking.destination,
         booking.departing_on,
@@ -136,6 +152,13 @@ function groupBookings(bookings) {
                 passengers: [],
                 docIds: []
             };
+        } else {
+            const priorities = ['Normal', 'High', 'VIP'];
+            const curPrioIdx = priorities.indexOf(acc[key].priority || 'Normal');
+            const newPrioIdx = priorities.indexOf(booking.priority || 'Normal');
+            if (newPrioIdx > curPrioIdx) {
+                acc[key].priority = booking.priority;
+            }
         }
         acc[key].passengers.push({
             name: booking.name,
@@ -580,15 +603,23 @@ function openExtendDeadlineModal(docIdsStr) {
         }
 
         try {
-            await Promise.all(bookingsToUpdate.map(id => updateBooking(id, {
-                enddate,
-                endtime,
-                deadlineAt: deadline.toISOString(),
-                notes,
-                status: 'active',
-                remark: '',
-                notified1hWarning: false
-            })));
+            await Promise.all(bookingsToUpdate.map(id => {
+                const existingBooking = (state.allBookings || []).find(b => b.id === id);
+                const isExistingActive = existingBooking && String(existingBooking.status || '').toLowerCase() === 'active';
+                const isTargetGroup = docIds.includes(id);
+                const updateData = {
+                    enddate,
+                    endtime,
+                    deadlineAt: deadline.toISOString(),
+                    notes,
+                    notified1hWarning: false
+                };
+                if (isTargetGroup || isExistingActive) {
+                    updateData.status = 'active';
+                    updateData.remark = '';
+                }
+                return updateBooking(id, updateData);
+            }));
             showToast('Booking deadline updated.', 'success');
             // Data and UI will update automatically via real-time listeners
         } catch (error) {
