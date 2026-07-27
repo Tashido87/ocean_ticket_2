@@ -971,12 +971,15 @@ export function showNotificationModal() {
     });
 
     const groupedDeadlineBookings = Object.values(nearDeadlineBookings.reduce((acc, booking) => {
-        if (!acc[booking.groupId]) {
-            acc[booking.groupId] = { ...booking,
+        const key = (booking.pnr && booking.pnr !== 'NO PNR' && booking.pnr !== '—' && booking.pnr !== '-') ? `pnr|${booking.pnr}` : booking.groupId;
+        if (!acc[key]) {
+            acc[key] = { ...booking,
                 passengers: []
             };
         }
-        acc[booking.groupId].passengers.push(booking.name);
+        if (!acc[key].passengers.includes(booking.name)) {
+            acc[key].passengers.push(booking.name);
+        }
         return acc;
     }, {})).sort((a, b) => parseDeadline(a.enddate, a.endtime) - parseDeadline(b.enddate, b.endtime));
 

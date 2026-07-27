@@ -33,7 +33,8 @@ import {
     resetPassengerForms,
     addPassengerForm,
     hideNewBookingForm,
-    populatePassengerCardFromClient
+    populatePassengerCardFromClient,
+    applyTripTypeToUI
 } from './ui.js';
 
 const BOOKING_STATUS_LABELS = {
@@ -118,15 +119,8 @@ function getDeadlineMeta(booking) {
 function getGroupKey(booking) {
     const pnr = String(booking.pnr || '').trim().toUpperCase();
     const hasPnr = pnr && pnr !== 'NO PNR' && pnr !== '—' && pnr !== '-';
-    const clientName = String(booking.name || '').replace(/^(MR|MS|MSTR|MISS)\s+/i, '').trim().toLowerCase();
-    const phone = normalizeText(booking.phone);
-    const clientKey = clientName || phone;
-
     if (hasPnr) {
-        const dep = normalizeText(booking.departure);
-        const dest = normalizeText(booking.destination);
-        const date = normalizeText(booking.departing_on);
-        return `pnr|${pnr}|${dep}|${dest}|${date}|${clientKey}`;
+        return `pnr|${pnr}`;
     }
 
     if (booking.groupId) {
@@ -147,34 +141,93 @@ function groupBookings(bookings) {
         const key = getGroupKey(booking);
         if (!acc[key]) {
             acc[key] = {
-                ...booking,
-                groupId: key,
+                id: booking.id,
+                pnr: booking.pnr,
+                phone: booking.phone,
+                account_name: booking.account_name,
+                account_type: booking.account_type,
+                account_link: booking.account_link,
+                status: booking.status,
+                remark: booking.remark,
+                notes: booking.notes,
+                priority: booking.priority || 'Normal',
+                enddate: booking.enddate,
+                endtime: booking.endtime,
+                deadlineAt: booking.deadlineAt,
+                notified1hWarning: booking.notified1hWarning,
                 passengers: [],
+                legs: [],
                 docIds: []
             };
-        } else {
-            const priorities = ['Normal', 'High', 'VIP'];
-            const curPrioIdx = priorities.indexOf(acc[key].priority || 'Normal');
-            const newPrioIdx = priorities.indexOf(booking.priority || 'Normal');
-            if (newPrioIdx > curPrioIdx) {
-                acc[key].priority = booking.priority;
-            }
         }
-        acc[key].passengers.push({
-            name: booking.name,
-            id_no: booking.id_no,
-            docId: booking.id
-        });
+
+        const priorities = ['Normal', 'High', 'VIP'];
+        const curPrioIdx = priorities.indexOf(acc[key].priority || 'Normal');
+        const newPrioIdx = priorities.indexOf(booking.priority || 'Normal');
+        if (newPrioIdx > curPrioIdx) {
+            acc[key].priority = booking.priority;
+        }
+
+        const passengerName = String(booking.name || '').trim();
+        if (!acc[key].passengers.some(p => p.name === passengerName)) {
+            acc[key].passengers.push({
+                name: passengerName,
+                id_no: booking.id_no,
+                docId: booking.id
+            });
+        }
+
+        const legDep = String(booking.departure || '').trim();
+        const legDest = String(booking.destination || '').trim();
+        const legDate = String(booking.departing_on || '').trim();
+        const legType = String(booking.trip_type || '').trim();
+        const legName = String(booking.leg || '').trim();
+        if (!acc[key].legs.some(l => l.departure === legDep && l.destination === legDest && l.departing_on === legDate)) {
+            acc[key].legs.push({
+                departure: legDep,
+                destination: legDest,
+                departing_on: legDate,
+                trip_type: legType,
+                leg: legName
+            });
+        }
+
         acc[key].docIds.push(booking.id);
+
+        if (booking.status === 'active') {
+            acc[key].status = 'active';
+            acc[key].remark = '';
+        }
+
         return acc;
     }, {});
 
-    return Object.values(grouped).map(group => ({
-        ...group,
-        status: normalizeBookingStatus(group),
-        priority: group.priority || 'Normal',
-        deadlineMeta: getDeadlineMeta(group)
-    }));
+    return Object.values(grouped).map(group => {
+        group.legs.sort((a, b) => {
+            const parseDate = (dStr) => {
+                if (!dStr) return 0;
+                const parts = dStr.split(/[-\/]/);
+                if (parts.length === 3) {
+                    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+                }
+                return new Date(dStr).getTime();
+            };
+            return parseDate(a.departing_on) - parseDate(b.departing_on);
+        });
+
+        if (group.legs.length > 0) {
+            group.departure = group.legs[0].departure;
+            group.destination = group.legs[0].destination;
+            group.departing_on = group.legs[0].departing_on;
+        }
+
+        return {
+            ...group,
+            status: normalizeBookingStatus(group),
+            priority: group.priority || 'Normal',
+            deadlineMeta: getDeadlineMeta(group)
+        };
+    });
 }
 
 function routeKey(booking) {
@@ -253,7 +306,7 @@ function groupMatchesFilters(group) {
     const statusFilter = document.getElementById('bookingStatusFilter')?.value || 'active';
     const priorityFilter = document.getElementById('bookingPriorityFilter')?.value || '';
 
-    if (routeFilter && routeKey(group) !== routeFilter) return false;
+    if (routeFilter && !group.legs.some(leg => routeKey(leg) === routeFilter)) return false;
     if (priorityFilter && group.priority !== priorityFilter) return false;
 
     if (statusFilter === 'active' && group.status !== 'active') return false;
@@ -395,8 +448,6 @@ export function renderBookingPage(page) {
 
     paginated.forEach(group => {
         const docIdsStr = group.docIds.join(',');
-        const firstPassengerName = group.passengers[0] ? group.passengers[0].name : 'N/A';
-        const passengerCount = group.passengers.length;
         const isUrgent = ['due-soon', 'expired'].includes(group.deadlineMeta.state);
         const isActive = group.status === 'active';
 
@@ -405,14 +456,59 @@ export function renderBookingPage(page) {
             row.classList.add('deadline-warning');
         }
 
+        // Generate Passenger Tag elements
+        const passengerHtml = `
+            <div class="booking-client-cell" style="display: flex; flex-wrap: wrap; gap: 4px; max-width: 250px; margin-bottom: 4px;">
+                ${group.passengers.map(p => `<span class="passenger-tag">${escapeHtml(p.name)}</span>`).join('')}
+            </div>
+        `;
+        const clientSubHtml = `<div class="booking-meta-sub">${escapeHtml(group.phone || '')}${group.account_name ? ` · ${escapeHtml(group.account_name)}` : ''}</div>`;
+
+        // Generate Routes elements
+        let routeHtml = '';
+        if (group.legs && group.legs.length > 0) {
+            routeHtml = `<div class="route-display-group" style="display: flex; flex-direction: column; gap: 6px;">
+              ${group.legs.map((leg, index) => {
+                  const isRet = leg.leg === 'return' || index > 0;
+                  const badgeText = isRet ? 'RT' : 'OB';
+                  const badgeClass = isRet ? 'tag-cancelled' : 'tag-completed';
+                  return `
+                    <div class="route-row" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600;">
+                      <span class="booking-deadline-badge ${badgeClass}" style="padding: 2px 6px; font-size: 0.65rem; border-radius: 4px; line-height: 1;">${badgeText}</span>
+                      <span>${escapeHtml(compactPlace(leg.departure))} ➔ ${escapeHtml(compactPlace(leg.destination))}</span>
+                    </div>
+                  `;
+              }).join('')}
+            </div>`;
+        } else {
+            routeHtml = routeLabel(group);
+        }
+
+        // Generate Dates elements
+        let travelDateHtml = '';
+        if (group.legs && group.legs.length > 0) {
+            travelDateHtml = `<div class="date-display-group" style="display: flex; flex-direction: column; gap: 4px;">
+              ${group.legs.map((leg, index) => {
+                  const isRet = leg.leg === 'return' || index > 0;
+                  return `
+                    <div class="date-row" style="font-size: 0.85rem; font-weight: 600; color: ${isRet ? 'var(--text-secondary)' : 'var(--text-primary)'}; line-height: 1.45;">
+                      ${formatDateToDMMMY(leg.departing_on)}
+                    </div>
+                  `;
+              }).join('')}
+            </div>`;
+        } else {
+            travelDateHtml = formatDateToDMMMY(group.departing_on) || '';
+        }
+
         row.innerHTML = `
             <td>${deadlineBadge(group)}</td>
-            <td>${formatDateToDMMMY(group.departing_on) || ''}</td>
+            <td>${travelDateHtml}</td>
             <td>
-                <div class="booking-client-cell">${escapeHtml(firstPassengerName)}${passengerCount > 1 ? ` (+${passengerCount - 1})` : ''}</div>
-                <div class="booking-meta-sub">${escapeHtml(group.phone || group.account_type || '')}</div>
+                ${passengerHtml}
+                ${clientSubHtml}
             </td>
-            <td>${routeLabel(group)}</td>
+            <td>${routeHtml}</td>
             <td>${group.pnr ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(group.pnr)}">${escapeHtml(group.pnr)}</a>` : 'N/A'}</td>
             <td>${statusBadge(group.status)}</td>
             <td>${priorityBadge(group.priority)}</td>
@@ -920,6 +1016,26 @@ export function sellTicketFromBooking(docIdsStr) {
     document.getElementById('departure').value = bookingGroup.departure || '';
     document.getElementById('destination').value = bookingGroup.destination || '';
     document.getElementById('departing_on').value = bookingGroup.departing_on || '';
+
+    // Handle return leg prefill for round-trip bookings
+    const returnLeg = bookingGroup.legs ? bookingGroup.legs.find(l => l.leg === 'return') : null;
+    if (returnLeg) {
+        const roundRadio = document.getElementById('trip_type_round');
+        const onewayRadio = document.getElementById('trip_type_oneway');
+        if (roundRadio) roundRadio.checked = true;
+        if (onewayRadio) onewayRadio.checked = false;
+        applyTripTypeToUI();
+        const returnDateInput = document.getElementById('return_date');
+        if (returnDateInput) returnDateInput.value = returnLeg.departing_on || '';
+    } else {
+        const roundRadio = document.getElementById('trip_type_round');
+        const onewayRadio = document.getElementById('trip_type_oneway');
+        if (onewayRadio) onewayRadio.checked = true;
+        if (roundRadio) roundRadio.checked = false;
+        applyTripTypeToUI();
+        const returnDateInput = document.getElementById('return_date');
+        if (returnDateInput) returnDateInput.value = '';
+    }
 
     handleRouteValidation({
         target: document.getElementById('departure')
