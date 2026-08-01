@@ -171,8 +171,8 @@ exports.checkBookingDeadlines = onSchedule(
                 .get();
 
             const bookings = snapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() }));
-            
-            // Group bookings by: (PNR + normalized name) if PNR is present and valid,
+
+            // Group bookings by PNR if PNR is present and valid,
             // otherwise keep them separate (to prevent grouping different client bookings without PNRs).
             const groups = [];
             const processedIds = new Set();
@@ -181,21 +181,41 @@ exports.checkBookingDeadlines = onSchedule(
                 if (processedIds.has(b.id)) continue;
 
                 const pnrVal = String(b.pnr || '').trim().toUpperCase();
-                const clientName = String(b.name || '').trim().replace(/^(MR|MS)\s+/i, '').toLowerCase();
 
                 if (pnrVal && pnrVal !== 'NO PNR' && pnrVal !== '—' && pnrVal !== '-') {
-                    // Find all legs sharing this PNR and same client
+                    // Find all bookings sharing this PNR
                     const legs = bookings.filter(other => 
                         !processedIds.has(other.id) &&
-                        String(other.pnr || '').trim().toUpperCase() === pnrVal &&
-                        String(other.name || '').trim().replace(/^(MR|MS)\s+/i, '').toLowerCase() === clientName
+                        String(other.pnr || '').trim().toUpperCase() === pnrVal
                     );
 
                     legs.forEach(leg => processedIds.add(leg.id));
+
+                    // Collect unique passenger names (strip gender prefix)
+                    const passengerNames = [];
+                    legs.forEach(leg => {
+                        const cleanName = String(leg.name || '').trim().replace(/^(MR|MS|MSTR|MISS)\s+/i, '');
+                        if (cleanName && !passengerNames.includes(cleanName)) {
+                            passengerNames.push(cleanName);
+                        }
+                    });
+
+                    // Collect unique routes/legs to avoid duplicate route listings in the notification
+                    const uniqueLegs = [];
+                    legs.forEach(leg => {
+                        const dep = String(leg.departure || '').trim();
+                        const dest = String(leg.destination || '').trim();
+                        const date = String(leg.departing_on || '').trim();
+                        if (!uniqueLegs.some(l => l.departure === dep && l.destination === dest && l.departing_on === date)) {
+                            uniqueLegs.push(leg);
+                        }
+                    });
+
                     groups.push({
                         pnr: pnrVal,
-                        clientName: String(b.name || '').replace(/^(MR|MS)\s+/i, ''),
-                        legs,
+                        clientName: passengerNames.join(', '),
+                        legs: uniqueLegs,
+                        rawLegs: legs, // Keep references to all original Firestore documents
                         deadlineAt: b.deadlineAt,
                         enddate: b.enddate,
                         endtime: b.endtime,
@@ -203,10 +223,12 @@ exports.checkBookingDeadlines = onSchedule(
                     });
                 } else {
                     processedIds.add(b.id);
+                    const cleanName = String(b.name || '').replace(/^(MR|MS|MSTR|MISS)\s+/i, '');
                     groups.push({
                         pnr: '',
-                        clientName: String(b.name || '').replace(/^(MR|MS)\s+/i, ''),
+                        clientName: cleanName,
                         legs: [b],
+                        rawLegs: [b],
                         deadlineAt: b.deadlineAt,
                         enddate: b.enddate,
                         endtime: b.endtime,
@@ -253,8 +275,9 @@ exports.checkBookingDeadlines = onSchedule(
 
                 // Case 1: Deadline has passed (expired)
                 if (timeLeftMins <= 0) {
+                    const clientLabel = group.clientName.includes(',') ? 'Clients' : 'Client';
                     const message = `❌ *HOLD DEADLINE EXPIRED*\n\n` +
-                                    `👤 *Client:* ${group.clientName}\n` +
+                                    `👤 *${clientLabel}:* ${group.clientName}\n` +
                                     routeInfo +
                                     `🎫 *PNR:* ${group.pnr || 'N/A'}\n` +
                                     `⏰ *Deadline:* ${group.enddate || ''} ${group.endtime || ''}\n\n` +
@@ -263,7 +286,7 @@ exports.checkBookingDeadlines = onSchedule(
                     await sendTelegramAlert(message);
 
                     // Update status in Firestore for all legs in the group
-                    for (const leg of group.legs) {
+                    for (const leg of group.rawLegs) {
                         await db.collection('bookings').doc(leg.id).update({
                             status: 'expired',
                             remark: 'end',
@@ -273,8 +296,9 @@ exports.checkBookingDeadlines = onSchedule(
                 }
                 // Case 2: Deadline is near (under 1 hour left)
                 else if (timeLeftMins > 0 && timeLeftMins <= 60 && !group.notified1hWarning) {
+                    const clientLabel = group.clientName.includes(',') ? 'Clients' : 'Client';
                     const message = `⚠️ *HOLD DEADLINE WARNING* (Less than 1 hour!)\n\n` +
-                                    `👤 *Client:* ${group.clientName}\n` +
+                                    `👤 *${clientLabel}:* ${group.clientName}\n` +
                                     routeInfo +
                                     `🎫 *PNR:* ${group.pnr || 'N/A'}\n` +
                                     `⏰ *Deadline:* ${group.enddate || ''} ${group.endtime || ''}\n` +
@@ -283,7 +307,7 @@ exports.checkBookingDeadlines = onSchedule(
                     await sendTelegramAlert(message);
 
                     // Mark all legs in the group so we don't send duplicate notifications
-                    for (const leg of group.legs) {
+                    for (const leg of group.rawLegs) {
                         await db.collection('bookings').doc(leg.id).update({ notified1hWarning: true });
                     }
                 }
