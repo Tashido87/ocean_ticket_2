@@ -5,6 +5,9 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      ".git/**",
+      ".firebase/**",
+      "functions/**",
       "**/node_modules/**",
       "**/scratch*.js",
       "**/check_amounts.js"
