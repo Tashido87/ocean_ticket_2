@@ -8,7 +8,7 @@ import { state } from './state.js';
 import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast, isTicketPaid, renderAirlineName } from './utils.js';
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
-import { batchUpdateTickets } from './db.js';
+import { batchUpdateTickets, updateTicket } from './db.js';
 import { sellTicketForClient, bookForClient, reserveHotelForClient } from './clients.js';
 import { showDetails } from './tickets.js';
 import { findTicketForManage } from './manage.js';
@@ -166,7 +166,7 @@ function routeShort(ticket) {
 }
 
 function getTicketAmount(ticket) {
-    return Number(ticket.net_amount || 0) + Number(ticket.extra_fare || 0) + Number(ticket.date_change || 0);
+    return Number(ticket.net_amount || 0) + Number(ticket.extra_fare || 0) + Number(ticket.sub_agent_fare || 0) + Number(ticket.date_change || 0);
 }
 
 function getPaymentStatus(ticket) {
@@ -875,6 +875,234 @@ function renderHeader(results) {
     summary.textContent = `${results.best.length} best matches · ${results.related.length} related matches`;
 }
 
+function renderSubAgentCard(accountName) {
+    if (!accountName) return '';
+    const norm = normalize(accountName);
+    const accountTickets = state.allTickets.filter(t => normalize(t.account_name) === norm && !isCanceled(t));
+    if (!accountTickets.length) return '';
+
+    const subAgentTickets = accountTickets.filter(t => Number(t.sub_agent_fare || 0) > 0);
+    const totalSubAgent = accountTickets.reduce((sum, t) => sum + (Number(t.sub_agent_fare) || 0), 0);
+    const unsettledTickets = subAgentTickets.filter(t => !t.sub_agent_settled);
+    const unsettledSubAgent = unsettledTickets.reduce((sum, t) => sum + (Number(t.sub_agent_fare) || 0), 0);
+    const settledTickets = subAgentTickets.filter(t => t.sub_agent_settled);
+    const settledSubAgent = settledTickets.reduce((sum, t) => sum + (Number(t.sub_agent_fare) || 0), 0);
+
+    return `
+        <div class="sub-agent-summary-card">
+            <div class="sub-agent-header">
+                <div class="sub-agent-title-box">
+                    <div class="sub-agent-icon"><i class="fa-solid fa-handshake"></i></div>
+                    <div>
+                        <div class="sub-agent-title-row">
+                            <h3 class="sub-agent-name">${escapeHtml(accountName)}</h3>
+                            <span class="sub-agent-tag">Sub-Agent Account</span>
+                        </div>
+                        <p class="sub-agent-desc">${accountTickets.length} total tickets under this account · ${subAgentTickets.length} with sub-agent fare</p>
+                    </div>
+                </div>
+                <div class="sub-agent-actions">
+                    ${unsettledSubAgent > 0 ? `
+                        <button type="button" class="btn btn-primary btn-settle-subagent-all" data-account-name="${escapeHtml(accountName)}">
+                            <i class="fa-solid fa-money-bill-transfer"></i> Settle All (${unsettledSubAgent.toLocaleString()} MMK)
+                        </button>
+                    ` : (subAgentTickets.length > 0 ? `
+                        <span class="tag-all-settled"><i class="fa-solid fa-circle-check"></i> All Sub-Agent Fares Settled</span>
+                    ` : '')}
+                </div>
+            </div>
+            <div class="sub-agent-kpis">
+                <div class="sub-agent-kpi">
+                    <span class="kpi-label">Total Sub-Agent Fare</span>
+                    <span class="kpi-value">${totalSubAgent.toLocaleString()} <small>MMK</small></span>
+                    <span class="kpi-sub">${subAgentTickets.length} ticket record(s)</span>
+                </div>
+                <div class="sub-agent-kpi kpi-unsettled">
+                    <span class="kpi-label">Left to Pay (Unsettled)</span>
+                    <span class="kpi-value text-danger">${unsettledSubAgent.toLocaleString()} <small>MMK</small></span>
+                    <span class="kpi-sub">${unsettledTickets.length} ticket(s) pending payment</span>
+                </div>
+                <div class="sub-agent-kpi kpi-settled">
+                    <span class="kpi-label">Already Settled (Paid)</span>
+                    <span class="kpi-value text-success">${settledSubAgent.toLocaleString()} <small>MMK</small></span>
+                    <span class="kpi-sub">${settledTickets.length} ticket(s) settled</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+export function openSettleSubAgentModal(accountName, singleTicketId = null) {
+    if (!accountName) return;
+    const norm = normalize(accountName);
+    const accountTickets = state.allTickets.filter(t => normalize(t.account_name) === norm && !isCanceled(t));
+    const targetTickets = singleTicketId 
+        ? accountTickets.filter(t => t.id === singleTicketId)
+        : accountTickets.filter(t => Number(t.sub_agent_fare) > 0 && !t.sub_agent_settled);
+
+    if (!targetTickets.length) {
+        showToast('No unsettled sub-agent fares found for this account.', 'info');
+        return;
+    }
+
+    const totalToSettle = targetTickets.reduce((sum, t) => sum + (Number(t.sub_agent_fare) || 0), 0);
+    const today = new Date();
+    const todayFormatted = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+    const content = `
+        <div class="settle-subagent-modal-content">
+            <div class="modal-subagent-header">
+                <div class="modal-subagent-icon"><i class="fa-solid fa-handshake"></i></div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.25rem;">Settle Sub-Agent Fare</h3>
+                    <p style="margin: 3px 0 0; font-size: 0.85rem; color: var(--text-secondary);">Account: <strong>${escapeHtml(accountName)}</strong></p>
+                </div>
+            </div>
+
+            <div class="settle-summary-box">
+                <div class="settle-sum-row">
+                    <span>Tickets Selected:</span>
+                    <strong id="settleSelectedCount">${targetTickets.length} ticket(s)</strong>
+                </div>
+                <div class="settle-sum-row total-row">
+                    <span>Total Sub-Agent Payout:</span>
+                    <strong id="settleTotalAmount" style="color: var(--primary-accent); font-size: 1.15rem;">${totalToSettle.toLocaleString()} MMK</strong>
+                </div>
+            </div>
+
+            <form id="settleSubAgentForm">
+                <div class="settle-items-list-container">
+                    <label class="list-label" style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); text-transform:uppercase; margin-bottom:0.4rem; display:block;">Select Tickets to Settle:</label>
+                    <div class="settle-items-list">
+                        ${targetTickets.map(t => `
+                            <label class="settle-item-row">
+                                <input type="checkbox" class="settle-item-checkbox" data-ticket-id="${escapeHtml(t.id)}" data-fare="${Number(t.sub_agent_fare) || 0}" checked>
+                                <div class="settle-item-info">
+                                    <span class="item-client">${escapeHtml(t.name || '—')}</span>
+                                    <span class="item-meta">PNR: ${escapeHtml(t.booking_reference || '—')} · ${escapeHtml(routeShort(t))} · ${escapeHtml(t.departing_on || '—')}</span>
+                                </div>
+                                <span class="item-fare">${(Number(t.sub_agent_fare) || 0).toLocaleString()} MMK</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="form-grid" style="margin-top: 1rem;">
+                    <div class="form-group">
+                        <label for="subagent_settle_date">Settlement Date <span class="req">*</span></label>
+                        <input type="text" id="subagent_settle_date" value="${todayFormatted}" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="subagent_settle_method">Payment Method <span class="req">*</span></label>
+                        <select id="subagent_settle_method" required>
+                            <option value="KBZ Pay">KBZ Pay</option>
+                            <option value="Mobile Banking">Mobile Banking</option>
+                            <option value="CB Pay">CB Pay</option>
+                            <option value="Aya Pay">Aya Pay</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="subagent_settle_note">Reference / Note (Optional)</label>
+                        <input type="text" id="subagent_settle_note" placeholder="e.g. Transaction ID, transfer note" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" id="settleSubAgentCancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="settleSubAgentConfirmBtn"><i class="fa-solid fa-check"></i> Confirm Settlement</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    openModal(content);
+
+    new Datepicker(document.getElementById('subagent_settle_date'), {
+        format: 'dd/mm/yyyy',
+        autohide: true,
+        todayHighlight: true
+    });
+
+    const checkboxes = document.querySelectorAll('.settle-item-checkbox');
+    const updateModalTotals = () => {
+        let sum = 0;
+        let count = 0;
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                sum += Number(cb.dataset.fare) || 0;
+                count++;
+            }
+        });
+        const cntEl = document.getElementById('settleSelectedCount');
+        const amtEl = document.getElementById('settleTotalAmount');
+        const btn = document.getElementById('settleSubAgentConfirmBtn');
+        if (cntEl) cntEl.textContent = `${count} ticket(s)`;
+        if (amtEl) amtEl.textContent = `${sum.toLocaleString()} MMK`;
+        if (btn) btn.disabled = count === 0;
+    };
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateModalTotals));
+
+    document.getElementById('settleSubAgentCancelBtn')?.addEventListener('click', closeModal);
+    document.getElementById('settleSubAgentForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const selectedIds = [...checkboxes].filter(cb => cb.checked).map(cb => cb.dataset.ticketId);
+        if (!selectedIds.length) {
+            showToast('Please select at least one ticket to settle.', 'warning');
+            return;
+        }
+
+        const rawDate = document.getElementById('subagent_settle_date').value.trim();
+        const pd = parseSheetDate(rawDate);
+        const settleDate = (!isNaN(pd.getTime()) && pd.getTime() !== 0) ? formatDateForSheet(pd) : rawDate;
+        const settleMethod = document.getElementById('subagent_settle_method').value;
+        const settleNote = document.getElementById('subagent_settle_note').value.trim();
+
+        const updates = selectedIds.map(id => ({
+            id,
+            data: {
+                sub_agent_settled: true,
+                sub_agent_settled_at: new Date().toISOString(),
+                sub_agent_settled_date: settleDate,
+                sub_agent_settlement_method: settleMethod,
+                sub_agent_settlement_note: settleNote
+            }
+        }));
+
+        try {
+            await batchUpdateTickets(updates);
+            showToast(`Successfully settled ${selectedIds.length} sub-agent fare(s) for ${accountName}!`, 'success');
+            closeModal();
+            refreshSearchView(false);
+        } catch (err) {
+            console.error('Error settling sub-agent fares:', err);
+            showToast('Failed to save settlement. Please try again.', 'error');
+        }
+    });
+}
+
+async function unsettleSubAgentTicket(ticketId) {
+    if (!ticketId) return;
+    if (!confirm('Are you sure you want to mark this sub-agent fare as UNSETTLED?')) return;
+
+    try {
+        await updateTicket(ticketId, {
+            sub_agent_settled: false,
+            sub_agent_settled_at: null,
+            sub_agent_settled_date: '',
+            sub_agent_settlement_method: '',
+            sub_agent_settlement_note: ''
+        });
+        showToast('Sub-agent fare marked as unsettled.', 'info');
+        refreshSearchView(false);
+    } catch (err) {
+        console.error('Error unsettling sub-agent fare:', err);
+        showToast('Failed to update ticket status.', 'error');
+    }
+}
+
 function renderResults(results) {
     const container = document.getElementById('searchResultsContainer');
     if (!container) return;
@@ -900,41 +1128,57 @@ function renderResults(results) {
         return;
     }
 
+    const targetAccount = searchState.filters.accountName || 
+        (searchState.query && state.allTickets.some(t => normalize(t.account_name) === normalize(searchState.query)) ? searchState.query : '');
+
+    const subAgentCardHtml = targetAccount ? renderSubAgentCard(targetAccount) : '';
+    const hasSubAgent = Boolean(targetAccount) || results.all.some(r => r.kind === 'ticket' && Number(r.data?.sub_agent_fare || 0) > 0);
+
     const rows = [
-        ...sectionRows('Best Matches', results.best),
-        ...sectionRows('Related Matches', results.related)
+        ...sectionRows('Best Matches', results.best, hasSubAgent),
+        ...sectionRows('Related Matches', results.related, hasSubAgent)
     ].join('');
 
     container.innerHTML = `
+        ${subAgentCardHtml}
         <div class="search-table-shell">
             <table class="search-results-table">
-                ${renderTableHead()}
+                ${renderTableHead(hasSubAgent)}
                 <tbody>${rows}</tbody>
             </table>
         </div>
     `;
-    wireResultActions(container);
+    wireResultActions(container, targetAccount);
 }
 
-function renderTableHead() {
+function renderTableHead(hasSubAgent = false) {
     return `
         <thead><tr>
-            <th>Issue Date</th><th>Client Name</th><th>Account</th><th>Booking Ref/PNR</th><th>Route/Type</th><th>Status/Tickets</th><th>Actions</th>
+            <th>Issue Date</th>
+            <th>Client Name</th>
+            <th>Account</th>
+            <th>Booking Ref/PNR</th>
+            <th>Route/Type</th>
+            ${hasSubAgent ? '<th>Sub-Agent Fare</th>' : ''}
+            <th>Status/Tickets</th>
+            <th>Actions</th>
         </tr></thead>
     `;
 }
 
-function sectionRows(title, rows) {
+function sectionRows(title, rows, hasSubAgent = false) {
     if (!rows.length) return [];
+    const colSpan = hasSubAgent ? 8 : 7;
     return [
-        `<tr class="search-section-row"><td colspan="7">${title} <span>${rows.length}</span></td></tr>`,
-        ...rows.map(renderRow)
+        `<tr class="search-section-row"><td colspan="${colSpan}">${title} <span>${rows.length}</span></td></tr>`,
+        ...rows.map(r => renderRow(r, hasSubAgent))
     ];
 }
 
-function renderRow(result) {
+function renderRow(result, hasSubAgent = false) {
     if (result.kind === 'client') {
         const c = result.data;
+        const subAgentCol = hasSubAgent ? '<td>—</td>' : '';
         return `
             <tr class="search-row" data-kind="client" data-client-key="${escapeHtml(c.client_key)}">
                 <td>${fmtDateOrDash(c.last_issued)}</td>
@@ -947,6 +1191,7 @@ function renderRow(result) {
                 <td>${highlightText(c.account_name || '—')}</td>
                 <td>—</td>
                 <td>Client (${escapeHtml(c.account_type || '—')})</td>
+                ${subAgentCol}
                 <td>${Number(c.ticket_count || 0)} tickets</td>
                 <td>${clientActions(c.client_key)}</td>
             </tr>
@@ -955,8 +1200,20 @@ function renderRow(result) {
 
     const t = result.data;
     const clientKey = getTicketClientKey(t);
+    const subFare = Number(t.sub_agent_fare || 0);
+    const subAgentCol = hasSubAgent ? `
+        <td>
+            ${subFare > 0 ? `
+                <div class="subagent-fare-badge ${t.sub_agent_settled ? 'is-settled' : 'is-unsettled'}" title="${t.sub_agent_settled ? `Settled on ${t.sub_agent_settled_date || '—'} via ${t.sub_agent_settlement_method || '—'}` : 'Unsettled sub-agent fare'}">
+                    <span class="subagent-amt">${subFare.toLocaleString()} MMK</span>
+                    <span class="subagent-tag-status">${t.sub_agent_settled ? `<i class="fa-solid fa-circle-check"></i> Paid` : `<i class="fa-solid fa-clock"></i> Unpaid`}</span>
+                </div>
+            ` : '<span class="text-slate-muted">—</span>'}
+        </td>
+    ` : '';
+
     return `
-        <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(t.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(t.booking_reference || '')}">
+        <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(t.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(t.booking_reference || '')}" data-account-name="${escapeHtml(t.account_name || '')}">
             <td>${fmtDateOrDash(t.issued_date)}</td>
             <td class="strong-cell">
                 <div class="cell-with-avatar">
@@ -967,8 +1224,9 @@ function renderRow(result) {
             <td>${highlightText(t.account_name || '—')}</td>
             <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${highlightText(t.booking_reference)}</a>` : '—'}</strong></td>
             <td>${escapeHtml(routeShort(t))}</td>
+            ${subAgentCol}
             <td>${paymentBadge(result.payment)}</td>
-            <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid')}</td>
+            <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid', t)}</td>
         </tr>
     `;
 }
@@ -983,18 +1241,24 @@ function clientActions(clientKey) {
     `;
 }
 
-function ticketActions(canSell, canSettle) {
+function ticketActions(canSell, canSettle, ticket = null) {
+    const subFare = Number(ticket?.sub_agent_fare || 0);
+    const hasSubAgent = subFare > 0;
+    const isSubSettled = Boolean(ticket?.sub_agent_settled);
+
     return `
         <div class="search-row-actions">
             <button type="button" class="search-action-btn" data-action="view-ticket">View</button>
             <button type="button" class="search-action-btn" data-action="booking-ticket">Booking</button>
             ${canSell ? '<button type="button" class="search-action-btn primary" data-action="sell-ticket">Sell</button>' : ''}
             ${canSettle ? '<button type="button" class="search-action-btn coral" data-action="settle-ticket">Settle</button>' : ''}
+            ${hasSubAgent && !isSubSettled ? '<button type="button" class="search-action-btn primary btn-subagent-action" data-action="settle-subagent" title="Settle sub-agent fare"><i class="fa-solid fa-handshake"></i> Settle</button>' : ''}
+            ${hasSubAgent && isSubSettled ? '<button type="button" class="search-action-btn btn-subagent-action" data-action="unsettle-subagent" title="Mark as unsettled"><i class="fa-solid fa-rotate-left"></i> Unsettle</button>' : ''}
         </div>
     `;
 }
 
-function wireResultActions(container) {
+function wireResultActions(container, targetAccount = '') {
     container.querySelectorAll('.search-row').forEach(row => {
         row.addEventListener('click', (e) => {
             if (e.target.closest('button')) return;
@@ -1018,6 +1282,7 @@ function wireResultActions(container) {
             const clientKey = btn.dataset.clientKey || row?.dataset.clientKey;
             const ticketId = row?.dataset.ticketId;
             const pnr = row?.dataset.pnr;
+            const rowAccount = row?.dataset.accountName || targetAccount;
 
             if (action === 'view-client' && clientKey) navigateToClient(clientKey);
             if (action === 'booking-client' && clientKey) bookForClient(clientKey);
@@ -1029,7 +1294,14 @@ function wireResultActions(container) {
             }
             if (action === 'sell-ticket' && clientKey) sellTicketForClient(clientKey);
             if (action === 'settle-ticket') showView('settle');
+            if (action === 'settle-subagent') openSettleSubAgentModal(rowAccount, ticketId);
+            if (action === 'unsettle-subagent') unsettleSubAgentTicket(ticketId);
         });
+    });
+
+    container.querySelector('.btn-settle-subagent-all')?.addEventListener('click', (e) => {
+        const acc = e.currentTarget.dataset.accountName || targetAccount;
+        if (acc) openSettleSubAgentModal(acc);
     });
 }
 

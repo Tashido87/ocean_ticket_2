@@ -1172,7 +1172,7 @@ function inDashboardRange(date, range) {
 
 
 function ticketSalesAmount(t) {
-    return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0) + (Number(t.extra_fare) || 0);
+    return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0) + (Number(t.extra_fare) || 0) + (Number(t.sub_agent_fare) || 0);
 }
 
 function ticketProfitAmount(t) {

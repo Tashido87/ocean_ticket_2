@@ -60,7 +60,7 @@ function dateForInput(value) {
 }
 
 function ticketTotal(ticket) {
-    return (Number(ticket.net_amount) || 0) + (Number(ticket.extra_fare) || 0) + (Number(ticket.date_change) || 0);
+    return (Number(ticket.net_amount) || 0) + (Number(ticket.extra_fare) || 0) + (Number(ticket.sub_agent_fare) || 0) + (Number(ticket.date_change) || 0);
 }
 
 
@@ -319,7 +319,7 @@ function openFeeManageModal(docId) {
     const ticket = state.allTickets.find(t => t.id === docId);
     if (!ticket) return;
 
-    const feeAmount = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
+    const feeAmount = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.sub_agent_fare || 0) + (ticket.date_change || 0);
     const { method: pmBase, bank: pmBank } = parsePaymentMethod(ticket.payment_method);
     
     // Parse Paid Date
@@ -1350,7 +1350,7 @@ function openPartialPaymentModal(docId) {
     }
 
     // Calculate total debt for the scope
-    const currentTotal = ticketsToPay.reduce((sum, t) => sum + (t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0), 0);
+    const currentTotal = ticketsToPay.reduce((sum, t) => sum + (t.net_amount || 0) + (t.extra_fare || 0) + (t.sub_agent_fare || 0) + (t.date_change || 0), 0);
     
     const contextTitle = applyToAll ? `Total PNR Debt (${ticketsToPay.length} tickets)` : 'Single Ticket Debt';
 
@@ -1468,7 +1468,7 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
         for (const ticket of ticketsToPay) {
             if (payAmount <= 0) break;
 
-            const ticketTotalAmt = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
+            const ticketTotalAmt = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.sub_agent_fare || 0) + (ticket.date_change || 0);
             
             if (payAmount >= ticketTotalAmt) {
                 updates.push(updateTicket(ticket.id, {

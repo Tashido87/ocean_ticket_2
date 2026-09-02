@@ -104,7 +104,7 @@ export function buildClientList() {
             if (!isFeeEntry(ticket)) {
                 clients[clientKey].ticket_count++;
             }
-            clients[clientKey].total_spent += (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.date_change || 0);
+            clients[clientKey].total_spent += (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.sub_agent_fare || 0) + (ticket.date_change || 0);
         }
         const travelDate = parseSheetDate(ticket.departing_on);
         if (travelDate > clients[clientKey].last_travel) {
@@ -422,7 +422,7 @@ function _legacyViewClientHistory(clientKey) {
         const lowerRemarks = t.remarks?.toLowerCase() || '';
         return !lowerRemarks.includes('cancel') && !lowerRemarks.includes('refund');
     });
-    const totalSpent = activeClientTickets.reduce((sum, t) => sum + (t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0), 0);
+    const totalSpent = activeClientTickets.reduce((sum, t) => sum + (t.net_amount || 0) + (t.extra_fare || 0) + (t.sub_agent_fare || 0) + (t.date_change || 0), 0);
     const totalProfit = activeClientTickets.reduce((sum, t) => sum + (t.commission || 0) + (t.extra_fare || 0), 0);
     const primaryId = activeClient?.nrc_no || firstTicket.nrc_no || firstTicket.id_no || 'N/A';
     const passportNo = activeClient?.passport_no || firstTicket.passport_no || '';

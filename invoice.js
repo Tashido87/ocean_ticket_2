@@ -457,7 +457,7 @@ function buildInvoiceLineItems(groupTickets, mode) {
         const isFee = isFeeEntryRow(ticket);
         const route = `${(ticket.departure || '').split(' ')[0]}-${(ticket.destination || '').split(' ')[0]}`;
         const airline = ticket.airline || '';
-        const price = (ticket.net_amount || 0) + (ticket.extra_fare || 0);
+        const price = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.sub_agent_fare || 0);
         
         let displayDate = ticket.departing_on;
         let prefix = '';
@@ -519,7 +519,7 @@ function buildInvoiceDocumentData(group, type, brand, dateStr, groupIndex, group
     const documentDate = resolveDocumentDate(dateStr);
     const lineItems = buildInvoiceLineItems(group.tickets, mode);
     const totalAmount = group.tickets.reduce(
-        (sum, ticket) => sum + (ticket.net_amount || 0) + (ticket.extra_fare || 0),
+        (sum, ticket) => sum + (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.sub_agent_fare || 0),
         0
     );
 

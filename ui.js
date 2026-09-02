@@ -1815,6 +1815,10 @@ function _buildPassengerCardHtml(idx, opts) {
                             <input type="number" class="passenger-extra-fare" placeholder="0" min="0" step="1" inputmode="numeric">
                         </div>
                         <div class="form-group">
+                            <label>Sub Agent Fare</label>
+                            <input type="number" class="passenger-sub-agent-fare" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
                             <label>Commission</label>
                             <input type="number" class="passenger-commission" placeholder="0" min="0" step="1" inputmode="numeric">
                         </div>
@@ -1824,7 +1828,7 @@ function _buildPassengerCardHtml(idx, opts) {
                         <input type="text" class="passenger-remarks" placeholder="Optional notes">
                     </div>
                     <div class="pricing-totals">
-                        <span class="label">Outbound subtotal (net + extra)</span>
+                        <span class="label">Outbound subtotal (net + extra + sub-agent)</span>
                         <span class="value" data-role="outbound-subtotal">0 MMK</span>
                     </div>
                 </div>
@@ -1853,6 +1857,10 @@ function _buildPassengerCardHtml(idx, opts) {
                             <input type="number" class="passenger-return-extra-fare" placeholder="0" min="0" step="1" inputmode="numeric">
                         </div>
                         <div class="form-group">
+                            <label>Sub Agent Fare</label>
+                            <input type="number" class="passenger-return-sub-agent-fare" placeholder="0" min="0" step="1" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
                             <label>Commission</label>
                             <input type="number" class="passenger-return-commission" placeholder="0" min="0" step="1" inputmode="numeric">
                         </div>
@@ -1862,7 +1870,7 @@ function _buildPassengerCardHtml(idx, opts) {
                         <input type="text" class="passenger-return-remarks" placeholder="Optional notes">
                     </div>
                     <div class="pricing-totals">
-                        <span class="label">Return subtotal (net + extra)</span>
+                        <span class="label">Return subtotal (net + extra + sub-agent)</span>
                         <span class="value" data-role="return-subtotal">0 MMK</span>
                     </div>
                 </div>
@@ -2161,8 +2169,8 @@ function _attachPaxBehaviour(formEl, opts = {}) {
 
 
     [
-        'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission',
-        'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-commission'
+        'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-sub-agent-fare', 'passenger-commission',
+        'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-sub-agent-fare', 'passenger-return-commission'
     ].forEach(cls => {
         const el = formEl.querySelector('.' + cls);
         if (!el) return;
@@ -2716,13 +2724,15 @@ function isPassengerComplete(formEl) {
 function updatePaxTotal(formEl) {
     const obNet = parseFloat(formEl.querySelector('.passenger-net-amount').value) || 0;
     const obExtra = parseFloat(formEl.querySelector('.passenger-extra-fare').value) || 0;
-    const obSubtotal = obNet + obExtra;
+    const obSubAgent = parseFloat(formEl.querySelector('.passenger-sub-agent-fare')?.value) || 0;
+    const obSubtotal = obNet + obExtra + obSubAgent;
 
     let retSubtotal = 0;
     if (isRoundTrip()) {
         const retNet = parseFloat(formEl.querySelector('.passenger-return-net-amount')?.value) || 0;
         const retExtra = parseFloat(formEl.querySelector('.passenger-return-extra-fare')?.value) || 0;
-        retSubtotal = retNet + retExtra;
+        const retSubAgent = parseFloat(formEl.querySelector('.passenger-return-sub-agent-fare')?.value) || 0;
+        retSubtotal = retNet + retExtra + retSubAgent;
     }
 
     const obSubEl = formEl.querySelector('[data-role="outbound-subtotal"]');
@@ -2876,14 +2886,16 @@ export function updateSummaryBar() {
     cards.forEach(card => {
         const net = parseFloat(card.querySelector('.passenger-net-amount').value) || 0;
         const extra = parseFloat(card.querySelector('.passenger-extra-fare').value) || 0;
+        const subAgent = parseFloat(card.querySelector('.passenger-sub-agent-fare')?.value) || 0;
         const commission = parseFloat(card.querySelector('.passenger-commission').value) || 0;
-        totalNet += net + extra;
+        totalNet += net + extra + subAgent;
         totalCommission += (isSelf ? commission : calculateAgentCut(commission)) + extra;
         if (round) {
             const retNet = parseFloat(card.querySelector('.passenger-return-net-amount')?.value) || 0;
             const retExtra = parseFloat(card.querySelector('.passenger-return-extra-fare')?.value) || 0;
+            const retSubAgent = parseFloat(card.querySelector('.passenger-return-sub-agent-fare')?.value) || 0;
             const retCommission = parseFloat(card.querySelector('.passenger-return-commission')?.value) || 0;
-            totalNet += retNet + retExtra;
+            totalNet += retNet + retExtra + retSubAgent;
             totalCommission += (isSelf ? retCommission : calculateAgentCut(retCommission)) + retExtra;
         }
     });
@@ -2903,8 +2915,8 @@ export function updateSummaryBar() {
 function duplicatePassengerForm(srcEl) {
     const gender = srcEl.querySelector('.passenger-gender:checked')?.value || '';
     const fields = [
-        'passenger-cost-price', 'passenger-supplier', 'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-commission',
-        'passenger-return-cost-price', 'passenger-return-supplier', 'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-commission'
+        'passenger-cost-price', 'passenger-supplier', 'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-sub-agent-fare', 'passenger-commission',
+        'passenger-return-cost-price', 'passenger-return-supplier', 'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-sub-agent-fare', 'passenger-return-commission'
     ];
     const values = Object.fromEntries(fields.map(c => [c, srcEl.querySelector('.' + c)?.value || '']));
 

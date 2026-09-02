@@ -116,7 +116,7 @@ function n(v) { return Number(v || 0); }
    ============================================================ */
 
 export function getTicketGrossAmount(t) {
-    return n(t.net_amount) + n(t.date_change) + n(t.extra_fare);
+    return n(t.net_amount) + n(t.date_change) + n(t.extra_fare) + n(t.sub_agent_fare);
 }
 
 export const getTicketCustomerCharge = getTicketGrossAmount;

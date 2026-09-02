@@ -548,7 +548,7 @@ export function showDetails(docId) {
     }
 
     function getTicketAmount(t) {
-        return (Number(t.net_amount) || 0) + (Number(t.extra_fare) || 0) + (Number(t.date_change) || 0);
+        return (Number(t.net_amount) || 0) + (Number(t.extra_fare) || 0) + (Number(t.sub_agent_fare) || 0) + (Number(t.date_change) || 0);
     }
 
     function getAirportCodeAndCity(locationName) {
@@ -1296,9 +1296,9 @@ export async function handleSellTicket(e) {
         return;
     }
 
-    const outboundTotal = passengerData.reduce((sum, p) => sum + p.net_amount + p.extra_fare, 0);
+    const outboundTotal = passengerData.reduce((sum, p) => sum + p.net_amount + p.extra_fare + (p.sub_agent_fare || 0), 0);
     const returnTotal = sharedData.is_round_trip
-        ? passengerData.reduce((sum, p) => sum + (p.return_net_amount || 0) + (p.return_extra_fare || 0), 0)
+        ? passengerData.reduce((sum, p) => sum + (p.return_net_amount || 0) + (p.return_extra_fare || 0) + (p.return_sub_agent_fare || 0), 0)
         : 0;
     const totalAmount = outboundTotal + returnTotal;
     const totalRowCount = passengerData.length * (sharedData.is_round_trip ? 2 : 1);
@@ -1572,6 +1572,7 @@ function collectFormData(form) {
             base_fare: readMoneyInput(pForm, '.passenger-base-fare'),
             net_amount: readMoneyInput(pForm, '.passenger-net-amount'),
             extra_fare: readMoneyInput(pForm, '.passenger-extra-fare'),
+            sub_agent_fare: readMoneyInput(pForm, '.passenger-sub-agent-fare'),
             commission: readMoneyInput(pForm, '.passenger-commission'),
             remarks: readPassengerInput(pForm, '.passenger-remarks'),
             // Return-leg pricing (zero when one-way)
@@ -1580,6 +1581,7 @@ function collectFormData(form) {
             return_base_fare: isRound ? readMoneyInput(pForm, '.passenger-return-base-fare') : 0,
             return_net_amount: isRound ? readMoneyInput(pForm, '.passenger-return-net-amount') : 0,
             return_extra_fare: isRound ? readMoneyInput(pForm, '.passenger-return-extra-fare') : 0,
+            return_sub_agent_fare: isRound ? readMoneyInput(pForm, '.passenger-return-sub-agent-fare') : 0,
             return_commission: isRound ? readMoneyInput(pForm, '.passenger-return-commission') : 0,
             return_remarks: isRound ? readPassengerInput(pForm, '.passenger-return-remarks') : ''
         };
@@ -1638,6 +1640,8 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
             commission: agentCommission,
             remarks: pricing.remarks || '',
             extra_fare: pricing.extra_fare || 0,
+            sub_agent_fare: pricing.sub_agent_fare || 0,
+            sub_agent_settled: false,
             date_change: 0,
             source: sharedData.source || 'owner',
             cost_price: pricing.cost_price || 0,
@@ -1666,6 +1670,7 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
             base_fare: p.base_fare,
             net_amount: p.net_amount,
             extra_fare: p.extra_fare,
+            sub_agent_fare: p.sub_agent_fare,
             commission: p.commission,
             remarks: p.remarks
         }));
@@ -1678,6 +1683,7 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
                 base_fare: p.return_base_fare,
                 net_amount: p.return_net_amount,
                 extra_fare: p.return_extra_fare,
+                sub_agent_fare: p.return_sub_agent_fare,
                 commission: p.return_commission,
                 remarks: p.return_remarks
             }));
@@ -1977,6 +1983,10 @@ export function openEditTicketModal(ticket) {
                 <input type="number" id="editExtraFare" value="${ticket.extra_fare || 0}">
             </div>
             <div class="form-group">
+                <label>Sub Agent Fare</label>
+                <input type="number" id="editSubAgentFare" value="${ticket.sub_agent_fare || 0}">
+            </div>
+            <div class="form-group">
                 <label>Date Change Fees</label>
                 <input type="number" id="editDateChange" value="${ticket.date_change || 0}">
             </div>
@@ -2028,6 +2038,7 @@ export function openEditTicketModal(ticket) {
             net_amount: Number(document.getElementById('editNetAmount').value) || 0,
             commission: Number(document.getElementById('editCommission').value) || 0,
             extra_fare: Number(document.getElementById('editExtraFare').value) || 0,
+            sub_agent_fare: Number(document.getElementById('editSubAgentFare').value) || 0,
             date_change: Number(document.getElementById('editDateChange').value) || 0
         });
         showToast('Ticket updated successfully', 'success');
@@ -2050,12 +2061,16 @@ export function openEditGroupModal(group) {
                 <input type="number" id="editGroupExtraFare" value="${group.extra_fare || 0}">
             </div>
             <div class="form-group full-width">
+                <label>Sub Agent Fare (total)</label>
+                <input type="number" id="editGroupSubAgentFare" value="${group.sub_agent_fare || 0}">
+            </div>
+            <div class="form-group full-width">
                 <label>Date Change Fees (total)</label>
                 <input type="number" id="editGroupDateChange" value="${group.date_change || 0}">
             </div>
         </div>
         <div class="edit-modal-note">
-            <i class="fa-solid fa-circle-info"></i> Commission will be divided equally among the ${group.count} tickets. Example: 100,000 ÷ ${group.count} = ${Math.round((group.commission || 0) / group.count).toLocaleString()} each.
+            <i class="fa-solid fa-circle-info"></i> Commission and Sub Agent Fare will be divided equally among the ${group.count} tickets.
         </div>
         <div class="form-actions" style="margin-top:1.25rem;">
             <button class="btn btn-primary" id="editGroupSaveBtn">Save</button>
@@ -2067,10 +2082,12 @@ export function openEditGroupModal(group) {
     document.getElementById('editGroupSaveBtn').addEventListener('click', async () => {
         const totalCommission = Number(document.getElementById('editGroupCommission').value) || 0;
         const totalExtraFare = Number(document.getElementById('editGroupExtraFare').value) || 0;
+        const totalSubAgentFare = Number(document.getElementById('editGroupSubAgentFare').value) || 0;
         const totalDateChange = Number(document.getElementById('editGroupDateChange').value) || 0;
 
         const perCommission = Math.round(totalCommission / group.count);
         const perExtraFare = Math.round(totalExtraFare / group.count);
+        const perSubAgentFare = Math.round(totalSubAgentFare / group.count);
         const perDateChange = Math.round(totalDateChange / group.count);
 
         const updates = group.tickets.map(t => ({
@@ -2078,6 +2095,7 @@ export function openEditGroupModal(group) {
             data: {
                 commission: perCommission,
                 extra_fare: perExtraFare,
+                sub_agent_fare: perSubAgentFare,
                 date_change: perDateChange
             }
         }));
