@@ -47,7 +47,8 @@ export function buildClientList() {
     state.allTickets.forEach(ticket => {
         const baseName = String(ticket.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
         const phone = ticket.phone && ticket.phone !== 'undefined' ? ticket.phone : '';
-        const accountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name : '';
+        const rawAccountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name.trim() : '';
+        const accountName = rawAccountName.toUpperCase();
         const accountType = ticket.account_type && ticket.account_type !== 'undefined' ? ticket.account_type : '';
         const accountLink = ticket.account_link && ticket.account_link !== 'undefined' ? ticket.account_link : '';
         
@@ -81,6 +82,8 @@ export function buildClientList() {
                 last_issued: new Date(0)
             };
         }
+        if (!clients[clientKey].account_type && accountType) clients[clientKey].account_type = accountType;
+        if (!clients[clientKey].account_link && accountLink) clients[clientKey].account_link = accountLink;
         if (!clients[clientKey].nrc_no && ticketNrc) clients[clientKey].nrc_no = ticketNrc;
         if (!clients[clientKey].id_no && ticket.id_no) clients[clientKey].id_no = ticket.id_no;
         if (!clients[clientKey].passport_no && ticketPassport) clients[clientKey].passport_no = ticketPassport;
@@ -408,7 +411,7 @@ function _legacyViewClientHistory(clientKey) {
     const clientName = activeClient ? activeClient.name : 'Unknown';
 
     const clientTickets = state.allTickets.filter(t => 
-        `${t.name}|${t.phone}|${t.account_name}` === clientKey
+        `${String(t.name || '').replace(/\([^)]+\)\s*$/i, '').trim()}|${t.phone && t.phone !== 'undefined' ? t.phone : ''}|${(t.account_name && t.account_name !== 'undefined' ? t.account_name.trim().toUpperCase() : '')}` === clientKey
     )
         .sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date));
 

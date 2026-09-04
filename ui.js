@@ -1388,7 +1388,7 @@ function renderClientSuggestions(input, box, matches, onSelect) {
             <div style="font-weight:600;">${client.name || 'Unknown'}</div>
             <div style="font-size:0.78em; opacity:0.72;">
                 ${client.phone ? `<i class="fa-solid fa-phone"></i> ${client.phone}` : ''}
-                ${client.account_name ? ` · ${client.account_name}` : ''}
+                ${client.account_name ? ` · ${client.account_name.toUpperCase()}` : ''}
             </div>
         `;
         item.addEventListener('mousedown', (e) => {
@@ -1409,7 +1409,7 @@ function fillSellClientFields(client) {
     const accountTypeInput = document.getElementById('account_type');
     const accountLinkInput = document.getElementById('account_link');
     if (phoneInput) phoneInput.value = client.phone || '';
-    if (accountNameInput) accountNameInput.value = client.account_name || '';
+    if (accountNameInput) accountNameInput.value = (client.account_name || '').toUpperCase();
     if (accountTypeInput) accountTypeInput.value = client.account_type || '';
     if (accountLinkInput) accountLinkInput.value = client.account_link || '';
     showClientMatchChip(client);

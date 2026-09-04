@@ -1469,7 +1469,7 @@ function collectFormData(form) {
     const sharedData = {
         issued_date: form.querySelector('#issued_date').value,
         phone: form.querySelector('#phone').value,
-        account_name: form.querySelector('#account_name').value,
+        account_name: (form.querySelector('#account_name').value || '').trim().toUpperCase(),
         account_type: form.querySelector('#account_type').value,
         account_link: form.querySelector('#account_link').value,
         departure: departureVal,
@@ -1796,7 +1796,7 @@ function groupTicketsByAccount(tickets, startDateVal, endDateVal) {
         const sumField = (field) => group.reduce((sum, t) => sum + (Number(t[field]) || 0), 0);
         const first = group[0];
         
-        const accountName = (first.account_name || '—').trim();
+        const accountName = (first.account_name || '—').trim().toUpperCase();
         const travelDate = first._isHotel ? (first.checkin || first.issued_date || '') : (first.departing_on || '');
 
         grouped.push({

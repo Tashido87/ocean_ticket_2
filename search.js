@@ -117,7 +117,7 @@ function normalizeName(name) {
 function clientKeyFromTicket(ticket) {
     const baseName = String(ticket.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
     const phone = ticket.phone && ticket.phone !== 'undefined' ? ticket.phone : '';
-    const accountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name : '';
+    const accountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name.trim().toUpperCase() : '';
     return `${baseName}|${phone}|${accountName}`;
 }
 
@@ -1188,7 +1188,7 @@ function renderRow(result, hasSubAgent = false) {
                         <span>${highlightText(c.name)}</span>
                     </div>
                 </td>
-                <td>${highlightText(c.account_name || '—')}</td>
+                <td>${highlightText(c.account_name ? c.account_name.toUpperCase() : '—')}</td>
                 <td>—</td>
                 <td>Client (${escapeHtml(c.account_type || '—')})</td>
                 ${subAgentCol}
@@ -1213,7 +1213,7 @@ function renderRow(result, hasSubAgent = false) {
     ` : '';
 
     return `
-        <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(t.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(t.booking_reference || '')}" data-account-name="${escapeHtml(t.account_name || '')}">
+        <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(t.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(t.booking_reference || '')}" data-account-name="${escapeHtml(t.account_name ? t.account_name.toUpperCase() : '')}">
             <td>${fmtDateOrDash(t.issued_date)}</td>
             <td class="strong-cell">
                 <div class="cell-with-avatar">
@@ -1221,7 +1221,7 @@ function renderRow(result, hasSubAgent = false) {
                     <span class="${clientKey ? 'clickable-client-link' : ''}" data-client-key="${escapeHtml(clientKey)}" ${clientKey ? 'style="cursor:pointer; color:var(--primary-accent);"' : ''} title="${clientKey ? 'View Client' : ''}">${highlightText(String(t.name || '—').replace(/\([^)]+\)\s*$/i, '').trim())}</span>
                 </div>
             </td>
-            <td>${highlightText(t.account_name || '—')}</td>
+            <td>${highlightText(t.account_name ? t.account_name.toUpperCase() : '—')}</td>
             <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${highlightText(t.booking_reference)}</a>` : '—'}</strong></td>
             <td>${escapeHtml(routeShort(t))}</td>
             ${subAgentCol}
@@ -2630,17 +2630,27 @@ function buildSuggestions(query) {
         .filter(r => r.kind === 'ticket' && !topIds.has(getResultId(r)) && !clientIds.has(getResultId(r)))
         .slice(0, 4);
 
-    // Account suggestions
-    const accountSet = new Set();
-    state.allClients.forEach(c => {
-        if (c.account_name && normalize(c.account_name).includes(normalize(q))) {
-            accountSet.add(c.account_name);
+    // Account suggestions - deduplicate case-insensitively, display in UPPERCASE
+    const accountMap = new Map();
+    const candidateAccounts = [];
+    if (state.allClients) candidateAccounts.push(...state.allClients);
+    if (state.allTickets) candidateAccounts.push(...state.allTickets);
+
+    candidateAccounts.forEach(item => {
+        const raw = (item.account_name || '').trim();
+        if (!raw || raw === 'undefined') return;
+        const norm = normalize(raw);
+        if (norm.includes(normalize(q))) {
+            if (!accountMap.has(norm)) {
+                accountMap.set(norm, raw.toUpperCase());
+            }
         }
     });
+
     const accountNamesShown = new Set();
-    const accounts = [...accountSet].slice(0, 3).map(name => {
-        accountNamesShown.add(normalize(name));
-        return { kind: 'account', label: name, data: { account_name: name } };
+    const accounts = [...accountMap.values()].slice(0, 3).map(upperName => {
+        accountNamesShown.add(normalize(upperName));
+        return { kind: 'account', label: upperName, data: { account_name: upperName } };
     });
     const filteredClients = tokens.length > 1
         ? clients
