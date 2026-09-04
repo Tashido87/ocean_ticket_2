@@ -734,7 +734,9 @@ body.material-theme .search-view-header {
 }
 
 body.material-theme .search-view-wrapper {
-    max-width: 1500px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     padding: 0;
 }
 

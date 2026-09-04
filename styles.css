@@ -6287,9 +6287,10 @@ body.material-theme ::-webkit-scrollbar-track {
 
 /* Search view wrapper */
 .search-view-wrapper {
-    padding: 1.5rem 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 0 0 2rem;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
 }
 
 /* Records view wrapper */
@@ -7092,10 +7093,10 @@ body.material-theme .suggestion-empty {
 }
 
 body.material-theme .search-view-wrapper {
-    width: min(1240px, calc(100vw - 3rem));
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 1.25rem 0 2.5rem;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 0 2.5rem;
 }
 
 body.material-theme .search-view-header {
@@ -7351,7 +7352,7 @@ body.material-theme .search-table-shell {
 
 body.material-theme .search-results-table {
     width: 100%;
-    min-width: 980px;
+    min-width: 100%;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.86rem;
@@ -7457,6 +7458,7 @@ body.material-theme .search-row-actions {
     display: inline-flex;
     align-items: center;
     gap: 0.36rem;
+    white-space: nowrap;
 }
 
 body.material-theme .search-action-btn {
