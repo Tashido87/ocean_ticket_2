@@ -145,6 +145,7 @@ body.material-theme.dark-theme .sidebar {
 }
 
 body.material-theme .sidebar-brand {
+    position: relative;
     justify-content: center;
     padding: 16px 20px 24px;
     margin: 0 0 8px;
@@ -953,28 +954,83 @@ body.material-theme .landing-signin-btn:active {
     transform: scale(0.98);
 }
 
+.sidebar-close-btn {
+    display: none;
+}
+
 /* Narrow layouts maintain clear touch targets and predictable navigation. */
 @media (max-width: 980px) {
     body.material-theme .sidebar {
-        transform: translateX(-100%);
-        box-shadow: 12px 0 30px rgba(0, 0, 0, 0.12);
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 280px;
+        max-width: 84vw;
+        z-index: 9999;
+        transform: translateX(-100%) !important;
+        box-shadow: 12px 0 30px rgba(0, 0, 0, 0.25);
+        transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    body.material-theme:not(.sidebar-collapsed) .sidebar {
-        transform: translateX(0);
+    body.material-theme.sidebar-open .sidebar {
+        transform: translateX(0) !important;
+    }
+
+    body.material-theme.sidebar-open::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 9998;
+        pointer-events: auto;
     }
 
     body.material-theme .app-body,
     body.material-theme.sidebar-collapsed .app-body {
-        margin-left: 0;
+        margin-left: 0 !important;
+        width: 100% !important;
     }
 
     body.material-theme .sidebar-toggle {
-        display: inline-flex;
+        display: inline-flex !important;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px;
+        font-size: 1.15rem;
+        cursor: pointer;
+    }
+
+    .sidebar-close-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.06);
+        border: none;
+        color: var(--apple-secondary-label, #64748b);
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    body.dark-theme .sidebar-close-btn,
+    body.material-theme.dark-theme .sidebar-close-btn {
+        background: rgba(255, 255, 255, 0.12);
+        color: #e2e8f0;
+    }
+
+    .sidebar-close-btn:hover {
+        background: rgba(185, 28, 28, 0.15);
+        color: #b91c1c;
     }
 
     body.material-theme .dashboard-hero {

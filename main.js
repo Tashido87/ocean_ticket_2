@@ -432,17 +432,41 @@ function setupEventListeners() {
     const authBtn = document.getElementById('authorize_button');
     if (authBtn) authBtn.addEventListener('click', handleAuthClick);
     const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', () => {
-            const isMobile = window.innerWidth <= 768;
+            const isMobile = window.innerWidth <= 980;
             if (isMobile) document.body.classList.toggle('sidebar-open');
             else document.body.classList.toggle('sidebar-collapsed');
         });
     }
-    // Close mobile sidebar on outside click
+
+    if (sidebarCloseBtn) {
+        sidebarCloseBtn.addEventListener('click', () => {
+            document.body.classList.remove('sidebar-open');
+        });
+    }
+
+    // Close mobile sidebar on outside click or when selecting a navigation link
     document.addEventListener('click', (e) => {
-        if (window.innerWidth > 768) return;
+        if (window.innerWidth > 980) return;
+        if (!document.body.classList.contains('sidebar-open')) return;
+
+        // If clicked outside the sidebar and not on the hamburger toggle button
         if (!e.target.closest('.sidebar') && !e.target.closest('.sidebar-toggle')) {
+            document.body.classList.remove('sidebar-open');
+            return;
+        }
+
+        // If clicked on a navigation button inside the sidebar
+        if (e.target.closest('.sidebar-nav .nav-btn')) {
+            document.body.classList.remove('sidebar-open');
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 980) {
             document.body.classList.remove('sidebar-open');
         }
     });
