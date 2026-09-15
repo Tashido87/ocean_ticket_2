@@ -11458,6 +11458,8 @@ body.dark-theme .trip-detail-card.financial-summary-card {
 }
 
 .pnr-card-left {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -11477,6 +11479,40 @@ body.dark-theme .trip-detail-card.financial-summary-card {
     font-weight: 850;
     color: var(--brand, #B91C1C);
     letter-spacing: 2px;
+}
+
+.pnr-account-premium {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    margin-top: 0.35rem;
+    color: var(--text-secondary, #6B7280);
+    font-size: 0.78rem;
+}
+
+.pnr-account-premium i {
+    flex: 0 0 auto;
+    color: var(--brand, #B91C1C);
+    font-size: 0.72rem;
+}
+
+.pnr-account-label {
+    flex: 0 0 auto;
+    color: var(--text-muted, #6B7280);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.pnr-account-value {
+    overflow: hidden;
+    color: var(--text-primary, #111827);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .pnr-card-right {
@@ -13127,5 +13163,3 @@ body.dark-theme .settle-item-row:hover {
     font-size: 0.85rem;
     color: #b91c1c;
 }
-
-

@@ -2169,11 +2169,16 @@ function _attachPaxBehaviour(formEl, opts = {}) {
 
 
     [
-        'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-sub-agent-fare', 'passenger-commission',
-        'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-sub-agent-fare', 'passenger-return-commission'
+        'passenger-cost-price', 'passenger-base-fare', 'passenger-net-amount', 'passenger-extra-fare', 'passenger-sub-agent-fare', 'passenger-commission',
+        'passenger-return-cost-price', 'passenger-return-base-fare', 'passenger-return-net-amount', 'passenger-return-extra-fare', 'passenger-return-sub-agent-fare', 'passenger-return-commission'
     ].forEach(cls => {
         const el = formEl.querySelector('.' + cls);
         if (!el) return;
+        // Keep the page scroll from incrementing/decrementing a focused fare field.
+        // Blurring before the browser's wheel default preserves normal page scrolling.
+        el.addEventListener('wheel', () => {
+            if (document.activeElement === el) el.blur();
+        }, { passive: true });
         el.addEventListener('input', () => {
             // Auto-calculate commission = net - base
             if (cls === 'passenger-base-fare' || cls === 'passenger-net-amount') {

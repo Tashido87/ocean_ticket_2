@@ -1528,6 +1528,9 @@ function showTripPlanDetail(pnr) {
     const passengerRows = allRows.filter(t => !isFeeEntryRow(t));
     const feeRows = allRows.filter(t => isFeeEntryRow(t));
     const lead = passengerRows[0] || allRows[0];
+    const accountName = allRows
+        .map(t => String(t.account_name || '').trim())
+        .find(name => name && name.toLowerCase() !== 'undefined') || '';
 
     // Group passenger rows by name to avoid duplicating round-trip legs
     const passengerMap = new Map();
@@ -1627,6 +1630,12 @@ function showTripPlanDetail(pnr) {
                 <div class="pnr-card-left">
                     <span class="pnr-label-premium">Booking Reference (PNR)</span>
                     <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
+                    ${accountName ? `
+                    <div class="pnr-account-premium" title="${dashboardEscapeHtml(accountName)}">
+                        <i class="fa-solid fa-at" aria-hidden="true"></i>
+                        <span class="pnr-account-label">Social media account</span>
+                        <strong class="pnr-account-value">${dashboardEscapeHtml(accountName)}</strong>
+                    </div>` : ''}
                 </div>
                 <div class="pnr-card-right">
                     ${renderAirlineName(lead.airline || 'Airline', { size: 'sm' })}

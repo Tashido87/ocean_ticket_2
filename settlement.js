@@ -627,14 +627,33 @@ export function getSettlementDiscrepancies() {
    PER-TICKET SETTLEMENT STATUS
    ============================================================ */
 
+function getTicketAllocationTotals(existingId = null) {
+    const totals = new Map();
+    state.allSettlements.forEach(s => {
+        if (existingId && s.id === existingId) return;
+        (Array.isArray(s.allocations) ? s.allocations : []).forEach(a => {
+            if (a.ticketId) totals.set(a.ticketId, (totals.get(a.ticketId) || 0) + n(a.amount));
+        });
+    });
+    return totals;
+}
+
+function getTicketRemainingPayable(t, allocationTotals) {
+    return Math.max(0, getTicketOwnerPayable(t) - (allocationTotals.get(t.id) || 0));
+}
+
 function getTicketSettlementStatus(t, summary) {
     if (isFeeEntry(t)) return { key: 'excluded', label: 'Excluded' };
     if (isCanceled(t)) return { key: 'excluded', label: 'Refunded / Canceled' };
     if (n(t.net_amount) === 0) return { key: 'review', label: 'Review' };
 
-    // Determine if a settlement covers this ticket via allocations OR FIFO best-effort
-    const allocated = state.allSettlements.some(s => Array.isArray(s.allocations) && s.allocations.some(a => a.ticketId === t.id));
-    if (allocated) return { key: 'paid_owner', label: 'Settled' };
+    // Explicit allocations take precedence over the best-effort FIFO fallback.
+    const allocationTotals = summary._allocationTotals || (summary._allocationTotals = getTicketAllocationTotals());
+    if (allocationTotals.has(t.id)) {
+        if (getTicketRemainingPayable(t, allocationTotals) <= 0) return { key: 'paid_owner', label: 'Settled' };
+        if (allocationTotals.get(t.id) > 0) return { key: 'partial', label: 'Partially Settled' };
+        return { key: 'unsettled', label: 'Unsettled' };
+    }
 
     // FIFO fallback: tickets up to cumulative paid amount are considered paid
     if (!summary._fifoMap) {
@@ -1205,18 +1224,11 @@ export function openNewSettlementModal(existing = null) {
     const { method, bank } = parsePaymentMethod(existing?.payment_method);
     const existingAllocations = Array.isArray(existing?.allocations) ? existing.allocations : [];
     const checkedSet = new Set(existingAllocations.map(a => a.ticketId));
-    const allocatedElsewhere = new Set();
-    state.allSettlements.forEach(s => {
-        if (existing?.id && s.id === existing.id) return;
-        (Array.isArray(s.allocations) ? s.allocations : []).forEach(a => {
-            if (a.ticketId) allocatedElsewhere.add(a.ticketId);
-        });
-    });
+    const allocationTotals = getTicketAllocationTotals(existing?.id);
 
     const unpaidTickets = state.allTickets
         .filter(t => !isExcluded(t))
-        .filter(t => !allocatedElsewhere.has(t.id))
-        .filter(t => getTicketOwnerPayable(t) > 0)
+        .filter(t => getTicketRemainingPayable(t, allocationTotals) > 0)
         .sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date));
 
     openModal(`
@@ -1302,11 +1314,11 @@ export function openNewSettlementModal(existing = null) {
                         <div class="settle-alloc-list">
                             ${unpaidTickets.map(t => `
                                 <label class="settle-alloc-item">
-                                    <input type="checkbox" data-alloc-ticket="${escapeHtml(t.id)}" data-alloc-payable="${getTicketOwnerPayable(t)}" data-alloc-pnr="${escapeHtml(t.booking_reference || '')}" data-alloc-name="${escapeHtml(t.name || '')}" ${checkedSet.has(t.id) ? 'checked' : ''}>
+                                    <input type="checkbox" data-alloc-ticket="${escapeHtml(t.id)}" data-alloc-payable="${getTicketRemainingPayable(t, allocationTotals)}" data-alloc-pnr="${escapeHtml(t.booking_reference || '')}" data-alloc-name="${escapeHtml(t.name || '')}" ${checkedSet.has(t.id) ? 'checked' : ''}>
                                     <span class="alloc-pnr">${escapeHtml(t.booking_reference || '—')}</span>
                                     <span class="alloc-name">${escapeHtml(t.name || '—')}</span>
                                     <span class="alloc-date">${escapeHtml(formatDateToDMMMY(t.issued_date))}</span>
-                                    <span class="num">${formatMMK(getTicketOwnerPayable(t))}</span>
+                                    <span class="num">${formatMMK(getTicketRemainingPayable(t, allocationTotals))}</span>
                                 </label>
                             `).join('') || '<p class="settle-muted">No unsettled tickets available.</p>'}
                         </div>
@@ -1399,20 +1411,14 @@ function readProofFile(file) {
 
 function buildAutoAllocations(amount, existingId = null) {
     let remaining = Number(amount || 0);
-    const alreadyAllocated = new Set();
-    state.allSettlements.forEach(s => {
-        if (existingId && s.id === existingId) return;
-        (Array.isArray(s.allocations) ? s.allocations : []).forEach(a => {
-            if (a.ticketId) alreadyAllocated.add(a.ticketId);
-        });
-    });
+    const allocationTotals = getTicketAllocationTotals(existingId);
 
     return state.allTickets
-        .filter(t => !isExcluded(t) && !alreadyAllocated.has(t.id) && getTicketOwnerPayable(t) > 0)
+        .filter(t => !isExcluded(t) && getTicketRemainingPayable(t, allocationTotals) > 0)
         .sort((a, b) => parseSheetDate(a.issued_date) - parseSheetDate(b.issued_date))
         .reduce((allocations, t) => {
             if (remaining <= 0) return allocations;
-            const payable = getTicketOwnerPayable(t);
+            const payable = getTicketRemainingPayable(t, allocationTotals);
             const amountForTicket = Math.min(remaining, payable);
             remaining -= amountForTicket;
             allocations.push({
@@ -1453,13 +1459,19 @@ async function handleSettlementSubmit(e, existing) {
         }
 
         if (allocMode === 'manual') {
+            const allocationTotals = getTicketAllocationTotals(existing?.id);
             document.querySelectorAll('[data-alloc-ticket]:checked').forEach(cb => {
+                const ticket = state.allTickets.find(t => t.id === cb.dataset.allocTicket);
+                if (!ticket || isExcluded(ticket)) return;
+                // Recheck the cap in case allocations changed while the modal was open.
+                const payable = Math.min(n(cb.dataset.allocPayable), getTicketRemainingPayable(ticket, allocationTotals));
+                if (payable <= 0) return;
                 allocations.push({
                     ticketId: cb.dataset.allocTicket,
                     pnr: cb.dataset.allocPnr,
                     clientName: cb.dataset.allocName,
                     passengerName: cb.dataset.allocName,
-                    amount: Number(cb.dataset.allocPayable || 0)
+                    amount: payable
                 });
             });
             const total = allocations.reduce((s, a) => s + a.amount, 0);
