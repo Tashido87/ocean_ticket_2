@@ -1704,6 +1704,10 @@ function showTripPlanDetail(pnr) {
 
     const content = `
         <div class="trip-detail-modal-container">
+            <div class="pnr-dialog-toolbar">
+                <span>Booking details</span>
+                <button type="button" id="tripPlanTopCloseBtn" aria-label="Close booking details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
             <!-- Ticket Header Card -->
             <div class="trip-ticket-header">
                 <div class="ticket-route-section">
@@ -1792,12 +1796,13 @@ function showTripPlanDetail(pnr) {
             </div>
 
             <!-- Footer Action -->
-            <div class="form-actions" style="margin-top: 2rem; justify-content: center;">
-                <button class="btn btn-secondary" id="tripPlanCloseBtn" style="padding: 0.75rem 3rem; font-weight: 700; border-radius: 30px; font-size: 0.9rem;">Close Detail</button>
+            <div class="form-actions pnr-dialog-footer">
+                <button type="button" class="btn btn-secondary" id="tripPlanCloseBtn">Done</button>
             </div>
         </div>
     `;
-    openModal(content, 'solid-modal');
+    openModal(content, 'solid-modal pnr-detail-dialog');
+    document.getElementById('tripPlanTopCloseBtn').addEventListener('click', closeModal);
     document.getElementById('tripPlanCloseBtn').addEventListener('click', closeModal);
 
     document.querySelectorAll('.clickable-client-link').forEach(link => {
