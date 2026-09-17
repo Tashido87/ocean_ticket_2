@@ -3,7 +3,8 @@
  * Supports shared invoice logic with switchable branding.
  */
 
-import { formatDateToDMMMY, parseSheetDate, showToast, isFeeEntryRow } from './utils.js';
+import { formatDateToDMMMY, parseSheetDate, showToast, isFeeEntryRow, isTicketPaid } from './utils.js';
+import { selectPassengerTickets } from './invoice-selection.mjs';
 import { state } from './state.js';
 
 const INVOICE_THEME = {
@@ -474,7 +475,7 @@ function buildInvoiceLineItems(groupTickets, mode) {
 
         const dateStr = formatDateToDMMMY(displayDate);
         return {
-            description: `${prefix}${route}, ${dateStr} (${airline})`,
+            description: `${prefix}${route}, ${dateStr} (${airline})${ticket.invoicePassengerSelection ? ` — PNR: ${ticket.booking_reference}` : ''}`,
             qty: 1,
             rate: price,
             amount: price,
@@ -911,9 +912,14 @@ export function analyzeInvoiceScenario(pnrList) {
     return { code: 'DEFAULT', type: 'COMBINED', canChoose: false };
 }
 
-export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null) {
+export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null, selection = null) {
     const cleanPnrs = pnrList.map((pnr) => pnr.trim().toUpperCase()).filter(Boolean);
     let tickets = state.allTickets.filter((ticket) => cleanPnrs.includes(ticket.booking_reference));
+    if (selection) {
+        tickets = selectPassengerTickets(state.allTickets, pnrList, selection, type, isTicketPaid);
+        forcedMode = 'separate';
+        adjustments = null;
+    }
 
     if (tickets.length === 0) {
         showToast('No tickets found.', 'error');
@@ -962,16 +968,22 @@ export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null,
     doc.save(`${safeName}_${safeBrand}_${type}.pdf`);
 }
 
-export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null) {
+export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null, selection = null) {
     try {
         await loadHtml2Canvas();
     } catch (error) {
         showToast('Could not load image generation library.', 'error');
+        if (selection) throw error;
         return;
     }
 
     const cleanPnrs = pnrList.map((pnr) => pnr.trim().toUpperCase()).filter(Boolean);
     let tickets = state.allTickets.filter((ticket) => cleanPnrs.includes(ticket.booking_reference));
+    if (selection) {
+        tickets = selectPassengerTickets(state.allTickets, pnrList, selection, type, isTicketPaid);
+        forcedMode = 'separate';
+        adjustments = null;
+    }
 
     if (tickets.length === 0) {
         showToast('No tickets found.', 'error');
@@ -1053,6 +1065,11 @@ export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = 
         } catch (error) {
             console.error(error);
             showToast('Failed to generate image.', 'error');
+            if (selection) {
+                container.remove();
+                style.remove();
+                throw error;
+            }
         }
     }
 

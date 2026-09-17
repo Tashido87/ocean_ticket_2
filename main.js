@@ -19,7 +19,8 @@ import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=22'; 
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=23';
+import { selectPassengerTickets } from './invoice-selection.mjs';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
@@ -678,6 +679,10 @@ function setupEventListeners() {
     }
 
     function updateInvoiceAdjustmentsSection() {
+        if (document.getElementById('invoice_grouping')?.value === 'passenger') {
+            document.getElementById('invoice_adjustments_wrapper').style.display = 'none';
+            return;
+        }
         const pnrInput = document.getElementById('invoice_pnr_list').value;
         const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim().toUpperCase()).filter(p => p);
         const wrapper = document.getElementById('invoice_adjustments_wrapper');
@@ -785,6 +790,81 @@ function setupEventListeners() {
         updateInvoiceAdjustmentsSection();
     }
 
+    // Passenger mode is an export-only selection; no booking/payment records are written.
+    const passengerTools = document.createElement('div');
+    passengerTools.style.cssText = 'grid-column:1/-1;min-width:0';
+    passengerTools.innerHTML = `<label for="invoice_grouping">Document grouping</label>
+        <select id="invoice_grouping"><option value="pnr">By PNR — existing rules</option><option value="passenger">By passenger — select flights across PNRs</option></select>
+        <section id="invoice_passenger_tools" hidden>
+        <p>Select each flight and fee to include. Selected rows with the same displayed passenger name form one document. Leave unrelated tickets unchecked.</p>
+        <button type="button" class="btn-service" id="invoice_load_passengers">Load / refresh passenger tickets</button>
+        <div id="invoice_passenger_rows" style="display:grid;gap:12px;margin:12px 0"></div>
+        <div id="invoice_passenger_preview" aria-live="polite" style="white-space:pre-line"></div>
+        <label style="display:flex;gap:10px;align-items:flex-start;margin-top:12px"><input type="checkbox" id="invoice_identity_confirm" style="width:auto;flex:none">I verified that flights grouped under each name belong to the same person, and checked the dates, fees and amounts. A single selected flight is not a round trip.</label>
+        </section>`;
+    invoiceForm?.appendChild(passengerTools);
+    const grouping = passengerTools.querySelector('#invoice_grouping');
+    const rows = passengerTools.querySelector('#invoice_passenger_rows');
+    const preview = passengerTools.querySelector('#invoice_passenger_preview');
+    const confirmation = passengerTools.querySelector('#invoice_identity_confirm');
+    const passengerSelection = () => ({
+        ids: [...rows.querySelectorAll('input[data-ticket]:checked')].map(el => el.dataset.ticket),
+        adjustments: Object.fromEntries([...rows.querySelectorAll('input[data-adjustment]')].map(el => [el.dataset.adjustment, el.value]))
+    });
+    const invoicePnrs = () => pnrListInput.value.split(/[\n,]/).map(p => p.trim()).filter(Boolean);
+    function updatePassengerPreview() {
+        confirmation.checked = false;
+        try {
+            const tickets = selectPassengerTickets(state.allTickets, invoicePnrs(), passengerSelection(), document.getElementById('document_type').value, isTicketPaid);
+            const groups = new Map();
+            tickets.forEach(t => {
+                const name = t.name.replace(/\s*\(\s*fees\s*\)\s*$/i, '').trim();
+                if (!groups.has(name)) groups.set(name, { total: 0, details: [] });
+                const group = groups.get(name);
+                group.total += Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0);
+                group.details.push(`${t.booking_reference}: ${t.departure} → ${t.destination} · ${t.departing_on || 'Date missing'} · ${t.airline || 'Airline missing'}${isFeeEntryRow(t) ? ' · Fee' : ''}`);
+            });
+            preview.textContent = [...groups].map(([name, g]) => `${name} — ${g.total.toLocaleString()} MMK\n${g.details.join('\n')}`).join('\n\n');
+        } catch (error) { preview.textContent = error.message; }
+    }
+    function resetPassengerSelection() {
+        rows.replaceChildren();
+        preview.textContent = 'Load passenger tickets after entering all relevant PNRs.';
+        confirmation.checked = false;
+    }
+    grouping.addEventListener('change', () => {
+        passengerTools.querySelector('section').hidden = grouping.value !== 'passenger';
+        document.getElementById('invoice_adjustments_wrapper').hidden = grouping.value === 'passenger';
+        updateInvoiceAdjustmentsSection();
+        resetPassengerSelection();
+    });
+    pnrListInput?.addEventListener('input', resetPassengerSelection);
+    pnrListInput?.addEventListener('change', resetPassengerSelection);
+    document.getElementById('document_type').addEventListener('change', updatePassengerPreview);
+    rows.addEventListener('input', updatePassengerPreview);
+    passengerTools.querySelector('#invoice_load_passengers').addEventListener('click', () => {
+        resetPassengerSelection();
+        const pnrs = new Set(invoicePnrs().map(p => p.toUpperCase()));
+        state.allTickets.filter(t => pnrs.has(String(t.booking_reference || '').trim().toUpperCase())).forEach(t => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:12px;border:1px solid var(--border-color);border-radius:10px;overflow-wrap:anywhere';
+            const label = document.createElement('label');
+            label.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
+            const check = document.createElement('input');
+            check.type = 'checkbox'; check.dataset.ticket = String(t.id); check.disabled = !t.id || isCanceledTicket(t);
+            check.style.cssText = 'width:auto;flex:none';
+            const text = document.createElement('span');
+            text.textContent = `${t.name} · ${t.booking_reference} · ${t.departure} → ${t.destination} · ${t.departing_on || 'Date missing'} · ${t.airline || 'Airline missing'} · ${(Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0)).toLocaleString()} MMK · ${isTicketPaid(t) ? 'Paid' : 'Unpaid'}${isFeeEntryRow(t) ? ' · Fee' : ''}${isCanceledTicket(t) ? ' · Cancelled (unavailable)' : ''}`;
+            label.append(check, text);
+            const adjustment = document.createElement('input');
+            adjustment.type = 'text'; adjustment.inputMode = 'decimal'; adjustment.dataset.adjustment = String(t.id);
+            adjustment.placeholder = 'Optional invoice adjustment, e.g. -2000';
+            adjustment.setAttribute('aria-label', `Adjustment for ${t.name}, ${t.booking_reference}, ${t.departing_on}`);
+            item.append(label, adjustment); rows.append(item);
+        });
+        updatePassengerPreview();
+    });
+
     async function runInvoiceGeneration() {
         const pnrInput = document.getElementById('invoice_pnr_list').value;
         const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim()).filter(p => p);
@@ -798,7 +878,17 @@ function setupEventListeners() {
             return;
         }
 
-        const scenario = analyzeInvoiceScenario(pnrList);
+        const selection = grouping.value === 'passenger' ? passengerSelection() : null;
+        if (selection) {
+            try {
+                selectPassengerTickets(state.allTickets, pnrList, selection, type, isTicketPaid);
+                if (!confirmation.checked) throw new Error('Review the passenger preview and confirm the selected flights belong to the correct people.');
+            } catch (error) {
+                showServiceToast('invoiceToast', error.message, 'error');
+                return;
+            }
+        }
+        const scenario = selection ? { type: 'SEPARATE', canChoose: false } : analyzeInvoiceScenario(pnrList);
         if (scenario.type === 'ERROR') {
             showServiceToast('invoiceToast', scenario.message, 'error');
             return;
@@ -839,9 +929,9 @@ function setupEventListeners() {
                 });
             } else {
                 if (format === 'photo') {
-                    await generateInvoiceImage(pnrList, type, date, 'auto', brand, adjustments);
+                    await generateInvoiceImage(pnrList, type, date, 'auto', brand, adjustments, selection);
                 } else {
-                    await generateInvoice(pnrList, type, date, 'auto', brand, adjustments);
+                    await generateInvoice(pnrList, type, date, 'auto', brand, adjustments, selection);
                 }
                 onDone(true, `${type} generated successfully!`);
             }
@@ -856,6 +946,8 @@ function setupEventListeners() {
 
     if (invoiceClearBtn) {
         invoiceClearBtn.addEventListener('click', () => {
+            grouping.value = 'pnr';
+            grouping.dispatchEvent(new Event('change'));
             document.getElementById('invoice_pnr_list').value = '';
             document.getElementById('invoice_date').value = '';
             document.getElementById('document_type').value = 'Invoice';
