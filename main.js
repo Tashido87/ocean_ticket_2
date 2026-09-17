@@ -1620,6 +1620,9 @@ function showTripPlanDetail(pnr) {
     const passengerRows = allRows.filter(t => !isFeeEntryRow(t));
     const feeRows = allRows.filter(t => isFeeEntryRow(t));
     const lead = passengerRows[0] || allRows[0];
+    const issuedDates = [...new Set((passengerRows.length ? passengerRows : allRows)
+        .map(ticket => formatDashboardDateLabel(ticket.issued_date, ''))
+        .filter(Boolean))];
     const accountName = allRows
         .map(t => String(t.account_name || '').trim())
         .find(name => name && name.toLowerCase() !== 'undefined') || '';
@@ -1741,6 +1744,10 @@ function showTripPlanDetail(pnr) {
                     <div class="flat-grid-item">
                         <span class="item-label">Travel Date</span>
                         <strong class="item-value"><i class="fa-regular fa-clock"></i> ${dashboardEscapeHtml(lead.departing_on || 'N/A')}</strong>
+                    </div>
+                    <div class="flat-grid-item">
+                        <span class="item-label">Issued Date${issuedDates.length > 1 ? 's' : ''}</span>
+                        <strong class="item-value"><i class="fa-regular fa-calendar-check"></i> ${dashboardEscapeHtml(issuedDates.join(', ') || 'N/A')}</strong>
                     </div>
                     <div class="flat-grid-item">
                         <span class="item-label">Passengers</span>
