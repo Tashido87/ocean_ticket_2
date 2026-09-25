@@ -4,7 +4,7 @@
  */
 
 import { formatDateToDMMMY, parseSheetDate, showToast, isFeeEntryRow, isTicketPaid } from './utils.js';
-import { selectPassengerTickets } from './invoice-selection.mjs';
+import { selectPassengerTickets, receiptPaymentLabels } from './invoice-selection.mjs?v=2';
 import { state } from './state.js';
 
 const INVOICE_THEME = {
@@ -517,6 +517,7 @@ function buildInvoiceLineItems(groupTickets, mode) {
 }
 
 function buildInvoiceDocumentData(group, type, brand, dateStr, groupIndex, groupCount, mode, logoSrc = null) {
+    const receiptLabels = receiptPaymentLabels(group.tickets, isTicketPaid);
     const documentDate = resolveDocumentDate(dateStr);
     const lineItems = buildInvoiceLineItems(group.tickets, mode);
     const totalAmount = group.tickets.reduce(
@@ -534,8 +535,8 @@ function buildInvoiceDocumentData(group, type, brand, dateStr, groupIndex, group
         formattedDate: formatDisplayDate(documentDate),
         documentId: buildDocumentId(type, group.pnrs, brand, groupIndex, groupCount),
         documentStatusLabel: type === 'Invoice' ? 'Terms' : 'Status',
-        documentStatusValue: type === 'Invoice' ? 'Due on Receipt' : 'Paid',
-        balanceLabel: type === 'Invoice' ? 'Balance Due' : 'Amount Received'
+        documentStatusValue: type === 'Invoice' ? 'Due on Receipt' : receiptLabels.status,
+        balanceLabel: type === 'Invoice' ? 'Balance Due' : receiptLabels.totalLabel
     };
 }
 

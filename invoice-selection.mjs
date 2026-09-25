@@ -12,7 +12,6 @@ export function selectPassengerTickets(allTickets, pnrs, selection, type, isPaid
         return matches[0];
     });
     if (tickets.some(t => !String(t.name || '').trim())) throw new Error('Selected tickets must have passenger names.');
-    if (type === 'Receipt' && tickets.some(t => !isPaid(t))) throw new Error('Selected tickets include unpaid items. Generate an invoice instead, or record payment first.');
     return tickets.map(t => {
         const adjustment = Number(selection.adjustments?.[String(t.id)] || 0);
         const total = Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0) + adjustment;
@@ -20,4 +19,13 @@ export function selectPassengerTickets(allTickets, pnrs, selection, type, isPaid
         if (type === 'Receipt' && adjustment !== 0) throw new Error('Receipt adjustments are not supported in passenger mode; use the recorded paid amount.');
         return { ...t, net_amount: Number(t.net_amount || 0), sub_agent_fare: Number(t.sub_agent_fare || 0), extra_fare: Number(t.extra_fare || 0) + adjustment, invoicePassengerSelection: true };
     });
+}
+
+export function receiptPaymentLabels(tickets, isPaid) {
+    const paidCount = tickets.filter(isPaid).length;
+    const allPaid = tickets.length > 0 && paidCount === tickets.length;
+    return {
+        status: allPaid ? 'Paid' : paidCount > 0 ? 'Partially paid' : 'Payment pending',
+        totalLabel: allPaid ? 'Amount Received' : 'Voucher Total'
+    };
 }

@@ -19,8 +19,8 @@ import { buildClientList, loadFeaturedClients } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=23';
-import { selectPassengerTickets } from './invoice-selection.mjs';
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=24';
+import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 
@@ -797,6 +797,7 @@ function setupEventListeners() {
         <select id="invoice_grouping"><option value="pnr">By PNR — existing rules</option><option value="passenger">By passenger — select flights across PNRs</option></select>
         <section id="invoice_passenger_tools" hidden>
         <p>Select each flight and fee to include. Selected rows with the same displayed passenger name form one document. Leave unrelated tickets unchecked.</p>
+        <p>Receipt vouchers can be generated before payment. They show the recorded payment status; generating a voucher does not mark tickets paid.</p>
         <button type="button" class="btn-service" id="invoice_load_passengers">Load / refresh passenger tickets</button>
         <div id="invoice_passenger_rows" style="display:grid;gap:12px;margin:12px 0"></div>
         <div id="invoice_passenger_preview" aria-live="polite" style="white-space:pre-line"></div>

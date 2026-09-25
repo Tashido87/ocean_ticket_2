@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { selectPassengerTickets } from '../invoice-selection.mjs';
+import { selectPassengerTickets, receiptPaymentLabels } from '../invoice-selection.mjs';
 
 const ticket = (id, name, pnr, departure, destination) => ({ id, name, booking_reference: pnr, departure, destination, departing_on: '2026-09-20', net_amount: 100, extra_fare: 10, sub_agent_fare: 5, paid: true, airline: id === 'a' ? 'MNA' : 'MAI' });
 const tickets = [ticket('a', 'AYE AYE LATT', 'OUT', 'Yangon', 'Heho'), ticket('b', 'AYE AYE LATT', 'BACK', 'Heho', 'Yangon'), ticket('c', 'THAW ZIN BO', 'BACK', 'Heho', 'Yangon')];
@@ -20,10 +20,18 @@ test('rejects missing, duplicate, stale, and out-of-PNR selections', () => {
     assert.throws(() => select(['a'], 'Invoice', {}, tickets, ['BACK']));
     assert.throws(() => select(['a'], 'Invoice', {}, tickets, ['OUT', 'TYPO']), /PNRs not found/);
 });
-test('receipts require recorded paid status and no display-only adjustments', () => {
+test('receipts allow unpaid tickets without changing recorded payment status', () => {
     assert.equal(select(['a', 'b'], 'Receipt').length, 2);
-    assert.throws(() => select(['a'], 'Receipt', {}, [{ ...tickets[0], paid: false }], ['OUT']), /unpaid/);
+    const unpaid = [{ ...tickets[0], paid: false }];
+    assert.equal(select(['a'], 'Receipt', {}, unpaid, ['OUT'])[0].paid, false);
+    assert.equal(unpaid[0].paid, false);
     assert.throws(() => select(['a'], 'Receipt', { a: 10 }), /adjustments/);
+});
+test('receipt labels distinguish pending, mixed and fully paid vouchers', () => {
+    const paid = t => t.paid === true;
+    assert.deepEqual(receiptPaymentLabels([{ paid: false }], paid), { status: 'Payment pending', totalLabel: 'Voucher Total' });
+    assert.deepEqual(receiptPaymentLabels([{ paid: true }, { paid: false }], paid), { status: 'Partially paid', totalLabel: 'Voucher Total' });
+    assert.deepEqual(receiptPaymentLabels([{ paid: true }], paid), { status: 'Paid', totalLabel: 'Amount Received' });
 });
 test('rejects invalid totals and parses numeric database strings', () => {
     assert.throws(() => select(['a'], 'Invoice', { a: 'bad' }), /Invalid/);
