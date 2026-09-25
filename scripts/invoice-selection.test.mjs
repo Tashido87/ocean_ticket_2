@@ -27,10 +27,10 @@ test('receipts allow unpaid tickets without changing recorded payment status', (
     assert.equal(unpaid[0].paid, false);
     assert.throws(() => select(['a'], 'Receipt', { a: 10 }), /adjustments/);
 });
-test('receipt labels distinguish pending, mixed and fully paid vouchers', () => {
+test('receipt status displays Paid independently of recorded payment status', () => {
     const paid = t => t.paid === true;
-    assert.deepEqual(receiptPaymentLabels([{ paid: false }], paid), { status: 'Payment pending', totalLabel: 'Voucher Total' });
-    assert.deepEqual(receiptPaymentLabels([{ paid: true }, { paid: false }], paid), { status: 'Partially paid', totalLabel: 'Voucher Total' });
+    assert.deepEqual(receiptPaymentLabels([{ paid: false }], paid), { status: 'Paid', totalLabel: 'Voucher Total' });
+    assert.deepEqual(receiptPaymentLabels([{ paid: true }, { paid: false }], paid), { status: 'Paid', totalLabel: 'Voucher Total' });
     assert.deepEqual(receiptPaymentLabels([{ paid: true }], paid), { status: 'Paid', totalLabel: 'Amount Received' });
 });
 test('rejects invalid totals and parses numeric database strings', () => {

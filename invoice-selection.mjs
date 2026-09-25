@@ -25,7 +25,8 @@ export function receiptPaymentLabels(tickets, isPaid) {
     const paidCount = tickets.filter(isPaid).length;
     const allPaid = tickets.length > 0 && paidCount === tickets.length;
     return {
-        status: allPaid ? 'Paid' : paidCount > 0 ? 'Partially paid' : 'Payment pending',
+        // Receipt display is independent of the booking's recorded payment status.
+        status: 'Paid',
         totalLabel: allPaid ? 'Amount Received' : 'Voucher Total'
     };
 }

@@ -797,7 +797,7 @@ function setupEventListeners() {
         <select id="invoice_grouping"><option value="pnr">By PNR — existing rules</option><option value="passenger">By passenger — select flights across PNRs</option></select>
         <section id="invoice_passenger_tools" hidden>
         <p>Select each flight and fee to include. Selected rows with the same displayed passenger name form one document. Leave unrelated tickets unchecked.</p>
-        <p>Receipt vouchers can be generated before payment. They show the recorded payment status; generating a voucher does not mark tickets paid.</p>
+        <p>Receipt vouchers display “Paid”, even before payment is recorded. Generating a voucher does not mark tickets paid or change outstanding balances.</p>
         <button type="button" class="btn-service" id="invoice_load_passengers">Load / refresh passenger tickets</button>
         <div id="invoice_passenger_rows" style="display:grid;gap:12px;margin:12px 0"></div>
         <div id="invoice_passenger_preview" aria-live="polite" style="white-space:pre-line"></div>
