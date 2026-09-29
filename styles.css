@@ -9233,6 +9233,10 @@ body.material-theme tbody tr:hover {
     gap: 0.35rem;
 }
 
+.dashboard-custom-range[hidden] {
+    display: none !important;
+}
+
 .dashboard-custom-range input {
     height: 34px;
     max-width: 140px;

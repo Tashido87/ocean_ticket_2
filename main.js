@@ -269,10 +269,21 @@ export async function initializeApp() {
         }
         handleHashRoute();
 
+        let initialDataShown = false;
+        const revealDashboard = () => {
+            if (initialDataShown) return;
+            initialDataShown = true;
+            const loading = document.getElementById('loading');
+            const dashboardContent = document.getElementById('dashboard-content');
+            if (loading) loading.style.display = 'none';
+            if (dashboardContent) dashboardContent.style.display = 'flex';
+        };
+
         // Set up real-time listeners
         state.unsubscribers.push(
             onTicketsChange((tickets) => {
                 state.allTickets = tickets;
+                revealDashboard();
                 sanitizeTickets(tickets);
                 populateSearchAirlines();
                 updateUnpaidCount();
@@ -283,6 +294,9 @@ export async function initializeApp() {
                 if (typeof updateInvoiceAdjustmentsSection === 'function') {
                     updateInvoiceAdjustmentsSection();
                 }
+            }, (err) => {
+                revealDashboard();
+                showToast(`Unable to load tickets: ${err.message || err}`, 'error');
             })
         );
 
@@ -353,10 +367,8 @@ export async function initializeApp() {
         state.timeUpdateInterval = setInterval(updateDynamicTimes, 60000);
         updateDynamicTimes();
         
-        const loading = document.getElementById('loading');
-        const dashboardContent = document.getElementById('dashboard-content');
-        if (loading) loading.style.display = 'none';
-        if (dashboardContent) dashboardContent.style.display = 'flex';
+        // Fallback: reveal dashboard if listener takes longer than 2.5s or offline
+        setTimeout(revealDashboard, 2500);
 
         // One-time migration: fix old self-purchased tickets with commission=0
         migrateSelfTicketCommissions();

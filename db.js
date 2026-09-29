@@ -39,11 +39,15 @@ export async function getTickets() {
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export function onTicketsChange(callback) {
+export function onTicketsChange(callback, errorCallback) {
     const q = query(ticketsCol, orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
         const tickets = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         callback(tickets);
+    }, (error) => {
+        console.error("Firestore onTicketsChange error:", error);
+        if (errorCallback) errorCallback(error);
+        else showToast(`Ticket sync error: ${error.message || error}`, 'error');
     });
 }
 
@@ -98,11 +102,14 @@ export async function getBookings() {
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export function onBookingsChange(callback) {
+export function onBookingsChange(callback, errorCallback) {
     const q = query(bookingsCol, orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
         const bookings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         callback(bookings);
+    }, (error) => {
+        console.error("Firestore onBookingsChange error:", error);
+        if (errorCallback) errorCallback(error);
     });
 }
 
@@ -176,11 +183,14 @@ export async function getSettlements() {
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export function onSettlementsChange(callback) {
+export function onSettlementsChange(callback, errorCallback) {
     const q = query(settlementsCol, orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
         const settlements = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         callback(settlements);
+    }, (error) => {
+        console.error("Firestore onSettlementsChange error:", error);
+        if (errorCallback) errorCallback(error);
     });
 }
 
@@ -212,10 +222,13 @@ export async function getClosedPeriods() {
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export function onClosedPeriodsChange(callback) {
+export function onClosedPeriodsChange(callback, errorCallback) {
     const q = query(closedPeriodsCol, orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
         callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+        console.error("Firestore onClosedPeriodsChange error:", error);
+        if (errorCallback) errorCallback(error);
     });
 }
 
@@ -299,11 +312,14 @@ export async function getDocument(collectionName, docId) {
 // --- HOTEL RESERVATIONS ---
 const hotelsCol = collection(db, 'hotelReservations');
 
-export function onHotelsChange(callback) {
+export function onHotelsChange(callback, errorCallback) {
     const q = query(hotelsCol, orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
         const hotels = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         callback(hotels);
+    }, (error) => {
+        console.error("Firestore onHotelsChange error:", error);
+        if (errorCallback) errorCallback(error);
     });
 }
 
