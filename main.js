@@ -8,7 +8,7 @@
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
 import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, batchUpdateTickets } from './db.js';
-import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle } from './utils.js';
+import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle } from './utils.js';
 
 // Feature Modules
 import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets } from './tickets.js';
@@ -26,7 +26,7 @@ import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, format
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
-import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, openModal, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview } from './ui.js';
+import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, openModal, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview, setupDepartureReturnDatepickers } from './ui.js';
 
 function syncGroupToggleState() {
     const start = document.getElementById('searchStartDate')?.value;
@@ -143,9 +143,36 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Auto-select today's date when a Datepicker is opened and the field is empty
+// Auto-select today's date when a Datepicker is opened and the field is empty,
+// EXCEPT for return date inputs paired with departure dates (which should view the departure month instead of today)
 document.addEventListener('show', (e) => {
     if (e.target.tagName === 'INPUT' && e.target.datepicker) {
+        const targetId = e.target.id;
+        const isReturnInput = targetId === 'return_date' || targetId === 'booking_returning_on' || targetId === 'hotel-departure' || targetId === 'hotel_res_checkout' || e.target.dataset.isReturnDate === 'true';
+        if (isReturnInput) {
+            let depInput = null;
+            if (targetId === 'return_date') depInput = document.getElementById('departing_on');
+            else if (targetId === 'booking_returning_on') depInput = document.getElementById('booking_departing_on');
+            else if (targetId === 'hotel-departure') depInput = document.getElementById('hotel-arrival');
+            else if (targetId === 'hotel_res_checkout') depInput = document.getElementById('hotel_res_checkin');
+            else if (e.target.dataset.pairedDeparture) depInput = document.getElementById(e.target.dataset.pairedDeparture);
+
+            const depVal = depInput?.value?.trim();
+            const depDate = depVal ? parseDateInput(depVal) : null;
+            if (depDate) {
+                const depStr = `${String(depDate.getDate()).padStart(2, '0')}/${String(depDate.getMonth() + 1).padStart(2, '0')}/${depDate.getFullYear()}`;
+                e.target.datepicker.setOptions({
+                    minDate: depStr,
+                    defaultViewDate: depStr
+                });
+                if (typeof e.target.datepicker.setFocusedDate === 'function') {
+                    e.target.datepicker.setFocusedDate(depDate);
+                }
+                // Do NOT auto-set to today's date!
+                return;
+            }
+        }
+
         if (!e.target.value) {
             e.target.datepicker.setDate(new Date(), { autohide: false });
         }
@@ -620,6 +647,7 @@ function setupEventListeners() {
             if (bookingReturningGroup) bookingReturningGroup.style.display = 'block';
             if (bookingReturningOn) bookingReturningOn.required = true;
             if (bookingDepartingLabel) bookingDepartingLabel.textContent = 'Departure Date';
+            setupDepartureReturnDatepickers('booking_departing_on', 'booking_returning_on');
         } else {
             if (bookingReturningGroup) bookingReturningGroup.style.display = 'none';
             if (bookingReturningOn) {

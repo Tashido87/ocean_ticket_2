@@ -6,7 +6,7 @@
 
 import { CITIES } from './config.js';
 import { state } from './state.js';
-import { parseSheetDate, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate, isTicketPaid, isFeeEntryRow, renderAirlineName } from './utils.js';
+import { parseSheetDate, parseDateInput, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate, isTicketPaid, isFeeEntryRow, renderAirlineName } from './utils.js';
 import { clearManageResults } from './manage.js';
 import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard, renderSettlementPage } from './settlement.js';
 import { showToast } from './utils.js';
@@ -284,6 +284,70 @@ export function initializeDatepickers() {
 
     const settlementDatePicker = document.getElementById('settlement_date');
     if (settlementDatePicker) new Datepicker(settlementDatePicker, settlementOptions);
+
+    // Setup paired Departure & Return datepickers
+    setupDepartureReturnDatepickers('departing_on', 'return_date');
+    setupDepartureReturnDatepickers('booking_departing_on', 'booking_returning_on');
+    setupDepartureReturnDatepickers('hotel-arrival', 'hotel-departure');
+    setupDepartureReturnDatepickers('hotel_res_checkin', 'hotel_res_checkout');
+}
+
+/**
+ * Links a Departure datepicker with a Return datepicker so that:
+ * 1. Opening the Return calendar displays the month chosen in Departure.
+ * 2. Only dates on or after the Departure date can be selected (prior dates are disabled).
+ * 3. If Departure date is changed to a date later than current Return date, Return date is cleared.
+ * @param {string|HTMLElement} depInputOrId
+ * @param {string|HTMLElement} returnInputOrId
+ */
+export function setupDepartureReturnDatepickers(depInputOrId, returnInputOrId) {
+    const depInput = typeof depInputOrId === 'string' ? document.getElementById(depInputOrId) : depInputOrId;
+    const returnInput = typeof returnInputOrId === 'string' ? document.getElementById(returnInputOrId) : returnInputOrId;
+    if (!depInput || !returnInput) return;
+
+    returnInput.dataset.isReturnDate = 'true';
+    if (depInput.id) returnInput.dataset.pairedDeparture = depInput.id;
+
+    function sync() {
+        const depVal = depInput.value?.trim();
+        const depDate = parseDateInput(depVal);
+        if (!returnInput.datepicker) return;
+
+        if (depDate) {
+            const depStr = `${String(depDate.getDate()).padStart(2, '0')}/${String(depDate.getMonth() + 1).padStart(2, '0')}/${depDate.getFullYear()}`;
+            returnInput.datepicker.setOptions({
+                minDate: depStr,
+                defaultViewDate: depStr
+            });
+            if (typeof returnInput.datepicker.setFocusedDate === 'function') {
+                returnInput.datepicker.setFocusedDate(depDate);
+            }
+
+            // Check if existing return date is earlier than departure
+            const retVal = returnInput.value?.trim();
+            const retDate = parseDateInput(retVal);
+            if (retDate && retDate.getTime() < depDate.getTime()) {
+                returnInput.datepicker.setDate({ clear: true });
+                returnInput.value = '';
+                showToast('Return date cleared because departure date is later.', 'info');
+            }
+        } else {
+            returnInput.datepicker.setOptions({
+                minDate: null,
+                defaultViewDate: new Date()
+            });
+        }
+    }
+
+    if (depInput.dataset.depSyncBound !== 'true') {
+        depInput.addEventListener('changeDate', sync);
+        depInput.addEventListener('change', sync);
+        depInput.addEventListener('input', sync);
+        depInput.dataset.depSyncBound = 'true';
+    }
+
+    // Initial sync
+    sync();
 }
 
 /**
@@ -2835,6 +2899,9 @@ export function applyTripTypeToUI() {
     const round = isRoundTrip();
     const returnBlock = document.getElementById('returnFlightBlock');
     if (returnBlock) returnBlock.hidden = !round;
+    if (round) {
+        setupDepartureReturnDatepickers('departing_on', 'return_date');
+    }
 
     document.querySelectorAll('#passenger-forms-container .passenger-form').forEach(applyTripTypeToCard);
     updateSummaryBar();

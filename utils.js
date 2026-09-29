@@ -674,3 +674,42 @@ export function wirePhoneticToggle(toggleBtnId, panelId) {
     }
 }
 
+/**
+ * Parses user input date string into a local Date object at midnight.
+ * Supports DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD.
+ * @param {string|Date} value
+ * @returns {Date|null}
+ */
+export function parseDateInput(value) {
+    if (!value) return null;
+    if (value instanceof Date) {
+        return isNaN(value.getTime()) ? null : new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
+    }
+    const safeStr = String(value).trim();
+    if (!safeStr) return null;
+
+    const parts = safeStr.split(/[-\/]/);
+    if (parts.length === 3) {
+        let day, month, year;
+        if (parts[0].length === 4) {
+            // YYYY-MM-DD
+            year = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10) - 1;
+            day = parseInt(parts[2], 10);
+        } else {
+            // DD/MM/YYYY
+            day = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10) - 1;
+            year = parseInt(parts[2], 10);
+        }
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900 && month >= 0 && month < 12 && day >= 1 && day <= 31) {
+            return new Date(year, month, day, 0, 0, 0, 0);
+        }
+    }
+    const d = parseSheetDate(safeStr);
+    if (d && !isNaN(d.getTime()) && d.getTime() > 0) {
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+    }
+    return null;
+}
+
