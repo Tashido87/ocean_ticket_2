@@ -8,7 +8,7 @@
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
 import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, batchUpdateTickets } from './db.js';
-import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName } from './utils.js';
+import { showToast, parseSheetDate, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle } from './utils.js';
 
 // Feature Modules
 import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets } from './tickets.js';
@@ -1729,7 +1729,13 @@ function showTripPlanDetail(pnr) {
             <div class="trip-pnr-card-premium">
                 <div class="pnr-card-left">
                     <span class="pnr-label-premium">Booking Reference (PNR)</span>
-                    <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
+                    <div class="pnr-value-row">
+                        <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
+                        <button type="button" class="pnr-phonetic-btn" id="tripPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+                    ${renderPhoneticExpansionHtml(pnr, 'tripPnrPhoneticPanel')}
                     ${accountName ? `
                     <div class="pnr-account-premium" title="${dashboardEscapeHtml(accountName)}">
                         <i class="fa-solid fa-at" aria-hidden="true"></i>
@@ -1803,6 +1809,7 @@ function showTripPlanDetail(pnr) {
         </div>
     `;
     openModal(content, 'solid-modal pnr-detail-dialog');
+    wirePhoneticToggle('tripPnrPhoneticToggle', 'tripPnrPhoneticPanel');
     document.getElementById('tripPlanTopCloseBtn').addEventListener('click', closeModal);
     document.getElementById('tripPlanCloseBtn').addEventListener('click', closeModal);
 

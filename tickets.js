@@ -6,7 +6,7 @@
 
 import { state } from './state.js';
 import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation } from './db.js';
-import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, renderAirlineName } from './utils.js';
+import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
 import { updateDashboardData } from './main.js';
@@ -985,11 +985,18 @@ export function showDetails(docId) {
                 <div class="aesthetic-card">
                     <div class="card-label-tiny">BOOKING REFERENCE (PNR)</div>
                     <div class="card-pnr-row">
-                        <span class="pnr-value">${escapeHtml(ticket.booking_reference || 'N/A')}</span>
+                        <div class="pnr-value-row">
+                            <span class="pnr-value">${escapeHtml(ticket.booking_reference || 'N/A')}</span>
+                            ${ticket.booking_reference && ticket.booking_reference !== 'N/A' && ticket.booking_reference !== 'No PNR' ? `
+                            <button type="button" class="pnr-phonetic-btn" id="ticketPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>` : ''}
+                        </div>
                         <div class="airline-badge-container">
                             ${renderAirlineName(ticket.airline || 'N/A', { size: 'xs' })}
                         </div>
                     </div>
+                    ${ticket.booking_reference && ticket.booking_reference !== 'N/A' && ticket.booking_reference !== 'No PNR' ? renderPhoneticExpansionHtml(ticket.booking_reference, 'ticketPnrPhoneticPanel') : ''}
                 </div>
 
                 <!-- Schedule & Overview -->
@@ -1124,6 +1131,9 @@ export function showDetails(docId) {
     `;
 
     openModal(content, 'solid-modal');
+    if (ticket.booking_reference && ticket.booking_reference !== 'N/A' && ticket.booking_reference !== 'No PNR') {
+        wirePhoneticToggle('ticketPnrPhoneticToggle', 'ticketPnrPhoneticPanel');
+    }
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
     document.getElementById('modalEditTicketBtn').addEventListener('click', () => {
         openEditTicketModal(ticket);

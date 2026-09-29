@@ -19,7 +19,9 @@ import {
     parseDeadline,
     makeClickable,
     formatDateForSheet,
-    escapeHtml
+    escapeHtml,
+    renderPhoneticExpansionHtml,
+    wirePhoneticToggle
 } from './utils.js';
 import {
     openModal,
@@ -738,7 +740,17 @@ function showBookingDetails(docIdsStr) {
         const passengerListHtml = bookingGroup.passengers.map(p => `<li><strong>${escapeHtml(p.name)}</strong> (ID: ${escapeHtml(p.id_no || 'N/A')})</li>`).join('');
         const content = `
             <h3>Booking Request Details</h3>
-            ${bookingGroup.pnr ? `<p><strong>PNR Code:</strong> ${escapeHtml(bookingGroup.pnr)}</p>` : ''}
+            ${bookingGroup.pnr ? `
+                <div style="margin-bottom: 0.75rem;">
+                    <div class="pnr-value-row">
+                        <span><strong>PNR Code:</strong> <span style="font-family: monospace; font-weight: 700; font-size: 1.1rem; color: var(--primary, #DC2626);">${escapeHtml(bookingGroup.pnr)}</span></span>
+                        <button type="button" class="pnr-phonetic-btn" id="bookingPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+                    ${renderPhoneticExpansionHtml(bookingGroup.pnr, 'bookingPnrPhoneticPanel')}
+                </div>
+            ` : ''}
             <p><strong>Status:</strong> ${BOOKING_STATUS_LABELS[bookingGroup.status] || 'Active'}</p>
             <p><strong>Priority:</strong> ${bookingGroup.priority || 'Normal'}</p>
             <div class="details-section">
@@ -764,6 +776,9 @@ function showBookingDetails(docIdsStr) {
             </div>
         `;
         openModal(content);
+        if (bookingGroup.pnr) {
+            wirePhoneticToggle('bookingPnrPhoneticToggle', 'bookingPnrPhoneticPanel');
+        }
         document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
         const issueBtn = document.getElementById('modalIssueBtn');
         if (issueBtn) {

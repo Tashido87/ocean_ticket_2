@@ -530,3 +530,156 @@ export function isCanceledTicket(ticket) {
     const status = String(ticket?.status || '').toLowerCase();
     return status.includes('cancel') || remarks.includes('cancel') || remarks.includes('refund');
 }
+
+/**
+ * Aviation Phonetic Alphabet Map
+ * Custom modifications per user specifications:
+ * - F: Foreign (modified from Foxtrot)
+ * - Q: Queen (modified from Quebec)
+ * - S: Singapore (modified from Sierra)
+ */
+export const PHONETIC_ALPHABET = {
+    A: 'Alfa',
+    B: 'Bravo',
+    C: 'Charlie',
+    D: 'Delta',
+    E: 'Echo',
+    F: 'Foreign',
+    G: 'Golf',
+    H: 'Hotel',
+    I: 'India',
+    J: 'Juliett',
+    K: 'Kilo',
+    L: 'Lima',
+    M: 'Mike',
+    N: 'November',
+    O: 'Oscar',
+    P: 'Papa',
+    Q: 'Queen',
+    R: 'Romeo',
+    S: 'Singapore',
+    T: 'Tango',
+    U: 'Uniform',
+    V: 'Victor',
+    W: 'Whiskey',
+    X: 'X-Ray',
+    Y: 'Yankee',
+    Z: 'Zulu'
+};
+
+/**
+ * Converts a PNR into its phonetic spelling string (e.g. 1LP897 -> 1 Lima Papa 8 9 7).
+ * @param {string} pnr
+ * @returns {string}
+ */
+export function getPhoneticPnr(pnr) {
+    if (!pnr) return '';
+    return String(pnr)
+        .trim()
+        .split('')
+        .map(char => {
+            const upper = char.toUpperCase();
+            return PHONETIC_ALPHABET[upper] || char;
+        })
+        .join(' ');
+}
+
+/**
+ * Renders the aesthetic phonetic PNR expansion panel HTML.
+ * @param {string} pnr
+ * @param {string} containerId
+ * @returns {string}
+ */
+export function renderPhoneticExpansionHtml(pnr, containerId = 'pnrPhoneticPanel') {
+    if (!pnr) return '';
+    const cleanPnr = String(pnr).trim();
+    if (!cleanPnr || cleanPnr.toUpperCase() === 'N/A') return '';
+    
+    const chars = cleanPnr.split('');
+    const fullText = getPhoneticPnr(cleanPnr);
+
+    const chipsHtml = chars.map(char => {
+        const upper = char.toUpperCase();
+        const word = PHONETIC_ALPHABET[upper];
+        if (word) {
+            return `
+                <span class="pnr-phonetic-chip is-alpha">
+                    <span class="chip-char">${escapeHtml(upper)}</span>
+                    <span class="chip-word">${escapeHtml(word)}</span>
+                </span>
+            `;
+        }
+        return `
+            <span class="pnr-phonetic-chip is-digit">
+                <span class="chip-char">${escapeHtml(char)}</span>
+            </span>
+        `;
+    }).join('');
+
+    return `
+        <div class="pnr-phonetic-panel" id="${containerId}" style="display: none;" data-pnr="${escapeHtml(cleanPnr)}">
+            <div class="pnr-phonetic-chips">
+                ${chipsHtml}
+            </div>
+            <div class="pnr-phonetic-speech-row">
+                <div class="pnr-phonetic-speech-text" title="Phonetic read-out">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span>${escapeHtml(fullText)}</span>
+                </div>
+                <button type="button" class="pnr-phonetic-copy-btn" data-copy-text="${escapeHtml(fullText)}" title="Copy phonetic spelling: ${escapeHtml(fullText)}" aria-label="Copy phonetic text">
+                    <i class="fa-regular fa-copy"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Attaches toggle and copy behavior to the phonetic PNR expansion button and panel.
+ * @param {string} toggleBtnId
+ * @param {string} panelId
+ */
+export function wirePhoneticToggle(toggleBtnId, panelId) {
+    const toggleBtn = document.getElementById(toggleBtnId);
+    const panel = document.getElementById(panelId);
+    if (!toggleBtn || !panel) return;
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const isHidden = panel.style.display === 'none' || !panel.style.display;
+        if (isHidden) {
+            panel.style.display = 'flex';
+            toggleBtn.classList.add('is-active');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+            toggleBtn.setAttribute('title', 'Hide phonetic spelling');
+        } else {
+            panel.style.display = 'none';
+            toggleBtn.classList.remove('is-active');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+            toggleBtn.setAttribute('title', 'Spell PNR phonetically');
+        }
+    });
+
+    const copyBtn = panel.querySelector('.pnr-phonetic-copy-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const textToCopy = copyBtn.dataset.copyText;
+            if (textToCopy) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast('Copied: ' + textToCopy, 'success');
+                    const icon = copyBtn.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fa-solid fa-check';
+                        setTimeout(() => { icon.className = 'fa-regular fa-copy'; }, 1500);
+                    }
+                }).catch(() => {
+                    showToast(textToCopy, 'info');
+                });
+            }
+        });
+    }
+}
+
