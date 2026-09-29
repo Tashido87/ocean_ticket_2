@@ -2066,6 +2066,478 @@ body.material-theme .landing-signin-btn:active {
         padding: 32px 24px 24px;
         border-radius: 24px;
     }
+
+    /* --- Mobile Viewport and Container Lock (Prevents horizontal blow-out) --- */
+    html, body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+    }
+
+    body.material-theme .main-container {
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+
+    body.material-theme .app-body {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+
+    body.material-theme .main-content {
+        padding: 12px 10px 36px !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme .view {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* --- RECORDS PAGE MOBILE POLISH --- */
+    body.material-theme .records-view-wrapper,
+    body.material-theme #recordsSection {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme #recordsSection {
+        padding: 14px 12px !important;
+        border-radius: 16px !important;
+    }
+
+    body.material-theme .results-header {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        width: 100% !important;
+        margin-bottom: 12px !important;
+    }
+
+    body.material-theme .records-header-left {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .records-header-left > .icon-btn,
+    body.material-theme .records-header-left > h3 {
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+
+    body.material-theme .records-presets {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    body.material-theme .records-preset-btn {
+        padding: 7px 4px !important;
+        font-size: 0.75rem !important;
+        text-align: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .results-header > div:last-child {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .results-header > div:last-child .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 8px 4px !important;
+        min-height: 38px !important;
+        font-size: 0.82rem !important;
+    }
+
+    body.material-theme #resultsBodyContainer.table-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 12px !important;
+        margin-top: 8px !important;
+    }
+
+    body.material-theme #resultsTable {
+        min-width: 660px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme #resultsTable th,
+    body.material-theme #resultsTable td {
+        padding: 10px 8px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* --- HOTEL PAGE MOBILE POLISH --- */
+    body.material-theme #hotel-display-container {
+        padding: 14px 12px !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme #hotel-display-container .table-header {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+        margin-bottom: 12px !important;
+    }
+
+    body.material-theme #hotel-display-container .table-header h3 {
+        font-size: 1.15rem !important;
+        margin: 0 !important;
+    }
+
+    body.material-theme #newHotelResBtn {
+        font-size: 0.82rem !important;
+        padding: 8px 12px !important;
+        min-height: 36px !important;
+    }
+
+    body.material-theme #hotelKpiGrid.booking-kpi-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+        margin-bottom: 14px !important;
+    }
+
+    body.material-theme #hotelKpiGrid .booking-kpi-card {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        min-height: 114px !important;
+        height: 100% !important;
+        padding: 12px 14px !important;
+        border-radius: 14px !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme #hotelKpiGrid .booking-kpi-icon {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+        font-size: 0.85rem !important;
+        margin-bottom: 6px !important;
+        flex-shrink: 0 !important;
+    }
+
+    body.material-theme #hotelKpiGrid .booking-kpi-label {
+        font-size: 0.7rem !important;
+        font-weight: 600 !important;
+        color: var(--apple-secondary-label) !important;
+        text-transform: uppercase !important;
+        margin-bottom: 4px !important;
+    }
+
+    body.material-theme #hotelKpiGrid .booking-kpi-value {
+        font-size: 1.15rem !important;
+        font-weight: 750 !important;
+        color: var(--apple-label) !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.15 !important;
+        word-break: break-word !important;
+    }
+
+    body.material-theme .booking-search-section {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin-bottom: 14px !important;
+    }
+
+    body.material-theme #hotelResSearchText {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        height: 42px !important;
+    }
+
+    body.material-theme #hotelResStatusFilter {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        height: 42px !important;
+    }
+
+    body.material-theme #hotelResSearchBtn {
+        grid-column: 1 / 2 !important;
+        width: 100% !important;
+        height: 40px !important;
+        justify-content: center !important;
+    }
+
+    body.material-theme #hotelResClearBtn {
+        grid-column: 2 / 3 !important;
+        width: 100% !important;
+        height: 40px !important;
+        justify-content: center !important;
+    }
+
+    body.material-theme #hotelResTableContainer.table-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 12px !important;
+    }
+
+    body.material-theme #hotelResTableContainer table {
+        min-width: 580px !important;
+        width: 100% !important;
+    }
+
+    /* --- SERVICES PAGE MOBILE POLISH --- */
+    body.material-theme .services-dashboard,
+    body.material-theme .services-main {
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 16px !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme .service-panel {
+        padding: 16px 14px !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme .service-panel-header {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        margin-bottom: 12px !important;
+    }
+
+    body.material-theme .service-panel-header h2 {
+        font-size: 1.15rem !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+    }
+
+    body.material-theme .service-panel-desc {
+        font-size: 0.75rem !important;
+        margin: 2px 0 0 !important;
+    }
+
+    body.material-theme .invoice-horizontal-form,
+    body.material-theme .hotel-booking-form {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .invoice-horizontal-form .form-group,
+    body.material-theme .hotel-booking-form .form-group {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+    }
+
+    body.material-theme .service-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin-top: 14px !important;
+    }
+
+    body.material-theme .format-segment {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        width: 100% !important;
+        height: 40px !important;
+        border-radius: 10px !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+    }
+
+    body.material-theme .format-segment label {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        height: 100% !important;
+        font-size: 0.82rem !important;
+    }
+
+    body.material-theme .btn-service.btn-generate {
+        width: 100% !important;
+        height: 44px !important;
+        justify-content: center !important;
+        font-size: 0.9rem !important;
+    }
+
+    body.material-theme .btn-service.btn-clear {
+        width: 100% !important;
+        height: 38px !important;
+        justify-content: center !important;
+        font-size: 0.82rem !important;
+    }
+
+    /* --- SELL TICKET PAGE MOBILE POLISH --- */
+    body.material-theme #sell-view,
+    body.material-theme #sellForm {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme .sell-section {
+        padding: 16px 14px !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme .sell-section-header {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .sell-section-header .section-titles {
+        width: 100% !important;
+    }
+
+    body.material-theme .sell-section-header .trip-type-segment {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        margin: 0 !important;
+    }
+
+    body.material-theme .sell-section-header .trip-type-segment label {
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 7px 6px !important;
+        font-size: 0.78rem !important;
+    }
+
+    body.material-theme .sell-section-header .flight-type-toggle {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 12px !important;
+        box-sizing: border-box !important;
+        border-radius: 10px !important;
+        background: var(--apple-fill) !important;
+        margin: 0 !important;
+    }
+
+    body.material-theme .passengers-section-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .passengers-section-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        min-height: 40px !important;
+        font-size: 0.82rem !important;
+    }
+
+    /* Sticky summary bar on mobile */
+    body.material-theme .sticky-summary-bar {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
+        padding: 10px 14px !important;
+        z-index: 1000 !important;
+        background: var(--apple-card) !important;
+        backdrop-filter: blur(20px) !important;
+        border-top: 1px solid var(--apple-separator) !important;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08) !important;
+        border-radius: 0 !important;
+    }
+
+    body.material-theme .sticky-summary-inner {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .sticky-summary-bar .summary-stats {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+        width: 100% !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+
+    body.material-theme .sticky-summary-bar .summary-payment-controls {
+        display: grid !important;
+        grid-template-columns: auto 1fr 1fr !important;
+        gap: 6px !important;
+        align-items: center !important;
+        width: 100% !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+
+    body.material-theme .sticky-summary-bar .summary-payment-controls .form-group {
+        min-width: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    body.material-theme .sticky-summary-bar .summary-payment-controls input,
+    body.material-theme .sticky-summary-bar .summary-payment-controls select {
+        width: 100% !important;
+        height: 38px !important;
+        font-size: 0.8rem !important;
+        border-radius: 8px !important;
+    }
+
+    body.material-theme .sticky-summary-bar .summary-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .sticky-summary-bar .summary-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 42px !important;
+        font-size: 0.85rem !important;
+        border-radius: 10px !important;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -3415,30 +3415,17 @@ body.material-theme:not(.dark-theme) .datepicker-view .days .day.selected:nth-ch
         display: none;
     }
 
-    #resultsTable th:nth-child(n+3),
-    #resultsTable td:nth-child(n+3) {
-        display: none;
+    #resultsTable,
+    #clientListTable {
+        width: 100%;
+        min-width: 640px;
     }
 
-    #resultsTable th:last-child,
-    #resultsTable td:last-child {
-        display: table-cell;
-    }
-
-    /* NEW RULE TO HIDE STAR ICON COLUMN */
-    #clientListTable th:first-child,
-    #clientListTable td:first-child {
-        display: none;
-    }
-
-    #clientListTable th:nth-child(n+3),
-    #clientListTable td:nth-child(n+3) {
-        display: none;
-    }
-
-    #clientListTable th:last-child,
-    #clientListTable td:last-child {
-        display: table-cell;
+    .table-container {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .info-card {
