@@ -2048,8 +2048,12 @@ body.dark-text-theme:not(.material-theme) .datepicker-view .year.selected {
 
 .datepicker-view .day.disabled,
 .datepicker-view .months .month.disabled,
-.datepicker-view .years .year.disabled {
-    color: rgba(38, 37, 30, 0.25);
+.datepicker-view .years .year.disabled,
+.datepicker-cell.disabled {
+    color: #94a3b8 !important;
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
 }
 
 .datepicker-view .days .day:not(.disabled):not(.prev):not(.next):nth-child(7n),
@@ -3281,6 +3285,16 @@ body.material-theme:not(.dark-theme) .datepicker-view .years .year:not(.disabled
 body.material-theme:not(.dark-theme) .datepicker-view .day.prev,
 body.material-theme:not(.dark-theme) .datepicker-view .day.next {
     color: var(--text-secondary) !important;
+}
+
+body.material-theme:not(.dark-theme) .datepicker-view .day.disabled,
+body.material-theme:not(.dark-theme) .datepicker-view .months .month.disabled,
+body.material-theme:not(.dark-theme) .datepicker-view .years .year.disabled,
+body.material-theme:not(.dark-theme) .datepicker-cell.disabled {
+    color: #94a3b8 !important;
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
 }
 
 body.material-theme:not(.dark-theme) .datepicker-view .days .day.today:not(.selected) {
@@ -10765,10 +10779,15 @@ body.material-theme.dark-theme .datepicker-view .day.next {
 body.dark-theme .datepicker-view .day.disabled,
 body.dark-theme .datepicker-view .months .month.disabled,
 body.dark-theme .datepicker-view .years .year.disabled,
+body.dark-theme .datepicker-cell.disabled,
 body.material-theme.dark-theme .datepicker-view .day.disabled,
 body.material-theme.dark-theme .datepicker-view .months .month.disabled,
-body.material-theme.dark-theme .datepicker-view .years .year.disabled {
-    color: rgba(255, 255, 255, 0.15) !important;
+body.material-theme.dark-theme .datepicker-view .years .year.disabled,
+body.material-theme.dark-theme .datepicker-cell.disabled {
+    color: rgba(255, 255, 255, 0.22) !important;
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
 }
 
 /* ============================================================
