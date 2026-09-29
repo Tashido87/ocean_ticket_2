@@ -3648,50 +3648,8 @@ body.material-theme.dark-theme .sidebar-brand {
     border-bottom-color: rgba(255,255,255,0.08);
 }
 
-body.material-theme .sidebar-nav .nav-btn {
-    border: none;
-    background: transparent !important;
-    color: #000000 !important;
-    padding: 0.85rem 1rem;
-    border-radius: 10px;
-    font-weight: 500;
-    font-size: 0.9rem;
-    transition: all 0.14s var(--ease);
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
+/* Sidebar nav styling deferred to apple-ui.css */
 
-body.material-theme .sidebar-nav .nav-btn:hover {
-    background: #ffffff !important;
-    color: #000000 !important;
-    transform: none;
-}
-
-body.material-theme.dark-theme .sidebar-nav .nav-btn:hover {
-    background: rgba(255,255,255,0.06) !important;
-}
-
-body.dark-theme .sidebar-nav .nav-btn,
-body.material-theme.dark-theme .sidebar-nav .nav-btn {
-    color: rgba(255, 255, 255, 0.85) !important;
-}
-
-body.dark-theme .sidebar-nav .nav-btn:hover,
-body.material-theme.dark-theme .sidebar-nav .nav-btn:hover {
-    color: #ffffff !important;
-}
-
-body.material-theme .sidebar-nav .nav-btn.active {
-    background: rgba(185, 28, 28, 0.10) !important;
-    color: var(--primary-accent) !important;
-    border: none;
-    box-shadow: none;
-    font-weight: 600;
-}
-
-body.material-theme.dark-theme .sidebar-nav .nav-btn.active {
-    background: rgba(185, 28, 28, 0.15) !important;
-}
 
 body.material-theme .main-content {
     background: #ffffff;

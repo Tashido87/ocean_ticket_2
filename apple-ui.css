@@ -164,47 +164,110 @@ body.material-theme.dark-theme .sidebar-brand .brand-logo {
 }
 
 body.material-theme .sidebar-nav {
-    gap: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 body.material-theme .sidebar-nav-footer {
-    padding-top: 12px;
-    border-color: var(--apple-separator);
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--apple-separator);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 body.material-theme .sidebar-nav .nav-btn,
 body.material-theme .nav-btn {
-    min-height: 38px;
-    padding: 8px 11px;
-    border-radius: 9px;
+    min-height: 44px;
+    padding: 8px 14px;
+    border-radius: 12px;
     color: var(--apple-label);
-    font-size: 0.875rem;
-    font-weight: 500;
-    letter-spacing: -0.005em;
-    transition: background-color 150ms var(--apple-ease), color 150ms var(--apple-ease), transform 100ms ease-out;
+    font-size: 0.92rem;
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    cursor: pointer;
 }
 
 body.material-theme .sidebar-nav .nav-btn i {
-    width: 20px;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: rgba(0, 0, 0, 0.04);
     color: var(--apple-secondary-label);
     font-size: 0.95rem;
-    transition: color 150ms var(--apple-ease);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body.material-theme .sidebar-nav .nav-btn:hover {
-    background: var(--apple-fill);
+    background: rgba(0, 0, 0, 0.045);
+    color: var(--apple-label);
+    transform: translateX(2px);
+}
+
+body.material-theme .sidebar-nav .nav-btn:hover i {
+    background: rgba(0, 0, 0, 0.08);
     color: var(--apple-label);
 }
 
 body.material-theme .sidebar-nav .nav-btn.active {
-    background: rgba(185, 28, 28, 0.12) !important;
-    color: var(--primary-accent) !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
     font-weight: 600;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    transform: none;
 }
 
-body.material-theme .sidebar-nav .nav-btn.active i,
-body.material-theme .sidebar-nav .nav-btn:hover i {
-    color: currentColor;
+body.material-theme .sidebar-nav .nav-btn.active i {
+    background: linear-gradient(135deg, #e11d48, #b91c1c) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.32);
+}
+
+/* Dark mode adjustments for sidebar buttons */
+body.material-theme.dark-theme .sidebar-nav .nav-btn {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+body.material-theme.dark-theme .sidebar-nav .nav-btn i {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.65);
+}
+
+body.material-theme.dark-theme .sidebar-nav .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+body.material-theme.dark-theme .sidebar-nav .nav-btn:hover i {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+body.material-theme.dark-theme .sidebar-nav .nav-btn.active {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.material-theme.dark-theme .sidebar-nav .nav-btn.active i {
+    background: linear-gradient(135deg, #f43f5e, #be123c) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 10px rgba(244, 63, 94, 0.4);
 }
 
 body.material-theme .app-body {
