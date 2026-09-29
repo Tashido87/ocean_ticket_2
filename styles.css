@@ -3464,14 +3464,14 @@ body.material-theme:not(.dark-theme) .datepicker-view .days .day.selected:nth-ch
         grid-template-columns: 1fr;
     }
 
-    .stat-card {
+    .client-history-stats .stat-card {
         text-align: left;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
 
-    .stat-card .value {
+    .client-history-stats .stat-card .value {
         font-size: 1.2rem;
     }
 }
@@ -8353,6 +8353,9 @@ body.material-theme .search-skeleton-row span {
 .period-custom {
     display: inline-flex; align-items: center; gap: 0.4rem;
 }
+.period-custom[hidden] {
+    display: none !important;
+}
 .period-custom input[type="date"] {
     height: 32px; padding: 0 0.6rem;
     border-radius: 8px;
@@ -12032,6 +12035,20 @@ body.dark-theme .premium-summary-card {
     }
 }
 
+.client-detail-new .insights-payment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    flex: 1;
+}
+
+@media (max-width: 640px) {
+    .client-detail-new .insights-payment-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
+
 /* Base Card Style */
 .client-detail-new .details-card {
     background: #ffffff;
@@ -12421,6 +12438,7 @@ body.dark-theme .premium-summary-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid #f1f5f9;
 }
@@ -12434,12 +12452,15 @@ body.dark-theme .premium-summary-card {
     font-size: 0.825rem;
     font-weight: 500;
     color: #64748b;
+    flex-shrink: 0;
 }
 
 .client-detail-new .kv-list-val {
     font-size: 0.875rem;
     font-weight: 700;
     color: #0f172a;
+    text-align: right;
+    word-break: break-word;
 }
 
 /* Ticket History Card Layout */

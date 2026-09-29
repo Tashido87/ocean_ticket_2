@@ -1708,8 +1708,337 @@ body.material-theme .landing-signin-btn:active {
     body.material-theme .service-panel,
     body.material-theme .sell-section,
     body.material-theme .settle-header {
-        padding: 20px;
+        padding: 16px 14px;
         border-radius: 16px;
+    }
+
+    /* Client Profile (Search Detail View) on Mobile */
+    .client-detail-new .client-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    .client-detail-new .client-profile-info {
+        gap: 12px !important;
+    }
+
+    .client-detail-new .avatar-ring {
+        width: 62px !important;
+        height: 62px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .client-detail-new .avatar-text {
+        font-size: 1.25rem !important;
+    }
+
+    .client-detail-new .client-title {
+        font-size: 1.3rem !important;
+    }
+
+    .client-detail-new .client-subtitle {
+        font-size: 0.78rem !important;
+    }
+
+    .client-detail-new .action-buttons {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    .client-detail-new .btn-action-edit,
+    .client-detail-new .btn-action-secondary,
+    .client-detail-new .btn-action-primary {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 9px 10px !important;
+        min-height: 40px !important;
+        font-size: 0.82rem !important;
+        border-radius: 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Client Stats 2x2 Grid */
+    .client-detail-new .stats-container {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+
+    .client-detail-new .stat-card {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: space-between !important;
+        padding: 12px 14px !important;
+        min-height: 104px !important;
+        height: 100% !important;
+        border-radius: 14px !important;
+        box-sizing: border-box !important;
+    }
+
+    .client-detail-new .stat-bg-circle {
+        display: none !important;
+    }
+
+    .client-detail-new .stat-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-bottom: 8px !important;
+        width: 100% !important;
+    }
+
+    .client-detail-new .stat-icon-box {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 8px !important;
+        font-size: 0.82rem !important;
+    }
+
+    .client-detail-new .stat-badge {
+        font-size: 0.65rem !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
+    }
+
+    .client-detail-new .stat-body {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+    }
+
+    .client-detail-new .stat-number {
+        font-size: 1.18rem !important;
+        font-weight: 750 !important;
+        line-height: 1.2 !important;
+        word-break: break-word !important;
+    }
+
+    .client-detail-new .stat-card-label {
+        font-size: 0.72rem !important;
+        margin-top: 2px !important;
+        color: var(--apple-secondary-label) !important;
+    }
+
+    /* Client Insights & Payment Status Full-width Stacking */
+    .client-detail-new .insights-payment-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .client-detail-new .details-card,
+    .client-detail-new .doc-card {
+        border-radius: 16px !important;
+    }
+
+    .client-detail-new .card-top-bar,
+    .client-detail-new .doc-card-header {
+        padding: 12px 14px !important;
+    }
+
+    .client-detail-new .card-content,
+    .client-detail-new .doc-card-body {
+        padding: 14px !important;
+    }
+
+    .client-detail-new .doc-row-subitems {
+        gap: 12px !important;
+    }
+
+    .client-detail-new .passport-actions {
+        gap: 8px !important;
+    }
+
+    .client-detail-new .btn-doc-inline,
+    .client-detail-new .btn-doc-inline-primary {
+        min-height: 38px !important;
+        font-size: 0.8rem !important;
+        border-radius: 10px !important;
+    }
+
+    /* Owner Settlement View on Mobile */
+    body.material-theme .settle-header-panel {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .settle-header-balance {
+        width: 100% !important;
+        padding: 12px 14px !important;
+        border-radius: 12px !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme .settle-header-balance strong {
+        font-size: 1.4rem !important;
+        word-break: break-word !important;
+    }
+
+    body.material-theme .settle-header-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .settle-header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        font-size: 0.82rem !important;
+        padding: 9px 10px !important;
+        min-height: 40px !important;
+    }
+
+    body.material-theme .settle-toolbar {
+        padding: 12px 14px !important;
+        gap: 10px !important;
+    }
+
+    body.material-theme #settlePeriodTabs {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 4px !important;
+        width: 100% !important;
+    }
+
+    body.material-theme .period-tab {
+        padding: 6px 4px !important;
+        font-size: 0.72rem !important;
+        text-align: center !important;
+        justify-content: center !important;
+    }
+
+    body.material-theme .period-custom {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin-top: 8px !important;
+    }
+
+    body.material-theme .period-custom[hidden] {
+        display: none !important;
+    }
+
+    body.material-theme .period-custom input[type="date"] {
+        flex: 1 1 110px !important;
+        height: 36px !important;
+    }
+
+    /* Settlement KPI Cards: 2-column balanced grid */
+    body.material-theme .settle-kpi-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+
+    body.material-theme .settle-kpi-card {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: space-between !important;
+        padding: 12px 14px !important;
+        min-height: 124px !important;
+        height: 100% !important;
+        border-radius: 14px !important;
+        box-sizing: border-box !important;
+    }
+
+    body.material-theme .settle-kpi-icon {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 8px !important;
+        font-size: 0.82rem !important;
+        margin-bottom: 6px !important;
+        flex-shrink: 0 !important;
+    }
+
+    body.material-theme .settle-kpi-body {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+        flex: 1 !important;
+        justify-content: space-between !important;
+    }
+
+    body.material-theme .settle-kpi-label {
+        font-size: 0.7rem !important;
+        font-weight: 600 !important;
+        color: var(--apple-secondary-label) !important;
+        text-transform: none !important;
+        margin-bottom: 4px !important;
+        line-height: 1.2 !important;
+    }
+
+    body.material-theme .settle-kpi-value {
+        font-size: 1.1rem !important;
+        font-weight: 750 !important;
+        color: var(--apple-label) !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.15 !important;
+        margin-bottom: 4px !important;
+        word-break: break-word !important;
+    }
+
+    body.material-theme .settle-kpi-support {
+        font-size: 0.68rem !important;
+        color: var(--apple-secondary-label) !important;
+        line-height: 1.25 !important;
+        margin-top: auto !important;
+    }
+
+    /* Dashboard & Booking KPI Cards on Mobile */
+    body.material-theme .dashboard-kpis,
+    body.material-theme .booking-kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+
+    body.material-theme .info-card,
+    body.material-theme .booking-kpi-card {
+        padding: 12px 14px !important;
+        min-height: 110px !important;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        border-radius: 14px !important;
+    }
+
+    body.material-theme .info-card .stat-head {
+        margin-bottom: 8px !important;
+    }
+
+    body.material-theme .info-card .icon,
+    body.material-theme .booking-kpi-icon {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 8px !important;
+        font-size: 0.82rem !important;
+    }
+
+    body.material-theme .info-card .main-value,
+    body.material-theme .booking-kpi-value {
+        font-size: 1.22rem !important;
+        font-weight: 750 !important;
+        letter-spacing: -0.02em !important;
+    }
+
+    body.material-theme .info-card .sub-value,
+    body.material-theme .booking-kpi-hint {
+        font-size: 0.7rem !important;
+        margin-top: 4px !important;
     }
 
     body.material-theme .dashboard-period-controls {

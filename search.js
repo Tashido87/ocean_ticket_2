@@ -1556,7 +1556,7 @@ function renderClientDetailView() {
                 <div style="display: flex; flex-direction: column; gap: 1.5rem; height: 100%;">
                     ${overviewCard(client)}
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; flex: 1;">
+                    <div class="insights-payment-grid">
                         ${insightsCard(mostFrequentRoute, oneWay, roundTrip, avgNet)}
                         ${paymentCard(paidCount, unpaidTickets.length, outstanding, preferredPayment)}
                     </div>
