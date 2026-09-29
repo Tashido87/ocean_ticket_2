@@ -134,22 +134,21 @@ function ticketsForClient(clientKey) {
     return state.allTickets
         .filter(t => clientKeyFromTicket(t) === clientKey)
         .sort((a, b) => {
-            const dateA = parseSheetDate(a.issued_date);
-            const dateB = parseSheetDate(b.issued_date);
-            
-            const timeA = dateA && !isNaN(dateA.getTime()) ? dateA.getTime() : 0;
-            const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : 0;
-            
-            if (timeA !== timeB) {
-                return timeB - timeA;
-            }
-            
             const depA = parseSheetDate(a.departing_on);
             const depB = parseSheetDate(b.departing_on);
             const depTimeA = depA && !isNaN(depA.getTime()) ? depA.getTime() : 0;
             const depTimeB = depB && !isNaN(depB.getTime()) ? depB.getTime() : 0;
             
-            return depTimeB - depTimeA;
+            if (depTimeA !== depTimeB) {
+                return depTimeB - depTimeA;
+            }
+            
+            const dateA = parseSheetDate(a.issued_date);
+            const dateB = parseSheetDate(b.issued_date);
+            const timeA = dateA && !isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+            const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+            
+            return timeB - timeA;
         });
 }
 
@@ -1881,9 +1880,32 @@ function paymentCard(paid, unpaid, outstanding, preferredPayment) {
 }
 
 function ticketHistorySection(client, tickets) {
-    const years = [...new Set(tickets.map(t => parseSheetDate(t.issued_date)?.getFullYear?.()).filter(Boolean))].sort((a, b) => b - a);
+    const sortedTickets = [...(tickets || [])].sort((a, b) => {
+        const depA = parseSheetDate(a.departing_on);
+        const depB = parseSheetDate(b.departing_on);
+        const depTimeA = depA && !isNaN(depA.getTime()) ? depA.getTime() : 0;
+        const depTimeB = depB && !isNaN(depB.getTime()) ? depB.getTime() : 0;
 
-    const rows = tickets.map(t => {
+        if (depTimeA !== depTimeB) {
+            return depTimeB - depTimeA;
+        }
+
+        const dateA = parseSheetDate(a.issued_date);
+        const dateB = parseSheetDate(b.issued_date);
+        const timeA = dateA && !isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+        const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+
+        return timeB - timeA;
+    });
+
+    const getTicketYear = (t) => {
+        const d = parseSheetDate(t.departing_on) || parseSheetDate(t.issued_date);
+        return d && !isNaN(d.getTime()) ? d.getFullYear() : null;
+    };
+
+    const years = [...new Set(sortedTickets.map(getTicketYear).filter(Boolean))].sort((a, b) => b - a);
+
+    const rows = sortedTickets.map(t => {
         const status = getPaymentStatus(t);
         const upcoming = isUpcoming(t) ? 'upcoming' : (parseSheetDate(t.departing_on) < new Date() ? 'completed' : 'scheduled');
         const canceled = isCanceled(t);
@@ -1939,8 +1961,10 @@ function ticketHistorySection(client, tickets) {
             statusClass = 'tag-pending';
         }
 
+        const ticketYear = getTicketYear(t) || '';
+
         return `
-            <tr data-pnr="${escapeHtml(t.booking_reference || '')}" data-tt="${escapeHtml(String(t.ticket_type || '').toUpperCase().includes('ROUND') ? 'round' : 'oneway')}" data-year="${escapeHtml(String(parseSheetDate(t.issued_date)?.getFullYear?.() || ''))}" class="ticket-row ${canceled ? 'canceled-row' : ''}">
+            <tr data-pnr="${escapeHtml(t.booking_reference || '')}" data-tt="${escapeHtml(String(t.ticket_type || '').toUpperCase().includes('ROUND') ? 'round' : 'oneway')}" data-year="${escapeHtml(String(ticketYear))}" class="ticket-row ${canceled ? 'canceled-row' : ''}">
                 <td>
                     <p class="text-bold-slate" style="margin: 0; font-size: 0.85rem;">${invoiceNo}</p>
                     <p class="text-slate-muted" style="margin: 2px 0 0; font-size: 0.72rem;">${issueDateFormatted}</p>
