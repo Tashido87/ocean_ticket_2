@@ -745,7 +745,7 @@ function showBookingDetails(docIdsStr) {
                     <div class="pnr-value-row">
                         <span><strong>PNR Code:</strong> <span style="font-family: monospace; font-weight: 700; font-size: 1.1rem; color: var(--primary, #DC2626);">${escapeHtml(bookingGroup.pnr)}</span></span>
                         <button type="button" class="pnr-phonetic-btn" id="bookingPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
-                            <i class="fa-solid fa-volume-high"></i>
+                            <i class="fa-solid fa-spell-check"></i>
                         </button>
                     </div>
                     ${renderPhoneticExpansionHtml(bookingGroup.pnr, 'bookingPnrPhoneticPanel')}

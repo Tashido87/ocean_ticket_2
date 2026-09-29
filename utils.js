@@ -621,15 +621,6 @@ export function renderPhoneticExpansionHtml(pnr, containerId = 'pnrPhoneticPanel
             <div class="pnr-phonetic-chips">
                 ${chipsHtml}
             </div>
-            <div class="pnr-phonetic-speech-row">
-                <div class="pnr-phonetic-speech-text" title="Phonetic read-out">
-                    <i class="fa-solid fa-volume-high"></i>
-                    <span>${escapeHtml(fullText)}</span>
-                </div>
-                <button type="button" class="pnr-phonetic-copy-btn" data-copy-text="${escapeHtml(fullText)}" title="Copy phonetic spelling: ${escapeHtml(fullText)}" aria-label="Copy phonetic text">
-                    <i class="fa-regular fa-copy"></i>
-                </button>
-            </div>
         </div>
     `;
 }

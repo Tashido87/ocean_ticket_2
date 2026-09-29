@@ -1732,7 +1732,7 @@ function showTripPlanDetail(pnr) {
                     <div class="pnr-value-row">
                         <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
                         <button type="button" class="pnr-phonetic-btn" id="tripPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
-                            <i class="fa-solid fa-volume-high"></i>
+                            <i class="fa-solid fa-spell-check"></i>
                         </button>
                     </div>
                     ${renderPhoneticExpansionHtml(pnr, 'tripPnrPhoneticPanel')}

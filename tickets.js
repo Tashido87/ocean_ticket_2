@@ -989,7 +989,7 @@ export function showDetails(docId) {
                             <span class="pnr-value">${escapeHtml(ticket.booking_reference || 'N/A')}</span>
                             ${ticket.booking_reference && ticket.booking_reference !== 'N/A' && ticket.booking_reference !== 'No PNR' ? `
                             <button type="button" class="pnr-phonetic-btn" id="ticketPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
-                                <i class="fa-solid fa-volume-high"></i>
+                                <i class="fa-solid fa-spell-check"></i>
                             </button>` : ''}
                         </div>
                         <div class="airline-badge-container">
