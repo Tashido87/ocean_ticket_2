@@ -809,7 +809,7 @@ body.sidebar-collapsed .app-body {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    text-transform: uppercase;
+    text-transform: none;
 }
 
 .search-inputs select {
@@ -1015,11 +1015,11 @@ tbody tr:hover { background-color: var(--surface-soft); }
 .form-group.full-width {grid-column: 1 / -1;}
 .form-group label {
     margin-bottom: 0.35rem;
-    font-weight: 800;
-    font-size: 0.72rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-transform: none;
+    letter-spacing: -0.005em;
 }
 
 .form-group input, .form-group select, .form-group textarea {
@@ -1101,7 +1101,7 @@ tbody tr:hover { background-color: var(--surface-soft); }
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    text-transform: uppercase;
+    text-transform: none;
     cursor: pointer;
 }
 
@@ -1756,7 +1756,7 @@ td .action-checkbox {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    text-transform: uppercase;
+    text-transform: none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2326251e' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
@@ -4319,11 +4319,11 @@ body.material-theme .form-group select,
 body.material-theme .form-group textarea,
 body.material-theme .booking-search-section select,
 body.material-theme .client-search-box input {
-    border-radius: 9px;
-    border: 1px solid var(--border-color) !important;
-    background: var(--surface) !important;
-    padding: 0.6rem 0.85rem !important;
-    font-size: 0.875rem !important;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--surface);
+    padding: 0.6rem 0.85rem;
+    font-size: 0.875rem;
 }
 
 body.material-theme .search-inputs input:focus,

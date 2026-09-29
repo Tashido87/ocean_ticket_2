@@ -1014,11 +1014,11 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .sell-section .form-group label {
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: none;
+    letter-spacing: -0.005em;
     margin-bottom: 0.35rem;
 }
 

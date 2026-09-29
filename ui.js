@@ -1735,7 +1735,7 @@ function _buildPassengerCardHtml(idx, opts) {
                     </div>
                     <div class="form-group" style="grid-column: span 2; position: relative;">
                         <label>Full Name <span class="req">*</span></label>
-                        <input type="text" class="passenger-name" placeholder="PASSENGER FULL NAME" value="${(name || '').toUpperCase()}" required autocomplete="off">
+                        <input type="text" class="passenger-name" placeholder="Passenger full name" value="${(name || '').toUpperCase()}" required autocomplete="off">
                         <div class="autosuggest-box" style="display:none;"></div>
                     </div>
                     <div class="form-group">
@@ -3285,15 +3285,15 @@ export function addBookingPassengerForm() {
             </div>
             <div class="form-group">
                 <label>Full Name</label>
-                <input type="text" class="booking-passenger-name" placeholder="PASSENGER FULL NAME" required>
+                <input type="text" class="booking-passenger-name" placeholder="Passenger full name" required>
             </div>
             <div class="form-group">
                 <label>NRC No.</label>
-                <input type="text" class="booking-passenger-nrc" placeholder="NRC NUMBER">
+                <input type="text" class="booking-passenger-nrc" placeholder="NRC number (e.g. 12/KAMAYA(N)123456)">
             </div>
             <div class="form-group">
                 <label>Passport No.</label>
-                <input type="text" class="booking-passenger-passport" placeholder="PASSPORT NUMBER">
+                <input type="text" class="booking-passenger-passport" placeholder="Passport number (e.g. MF123456)">
             </div>
         </div>
     `;
