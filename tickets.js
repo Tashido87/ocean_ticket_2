@@ -6,7 +6,7 @@
 
 import { state } from './state.js';
 import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation } from './db.js';
-import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle } from './utils.js';
+import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
 import { updateDashboardData } from './main.js';
@@ -634,6 +634,29 @@ export function showDetails(docId) {
     const depInfo = getAirportCodeAndCity(outboundLeg.departure);
     const destInfo = getAirportCodeAndCity(outboundLeg.destination);
 
+    // Client contact details & direct communication links
+    const clientPhone = String(ticket.phone || outboundLeg.phone || '').trim();
+    const clientAccName = String(ticket.account_name || outboundLeg.account_name || '').trim();
+    const clientAccType = String(ticket.account_type || outboundLeg.account_type || '').trim();
+    const clientAccLink = String(ticket.account_link || outboundLeg.account_link || '').trim();
+    const clientKey = String(ticket.client_key || outboundLeg.client_key || '').trim();
+
+    let phoneHtml = '<span style="color:#94a3b8; font-weight:500;">Not provided</span>';
+    if (clientPhone) {
+        const digits = clientPhone.replace(/[^\d+]/g, '');
+        let intl = digits.replace(/^\+/, '');
+        if (intl.startsWith('09')) intl = '959' + intl.slice(2);
+        else if (intl.startsWith('9') && !intl.startsWith('95')) intl = '95' + intl;
+
+        phoneHtml = `
+            <a href="tel:${escapeHtml(clientPhone)}" style="color:var(--apple-blue); font-weight:700; text-decoration:none;">${escapeHtml(clientPhone)}</a>
+            <div style="display:inline-flex; gap:6px; align-items:center; margin-left:4px;">
+                <a href="viber://chat?number=%2B${intl}" class="btn-viber-chat" title="Chat on Viber" target="_blank" rel="noopener"><i class="fa-brands fa-viber"></i></a>
+                <a href="https://wa.me/${intl}" class="btn-whatsapp-chat" title="Chat on WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
+            </div>
+        `;
+    }
+
     const content = `
         <style>
             /* Styling for the aesthetic details modal */
@@ -1066,6 +1089,34 @@ export function showDetails(docId) {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Client & Contact Details -->
+                <div class="aesthetic-card">
+                    <div class="card-label-tiny"><i class="fa-solid fa-address-book"></i> CLIENT &amp; CONTACT</div>
+                    <div class="card-grid-two-cols">
+                        <div class="grid-col-item">
+                            <span class="grid-label">CLIENT / ACCOUNT</span>
+                            <span class="grid-val-bold">
+                                ${clientKey ? `<a href="#/client/${encodeURIComponent(clientKey)}" class="clickable-client-link" data-client-key="${escapeHtml(clientKey)}" style="color:var(--apple-blue); font-weight:700; text-decoration:none;">${escapeHtml(clientAccName || 'View Profile')} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i></a>` : escapeHtml(clientAccName || '—')}
+                                ${clientAccType ? `<div style="font-size:0.75rem; color:#64748b; font-weight:500; margin-top:2px;">${escapeHtml(clientAccType)}</div>` : ''}
+                            </span>
+                        </div>
+                        <div class="grid-col-item">
+                            <span class="grid-label">PHONE &amp; ACTIONS</span>
+                            <span class="grid-val-bold" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                ${phoneHtml}
+                            </span>
+                        </div>
+                    </div>
+                    ${clientAccLink ? `
+                        <div style="margin-top:0.6rem; padding-top:0.5rem; border-top:1px dashed rgba(226,232,240,0.8); font-size:0.8rem;">
+                            <span class="grid-label" style="display:block; margin-bottom:2px;">ACCOUNT LINK</span>
+                            <a href="${escapeHtml(formatSafeAccountLink(clientAccLink, clientAccType))}" target="_blank" rel="noopener" style="color:var(--apple-blue); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                                <i class="fa-solid fa-up-right-from-square"></i> ${escapeHtml(clientAccLink)}
+                            </a>
+                        </div>
+                    ` : ''}
                 </div>
 
                 <!-- Settlement Details -->
