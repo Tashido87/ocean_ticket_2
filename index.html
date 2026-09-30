@@ -1236,15 +1236,15 @@
                                     </div>
                                     <div class="form-group" style="margin: 0;">
                                         <label for="service_hotel_client_name" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Client / Guest Name</label>
-                                        <input type="text" id="service_hotel_client_name" placeholder="e.g. AUNG KHIN NYUNT" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); text-transform: uppercase; font-weight: 600;">
+                                        <input type="text" id="service_hotel_client_name" placeholder="Tashido" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); text-transform: uppercase; font-weight: 600;">
                                     </div>
                                     <div class="form-group" style="margin: 0;">
                                         <label for="service_hotel_arrival" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Arrival Date</label>
-                                        <input type="text" id="service_hotel_arrival" placeholder="e.g. 16/10/2026" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
+                                        <input type="text" id="service_hotel_arrival" placeholder="DD/MM/YYYY" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
                                     </div>
                                     <div class="form-group" style="margin: 0;">
                                         <label for="service_hotel_departure" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Departure Date</label>
-                                        <input type="text" id="service_hotel_departure" placeholder="e.g. 26/10/2026" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
+                                        <input type="text" id="service_hotel_departure" placeholder="DD/MM/YYYY" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
                                     </div>
                                 </div>
                                 <div style="font-size: 0.8rem; color: var(--apple-text-secondary); display: flex; align-items: center; gap: 6px;">
@@ -1738,8 +1738,6 @@
 
             <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--apple-separator); padding-top:12px; margin-top:14px; flex-wrap:wrap;">
                 <button type="button" class="btn btn-secondary" id="airAsiaCancelBtn">Cancel</button>
-                <button type="button" class="btn btn-secondary" id="airAsiaDownloadImgBtn"><i class="fa-solid fa-image"></i> Save Photo</button>
-                <button type="button" class="btn btn-secondary" id="airAsiaShareBtn" style="color:var(--apple-blue);"><i class="fa-solid fa-share-nodes"></i> Share</button>
                 <button type="button" class="btn btn-primary" id="airAsiaDownloadPdfBtn" style="background:#E31E24; border-color:#E31E24; color:#ffffff;">
                     <i class="fa-solid fa-file-pdf"></i> Download PDF
                 </button>
@@ -1816,7 +1814,7 @@
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_client_name">Client / Guest Name</label>
-                                <input type="text" id="agoda_client_name" placeholder="e.g. AUNG KHIN NYUNT" style="font-weight:700; text-transform:uppercase;">
+                                <input type="text" id="agoda_client_name" placeholder="Tashido" style="font-weight:700; text-transform:uppercase;">
                             </div>
                         </div>
                         <div class="airasia-form-row">
@@ -1864,11 +1862,11 @@
                         <div class="airasia-form-row">
                             <div class="airasia-form-group">
                                 <label for="agoda_arrival_date">Arrival Date</label>
-                                <input type="text" id="agoda_arrival_date" placeholder="e.g. 16/10/2026 or October 16, 2026">
+                                <input type="text" id="agoda_arrival_date" placeholder="DD/MM/YYYY" autocomplete="off">
                             </div>
                             <div class="airasia-form-group">
                                 <label for="agoda_departure_date">Departure Date</label>
-                                <input type="text" id="agoda_departure_date" placeholder="e.g. 26/10/2026 or October 26, 2026">
+                                <input type="text" id="agoda_departure_date" placeholder="DD/MM/YYYY" autocomplete="off">
                             </div>
                         </div>
 
@@ -1919,7 +1917,6 @@
 
             <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--apple-separator); padding-top:12px; margin-top:14px; flex-wrap:wrap;">
                 <button type="button" class="btn btn-secondary" id="chinaHotelCancelBtn">Cancel</button>
-                <button type="button" class="btn btn-secondary" id="chinaHotelShareBtn" style="color:var(--apple-blue);"><i class="fa-solid fa-share-nodes"></i> Share</button>
                 <button type="button" class="btn btn-primary" id="chinaHotelDownloadPdfBtn" style="background:#e1251b; border-color:#e1251b; color:#ffffff;">
                     <i class="fa-solid fa-file-pdf"></i> Download PDF
                 </button>
@@ -1929,6 +1926,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=54" type="module"></script>
+    <script src="main.js?v=55" type="module"></script>
 </body>
 </html>

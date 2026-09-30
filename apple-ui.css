@@ -3013,3 +3013,27 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
     }
 }
 
+/* Faded and disabled dates for VanillaJS Datepicker */
+.datepicker-picker .datepicker-cell.disabled,
+.datepicker-picker .datepicker-cell.disabled:hover,
+.datepicker-cell.disabled,
+.datepicker-cell.disabled:hover,
+.datepicker-view .day.disabled,
+.datepicker-view .month.disabled,
+.datepicker-view .year.disabled,
+body.material-theme .datepicker-cell.disabled {
+    color: #8e8e93 !important;
+    opacity: 0.22 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    background: transparent !important;
+    text-decoration: line-through rgba(142, 142, 147, 0.4) !important;
+}
+
+.datepicker-cell.prev:not(.disabled),
+.datepicker-cell.next:not(.disabled) {
+    color: #8e8e93 !important;
+    opacity: 0.6 !important;
+}
+
+

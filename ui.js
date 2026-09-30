@@ -345,6 +345,8 @@ export function setupDepartureReturnDatepickers(depInputOrId, returnInputOrId) {
         depInput.addEventListener('changeDate', sync);
         depInput.addEventListener('change', sync);
         depInput.addEventListener('input', sync);
+        returnInput.addEventListener('show', sync);
+        returnInput.addEventListener('focus', sync);
         depInput.dataset.depSyncBound = 'true';
     }
 

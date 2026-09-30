@@ -191,7 +191,7 @@ export function calculateDefaultCancellationDate(arrivalDateStr) {
             return formatAgodaDate(cancelDate);
         }
     } catch (e) {}
-    return 'October 13, 2026';
+    return '';
 }
 
 /**
@@ -207,7 +207,7 @@ export function renderAgodaHotelHtml(data = {}) {
         ? (cachedAgodaSingaporeStampDataUrl || 'agoda-stamp-singapore.png')
         : (cachedAgodaStampDataUrl || 'agoda-stamp.png');
 
-    const clientName = (data.clientName || 'AUNG KHIN NYUNT').trim().toUpperCase();
+    const clientName = (data.clientName || '').trim().toUpperCase();
     const bookingId = data.bookingId || generateRandomBookingId();
     const memberId = data.memberId || generateRandomMemberId();
     const bookingRefNo = data.bookingRefNo || '';
@@ -223,9 +223,9 @@ export function renderAgodaHotelHtml(data = {}) {
     const roomType = data.roomType || 'Superior Deluxe';
     const promotion = data.promotion || 'Long Stay Deal. Price includes 10% discount!';
 
-    const arrivalDate = formatAgodaDate(data.arrivalDate || 'October 16, 2026');
-    const departureDate = formatAgodaDate(data.departureDate || 'October 26, 2026');
-    const cancellationDate = data.cancellationDate || calculateDefaultCancellationDate(arrivalDate);
+    const arrivalDate = data.arrivalDate ? formatAgodaDate(data.arrivalDate) : '';
+    const departureDate = data.departureDate ? formatAgodaDate(data.departureDate) : '';
+    const cancellationDate = data.cancellationDate || (arrivalDate ? calculateDefaultCancellationDate(arrivalDate) : '');
 
     const bookedPayableTitle = data.bookedPayableTitle || preset.bookedPayableTitle || (isSingapore ? 'Booked And Payable Through :' : 'Booked And Payable By :');
     const bookedPayableAddress = data.bookedPayableAddress || preset.bookedPayableAddress || (isSingapore ? 'Agoda Company Pte, Ltd.\n36 Robinson Road, City House #20-01,\nSingapore 068877' : 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712');
@@ -292,7 +292,7 @@ export function renderAgodaHotelHtml(data = {}) {
                     <!-- Client -->
                     <div style="display:flex; align-items:center; height:18px;">
                         <span style="width:125px; color:#000000;">Client :</span>
-                        <span style="font-weight:bold; color:#000000; font-size:10.5px;">${clientName}</span>
+                        <span style="font-weight:bold; color:#000000; font-size:10.5px;">${clientName || '&nbsp;'}</span>
                     </div>
 
                     <!-- Member ID -->
@@ -412,13 +412,13 @@ export function renderAgodaHotelHtml(data = {}) {
                             <div style="display:flex; align-items:center;">
                                 <span style="font-weight:bold; margin-right:6px; width:50px; color:#000000;">Arrival :</span>
                                 <div style="width:125px; background:#dcdcdc; border-radius:2px; height:19px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
-                                    ${arrivalDate}
+                                    ${arrivalDate || '&nbsp;'}
                                 </div>
                             </div>
                             <div style="display:flex; align-items:center;">
                                 <span style="font-weight:bold; margin-right:6px; width:65px; color:#000000;">Departure :</span>
                                 <div style="width:125px; background:#dcdcdc; border-radius:2px; height:19px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
-                                    ${departureDate}
+                                    ${departureDate || '&nbsp;'}
                                 </div>
                             </div>
                         </div>
@@ -498,7 +498,7 @@ export async function generateAgodaPdfDoc(data) {
     const logoDataUrl = await getAgodaLogoDataUrl();
     const stampDataUrl = await getAgodaStampDataUrl(destination);
 
-    const clientName = (data.clientName || 'AUNG KHIN NYUNT').trim().toUpperCase();
+    const clientName = (data.clientName || '').trim().toUpperCase();
     const bookingId = String(data.bookingId || generateRandomBookingId());
     const memberId = String(data.memberId || generateRandomMemberId());
     const bookingRefNo = String(data.bookingRefNo || '');
@@ -514,9 +514,9 @@ export async function generateAgodaPdfDoc(data) {
     const roomType = String(data.roomType || 'Superior Deluxe');
     const promotion = String(data.promotion || 'Long Stay Deal. Price includes 10% discount!');
 
-    const arrivalDate = formatAgodaDate(data.arrivalDate || 'October 16, 2026');
-    const departureDate = formatAgodaDate(data.departureDate || 'October 26, 2026');
-    const cancellationDate = data.cancellationDate || calculateDefaultCancellationDate(arrivalDate);
+    const arrivalDate = data.arrivalDate ? formatAgodaDate(data.arrivalDate) : '';
+    const departureDate = data.departureDate ? formatAgodaDate(data.departureDate) : '';
+    const cancellationDate = data.cancellationDate || (arrivalDate ? calculateDefaultCancellationDate(arrivalDate) : '');
 
     const remarksSpecial = String(data.remarksSpecial || 'NonSmoke,LargeBed');
 
