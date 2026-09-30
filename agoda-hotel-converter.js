@@ -797,23 +797,23 @@ export async function generateAgodaPdfDoc(data) {
     doc.setFontSize(7.4);
     doc.text(bookedPayableTitle, innerX + 6.0, lowerY + 6.0);
 
-    const addrBoxY = lowerY + 9.0;
-    const addrBoxW = (stampBoxX - innerX) - 12.0;
-    const addrBoxH = (stampBoxY + stampBoxH) - addrBoxY;
+    const payableBoxY = lowerY + 9.0;
+    const payableBoxW = (stampBoxX - innerX) - 12.0;
+    const payableBoxH = (stampBoxY + stampBoxH) - payableBoxY;
     doc.setFillColor(235, 235, 235);
-    doc.rect(innerX + 6.0, addrBoxY, addrBoxW, addrBoxH, 'F');
+    doc.rect(innerX + 6.0, payableBoxY, payableBoxW, payableBoxH, 'F');
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.2);
     doc.setTextColor(0, 0, 0);
     const payableLines = bookedPayableAddress.split('\n');
     if (payableLines.length >= 3) {
-        doc.text(payableLines[0].trim(), innerX + 11.0, addrBoxY + 11.0);
-        doc.text(payableLines[1].trim(), innerX + 11.0, addrBoxY + 21.0);
-        doc.text(payableLines[2].trim(), innerX + 11.0, addrBoxY + 31.0);
+        doc.text(payableLines[0].trim(), innerX + 11.0, payableBoxY + 11.0);
+        doc.text(payableLines[1].trim(), innerX + 11.0, payableBoxY + 21.0);
+        doc.text(payableLines[2].trim(), innerX + 11.0, payableBoxY + 31.0);
     } else {
         payableLines.forEach((l, idx) => {
-            doc.text(l.trim(), innerX + 11.0, addrBoxY + 11.0 + (idx * 10.0));
+            doc.text(l.trim(), innerX + 11.0, payableBoxY + 11.0 + (idx * 10.0));
         });
     }
 
