@@ -3,7 +3,7 @@
  * Converts Trip.com / OTA PDF itineraries into official AirAsia E-Ticket Receipts.
  */
 
-import { showToast } from './ui.js';
+import { showToast } from './utils.js';
 
 let cachedLogoDataUrl = null;
 
