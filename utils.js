@@ -29,7 +29,71 @@ export function makeClickable(text) {
         </span>`;
     }
     if (text.startsWith('@')) return `<a href="https://t.me/${escaped.substring(1)}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
+    if (text.includes('.') && !text.includes(' ') && text.length > 4) {
+        return `<a href="https://${escaped}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
+    }
     return escaped;
+}
+
+/**
+ * Normalizes raw account links into safe absolute URLs or action links (tel, viber, whatsapp, facebook, telegram).
+ * Prevents relative URL navigation errors (e.g. domain.com/09440006400).
+ * @param {string} rawLink The raw account link or username or phone.
+ * @param {string} [accountType=''] The account type (Facebook, Viber, Telegram, WhatsApp, etc.).
+ * @returns {string} The safe link for href.
+ */
+export function formatSafeAccountLink(rawLink, accountType = '') {
+    if (!rawLink) return '';
+    let link = String(rawLink).trim();
+    if (!link) return '';
+
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(link)) {
+        return link;
+    }
+
+    const type = String(accountType || '').toLowerCase();
+    const digitsOnly = link.replace(/[^\d+]/g, '');
+
+    if (/^(\+?959|09|\d{7,12})$/.test(digitsOnly)) {
+        let intl = digitsOnly.replace(/^\+/, '');
+        if (intl.startsWith('09')) intl = '959' + intl.slice(2);
+        else if (intl.startsWith('9') && !intl.startsWith('95')) intl = '95' + intl;
+
+        if (type.includes('viber')) {
+            return `viber://chat?number=%2B${intl}`;
+        }
+        if (type.includes('whatsapp')) {
+            return `https://wa.me/${intl}`;
+        }
+        if (type.includes('facebook') || type.includes('fb')) {
+            return `https://www.facebook.com/search/top/?q=${encodeURIComponent(digitsOnly)}`;
+        }
+        return `tel:${digitsOnly}`;
+    }
+
+    if (link.startsWith('@')) {
+        return `https://t.me/${link.slice(1)}`;
+    }
+
+    if (/^(facebook\.com|fb\.com|fb\.me|m\.me|t\.me|instagram\.com|tiktok\.com|linkedin\.com|wa\.me)/i.test(link)) {
+        return `https://${link}`;
+    }
+
+    if (type.includes('facebook') || type.includes('fb')) {
+        return `https://www.facebook.com/${link.replace(/^\//, '')}`;
+    }
+    if (type.includes('telegram') || type.includes('tg')) {
+        return `https://t.me/${link.replace(/^@/, '')}`;
+    }
+    if (type.includes('viber')) {
+        return `viber://chat?number=%2B${link.replace(/[^\d]/g, '')}`;
+    }
+
+    if (link.includes('.')) {
+        return `https://${link}`;
+    }
+
+    return `https://www.facebook.com/${encodeURIComponent(link)}`;
 }
 
 /**

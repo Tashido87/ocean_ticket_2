@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast, isTicketPaid, renderAirlineName } from './utils.js';
+import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToDMMMY, attachDateAutoFormat, isPlaceholderDate, debounce, showToast, isTicketPaid, renderAirlineName, formatSafeAccountLink } from './utils.js';
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets, updateTicket } from './db.js';
@@ -1629,8 +1629,9 @@ function overviewCard(c) {
             ${intlPhone ? `<a href="https://wa.me/${intlPhone}" class="btn-whatsapp-chat" title="Chat on WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
            </span>`
         : '<span class="kv-value-empty">Not provided</span>';
-    const linkVal = accountLink
-        ? `<a href="${escapeHtml(accountLink)}" target="_blank" rel="noopener" class="link-overview-url"><i class="fa-solid fa-up-right-from-square"></i> View Link</a>`
+    const safeAccountLink = formatSafeAccountLink(accountLink, c.account_type);
+    const linkVal = safeAccountLink
+        ? `<a href="${escapeHtml(safeAccountLink)}" target="_blank" rel="noopener" class="link-overview-url"><i class="fa-solid fa-up-right-from-square"></i> View Link</a>`
         : '<span class="kv-value-empty">Not provided</span>';
 
     // Consistent pseudo client ID based on hash of client_key
