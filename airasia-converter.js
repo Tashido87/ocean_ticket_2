@@ -200,52 +200,71 @@ export function parseItineraryText(rawText) {
         }
     }
 
-    // 7. Departure
-    let depTime = '';
-    let depDateRaw = '';
-    let depAirport = '';
-    let depTerminal = '';
-    const depMatch = flSearchText.match(/Departure\s*[\t: ]*(\d{1,2}:\d{2}),?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4}),?\s*(.*?)(?=\s*Arrival\b|[\r\n]{2}|$)/i);
-    if (depMatch) {
-        depTime = depMatch[1].trim();
-        depDateRaw = depMatch[2].trim();
-        depAirport = depMatch[3].replace(/[\r\n]+/g, ' ').trim();
-        const termMatch = depAirport.match(/\b(T\d+|Terminal\s*\d+)\b/i);
-        if (termMatch) {
-            depTerminal = termMatch[0].replace(/^T(\d+)/i, 'Terminal $1');
-            depAirport = depAirport.replace(termMatch[0], '').replace(/,\s*$/, '').trim();
+    // 7 & 8. Section-based Departure & Arrival Parser (Robust against any spacing or line breaks)
+    function parseFlightSection(fullText, startWord, endWords) {
+        const endGroup = endWords.map(w => `\\b${w}\\b`).join('|');
+        const regex = new RegExp(`\\b${startWord}\\b([\\s\\S]*?)(?=${endGroup}|$)`, 'i');
+        const match = fullText.match(regex);
+        if (!match) return { time: '', dateRaw: '', terminal: '', airport: '' };
+        let block = match[1].trim();
+
+        // 1. Time (supports colon, dot, unicode ratio, or fullwidth colon)
+        let time = '';
+        const timeMatch = block.match(/\b(\d{1,2})\s*[:.∶：]\s*(\d{2})\b/);
+        if (timeMatch) {
+            time = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+            block = block.replace(timeMatch[0], ' ');
         }
+
+        // 2. Date
+        let dateRaw = '';
+        const dateMatch = block.match(/\b([A-Za-z]{3,}\s+\d{1,2},?\s*\d{4}|\d{1,2}\s+[A-Za-z]{3,},?\s*\d{4}|\d{1,2}[-\/]\d{1,2}[-\/]\d{4}|\d{4}[-\/]\d{1,2}[-\/]\d{1,2})\b/);
+        if (dateMatch) {
+            dateRaw = dateMatch[0].trim();
+            block = block.replace(dateMatch[0], ' ');
+        }
+
+        // 3. Terminal
+        let terminal = '';
+        const termMatch = block.match(/\b(T\d+|Terminal\s*\d+)\b/i);
+        if (termMatch) {
+            terminal = termMatch[0].replace(/^T(\d+)/i, 'Terminal $1');
+            block = block.replace(termMatch[0], ' ');
+        }
+
+        // 4. Airport Name
+        let airport = block
+            .replace(/^[,\s\-\t:]+/, '')
+            .replace(/[,\s\-\t:]+$/, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        return { time, dateRaw, terminal, airport };
     }
 
-    // 8. Arrival
-    let arrTime = '';
-    let arrDateRaw = '';
-    let arrAirport = '';
-    let arrTerminal = '';
-    const arrMatch = flSearchText.match(/Arrival\s*[\t: ]*(\d{1,2}:\d{2}),?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4}),?\s*(.*?)(?=\s*Airline\b|[\r\n]{2}|$)/i);
-    if (arrMatch) {
-        arrTime = arrMatch[1].trim();
-        arrDateRaw = arrMatch[2].trim();
-        arrAirport = arrMatch[3].replace(/[\r\n]+/g, ' ').trim();
-        const termMatch = arrAirport.match(/\b(T\d+|Terminal\s*\d+)\b/i);
-        if (termMatch) {
-            arrTerminal = termMatch[0].replace(/^T(\d+)/i, 'Terminal $1');
-            arrAirport = arrAirport.replace(termMatch[0], '').replace(/,\s*$/, '').trim();
-        }
+    const depSection = parseFlightSection(clean, 'Departure', ['Arrival']);
+    const arrSection = parseFlightSection(clean, 'Arrival', ['Airline', 'Flight', 'Baggage', 'Personal', 'Carry']);
+
+    const depTime = depSection.time;
+    const depDateFormatted = formatTicketDate(depSection.dateRaw);
+    const depTerminal = depSection.terminal;
+    const depCode = lookupAirportCode(depSection.airport);
+    let depAirport = depSection.airport;
+    if (depAirport && depCode && !depAirport.includes(`(${depCode})`)) {
+        depAirport += ` (${depCode})`;
     }
 
-    // 9. Airport Codes & Route
-    const depCode = lookupAirportCode(depAirport);
-    const arrCode = lookupAirportCode(arrAirport);
+    const arrTime = arrSection.time;
+    const arrDateFormatted = formatTicketDate(arrSection.dateRaw);
+    const arrTerminal = arrSection.terminal;
+    const arrCode = lookupAirportCode(arrSection.airport);
+    let arrAirport = arrSection.airport;
+    if (arrAirport && arrCode && !arrAirport.includes(`(${arrCode})`)) {
+        arrAirport += ` (${arrCode})`;
+    }
 
-    const depDateFormatted = formatTicketDate(depDateRaw);
-    const arrDateFormatted = formatTicketDate(arrDateRaw);
-
-    const depAirportFormatted = depAirport.includes(`(${depCode})`) ? depAirport : (depAirport + (depCode ? ` (${depCode})` : ''));
-    const arrAirportFormatted = arrAirport.includes(`(${arrCode})`) ? arrAirport : (arrAirport + (arrCode ? ` (${arrCode})` : ''));
-
-    const depCity = extractCityName(depAirport) || 'Kuala Lumpur';
-    const arrCity = extractCityName(arrAirport) || 'Johor Bahru';
+    const depCity = extractCityName(depSection.airport) || 'Kuala Lumpur';
+    const arrCity = extractCityName(arrSection.airport) || 'Johor Bahru';
     const route = `${depCity} (${depCode || 'DEP'}) - ${arrCity} (${arrCode || 'ARR'})`;
 
     // 10. Baggage
@@ -273,11 +292,11 @@ export function parseItineraryText(rawText) {
         airlineName,
         depTime,
         depDateFormatted,
-        depAirport: depAirportFormatted,
+        depAirport,
         depTerminal,
         arrTime,
         arrDateFormatted,
-        arrAirport: arrAirportFormatted,
+        arrAirport,
         arrTerminal,
         route,
         checkedBaggage,
@@ -306,13 +325,15 @@ export async function extractTextFromPdf(file) {
         let pageText = '';
         let lastY = null;
         for (const item of textContent.items) {
-            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+            if (!item || typeof item.str !== 'string') continue;
+            const currentY = (item.transform && item.transform.length > 5) ? item.transform[5] : null;
+            if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 5) {
                 pageText += '\n';
             } else if (pageText.length > 0 && !pageText.endsWith('\n') && !pageText.endsWith(' ')) {
                 pageText += ' ';
             }
             pageText += item.str;
-            lastY = item.transform[5];
+            if (currentY !== null) lastY = currentY;
         }
         fullText += pageText + '\n\n';
     }
