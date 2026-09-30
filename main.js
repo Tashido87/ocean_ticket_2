@@ -953,12 +953,14 @@ function setupEventListeners() {
             }
         });
 
+        const activeFormat = isShare ? 'photo' : format;
+
         try {
             if (scenario.canChoose) {
                 showInvoiceOptionModal(async (selectedMode) => {
                     try {
-                        if (format === 'photo') {
-                            await generateInvoiceImage(pnrList, type, date, selectedMode, brand, adjustments);
+                        if (activeFormat === 'photo') {
+                            await generateInvoiceImage(pnrList, type, date, selectedMode, brand, adjustments, null, isShare);
                         } else {
                             await generateInvoice(pnrList, type, date, selectedMode, brand, adjustments);
                         }
@@ -969,8 +971,8 @@ function setupEventListeners() {
                     }
                 });
             } else {
-                if (format === 'photo') {
-                    await generateInvoiceImage(pnrList, type, date, 'auto', brand, adjustments, selection);
+                if (activeFormat === 'photo') {
+                    await generateInvoiceImage(pnrList, type, date, 'auto', brand, adjustments, selection, isShare);
                 } else {
                     await generateInvoice(pnrList, type, date, 'auto', brand, adjustments, selection);
                 }
@@ -982,8 +984,10 @@ function setupEventListeners() {
         }
     }
 
-    if (invoiceGenerateBtn) invoiceGenerateBtn.addEventListener('click', runInvoiceGeneration);
-    if (invoiceForm) invoiceForm.addEventListener('submit', (e) => { e.preventDefault(); runInvoiceGeneration(); });
+    if (invoiceGenerateBtn) invoiceGenerateBtn.addEventListener('click', () => runInvoiceGeneration(false));
+    const invoiceShareBtn = document.getElementById('invoiceShareBtn');
+    if (invoiceShareBtn) invoiceShareBtn.addEventListener('click', () => runInvoiceGeneration(true));
+    if (invoiceForm) invoiceForm.addEventListener('submit', (e) => { e.preventDefault(); runInvoiceGeneration(false); });
 
     if (invoiceClearBtn) {
         invoiceClearBtn.addEventListener('click', () => {
@@ -1644,6 +1648,10 @@ export function updateDashboardData() {
         upcomingTrips
     });
     updateComparisonChart();
+    updatePaymentStatusChart();
+    updateRoutePerformanceChart();
+    updateAirlineChart();
+    updateOwnerPayableChart();
     updateSettlementDashboard();
 }
 
@@ -2880,6 +2888,13 @@ window.onload = async () => {
     resetBookingPassengerForms();
     initializePaymentMethodEnhancements();
     initializeSellFormEnhancements();
+
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.debug('ServiceWorker registration omitted:', err);
+        });
+    }
 
     // Initialize Firebase Auth
     initAuth(

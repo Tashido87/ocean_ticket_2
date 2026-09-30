@@ -1211,11 +1211,20 @@ export function showHotelDetails(hotel) {
             </div>
         </div>
         <div class="form-actions" style="margin-top: 1rem;">
+            <button class="btn btn-primary" id="modalHotelVoucherBtn" style="background:#0f4c75; border-color:#0f4c75; margin-right:0.5rem;"><i class="fa-solid fa-file-invoice"></i> Hotel Voucher</button>
             <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
         </div>
     `;
     openModal(content, 'solid-modal');
     document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+
+    const voucherBtn = document.getElementById('modalHotelVoucherBtn');
+    if (voucherBtn) {
+        voucherBtn.addEventListener('click', async () => {
+            const { exportHotelVoucher } = await import('./hotel.js');
+            exportHotelVoucher(hotel.id);
+        });
+    }
 
     const clientLink = document.querySelector('.clickable-client-link');
     if (clientLink) {
@@ -1473,6 +1482,18 @@ function collectFormData(form) {
         : form.querySelector('#airline').value;
     const outboundPnr = form.querySelector('#booking_reference').value.toUpperCase();
 
+    // Check duplicate PNR in database
+    const existingPnr = (state.allTickets || []).find(t =>
+        !isCanceledTicket(t) &&
+        String(t.booking_reference || '').trim().toUpperCase() === outboundPnr
+    );
+    if (existingPnr) {
+        const proceed = window.confirm(`⚠️ Warning: PNR "${outboundPnr}" is already in records (Issued on ${existingPnr.issued_date || ''} for ${existingPnr.name || ''}).\n\nAre you sure you want to issue another ticket with this PNR?`);
+        if (!proceed) {
+            return;
+        }
+    }
+
     const isInternational = !!document.getElementById('flightTypeToggle')?.checked;
     const isRound = !!document.getElementById('trip_type_round')?.checked;
 
@@ -1711,6 +1732,7 @@ export function performSearch(page) {
     if (typeof page !== 'number' || isNaN(page)) {
         page = state.currentPage || 1;
     }
+    updateRecordsFilterBadge();
     const nameRaw = (document.getElementById('searchName')?.value || '').toUpperCase().trim();
     const nameTokens = nameRaw ? nameRaw.split(/\s+/) : [];
     const bookRef = (document.getElementById('searchBooking')?.value || '').toUpperCase();
@@ -1842,8 +1864,43 @@ export function clearSearch() {
             opt.disabled = false;
         }
     });
+    updateRecordsFilterBadge();
     performSearch();
     togglePrivateReportButton();
+}
+
+/**
+ * Updates the active filter badge count and quick clear button in Records view.
+ */
+export function updateRecordsFilterBadge() {
+    const badge = document.getElementById('recordsFilterBadge');
+    const clearBtn = document.getElementById('recordsQuickClearBtn');
+    if (!badge || !clearBtn) return;
+
+    let count = 0;
+    if ((document.getElementById('searchName')?.value || '').trim()) count++;
+    if ((document.getElementById('searchBooking')?.value || '').trim()) count++;
+    if ((document.getElementById('searchStartDate')?.value || '').trim()) count++;
+    if ((document.getElementById('searchEndDate')?.value || '').trim()) count++;
+    if ((document.getElementById('searchTravelDate')?.value || '').trim()) count++;
+    if (document.getElementById('searchDeparture')?.value) count++;
+    if (document.getElementById('searchDestination')?.value) count++;
+    const src = document.getElementById('searchSource')?.value;
+    if (src && src !== 'all') count++;
+
+    if (count > 0) {
+        badge.textContent = `${count} active`;
+        badge.style.display = 'inline-flex';
+        clearBtn.style.display = 'inline-flex';
+    } else {
+        badge.style.display = 'none';
+        clearBtn.style.display = 'none';
+    }
+
+    if (clearBtn.dataset.bound !== 'true') {
+        clearBtn.addEventListener('click', () => clearSearch());
+        clearBtn.dataset.bound = 'true';
+    }
 }
 
 

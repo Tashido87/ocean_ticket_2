@@ -969,7 +969,7 @@ export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null,
     doc.save(`${safeName}_${safeBrand}_${type}.pdf`);
 }
 
-export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null, selection = null) {
+export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null, selection = null, isShare = false) {
     try {
         await loadHtml2Canvas();
     } catch (error) {
@@ -1054,10 +1054,33 @@ export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = 
                 backgroundColor: '#ffffff'
             });
 
-            const link = document.createElement('a');
             const safeName = data.group.clientName.split(',')[0].replace(/[^a-z0-9]/gi, '_');
             const safeBrand = brand.displayName.replace(/[^a-z0-9]/gi, '_');
-            link.download = `${safeName}_${safeBrand}_${type}${invoiceGroups.length > 1 ? `-${index + 1}` : ''}.png`;
+            const filename = `${safeName}_${safeBrand}_${type}${invoiceGroups.length > 1 ? `-${index + 1}` : ''}.png`;
+
+            if (isShare && navigator.share && navigator.canShare) {
+                const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+                if (blob) {
+                    const file = new File([blob], filename, { type: 'image/png' });
+                    if (navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: `${brand.displayName} - ${type}`,
+                                text: `${type} for ${data.group.clientName}`
+                            });
+                            showToast('Invoice shared successfully!', 'success');
+                            continue;
+                        } catch (err) {
+                            if (err.name !== 'AbortError') console.warn('Share error:', err);
+                            else continue;
+                        }
+                    }
+                }
+            }
+
+            const link = document.createElement('a');
+            link.download = filename;
             link.href = canvas.toDataURL('image/png');
             document.body.appendChild(link);
             link.click();

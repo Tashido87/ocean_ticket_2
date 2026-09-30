@@ -1258,6 +1258,14 @@ export function openNewSettlementModal(existing = null) {
                     <div class="form-group" id="set_bank_group" ${method === 'Mobile Banking' ? '' : 'hidden'}>
                         <label>Bank</label>
                         <input type="text" id="set_bank" placeholder="e.g. KBZ" value="${escapeHtml(bank || '')}">
+                        <div class="quick-bank-chips">
+                            <button type="button" class="bank-chip" data-bank="KBZPay">KBZPay</button>
+                            <button type="button" class="bank-chip" data-bank="KBZ Bank">KBZ Bank</button>
+                            <button type="button" class="bank-chip" data-bank="AYA Bank">AYA Bank</button>
+                            <button type="button" class="bank-chip" data-bank="CB Bank">CB Bank</button>
+                            <button type="button" class="bank-chip" data-bank="WavePay">WavePay</button>
+                            <button type="button" class="bank-chip" data-bank="Cash">Cash</button>
+                        </div>
                     </div>
                     <div class="form-group"><label>Transaction ID</label>
                         <input type="text" id="set_txn" value="${escapeHtml(existing?.transaction_id || '')}" autocomplete="off">
@@ -1339,6 +1347,13 @@ export function openNewSettlementModal(existing = null) {
     document.querySelectorAll('[data-close-modal]').forEach(b => b.onclick = closeModal);
     document.getElementById('set_method')?.addEventListener('change', (e) => {
         document.getElementById('set_bank_group').hidden = e.target.value !== 'Mobile Banking';
+    });
+    document.querySelectorAll('.quick-bank-chips .bank-chip').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const bankInput = document.getElementById('set_bank');
+            if (bankInput) bankInput.value = btn.dataset.bank;
+        });
     });
     document.querySelectorAll('input[name="allocMode"]').forEach(r => {
         r.addEventListener('change', () => {

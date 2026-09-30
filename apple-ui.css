@@ -2644,3 +2644,200 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
     color: #1c1c1e !important;
     border: 1px solid rgba(0, 0, 0, 0.12) !important;
 }
+
+/* --- RESTORED DASHBOARD ANALYTICS CHARTS --- */
+#payment-status-box,
+#airline-share-box,
+#route-performance-box,
+#owner-payable-chart-box {
+    grid-column: span 6;
+    min-height: 330px;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 960px) {
+    #payment-status-box,
+    #airline-share-box,
+    #route-performance-box,
+    #owner-payable-chart-box {
+        grid-column: span 12 !important;
+    }
+}
+
+/* --- PNR DUPLICATE WARNING --- */
+.pnr-duplicate-warning {
+    margin-top: 6px;
+}
+.pnr-dup-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #b91c1c;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    animation: fadeIn 0.2s ease-in-out;
+}
+.pnr-dup-banner i {
+    font-size: 1rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* --- RECORDS ACTIVE FILTER BADGE & CLEAR BTN --- */
+.records-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 12px;
+    background: rgba(15, 76, 117, 0.12);
+    color: #0f4c75;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.records-quick-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: none;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+.records-quick-clear-btn:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+/* --- MOBILE SELL STEPPER (MOBILE ONLY) --- */
+.mobile-sell-stepper {
+    display: none;
+}
+.mobile-step-actions {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-sell-stepper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 14px;
+        padding: 4px;
+        background: rgba(120, 120, 128, 0.08);
+        border-radius: 12px;
+        overflow-x: auto;
+    }
+    .mobile-step-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 6px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--apple-text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    .mobile-step-btn .step-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.08);
+        font-size: 0.7rem;
+    }
+    .mobile-step-btn.active {
+        background: #ffffff;
+        color: #0f4c75;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+    .mobile-step-btn.active .step-num {
+        background: #0f4c75;
+        color: #ffffff;
+    }
+    .mobile-step-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--apple-separator);
+    }
+    .mobile-step-actions .btn {
+        min-width: 110px;
+    }
+}
+
+/* --- QUICK BANK CHIPS --- */
+.quick-bank-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+.bank-chip {
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--apple-separator);
+    background: var(--apple-card-bg);
+    color: var(--apple-text);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.bank-chip:hover,
+.bank-chip:active {
+    background: #0f4c75;
+    color: #ffffff;
+    border-color: #0f4c75;
+}
+
+/* --- DIRECT VIBER & WHATSAPP BUTTONS --- */
+.btn-viber-chat,
+.btn-whatsapp-chat {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+.btn-viber-chat {
+    background: rgba(115, 96, 242, 0.1);
+    color: #7360f2;
+}
+.btn-viber-chat:hover {
+    background: #7360f2;
+    color: #ffffff;
+}
+.btn-whatsapp-chat {
+    background: rgba(37, 211, 102, 0.1);
+    color: #25d366;
+}
+.btn-whatsapp-chat:hover {
+    background: #25d366;
+    color: #ffffff;
+}
+

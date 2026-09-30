@@ -851,6 +851,31 @@ export function initHotelReservationSystem() {
         if (checkinEl) new window.Datepicker(checkinEl, opt);
         if (checkoutEl) new window.Datepicker(checkoutEl, opt);
         if (payDateEl) new window.Datepicker(payDateEl, opt);
+
+        const updateNights = () => {
+            const inDate = parseDMY(checkinEl?.value);
+            const outDate = parseDMY(checkoutEl?.value);
+            const badge = document.getElementById('hotel_res_nights_badge');
+            if (!badge) return;
+            if (inDate && outDate && outDate > inDate) {
+                const diffMs = outDate.getTime() - inDate.getTime();
+                const nights = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+                badge.textContent = `${nights} night${nights > 1 ? 's' : ''}`;
+            } else {
+                badge.textContent = '1 night';
+            }
+        };
+
+        if (checkinEl) {
+            checkinEl.addEventListener('changeDate', updateNights);
+            checkinEl.addEventListener('input', updateNights);
+            checkinEl.addEventListener('change', updateNights);
+        }
+        if (checkoutEl) {
+            checkoutEl.addEventListener('changeDate', updateNights);
+            checkoutEl.addEventListener('input', updateNights);
+            checkoutEl.addEventListener('change', updateNights);
+        }
     }
 
     // Set up suggestions dropdown
@@ -1252,6 +1277,7 @@ export function renderHotelReservations() {
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${statusBadge}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;" class="search-row-actions">
                         <div style="display: flex; gap: 0.25rem; justify-content: center;">
+                            <button class="icon-btn" title="Hotel Voucher" onclick="window.exportHotelVoucher('${res.id}')"><i class="fa-solid fa-file-invoice"></i></button>
                             <button class="icon-btn" title="View Details" onclick="window.showHotelDetailsAction('${res.id}')"><i class="fa-solid fa-eye"></i></button>
                             <button class="icon-btn" title="Edit Reservation" onclick="window.editHotelReservation('${res.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                             <button class="icon-btn btn-danger" title="Delete" onclick="window.deleteHotelReservationAction('${res.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -1324,8 +1350,151 @@ function formatNiceDate(str) {
 window.editHotelReservation = editHotelReservation;
 window.deleteHotelReservationAction = deleteHotelReservationAction;
 window.showHotelDetailsAction = showHotelDetailsAction;
+window.exportHotelVoucher = exportHotelVoucher;
 window.setHotelPage = (page) => {
     state.hotelPage = page;
     renderHotelReservations();
 };
+
+export async function exportHotelVoucher(id) {
+    const res = state.allHotels.find(h => h.id === id);
+    if (!res) {
+        showToast('Reservation not found.', 'error');
+        return;
+    }
+
+    const inDate = parseDMY(res.checkin);
+    const outDate = parseDMY(res.checkout);
+    const nights = (inDate && outDate && outDate > inDate)
+        ? Math.max(1, Math.round((outDate - inDate) / (1000 * 60 * 60 * 24)))
+        : 1;
+
+    const voucherNum = `OT-HTL-${(res.booking_ref || res.id.slice(0, 6)).toUpperCase()}`;
+    const clientName = res.client_name || 'Valued Guest';
+    const hotelName = res.hotel_name || 'Hotel';
+    const city = res.city || '';
+    const country = res.country || '';
+
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '800px';
+    container.style.background = '#ffffff';
+    container.style.padding = '40px';
+    container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    container.style.color = '#1c1c1e';
+    container.style.boxSizing = 'border-box';
+
+    container.innerHTML = `
+        <div style="border: 2px solid #0f4c75; border-radius: 16px; padding: 32px; background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f4c75; padding-bottom: 20px; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <img src="ocean-travel-logo.png" style="width: 56px; height: 56px; object-fit: contain;">
+                    <div>
+                        <h1 style="margin: 0; font-size: 24px; color: #0f4c75; letter-spacing: -0.5px;">OCEAN TRAVEL</h1>
+                        <p style="margin: 2px 0 0; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Air Ticket & Travel Services</p>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="display: inline-block; padding: 6px 14px; background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid #10b981; border-radius: 999px; font-weight: 700; font-size: 13px; text-transform: uppercase;">
+                        ✓ Confirmed
+                    </span>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 6px;">Voucher: <strong>${escapeHtml(voucherNum)}</strong></div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 28px;">
+                <h2 style="margin: 0; font-size: 20px; color: #1e293b; text-transform: uppercase; letter-spacing: 1.5px;">Hotel Confirmation Voucher</h2>
+                <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Please present this voucher upon check-in</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+                    <h3 style="margin: 0 0 12px; font-size: 14px; color: #0f4c75; text-transform: uppercase;">Guest Details</h3>
+                    <div style="font-size: 13px; line-height: 1.8;">
+                        <div><strong>Lead Guest:</strong> ${escapeHtml(clientName)}</div>
+                        ${res.other_names ? `<div><strong>Other Guests:</strong> ${escapeHtml(res.other_names)}</div>` : ''}
+                        <div><strong>Booking Reference:</strong> ${escapeHtml(res.booking_ref || 'N/A')}</div>
+                        <div><strong>Issued Date:</strong> ${escapeHtml(res.booking_date || res.checkin || '')}</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+                    <h3 style="margin: 0 0 12px; font-size: 14px; color: #0f4c75; text-transform: uppercase;">Hotel & Stay Details</h3>
+                    <div style="font-size: 13px; line-height: 1.8;">
+                        <div><strong>Hotel:</strong> <span style="font-size: 15px; font-weight: 700; color: #0f4c75;">${escapeHtml(hotelName)}</span></div>
+                        <div><strong>Location:</strong> ${escapeHtml(city)}, ${escapeHtml(country)}</div>
+                        <div><strong>Check-in:</strong> ${escapeHtml(res.checkin)}</div>
+                        <div><strong>Check-out:</strong> ${escapeHtml(res.checkout)}</div>
+                        <div><strong>Duration:</strong> <span style="font-weight: 700; color: #b91c1c;">${nights} Night${nights > 1 ? 's' : ''}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #eff6ff; border-left: 4px solid #0f4c75; padding: 14px 18px; border-radius: 6px; margin-bottom: 28px; font-size: 12px; color: #334155; line-height: 1.6;">
+                <strong>Important Notes:</strong> Standard hotel check-in time is 14:00 and check-out time is 12:00. All guests must present valid passports upon check-in. Any incidental charges are payable directly to the hotel.
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #e2e8f0; padding-top: 18px; font-size: 12px; color: #64748b;">
+                <div>
+                    <div><strong>Ocean Travel Agency</strong></div>
+                    <div>Phone: +95 9 798 123 456 · Viber Available</div>
+                    <div>Email: info@oceantravel.com</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="width: 140px; border-bottom: 1px solid #cbd5e1; margin-bottom: 4px;"></div>
+                    <div>Authorized Signature & Stamp</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(container);
+
+    try {
+        showToast('Generating Hotel Voucher...', 'info');
+        const canvas = await window.html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        const safeGuest = clientName.replace(/[^a-z0-9]/gi, '_');
+        const safeHotel = hotelName.replace(/[^a-z0-9]/gi, '_');
+        const filename = `Hotel_Voucher_${safeHotel}_${safeGuest}.png`;
+
+        canvas.toBlob(async (blob) => {
+            if (!blob) return;
+            const file = new File([blob], filename, { type: 'image/png' });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: `Hotel Voucher - ${hotelName}`,
+                        text: `Hotel Confirmation Voucher for ${clientName} at ${hotelName} (${res.checkin} - ${res.checkout})`
+                    });
+                    showToast('Voucher shared successfully!', 'success');
+                    return;
+                } catch (err) {
+                    if (err.name !== 'AbortError') console.warn('Share error:', err);
+                    else return;
+                }
+            }
+
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = URL.createObjectURL(blob);
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }, 1000);
+            showToast('Hotel Voucher downloaded!', 'success');
+        }, 'image/png');
+    } catch (err) {
+        console.error(err);
+        showToast('Failed to generate hotel voucher.', 'error');
+    } finally {
+        container.remove();
+    }
+}
+
 

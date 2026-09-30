@@ -16,7 +16,18 @@ export function makeClickable(text) {
     if (!text) return 'N/A';
     const escaped = escapeHtml(text);
     if (text.toLowerCase().startsWith('http')) return `<a href="${escaped}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
-    if (/^[\d\s\-+()]+$/.test(text)) return `<a href="tel:${text.replace(/[^\d+]/g, '')}">${escaped}</a>`;
+    if (/^[\d\s\-+()]{7,}$/.test(text)) {
+        const rawDigits = text.replace(/[^\d+]/g, '');
+        let intl = rawDigits.replace(/^\+/, '');
+        if (intl.startsWith('09')) intl = '959' + intl.slice(2);
+        else if (intl.startsWith('9') && !intl.startsWith('95')) intl = '95' + intl;
+
+        return `<span style="display:inline-flex; align-items:center; gap:6px;">
+            <a href="tel:${rawDigits}">${escaped}</a>
+            <a href="viber://chat?number=%2B${intl}" class="btn-viber-chat" title="Viber" target="_blank" rel="noopener"><i class="fa-brands fa-viber"></i></a>
+            <a href="https://wa.me/${intl}" class="btn-whatsapp-chat" title="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
+        </span>`;
+    }
     if (text.startsWith('@')) return `<a href="https://t.me/${escaped.substring(1)}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
     return escaped;
 }

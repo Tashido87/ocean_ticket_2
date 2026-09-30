@@ -1614,11 +1614,18 @@ function computePassportExpiryStatus(expiryStr) {
 
 function overviewCard(c) {
     const phone = c.phone || '';
-    const accountLink = c.account_link || '';
+    let intlPhone = phone.replace(/[^0-9]/g, '');
+    if (intlPhone.startsWith('09')) {
+        intlPhone = '959' + intlPhone.slice(2);
+    } else if (intlPhone.startsWith('9') && !intlPhone.startsWith('95')) {
+        intlPhone = '95' + intlPhone;
+    }
     const phoneVal = phone
-        ? `<span class="kv-phone-row">
+        ? `<span class="kv-phone-row" style="display:inline-flex; align-items:center; gap:6px;">
             <span>${escapeHtml(phone)}</span>
             <a href="tel:${escapeHtml(phone)}" class="btn-phone-call" title="Call Client"><i class="fa-solid fa-phone"></i></a>
+            ${intlPhone ? `<a href="viber://chat?number=%2B${intlPhone}" class="btn-viber-chat" title="Chat on Viber" target="_blank" rel="noopener"><i class="fa-brands fa-viber"></i></a>` : ''}
+            ${intlPhone ? `<a href="https://wa.me/${intlPhone}" class="btn-whatsapp-chat" title="Chat on WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
            </span>`
         : '<span class="kv-value-empty">Not provided</span>';
     const linkVal = accountLink

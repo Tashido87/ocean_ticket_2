@@ -6,10 +6,15 @@
     <title>Ocean Travel</title>
     <link rel="icon" type="image/png" href="ocean-travel-logo.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f4c75">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Ocean Travel">
     <link rel="stylesheet" href="styles.css?v=25">
     <link rel="stylesheet" href="landing.css">
     <link rel="stylesheet" href="sell.css">
-    <link rel="stylesheet" href="apple-ui.css?v=6">
+    <link rel="stylesheet" href="apple-ui.css?v=7">
     <link rel="stylesheet" href="pnr-detail.css?v=1">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -253,6 +258,47 @@
                             </div>
                             <div id="dashboardTasksReminders" class="dashboard-task-list panel-list"></div>
                         </div>
+
+                        <!-- RESTORED ANALYTICS CHARTS -->
+                        <div id="payment-status-box" class="glass-card dashboard-panel chart-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Payment Status</h3>
+                                <span class="panel-hint hint-neutral">Paid vs Pending</span>
+                            </div>
+                            <div class="booking-revenue-chart-container" style="height:260px; min-height:260px;">
+                                <canvas id="paymentStatusChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="airline-share-box" class="glass-card dashboard-panel chart-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-plane-departure" aria-hidden="true"></i> Airline Distribution</h3>
+                                <span class="panel-hint hint-neutral">Tickets by Airline</span>
+                            </div>
+                            <div class="booking-revenue-chart-container" style="height:260px; min-height:260px;">
+                                <canvas id="airlineChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="route-performance-box" class="glass-card dashboard-panel chart-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-route" aria-hidden="true"></i> Top Routes</h3>
+                                <span class="panel-hint hint-neutral">Profit by Route</span>
+                            </div>
+                            <div class="booking-revenue-chart-container" style="height:260px; min-height:260px;">
+                                <canvas id="routePerformanceChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div id="owner-payable-chart-box" class="glass-card dashboard-panel chart-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> Owner Payable Trend</h3>
+                                <span class="panel-hint hint-neutral">Due vs Paid</span>
+                            </div>
+                            <div class="booking-revenue-chart-container" style="height:260px; min-height:260px;">
+                                <canvas id="ownerPayableChart"></canvas>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -272,6 +318,10 @@
                                     <button type="button" class="records-preset-btn" data-range="last-month">Last Month</button>
                                     <button type="button" class="records-preset-btn" data-range="all-time">All Time</button>
                                 </div>
+                                <span class="records-filter-badge" id="recordsFilterBadge" style="display: none;"></span>
+                                <button type="button" class="records-quick-clear-btn" id="recordsQuickClearBtn" style="display: none;" title="Clear all active filters">
+                                    <i class="fa-solid fa-xmark"></i> Clear
+                                </button>
                             </div>
                             <div>
                                 <button id="editModeBtn" class="btn btn-secondary" title="Toggle Spreadsheet Edit Mode">
@@ -522,7 +572,10 @@
                                 <input type="text" id="hotel_res_checkin" placeholder="DD/MM/YYYY" required autocomplete="off">
                             </div>
                             <div class="form-group">
-                                <label for="hotel_res_checkout">Check-out Date <span class="req">*</span></label>
+                                <label for="hotel_res_checkout">
+                                    Check-out Date <span class="req">*</span>
+                                    <span id="hotel_res_nights_badge" class="nights-pill" style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:rgba(15,76,117,0.1); color:#0f4c75; font-size:0.75rem; font-weight:600; margin-left:6px;">1 night</span>
+                                </label>
                                 <input type="text" id="hotel_res_checkout" placeholder="DD/MM/YYYY" required autocomplete="off">
                             </div>
                             <div class="form-group">
@@ -733,6 +786,26 @@
             <section id="sell-view" class="view">
                 <form id="sellForm" class="sell-sections">
 
+                    <!-- Mobile Sell Step Nav (visible only on mobile) -->
+                    <div class="mobile-sell-stepper" id="mobileSellStepper">
+                        <button type="button" class="mobile-step-btn active" data-step="section-booking">
+                            <span class="step-num">1</span>
+                            <span class="step-title">Flight</span>
+                        </button>
+                        <button type="button" class="mobile-step-btn" data-step="section-passengers">
+                            <span class="step-num">2</span>
+                            <span class="step-title">Pax</span>
+                        </button>
+                        <button type="button" class="mobile-step-btn" data-step="section-pricing">
+                            <span class="step-num">3</span>
+                            <span class="step-title">Price</span>
+                        </button>
+                        <button type="button" class="mobile-step-btn" data-step="section-payment">
+                            <span class="step-num">4</span>
+                            <span class="step-title">Pay</span>
+                        </button>
+                    </div>
+
                     <!-- ========== SECTION 1: BOOKING CONTEXT ========== -->
                     <div class="sell-section" id="section-booking">
                         <div class="sell-section-header">
@@ -741,6 +814,9 @@
                                 <h3>Booking Context</h3>
                                 <p class="section-subtitle">Flight, route, and reference for this booking</p>
                             </div>
+                            <button type="button" class="btn btn-secondary btn-sm pnr-parser-btn" id="openPnrParserBtn" title="Paste GDS or Airline Text to Auto-fill" style="margin-left:auto; margin-right:0.75rem;">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Quick Paste
+                            </button>
                             <span id="route-preview" class="route-preview" style="display:none;">
                                 <i class="fa-solid fa-plane"></i>
                                 <span id="route-preview-text"></span>
@@ -774,6 +850,7 @@
                             <div class="form-group">
                                 <label for="booking_reference">PNR Code <span class="req">*</span></label>
                                 <input type="text" id="booking_reference" required autocomplete="off" placeholder="e.g. BDUVUU">
+                                <div id="pnrDuplicateWarning" class="pnr-duplicate-warning" style="display:none;" role="alert"></div>
                             </div>
                             <div class="form-group">
                                 <label for="departing_on">Travel Date <span class="req">*</span></label>
@@ -1107,6 +1184,9 @@
                                 <button type="button" class="btn-service btn-generate" id="invoiceGenerateBtn">
                                     <span class="btn-text"><i class="fa-solid fa-bolt"></i> Generate</span>
                                 </button>
+                                <button type="button" class="btn-service btn-share" id="invoiceShareBtn" title="Direct Share to Viber, Telegram, etc.">
+                                    <i class="fa-solid fa-share-nodes"></i> Share
+                                </button>
                                 <button type="button" class="btn-service btn-clear" id="invoiceClearBtn">
                                     <i class="fa-solid fa-eraser"></i> Clear
                                 </button>
@@ -1374,9 +1454,35 @@
         </div>
     </div>
 
+    <!-- GDS / Airline PNR Auto-Parser Modal -->
+    <div id="pnrParserModal" class="modal">
+        <div class="modal-content glass-card" style="max-width: 640px;">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--apple-separator); padding-bottom:12px;">
+                <h2 style="font-size:1.15rem; margin:0; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--apple-blue);"></i> Quick Paste / Airline PNR Parser</h2>
+                <button type="button" class="modal-close" id="pnrParserCloseBtn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--apple-text-secondary);">&times;</button>
+            </div>
+            <div class="modal-body" style="padding-top: 1rem;">
+                <p style="font-size: 0.88rem; color: var(--apple-text-secondary); margin-bottom: 0.75rem;">
+                    Paste raw airline confirmation text (Sabre, Amadeus, Galileo, MAI, MNA, Air Asia, TG, VietJet, etc.). The system will auto-extract PNR, passenger names, flight dates, airline, and route.
+                </p>
+                <textarea id="pnrRawInput" rows="6" placeholder="Paste itinerary text here, e.g.:&#10;1.1AUNG/MIN MR&#10;2 8M 335 Y 25OCT RGN BKK HK1 0830 1015&#10;PNR: K6D9WQ" style="width:100%; border-radius:10px; border:1px solid var(--apple-separator); padding:10px; font-family:monospace; font-size:0.85rem; box-sizing:border-box; background:var(--apple-input-bg); color:var(--apple-text); resize:vertical;"></textarea>
+                
+                <div id="pnrParserPreview" style="display:none; margin-top:1rem; padding:12px; border-radius:10px; background:rgba(0,113,227,0.06); border:1px solid rgba(0,113,227,0.2);">
+                    <h4 style="margin:0 0 8px; font-size:0.9rem; color:var(--apple-blue);"><i class="fa-solid fa-circle-check"></i> Detected Information:</h4>
+                    <div id="pnrParserPreviewContent" style="font-size:0.85rem; line-height:1.6;"></div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 1.5rem; display:flex; gap:10px; justify-content:flex-end;">
+                    <button type="button" class="btn btn-secondary" id="pnrParserCancelBtn">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="pnrParserApplyBtn"><i class="fa-solid fa-check"></i> Apply to Form</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=25" type="module"></script>
+    <script src="main.js?v=26" type="module"></script>
 </body>
 </html>

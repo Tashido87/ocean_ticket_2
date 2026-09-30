@@ -770,6 +770,7 @@ function showBookingDetails(docIdsStr) {
             <p><strong>Deadline Status:</strong> ${bookingGroup.deadlineMeta?.label || 'N/A'}</p>
             <p><strong>Notes:</strong> ${escapeHtml(bookingGroup.notes || 'N/A')}</p>
             <div class="form-actions" style="margin-top: 1.5rem;">
+                ${isActive ? `<button class="btn btn-primary" id="modalConvertSellBtn" style="background-color: #0f4c75; border-color: #0f4c75; margin-right: 0.5rem;"><i class="fa-solid fa-ticket"></i> Convert to Sell Ticket</button>` : ''}
                 ${isActive ? `<button class="btn btn-primary" id="modalIssueBtn" style="background-color: var(--teal-dark); border-color: var(--teal-dark); margin-right: 0.5rem;"><i class="fa-solid fa-check"></i> Mark as Issued</button>` : ''}
                 ${isActive ? `<button class="btn btn-secondary" id="modalExtendBtn" style="margin-right: 0.5rem;"><i class="fa-solid fa-clock-rotate-left"></i> Modify Deadline</button>` : ''}
                 <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
@@ -780,6 +781,13 @@ function showBookingDetails(docIdsStr) {
             wirePhoneticToggle('bookingPnrPhoneticToggle', 'bookingPnrPhoneticPanel');
         }
         document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+        const convertBtn = document.getElementById('modalConvertSellBtn');
+        if (convertBtn) {
+            convertBtn.addEventListener('click', () => {
+                closeModal();
+                convertBookingToSellTicket(bookingGroup);
+            });
+        }
         const issueBtn = document.getElementById('modalIssueBtn');
         if (issueBtn) {
             issueBtn.addEventListener('click', () => {
@@ -795,6 +803,75 @@ function showBookingDetails(docIdsStr) {
             });
         }
     }
+}
+
+export function convertBookingToSellTicket(bookingGroup) {
+    if (!bookingGroup) return;
+
+    // 1. Switch to Sell view
+    showView('sell');
+
+    // 2. Populate booking context
+    const pnrEl = document.getElementById('booking_reference');
+    if (pnrEl && bookingGroup.pnr) pnrEl.value = bookingGroup.pnr;
+
+    const issuedDateEl = document.getElementById('issued_date');
+    if (issuedDateEl && !issuedDateEl.value) {
+        const today = new Date();
+        issuedDateEl.value = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    }
+
+    const travelDateEl = document.getElementById('departing_on');
+    if (travelDateEl && bookingGroup.departing_on) travelDateEl.value = bookingGroup.departing_on;
+
+    const depEl = document.getElementById('departure');
+    if (depEl && bookingGroup.departure) depEl.value = bookingGroup.departure;
+
+    const destEl = document.getElementById('destination');
+    if (destEl && bookingGroup.destination) destEl.value = bookingGroup.destination;
+
+    // Contact info
+    const phoneEl = document.getElementById('phone');
+    if (phoneEl && bookingGroup.phone) phoneEl.value = bookingGroup.phone;
+
+    const accNameEl = document.getElementById('account_name');
+    if (accNameEl && bookingGroup.account_name) accNameEl.value = bookingGroup.account_name;
+
+    const accTypeEl = document.getElementById('account_type');
+    if (accTypeEl && bookingGroup.account_type) accTypeEl.value = bookingGroup.account_type;
+
+    const accLinkEl = document.getElementById('account_link');
+    if (accLinkEl && bookingGroup.account_link) accLinkEl.value = bookingGroup.account_link;
+
+    // Populate passengers
+    resetPassengerForms();
+    const passengers = bookingGroup.passengers || [];
+    passengers.forEach((p, idx) => {
+        if (idx > 0) {
+            addPassengerForm();
+        }
+        const forms = document.querySelectorAll('#passenger-forms-container .passenger-form');
+        const formEl = forms[idx];
+        if (formEl) {
+            const nameEl = formEl.querySelector('.passenger-name');
+            if (nameEl) nameEl.value = p.name || '';
+            const typeEl = formEl.querySelector('.passenger-type');
+            if (typeEl && p.type) typeEl.value = p.type;
+            const dobEl = formEl.querySelector('.passenger-dob');
+            if (dobEl && p.dob) dobEl.value = p.dob;
+            const passportEl = formEl.querySelector('.passenger-passport');
+            if (passportEl && p.passport) passportEl.value = p.passport;
+        }
+    });
+
+    const routePreviewText = document.getElementById('route-preview-text');
+    const routePreview = document.getElementById('route-preview');
+    if (routePreview && routePreviewText && bookingGroup.departure && bookingGroup.destination) {
+        routePreviewText.textContent = `${bookingGroup.departure} → ${bookingGroup.destination}`;
+        routePreview.style.display = 'inline-flex';
+    }
+
+    showToast(`Converted booking "${bookingGroup.pnr || ''}" to Sell Ticket form!`, 'success');
 }
 
 /**

@@ -6,7 +6,7 @@
 
 import { CITIES } from './config.js';
 import { state } from './state.js';
-import { parseSheetDate, parseDateInput, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate, isTicketPaid, isFeeEntryRow, renderAirlineName } from './utils.js';
+import { parseSheetDate, parseDateInput, formatDateToDMMMY, makeClickable, parseDeadline, calculateAgentCut, isPlaceholderDate, isTicketPaid, isFeeEntryRow, renderAirlineName, isCanceledTicket, debounce, escapeHtml } from './utils.js';
 import { clearManageResults } from './manage.js';
 import { displaySettlements, hideNewSettlementForm, updateSettlementDashboard, renderSettlementPage } from './settlement.js';
 import { showToast } from './utils.js';
@@ -1542,8 +1542,405 @@ function togglePassengerCardCollapse(card, button = null) {
     button?.setAttribute('aria-expanded', String(isCollapsed));
 }
 
+export function setupPnrDuplicateChecker() {
+    const pnrInput = document.getElementById('booking_reference');
+    const warningEl = document.getElementById('pnrDuplicateWarning');
+    if (!pnrInput || !warningEl || pnrInput.dataset.pnrDupBound === 'true') return;
+
+    const check = () => {
+        const val = (pnrInput.value || '').trim().toUpperCase();
+        if (val.length < 4) {
+            warningEl.style.display = 'none';
+            warningEl.innerHTML = '';
+            return;
+        }
+
+        const existing = (state.allTickets || []).find(t =>
+            !isCanceledTicket(t) &&
+            String(t.booking_reference || '').trim().toUpperCase() === val
+        );
+
+        if (existing) {
+            warningEl.style.display = 'block';
+            warningEl.innerHTML = `
+                <div class="pnr-dup-banner">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div>
+                        <strong>Possible Duplicate PNR:</strong> "${escapeHtml(val)}" is already in database (Issued on ${escapeHtml(existing.issued_date || '')} for ${escapeHtml(existing.name || 'a passenger')}).
+                    </div>
+                </div>
+            `;
+        } else {
+            warningEl.style.display = 'none';
+            warningEl.innerHTML = '';
+        }
+    };
+
+    pnrInput.addEventListener('input', debounce(check, 300));
+    pnrInput.addEventListener('blur', check);
+    pnrInput.dataset.pnrDupBound = 'true';
+}
+
+export function setupMobileSellStepper() {
+    const stepper = document.getElementById('mobileSellStepper');
+    const form = document.getElementById('sellForm');
+    if (!stepper || !form || stepper.dataset.stepperBound === 'true') return;
+
+    const sections = ['section-booking', 'section-passengers', 'section-pricing', 'section-payment'];
+
+    const applyStep = (stepId) => {
+        if (!sections.includes(stepId)) return;
+
+        stepper.querySelectorAll('.mobile-step-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.step === stepId);
+        });
+
+        sections.forEach(sId => {
+            const sec = document.getElementById(sId);
+            if (sec) {
+                sec.classList.toggle('active-mobile-step', sId === stepId);
+            }
+        });
+
+        if (window.innerWidth <= 768) {
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    stepper.querySelectorAll('.mobile-step-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            applyStep(btn.dataset.step);
+        });
+    });
+
+    const addActionButtons = (secId, prevId, nextId) => {
+        const sec = document.getElementById(secId);
+        if (!sec || sec.querySelector('.mobile-step-actions')) return;
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'mobile-step-actions';
+
+        let innerHtml = '';
+        if (prevId) {
+            innerHtml += `<button type="button" class="btn btn-secondary btn-sm" data-goto="${prevId}"><i class="fa-solid fa-arrow-left"></i> Back</button>`;
+        } else {
+            innerHtml += `<div></div>`;
+        }
+        if (nextId) {
+            const nextLabel = nextId === 'section-passengers' ? 'Next: Passengers' : nextId === 'section-pricing' ? 'Next: Pricing' : 'Next: Payment';
+            innerHtml += `<button type="button" class="btn btn-primary btn-sm" data-goto="${nextId}">${nextLabel} <i class="fa-solid fa-arrow-right"></i></button>`;
+        }
+        actionsDiv.innerHTML = innerHtml;
+        sec.appendChild(actionsDiv);
+
+        actionsDiv.querySelectorAll('[data-goto]').forEach(b => {
+            b.addEventListener('click', (e) => {
+                e.preventDefault();
+                applyStep(b.dataset.goto);
+            });
+        });
+    };
+
+    addActionButtons('section-booking', null, 'section-passengers');
+    addActionButtons('section-passengers', 'section-booking', 'section-pricing');
+    addActionButtons('section-pricing', 'section-passengers', 'section-payment');
+
+    applyStep('section-booking');
+    stepper.dataset.stepperBound = 'true';
+}
+
+export function setupPnrAutoParser() {
+    const openBtn = document.getElementById('openPnrParserBtn');
+    const modal = document.getElementById('pnrParserModal');
+    const closeBtn = document.getElementById('pnrParserCloseBtn');
+    const cancelBtn = document.getElementById('pnrParserCancelBtn');
+    const applyBtn = document.getElementById('pnrParserApplyBtn');
+    const rawInput = document.getElementById('pnrRawInput');
+    const previewEl = document.getElementById('pnrParserPreview');
+    const previewContent = document.getElementById('pnrParserPreviewContent');
+
+    if (!openBtn || !modal || openBtn.dataset.bound === 'true') return;
+
+    let parsedResult = null;
+
+    const closeModalFunc = () => {
+        modal.classList.remove('show');
+    };
+
+    openBtn.addEventListener('click', () => {
+        rawInput.value = '';
+        previewEl.style.display = 'none';
+        modal.classList.add('show');
+        setTimeout(() => rawInput.focus(), 100);
+    });
+
+    closeBtn?.addEventListener('click', closeModalFunc);
+    cancelBtn?.addEventListener('click', closeModalFunc);
+
+    const airportMap = {
+        'RGN': 'Yangon (RGN)',
+        'YANGON': 'Yangon (RGN)',
+        'MDL': 'Mandalay (MDL)',
+        'MANDALAY': 'Mandalay (MDL)',
+        'NYU': 'Bagan (NYU)',
+        'BAGAN': 'Bagan (NYU)',
+        'HEH': 'Heho (HEH)',
+        'HEHO': 'Heho (HEH)',
+        'BKK': 'Bangkok (BKK)',
+        'DMK': 'Bangkok (DMK)',
+        'BANGKOK': 'Bangkok (BKK)',
+        'SIN': 'Singapore (SIN)',
+        'SINGAPORE': 'Singapore (SIN)',
+        'KUL': 'Kuala Lumpur (KUL)',
+        'KUALA LUMPUR': 'Kuala Lumpur (KUL)',
+        'CNX': 'Chiang Mai (CNX)',
+        'CHIANG MAI': 'Chiang Mai (CNX)',
+        'HKT': 'Phuket (HKT)',
+        'PHUKET': 'Phuket (HKT)',
+        'DAD': 'Da Nang (DAD)',
+        'HAN': 'Hanoi (HAN)',
+        'SGN': 'Ho Chi Minh (SGN)',
+        'DXB': 'Dubai (DXB)',
+        'DOH': 'Doha (DOH)',
+        'CAN': 'Guangzhou (CAN)',
+        'KMG': 'Kunming (KMG)'
+    };
+
+    const monthMap = {
+        'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04',
+        'MAY': '05', 'JUN': '06', 'JUL': '07', 'AUG': '08',
+        'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
+    };
+
+    const parseText = (text) => {
+        if (!text) return null;
+        const res = {
+            pnr: '',
+            airline: '',
+            departure: '',
+            destination: '',
+            travelDate: '',
+            passengers: []
+        };
+
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+        const pnrRegex = /(?:PNR|BOOKING\s*REF(?:ERENCE)?|LOCATOR|RECORD\s*LOCATOR)\s*[:=\s]\s*([A-Z0-9]{5,7})\b/i;
+        const pnrMatch = text.match(pnrRegex);
+        if (pnrMatch) {
+            res.pnr = pnrMatch[1].toUpperCase();
+        } else {
+            for (const line of lines) {
+                if (/^[A-Z0-9]{6}$/i.test(line)) {
+                    res.pnr = line.toUpperCase();
+                    break;
+                }
+            }
+        }
+
+        const upper = text.toUpperCase();
+        if (upper.includes('8M') || upper.includes('MAI') || upper.includes('MYANMAR AIRWAYS INTL')) res.airline = 'MAI';
+        else if (upper.includes('UB') || upper.includes('MNA') || upper.includes('MYANMAR NATIONAL')) res.airline = 'MNA';
+        else if (upper.includes('YH') || upper.includes('YADANARPON') || upper.includes('MANYADANARPON')) res.airline = 'ManYadanarpon';
+        else if (upper.includes('K7') || upper.includes('AIR THAN LWIN') || upper.includes('AIRTHANLWIN')) res.airline = 'AirThanLwin';
+        else if (upper.includes('VJ') || upper.includes('VIETJET')) res.airline = 'VietJet Air';
+        else if (upper.includes('AK') || upper.includes('FD') || upper.includes('AIR ASIA') || upper.includes('AIRASIA')) res.airline = 'Air Asia';
+        else if (upper.includes('TG') || upper.includes('THAI AIRWAYS') || upper.includes('THAI')) res.airline = 'Thai Airways';
+        else if (upper.includes('SQ') || upper.includes('SINGAPORE AIRLINES')) res.airline = 'Singapore Airlines';
+        else if (upper.includes('MH') || upper.includes('MALAYSIA AIRLINES')) res.airline = 'Malaysia Airlines';
+        else if (upper.includes('VN') || upper.includes('VIETNAM AIRLINES')) res.airline = 'Vietnam Airlines';
+        else if (upper.includes('PG') || upper.includes('BANGKOK AIRWAYS')) res.airline = 'Bangkok Airways';
+        else if (upper.includes('DD') || upper.includes('NOK AIR') || upper.includes('NOKAIR')) res.airline = 'Nok Air';
+        else if (upper.includes('TR') || upper.includes('SCOOT')) res.airline = 'Scoot';
+        else if (upper.includes('CX') || upper.includes('CATHAY')) res.airline = 'Cathay Pacific';
+        else if (upper.includes('EK') || upper.includes('EMIRATES')) res.airline = 'Emirates';
+        else if (upper.includes('QR') || upper.includes('QATAR')) res.airline = 'Qatar Airways';
+        else if (upper.includes('CZ') || upper.includes('CHINA SOUTHERN')) res.airline = 'China Southern';
+        else if (upper.includes('MU') || upper.includes('CHINA EASTERN')) res.airline = 'China Eastern';
+
+        const gdsSegmentRegex = /(\d{1,2})([A-Z]{3})(?:\d{2,4})?\s+([A-Z]{3})[\s\-\/]+([A-Z]{3})/i;
+        const segMatch = text.match(gdsSegmentRegex);
+        if (segMatch) {
+            const day = String(segMatch[1]).padStart(2, '0');
+            const mStr = segMatch[2].toUpperCase();
+            const month = monthMap[mStr] || '01';
+            const year = new Date().getFullYear();
+            res.travelDate = `${day}/${month}/${year}`;
+
+            const depCode = segMatch[3].toUpperCase();
+            const destCode = segMatch[4].toUpperCase();
+            res.departure = airportMap[depCode] || depCode;
+            res.destination = airportMap[destCode] || destCode;
+        } else {
+            const dmyMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+            if (dmyMatch) {
+                res.travelDate = `${String(dmyMatch[1]).padStart(2, '0')}/${String(dmyMatch[2]).padStart(2, '0')}/${dmyMatch[3]}`;
+            }
+
+            const routeRegex = /\b([A-Z]{3})\s*(?:TO|-|\/)\s*([A-Z]{3})\b/i;
+            const rMatch = text.match(routeRegex);
+            if (rMatch) {
+                res.departure = airportMap[rMatch[1].toUpperCase()] || rMatch[1].toUpperCase();
+                res.destination = airportMap[rMatch[2].toUpperCase()] || rMatch[2].toUpperCase();
+            }
+        }
+
+        const paxRegex = /(?:^|\n)\s*(?:\d+\.?\d*|\d+\.)\s*([A-Z\s\/]+(?:MR|MRS|MS|MISS|MSTR|DR|DAW|U)?)(?:\s*\((CHD|INF|CHILD|INFANT)\))?/gim;
+        let match;
+        const foundNames = new Set();
+        while ((match = paxRegex.exec(text)) !== null) {
+            let rawName = match[1].trim();
+            if (rawName && !rawName.startsWith('8M') && !rawName.startsWith('UB') && !rawName.startsWith('TG') && rawName.length > 3) {
+                let clean = rawName;
+                if (clean.includes('/')) {
+                    const parts = clean.split('/');
+                    clean = `${parts[0]} ${parts[1]}`.trim();
+                }
+                const paxType = (match[2] && (match[2].includes('INF') ? 'infant' : match[2].includes('CH') ? 'child' : 'adult')) || 'adult';
+                if (!foundNames.has(clean)) {
+                    foundNames.add(clean);
+                    res.passengers.push({ name: clean, type: paxType });
+                }
+            }
+        }
+
+        if (res.passengers.length === 0) {
+            const altPaxRegex = /(?:PAX|PASSENGER(?:\s*NAME)?)\s*[:=]\s*([^\n\r,]+)/gi;
+            while ((match = altPaxRegex.exec(text)) !== null) {
+                let name = match[1].trim();
+                if (name && !foundNames.has(name)) {
+                    foundNames.add(name);
+                    res.passengers.push({ name, type: 'adult' });
+                }
+            }
+        }
+
+        return res;
+    };
+
+    rawInput.addEventListener('input', () => {
+        parsedResult = parseText(rawInput.value);
+        if (parsedResult && (parsedResult.pnr || parsedResult.airline || parsedResult.departure || parsedResult.passengers.length)) {
+            previewEl.style.display = 'block';
+            previewContent.innerHTML = `
+                <div><strong>PNR:</strong> ${escapeHtml(parsedResult.pnr || 'Not detected')}</div>
+                <div><strong>Airline:</strong> ${escapeHtml(parsedResult.airline || 'Not detected')}</div>
+                <div><strong>Route:</strong> ${escapeHtml(parsedResult.departure || '—')} → ${escapeHtml(parsedResult.destination || '—')}</div>
+                <div><strong>Travel Date:</strong> ${escapeHtml(parsedResult.travelDate || '—')}</div>
+                <div><strong>Passengers (${parsedResult.passengers.length}):</strong> ${parsedResult.passengers.map(p => escapeHtml(p.name)).join(', ') || 'Not detected'}</div>
+            `;
+        } else {
+            previewEl.style.display = 'none';
+        }
+    });
+
+    applyBtn.addEventListener('click', () => {
+        if (!parsedResult) parsedResult = parseText(rawInput.value);
+        if (!parsedResult) {
+            showToast('No recognizable information found.', 'error');
+            return;
+        }
+
+        if (parsedResult.pnr) {
+            const pnrIn = document.getElementById('booking_reference');
+            if (pnrIn) pnrIn.value = parsedResult.pnr;
+        }
+
+        if (parsedResult.airline) {
+            const airSelect = document.getElementById('airline');
+            if (airSelect) {
+                let matched = false;
+                for (const opt of airSelect.options) {
+                    if (opt.value.toUpperCase() === parsedResult.airline.toUpperCase()) {
+                        airSelect.value = opt.value;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    airSelect.value = 'CUSTOM';
+                    const customAir = document.getElementById('custom_airline');
+                    if (customAir) customAir.value = parsedResult.airline;
+                    const custGroup = document.getElementById('custom_airline_group');
+                    if (custGroup) custGroup.style.display = 'block';
+                }
+            }
+        }
+
+        if (parsedResult.departure) {
+            const depSelect = document.getElementById('departure');
+            if (depSelect) {
+                let found = false;
+                for (const opt of depSelect.options) {
+                    if (opt.value === parsedResult.departure || opt.text.includes(parsedResult.departure)) {
+                        depSelect.value = opt.value;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    depSelect.value = 'CUSTOM';
+                    const cust = document.getElementById('custom_departure');
+                    if (cust) cust.value = parsedResult.departure;
+                    const custGrp = document.getElementById('custom_departure_group');
+                    if (custGrp) custGrp.style.display = 'block';
+                }
+            }
+        }
+
+        if (parsedResult.destination) {
+            const destSelect = document.getElementById('destination');
+            if (destSelect) {
+                let found = false;
+                for (const opt of destSelect.options) {
+                    if (opt.value === parsedResult.destination || opt.text.includes(parsedResult.destination)) {
+                        destSelect.value = opt.value;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    destSelect.value = 'CUSTOM';
+                    const cust = document.getElementById('custom_destination');
+                    if (cust) cust.value = parsedResult.destination;
+                    const custGrp = document.getElementById('custom_destination_group');
+                    if (custGrp) custGrp.style.display = 'block';
+                }
+            }
+        }
+
+        if (parsedResult.travelDate) {
+            const dateIn = document.getElementById('departing_on');
+            if (dateIn) dateIn.value = parsedResult.travelDate;
+        }
+
+        if (parsedResult.passengers.length > 0) {
+            resetPassengerForms();
+            parsedResult.passengers.forEach((p, idx) => {
+                if (idx > 0) addPassengerForm();
+                const forms = document.querySelectorAll('#passenger-forms-container .passenger-form');
+                const formEl = forms[idx];
+                if (formEl) {
+                    const nameIn = formEl.querySelector('.passenger-name');
+                    if (nameIn) nameIn.value = p.name;
+                    const typeIn = formEl.querySelector('.passenger-type');
+                    if (typeIn && p.type) typeIn.value = p.type;
+                }
+            });
+        }
+
+        updateSellRoutePreview();
+        closeModalFunc();
+        showToast('Itinerary details successfully applied to form!', 'success');
+    });
+
+    openBtn.dataset.bound = 'true';
+}
+
 export function initializeSellFormEnhancements() {
     setupSellClientAutoSuggest();
+    setupPnrDuplicateChecker();
+    setupMobileSellStepper();
+    setupPnrAutoParser();
 
     // --- Bulletproof: delegated handler for passenger card collapse/expand ---
     // Survives any re-render and works for cards added later.
