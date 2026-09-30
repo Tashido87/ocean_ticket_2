@@ -21,11 +21,31 @@ export const DESTINATION_PRESETS = {
         destination: 'Singapore',
         propertyName: 'Village Hotel Bugis by Far East\nHospitality',
         propertyAddress: '390 Victoria Street, Bugis, Singapore,\nSingapore, 188061',
-        propertyContact: '',
+        propertyContact: '+65 6297 2828',
         stampFile: 'agoda-stamp-singapore.png',
         bookedPayableTitle: 'Booked And Payable Through :',
         bookedPayableAddress: 'Agoda Company Pte, Ltd.\n36 Robinson Road, City House #20-01,\nSingapore 068877',
         benefits: 'Coffee & tea, Free pool access, Free fitness center access, Free WiFi, Parking'
+    },
+    Bangkok: {
+        destination: 'Bangkok',
+        propertyName: 'Grande Centre Point Ratchadamri',
+        propertyAddress: '153/2 Mahatlek Luang 1, Ratchadamri Rd Lumpini,\nPathumwan, Bangkok (and vicinity), Thailand',
+        propertyContact: '+66 209 19000',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
+    },
+    'Kuala Lumpur': {
+        destination: 'Kuala Lumpur',
+        propertyName: 'THE FACE Style Hotel',
+        propertyAddress: '1020 Jalan Sultan Ismail, Kuala Lumpur (and vicinity),\nMalaysia',
+        propertyContact: '+60 3216 81688',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
     }
 };
 
@@ -180,7 +200,7 @@ export function calculateDefaultCancellationDate(arrivalDateStr) {
 export function renderAgodaHotelHtml(data = {}) {
     const destination = (data.destination || 'Guangzhou').trim();
     const isSingapore = destination.toLowerCase() === 'singapore';
-    const preset = isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Guangzhou;
+    const preset = DESTINATION_PRESETS[destination] || (isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Guangzhou);
 
     const logoSrc = cachedAgodaLogoDataUrl || 'agoda-logo.png';
     const stampSrc = isSingapore
@@ -473,7 +493,7 @@ export async function generateAgodaPdfDoc(data) {
 
     const destination = String(data.destination || 'Guangzhou').trim();
     const isSingapore = destination.toLowerCase() === 'singapore';
-    const preset = isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Guangzhou;
+    const preset = DESTINATION_PRESETS[destination] || (isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Guangzhou);
 
     const logoDataUrl = await getAgodaLogoDataUrl();
     const stampDataUrl = await getAgodaStampDataUrl(destination);
