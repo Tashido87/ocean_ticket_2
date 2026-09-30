@@ -7,31 +7,21 @@
 import { showToast } from './utils.js';
 
 export const DESTINATION_PRESETS = {
-    Guangzhou: {
-        destination: 'Guangzhou',
-        propertyName: 'Grand Park Guangzhou Hotel',
-        propertyAddress: '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina',
-        propertyContact: '+86 871 6538 6688',
-        stampFile: 'agoda-stamp.png',
-        bookedPayableTitle: 'Booked And Payable By :',
-        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
-        benefits: 'Express check-in, Free WiFi'
-    },
-    Singapore: {
-        destination: 'Singapore',
-        propertyName: 'Village Hotel Bugis by Far East\nHospitality',
-        propertyAddress: '390 Victoria Street, Bugis, Singapore,\nSingapore, 188061',
-        propertyContact: '+65 6297 2828',
-        stampFile: 'agoda-stamp-singapore.png',
-        bookedPayableTitle: 'Booked And Payable Through :',
-        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n36 Robinson Road, City House #20-01,\nSingapore 068877',
-        benefits: 'Coffee & tea, Free pool access, Free fitness center access, Free WiFi, Parking'
-    },
     Bangkok: {
         destination: 'Bangkok',
         propertyName: 'Grande Centre Point Ratchadamri',
         propertyAddress: '153/2 Mahatlek Luang 1, Ratchadamri Rd Lumpini,\nPathumwan, Bangkok (and vicinity), Thailand',
         propertyContact: '+66 209 19000',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
+    },
+    Guangzhou: {
+        destination: 'Guangzhou',
+        propertyName: 'Grand Park Guangzhou Hotel',
+        propertyAddress: '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina',
+        propertyContact: '+86 871 6538 6688',
         stampFile: 'agoda-stamp.png',
         bookedPayableTitle: 'Booked And Payable By :',
         bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
@@ -46,6 +36,16 @@ export const DESTINATION_PRESETS = {
         bookedPayableTitle: 'Booked And Payable By :',
         bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
         benefits: 'Express check-in, Free WiFi'
+    },
+    Singapore: {
+        destination: 'Singapore',
+        propertyName: 'Village Hotel Bugis by Far East\nHospitality',
+        propertyAddress: '390 Victoria Street, Bugis, Singapore,\nSingapore, 188061',
+        propertyContact: '+65 6297 2828',
+        stampFile: 'agoda-stamp-singapore.png',
+        bookedPayableTitle: 'Booked And Payable Through :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n36 Robinson Road, City House #20-01,\nSingapore 068877',
+        benefits: 'Coffee & tea, Free pool access, Free fitness center access, Free WiFi, Parking'
     }
 };
 
@@ -198,9 +198,9 @@ export function calculateDefaultCancellationDate(arrivalDateStr) {
  * Generate preview HTML markup that renders identically to the original Agoda Booking Confirmation
  */
 export function renderAgodaHotelHtml(data = {}) {
-    const destination = (data.destination || 'Guangzhou').trim();
+    const destination = (data.destination || 'Bangkok').trim();
     const isSingapore = destination.toLowerCase() === 'singapore';
-    const preset = DESTINATION_PRESETS[destination] || (isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Guangzhou);
+    const preset = DESTINATION_PRESETS[destination] || (isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Bangkok);
 
     const logoSrc = cachedAgodaLogoDataUrl || 'agoda-logo.png';
     const stampSrc = isSingapore
@@ -491,9 +491,9 @@ export async function generateAgodaPdfDoc(data) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
-    const destination = String(data.destination || 'Guangzhou').trim();
+    const destination = String(data.destination || 'Bangkok').trim();
     const isSingapore = destination.toLowerCase() === 'singapore';
-    const preset = DESTINATION_PRESETS[destination] || (isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Guangzhou);
+    const preset = DESTINATION_PRESETS[destination] || (isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Bangkok);
 
     const logoDataUrl = await getAgodaLogoDataUrl();
     const stampDataUrl = await getAgodaStampDataUrl(destination);

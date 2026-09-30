@@ -24,7 +24,7 @@ import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=7';
-import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=9';
+import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=10';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -3204,12 +3204,33 @@ function initializeChinaHotelGenerator() {
     const previewContainer = document.getElementById('agodaPreviewContainer');
     const rollBookingBtn = document.getElementById('agoda_roll_booking_id');
     const rollMemberBtn = document.getElementById('agoda_roll_member_id');
+    const switchToOldBtn = document.getElementById('switchToOldHotelBtn');
+    const switchToAgodaBtn = document.getElementById('switchToAgodaHotelBtn');
+    const chinaHotelPanel = document.getElementById('chinaHotelPanel');
+    const hotelPanel = document.getElementById('hotelPanel');
+
+    // Toggle between Agoda style (default) and Old style voucher
+    switchToOldBtn?.addEventListener('click', () => {
+        if (chinaHotelPanel) chinaHotelPanel.style.display = 'none';
+        if (hotelPanel) {
+            hotelPanel.style.display = '';
+            hotelPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
+
+    switchToAgodaBtn?.addEventListener('click', () => {
+        if (hotelPanel) hotelPanel.style.display = 'none';
+        if (chinaHotelPanel) {
+            chinaHotelPanel.style.display = '';
+            chinaHotelPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
 
     if (!modal) return;
 
     function collectFormData() {
-        const dest = document.getElementById('agoda_destination')?.value || 'Guangzhou';
-        const preset = DESTINATION_PRESETS[dest] || DESTINATION_PRESETS.Guangzhou;
+        const dest = document.getElementById('agoda_destination')?.value || 'Bangkok';
+        const preset = DESTINATION_PRESETS[dest] || DESTINATION_PRESETS.Bangkok;
         return {
             destination: dest,
             bookingId: document.getElementById('agoda_booking_id')?.value || generateRandomBookingId(),
@@ -3234,8 +3255,8 @@ function initializeChinaHotelGenerator() {
     }
 
     function populateForm(data = {}) {
-        const dest = data.destination || document.getElementById('agoda_destination')?.value || 'Guangzhou';
-        const preset = DESTINATION_PRESETS[dest] || DESTINATION_PRESETS.Guangzhou;
+        const dest = data.destination || document.getElementById('agoda_destination')?.value || 'Bangkok';
+        const preset = DESTINATION_PRESETS[dest] || DESTINATION_PRESETS.Bangkok;
         if (document.getElementById('agoda_destination')) {
             document.getElementById('agoda_destination').value = dest;
         }
@@ -3308,7 +3329,7 @@ function initializeChinaHotelGenerator() {
     // Destination preset selector in modal
     document.getElementById('agoda_destination')?.addEventListener('change', (e) => {
         const selectedDest = e.target.value;
-        const preset = DESTINATION_PRESETS[selectedDest] || DESTINATION_PRESETS.Guangzhou;
+        const preset = DESTINATION_PRESETS[selectedDest] || DESTINATION_PRESETS.Bangkok;
         if (document.getElementById('agoda_property_name')) {
             document.getElementById('agoda_property_name').value = preset.propertyName;
         }
@@ -3371,8 +3392,8 @@ function initializeChinaHotelGenerator() {
     });
 
     function openHotelEditorWithData() {
-        const quickDest = document.getElementById('service_hotel_destination')?.value || 'Guangzhou';
-        const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Guangzhou;
+        const quickDest = document.getElementById('service_hotel_destination')?.value || 'Bangkok';
+        const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Bangkok;
         const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim();
         const quickArrival = (document.getElementById('service_hotel_arrival')?.value || '').trim();
         const quickDeparture = (document.getElementById('service_hotel_departure')?.value || '').trim();
@@ -3399,8 +3420,8 @@ function initializeChinaHotelGenerator() {
     openBtn?.addEventListener('click', openHotelEditorWithData);
 
     quickBtn?.addEventListener('click', async () => {
-        const quickDest = document.getElementById('service_hotel_destination')?.value || 'Guangzhou';
-        const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Guangzhou;
+        const quickDest = document.getElementById('service_hotel_destination')?.value || 'Bangkok';
+        const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Bangkok;
         const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim() || 'AUNG KHIN NYUNT';
         const quickArrival = (document.getElementById('service_hotel_arrival')?.value || '').trim();
         const quickDeparture = (document.getElementById('service_hotel_departure')?.value || '').trim();

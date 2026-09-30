@@ -1208,13 +1208,74 @@
                             <div class="service-toast" id="invoiceToast"></div>
                         </div>
 
-                        <!-- HOTEL BOOKING VOUCHER -->
-                        <div class="service-panel" id="hotelPanel">
+                        <!-- AGODA HOTEL BOOKING (Default) -->
+                        <div class="service-panel" id="chinaHotelPanel">
+                            <div class="service-panel-header">
+                                <span class="service-panel-icon" style="background: rgba(225, 37, 27, 0.1); color: #e1251b;"><i class="fa-solid fa-hotel"></i></span>
+                                <div>
+                                    <h2>Agoda Hotel Booking</h2>
+                                    <p class="service-panel-desc">Generate official Agoda Booking Confirmation (Bangkok, Guangzhou, etc.) with auto-generated IDs</p>
+                                </div>
+                                <div class="header-actions">
+                                    <button type="button" class="btn-service btn-secondary" id="switchToOldHotelBtn" style="font-size: 11px; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; height: 30px; cursor: pointer; white-space: nowrap; font-weight: 600;">
+                                        <i class="fa-solid fa-repeat"></i> Switch to old style
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style="background: var(--apple-bg-secondary); border: 1px solid var(--apple-separator); border-radius: 10px; padding: 14px; margin-bottom: 1rem;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="service_hotel_destination" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Destination</label>
+                                        <select id="service_hotel_destination" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); font-weight: 600;">
+                                            <option value="Bangkok">Bangkok (Grande Centre Point Ratchadamri)</option>
+                                            <option value="Guangzhou">Guangzhou (Grand Park Guangzhou)</option>
+                                            <option value="Kuala Lumpur">Kuala Lumpur (THE FACE Style Hotel)</option>
+                                            <option value="Singapore">Singapore (Village Hotel Bugis)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="service_hotel_client_name" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Client / Guest Name</label>
+                                        <input type="text" id="service_hotel_client_name" placeholder="e.g. AUNG KHIN NYUNT" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); text-transform: uppercase; font-weight: 600;">
+                                    </div>
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="service_hotel_arrival" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Arrival Date</label>
+                                        <input type="text" id="service_hotel_arrival" placeholder="e.g. 16/10/2026" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
+                                    </div>
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="service_hotel_departure" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Departure Date</label>
+                                        <input type="text" id="service_hotel_departure" placeholder="e.g. 26/10/2026" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--apple-text-secondary); display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-circle-info" style="color: var(--apple-blue);"></i> Auto-generates random 12-digit Booking ID & 10-digit Member ID. Full editor with live preview available.
+                                </div>
+                            </div>
+
+                            <div class="service-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" class="btn-service btn-generate" id="openChinaHotelBtn" style="background: #e1251b; border-color: #e1251b; color: #fff;">
+                                    <i class="fa-solid fa-pen-to-square"></i> Open Hotel Editor
+                                </button>
+                                <button type="button" class="btn-service btn-clear" id="quickChinaHotelBtn">
+                                    <i class="fa-solid fa-bolt"></i> Quick Generate
+                                </button>
+                            </div>
+
+                            <div class="service-toast" id="chinaHotelToast"></div>
+                        </div>
+
+                        <!-- HOTEL BOOKING VOUCHER (Old Style, Hidden by Default) -->
+                        <div class="service-panel" id="hotelPanel" style="display: none;">
                             <div class="service-panel-header">
                                 <span class="service-panel-icon"><i class="fa-solid fa-hotel"></i></span>
                                 <div>
                                     <h2>Hotel Booking Voucher</h2>
                                     <p class="service-panel-desc">Generate hotel vouchers with guest names from PNRs</p>
+                                </div>
+                                <div class="header-actions">
+                                    <button type="button" class="btn-service btn-secondary" id="switchToAgodaHotelBtn" style="font-size: 11px; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; height: 30px; cursor: pointer; white-space: nowrap; font-weight: 600;">
+                                        <i class="fa-solid fa-repeat"></i> Switch to agoda style
+                                    </button>
                                 </div>
                             </div>
 
@@ -1342,54 +1403,6 @@
                             <div class="service-toast" id="airAsiaToast"></div>
                         </div>
 
-                        <!-- AGODA HOTEL BOOKING -->
-                        <div class="service-panel" id="chinaHotelPanel">
-                            <div class="service-panel-header">
-                                <span class="service-panel-icon" style="background: rgba(225, 37, 27, 0.1); color: #e1251b;"><i class="fa-solid fa-hotel"></i></span>
-                                <div>
-                                    <h2>Agoda Hotel Booking</h2>
-                                    <p class="service-panel-desc">Generate official Agoda Booking Confirmation (Guangzhou, Singapore, etc.) with auto-generated IDs</p>
-                                </div>
-                            </div>
-
-                            <div style="background: var(--apple-bg-secondary); border: 1px solid var(--apple-separator); border-radius: 10px; padding: 14px; margin-bottom: 1rem;">
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
-                                    <div class="form-group" style="margin: 0;">
-                                        <label for="service_hotel_destination" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Destination</label>
-                                        <select id="service_hotel_destination" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); font-weight: 600;">
-                                            <option value="Guangzhou">Guangzhou (Grand Park Guangzhou)</option>
-                                            <option value="Singapore">Singapore (Village Hotel Bugis)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group" style="margin: 0;">
-                                        <label for="service_hotel_client_name" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Client / Guest Name</label>
-                                        <input type="text" id="service_hotel_client_name" placeholder="e.g. AUNG KHIN NYUNT" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); text-transform: uppercase; font-weight: 600;">
-                                    </div>
-                                    <div class="form-group" style="margin: 0;">
-                                        <label for="service_hotel_arrival" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Arrival Date</label>
-                                        <input type="text" id="service_hotel_arrival" placeholder="e.g. 16/10/2026" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
-                                    </div>
-                                    <div class="form-group" style="margin: 0;">
-                                        <label for="service_hotel_departure" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Departure Date</label>
-                                        <input type="text" id="service_hotel_departure" placeholder="e.g. 26/10/2026" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
-                                    </div>
-                                </div>
-                                <div style="font-size: 0.8rem; color: var(--apple-text-secondary); display: flex; align-items: center; gap: 6px;">
-                                    <i class="fa-solid fa-circle-info" style="color: var(--apple-blue);"></i> Auto-generates random 12-digit Booking ID & 10-digit Member ID. Full editor with live preview available.
-                                </div>
-                            </div>
-
-                            <div class="service-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                <button type="button" class="btn-service btn-generate" id="openChinaHotelBtn" style="background: #e1251b; border-color: #e1251b; color: #fff;">
-                                    <i class="fa-solid fa-pen-to-square"></i> Open Hotel Editor
-                                </button>
-                                <button type="button" class="btn-service btn-clear" id="quickChinaHotelBtn">
-                                    <i class="fa-solid fa-bolt"></i> Quick Generate
-                                </button>
-                            </div>
-
-                            <div class="service-toast" id="chinaHotelToast"></div>
-                        </div>
 
                         <!-- DOWNLOAD DOCUMENTS -->
                         <div class="service-panel service-panel-wide" id="documentsPanel">
@@ -1760,10 +1773,10 @@
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_destination" style="font-weight:700;">Select Destination</label>
                                 <select id="agoda_destination" style="font-weight:600; padding:8px 10px; border-radius:8px; border:1px solid var(--apple-separator); background:var(--apple-input-bg); color:var(--apple-text);">
-                                    <option value="Guangzhou">Guangzhou (Grand Park Guangzhou Hotel)</option>
-                                    <option value="Singapore">Singapore (Village Hotel Bugis by Far East Hospitality)</option>
                                     <option value="Bangkok">Bangkok (Grande Centre Point Ratchadamri)</option>
+                                    <option value="Guangzhou">Guangzhou (Grand Park Guangzhou Hotel)</option>
                                     <option value="Kuala Lumpur">Kuala Lumpur (THE FACE Style Hotel)</option>
+                                    <option value="Singapore">Singapore (Village Hotel Bugis by Far East Hospitality)</option>
                                 </select>
                             </div>
                         </div>
@@ -1864,19 +1877,19 @@
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_property_name">Property Name</label>
-                                <input type="text" id="agoda_property_name" value="Grand Park Guangzhou Hotel">
+                                <input type="text" id="agoda_property_name" value="Grande Centre Point Ratchadamri">
                             </div>
                         </div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_property_address">Address</label>
-                                <textarea id="agoda_property_address" rows="2">20 Hong Hua Qiao, Wuhua, Guangzhou,&#10;China</textarea>
+                                <textarea id="agoda_property_address" rows="2">153/2 Mahatlek Luang 1, Ratchadamri Rd Lumpini,&#10;Pathumwan, Bangkok (and vicinity), Thailand</textarea>
                             </div>
                         </div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_property_contact">Property Contact Number</label>
-                                <input type="text" id="agoda_property_contact" value="+86 871 6538 6688">
+                                <input type="text" id="agoda_property_contact" value="+66 209 19000">
                             </div>
                         </div>
 
@@ -1917,6 +1930,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=50" type="module"></script>
+    <script src="main.js?v=51" type="module"></script>
 </body>
 </html>
