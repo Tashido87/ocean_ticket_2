@@ -12,14 +12,18 @@ export const DESTINATION_PRESETS = {
         propertyName: 'Grand Park Guangzhou Hotel',
         propertyAddress: '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina',
         propertyContact: '+86 871 6538 6688',
-        stampFile: 'agoda-stamp.png'
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712'
     },
     Singapore: {
         destination: 'Singapore',
         propertyName: 'Village Hotel Bugis by Far East Hospitality',
         propertyAddress: '90 Victoria Street, Bugis, Singapore,\nSingapore, 188061',
         propertyContact: '+65 6297 2828',
-        stampFile: 'agoda-stamp-singapore.png'
+        stampFile: 'agoda-stamp-singapore.png',
+        bookedPayableTitle: 'Booked And Payable Through :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n36 Robinson Road, City House #20-01,\nSingapore 068877'
     }
 };
 
@@ -200,6 +204,10 @@ export function renderAgodaHotelHtml(data = {}) {
     const departureDate = formatAgodaDate(data.departureDate || 'October 26, 2026');
     const cancellationDate = data.cancellationDate || calculateDefaultCancellationDate(arrivalDate);
 
+    const bookedPayableTitle = data.bookedPayableTitle || preset.bookedPayableTitle || (isSingapore ? 'Booked And Payable Through :' : 'Booked And Payable By :');
+    const bookedPayableAddress = data.bookedPayableAddress || preset.bookedPayableAddress || (isSingapore ? 'Agoda Company Pte, Ltd.\n36 Robinson Road, City House #20-01,\nSingapore 068877' : 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712');
+    const bookedPayableAddressHtml = bookedPayableAddress.split('\n').join('<br>');
+
     const remarksSpecial = data.remarksSpecial || 'NonSmoke,LargeBed';
 
     return `
@@ -299,11 +307,11 @@ export function renderAgodaHotelHtml(data = {}) {
                 </div>
 
                 <!-- Right Column (Inside a unified light-gray container with WHITE boxes inside) -->
-                <div style="background:#ebebeb; border:1px solid #dcdcdc; border-radius:4px; padding:6px 10px; display:flex; flex-direction:column; gap:4.5px;">
+                <div style="background:#dcdcdc; border:1px solid #c0c0c0; border-radius:4px; padding:6px 10px; display:flex; flex-direction:column; gap:4.5px;">
                     <!-- Number of Rooms -->
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="color:#000000;">Number of Rooms :</span>
-                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                        <div style="width:160px; background:#ffffff; border:1px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${numRooms}
                         </div>
                     </div>
@@ -311,7 +319,7 @@ export function renderAgodaHotelHtml(data = {}) {
                     <!-- Number of Extra Beds -->
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="color:#000000;">Number of Extra Beds :</span>
-                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                        <div style="width:160px; background:#ffffff; border:1px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${numExtraBeds}
                         </div>
                     </div>
@@ -319,7 +327,7 @@ export function renderAgodaHotelHtml(data = {}) {
                     <!-- Number of Adults -->
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="color:#000000;">Number of Adults :</span>
-                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                        <div style="width:160px; background:#ffffff; border:1px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${numAdults}
                         </div>
                     </div>
@@ -327,7 +335,7 @@ export function renderAgodaHotelHtml(data = {}) {
                     <!-- Number of Children -->
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="color:#000000;">Number of Children :</span>
-                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                        <div style="width:160px; background:#ffffff; border:1px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${numChildren}
                         </div>
                     </div>
@@ -335,7 +343,7 @@ export function renderAgodaHotelHtml(data = {}) {
                     <!-- Room Type -->
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="color:#000000;">Room Type :</span>
-                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                        <div style="width:160px; background:#ffffff; border:1px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${roomType}
                         </div>
                     </div>
@@ -343,7 +351,7 @@ export function renderAgodaHotelHtml(data = {}) {
                     <!-- Promotion -->
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="color:#000000;">Promotion :</span>
-                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:8.6px; color:#000000; padding:0 3px; white-space:nowrap; overflow:hidden;">
+                        <div style="width:160px; background:#ffffff; border:1px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:8.6px; color:#000000; padding:0 3px; white-space:nowrap; overflow:hidden;">
                             ${promotion}
                         </div>
                     </div>
@@ -366,38 +374,37 @@ export function renderAgodaHotelHtml(data = {}) {
                 Benefits Included Express check-in, Free WiFi
             </div>
 
-            <!-- 6. Dates Row (Arrival & Departure) - Enclosed in gray border box, moved down -->
-            <div style="background:#ffffff; border:1px solid #d4d4d4; border-radius:3px; padding:6px 12px; margin:14px 0 16px 0; display:flex; align-items:center; gap:24px; font-size:9.5px; box-sizing:border-box;">
-                <div style="display:flex; align-items:center;">
-                    <span style="font-weight:bold; margin-right:8px; width:55px; color:#000000;">Arrival :</span>
-                    <div style="width:145px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
-                        ${arrivalDate}
+            <!-- 6 & 7. Combined Dates, Booked and Payable, and Stamp Container -->
+            <div style="border:1px solid #c0c0c0; border-radius:3px; padding:10px 12px 10px 12px; margin:14px 0 16px 0; box-sizing:border-box; background:#ffffff;">
+                <!-- Dates Row -->
+                <div style="display:flex; align-items:center; gap:28px; font-size:9.5px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:bold; margin-right:8px; width:55px; color:#000000;">Arrival :</span>
+                        <div style="width:145px; background:#ebebeb; border-radius:3px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                            ${arrivalDate}
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:bold; margin-right:8px; width:70px; color:#000000;">Departure :</span>
+                        <div style="width:145px; background:#ebebeb; border-radius:3px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                            ${departureDate}
+                        </div>
                     </div>
                 </div>
-                <div style="display:flex; align-items:center;">
-                    <span style="font-weight:bold; margin-right:8px; width:70px; color:#000000;">Departure :</span>
-                    <div style="width:145px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
-                        ${departureDate}
-                    </div>
-                </div>
-            </div>
 
-            <!-- 7. Booked And Payable By / Signature Section -->
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;">
-                <!-- Left Box: Booked And Payable By (Enclosed in gray box with title inside) -->
-                <div style="flex:1; max-width:410px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; padding:9px 12px; font-size:9.5px; box-sizing:border-box;">
-                    <div style="font-weight:bold; margin-bottom:5px; color:#000000;">Booked And Payable By :</div>
-                    <div style="line-height:1.45; color:#000000;">
-                        Agoda Company Pte, Ltd.<br>
-                        30 Cecil Street, Prudential Tower #19-08,<br>
-                        Singapore 049712
+                <!-- Booked and Payable + Stamp Row -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <!-- Left: Booked and Payable -->
+                    <div style="flex:1; max-width:390px;">
+                        <div style="font-weight:bold; font-size:9.5px; margin-bottom:5px; color:#000000;">${bookedPayableTitle}</div>
+                        <div style="background:#ebebeb; border-radius:3px; padding:8px 12px; font-size:9.5px; line-height:1.45; color:#000000;">
+                            ${bookedPayableAddressHtml}
+                        </div>
                     </div>
-                </div>
-                <!-- Right Box: Stamp & Signature -->
-                <div style="display:flex; flex-direction:column; align-items:center;">
-                    <div style="font-weight:bold; font-size:9.5px; color:#000000; margin-bottom:4px; text-align:center;">Authorized Stamp & Signature :</div>
-                    <div style="width:190px; height:98px; background:#ffffff; border:1px solid #d4d4d4; border-radius:3px; display:flex; align-items:center; justify-content:center; padding:3px; box-sizing:border-box;">
-                        <img src="${stampSrc}" alt="Authorized Stamp & Signature" style="max-width:100%; max-height:100%; object-fit:contain;">
+
+                    <!-- Right: Stamp & Signature Box (NO header label, natural aspect ratio, not squashed) -->
+                    <div style="width:160px; height:85px; border:1px solid #c0c0c0; border-radius:3px; display:flex; align-items:center; justify-content:center; padding:3px; box-sizing:border-box; background:#ffffff;">
+                        <img src="${stampSrc}" alt="Authorized Stamp & Signature" style="max-width:100%; max-height:100%; object-fit:contain; display:block;">
                     </div>
                 </div>
             </div>
@@ -483,11 +490,14 @@ export async function generateAgodaPdfDoc(data) {
 
     const remarksSpecial = String(data.remarksSpecial || 'NonSmoke,LargeBed');
 
+    const bookedPayableTitle = data.bookedPayableTitle || preset.bookedPayableTitle || (isSingapore ? 'Booked And Payable Through :' : 'Booked And Payable By :');
+    const bookedPayableAddress = data.bookedPayableAddress || preset.bookedPayableAddress || (isSingapore ? 'Agoda Company Pte, Ltd.\n36 Robinson Road, City House #20-01,\nSingapore 068877' : 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712');
+
     // Page: 595.28 x 841.89 pt
     const outerX = 35.2;
     const outerY = 38.6;
     const outerW = 531.0;
-    const outerH = 545.0;
+    const outerH = 550.0;
 
     // Outer boundary line
     doc.setDrawColor(0, 0, 0);
@@ -632,7 +642,7 @@ export async function generateAgodaPdfDoc(data) {
 
     function drawWhiteRightBox(y, h, text, isSmall = false) {
         doc.setFillColor(255, 255, 255);
-        doc.setDrawColor(212, 212, 212);
+        doc.setDrawColor(255, 255, 255);
         doc.setLineWidth(0.5);
         doc.rect(rBoxX, y, rBoxW, h, 'FD');
         doc.setFont('helvetica', 'bold');
@@ -694,90 +704,109 @@ export async function generateAgodaPdfDoc(data) {
     doc.setFontSize(7.3);
     doc.text("Benefits Included Express check-in, Free WiFi", innerX + 4.5, benefitY + 10.5);
 
-    // 6. Dates Row (Arrival & Departure - Enclosed in gray border box, moved down)
-    const datesBoxY = 300.0;
-    const datesBoxH = 20.0;
-    doc.setDrawColor(212, 212, 212);
+    // 6 & 7. Combined Container (Arrival/Departure + Booked and Payable + Stamp)
+    const combBoxY = 299.0;
+    const combBoxH = 88.0;
+    doc.setDrawColor(200, 200, 200);
     doc.setFillColor(255, 255, 255);
     doc.setLineWidth(0.6);
-    doc.rect(innerX, datesBoxY, innerW, datesBoxH, 'FD');
+    doc.rect(innerX, combBoxY, innerW, combBoxH, 'FD');
 
+    // Dates Row
+    const datesY = combBoxY + 6.0;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
     doc.setTextColor(0, 0, 0);
-    doc.text("Arrival :", innerX + 8.0, datesBoxY + 13.0);
+    doc.text("Arrival :", innerX + 8.0, datesY + 9.5);
 
     // Arrival pill (Gray)
     const arrPillX = innerX + 46.0;
     const arrPillW = 125.0;
     const arrPillH = 13.5;
-    const arrPillY = datesBoxY + 3.2;
+    const arrPillY = datesY;
     doc.setFillColor(220, 220, 220);
     doc.rect(arrPillX, arrPillY, arrPillW, arrPillH, 'F');
     doc.text(arrivalDate, arrPillX + (arrPillW / 2), arrPillY + 9.5, { align: 'center' });
 
     // Departure
     const depLabelX = arrPillX + arrPillW + 24.0;
-    doc.text("Departure :", depLabelX, datesBoxY + 13.0);
+    doc.text("Departure :", depLabelX, datesY + 9.5);
 
     // Departure pill (Gray)
     const depPillX = depLabelX + 54.0;
     const depPillW = 125.0;
     const depPillH = 13.5;
-    const depPillY = datesBoxY + 3.2;
+    const depPillY = datesY;
     doc.setFillColor(220, 220, 220);
     doc.rect(depPillX, depPillY, depPillW, depPillH, 'F');
     doc.text(departureDate, depPillX + (depPillW / 2), depPillY + 9.5, { align: 'center' });
 
-    // 7. Booked And Payable By Box (Gray container enclosing title and address)
-    const payableBoxY = 328.0;
-    const payableBoxW = 345.0;
-    const payableBoxH = 48.0;
-    doc.setFillColor(235, 235, 235);
-    doc.setDrawColor(212, 212, 212);
-    doc.setLineWidth(0.6);
-    doc.rect(innerX, payableBoxY, payableBoxW, payableBoxH, 'FD');
-
+    // Lower portion inside combined container:
+    // Left: Booked and Payable Title + Gray Address Box
+    const lowerY = datesY + arrPillH + 6.5;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Booked And Payable By :", innerX + 8.0, payableBoxY + 11.5);
+    doc.text(bookedPayableTitle, innerX + 8.0, lowerY + 6.0);
+
+    const addrBoxY = lowerY + 9.5;
+    const addrBoxW = 330.0;
+    const addrBoxH = 43.0;
+    doc.setFillColor(235, 235, 235);
+    doc.rect(innerX + 8.0, addrBoxY, addrBoxW, addrBoxH, 'F');
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.3);
-    doc.text("Agoda Company Pte, Ltd.", innerX + 8.0, payableBoxY + 23.5);
-    doc.text("30 Cecil Street, Prudential Tower #19-08,", innerX + 8.0, payableBoxY + 34.0);
-    doc.text("Singapore 049712", innerX + 8.0, payableBoxY + 44.0);
-
-    // Stamp & Signature Box (On right side, aligned with Booked And Payable By)
-    const stampBoxX = 405.0;
-    const stampBoxY = 328.0;
-    const stampBoxW = rightEdge - stampBoxX;
-    const stampBoxH = 58.0;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.3);
     doc.setTextColor(0, 0, 0);
-    doc.text("Authorized Stamp & Signature :", stampBoxX + (stampBoxW / 2), stampBoxY - 4.0, { align: 'center' });
+    const payableLines = bookedPayableAddress.split('\n');
+    if (payableLines.length >= 3) {
+        doc.text(payableLines[0].trim(), innerX + 14.0, addrBoxY + 12.0);
+        doc.text(payableLines[1].trim(), innerX + 14.0, addrBoxY + 23.0);
+        doc.text(payableLines[2].trim(), innerX + 14.0, addrBoxY + 34.0);
+    } else {
+        payableLines.forEach((l, idx) => {
+            doc.text(l.trim(), innerX + 14.0, addrBoxY + 12.0 + (idx * 11.0));
+        });
+    }
+
+    // Right: Stamp & Signature Box (NO header text above it! Aligned with bottom of address box)
+    const stampBoxW = 145.0;
+    const stampBoxH = 55.0;
+    const stampBoxX = rightEdge - stampBoxW - 8.0;
+    const stampBoxY = (addrBoxY + addrBoxH) - stampBoxH;
 
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(212, 212, 212);
     doc.setLineWidth(0.6);
     doc.rect(stampBoxX, stampBoxY, stampBoxW, stampBoxH, 'FD');
+
     if (stampDataUrl) {
-        doc.addImage(stampDataUrl, 'PNG', stampBoxX + 3, stampBoxY + 2, stampBoxW - 6, stampBoxH - 4);
+        // Natural aspect ratio preservation to prevent any squashing/distortion
+        const pad = 3.0;
+        const maxW = stampBoxW - (pad * 2);
+        const maxH = stampBoxH - (pad * 2);
+        const naturalRatio = isSingapore ? (522.0 / 331.0) : (1024.0 / 568.0);
+        let drawW = maxW;
+        let drawH = drawW / naturalRatio;
+        if (drawH > maxH) {
+            drawH = maxH;
+            drawW = drawH * naturalRatio;
+        }
+        const drawX = stampBoxX + ((stampBoxW - drawW) / 2);
+        const drawY = stampBoxY + ((stampBoxH - drawH) / 2);
+        doc.addImage(stampDataUrl, 'PNG', drawX, drawY, drawW, drawH);
     }
 
-    // 8. Remarks (On Left, below Booked and Payable By)
-    const remarksY = 394.0;
+    // 8. Remarks (On Left, below combined container)
+    const remarksY = 404.0;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
+    doc.setTextColor(0, 0, 0);
     doc.text("Remarks :", innerX, remarksY);
     doc.text(remarksSpecial, innerX, remarksY + 10.0);
     doc.text("All special requests are subject to availability upon arrival", innerX, remarksY + 20.0);
 
     // 9. Call our Customer Service Center 24/7 (Pushed down on the right side)
-    const callY = 448.0;
+    const callY = 454.0;
     doc.setFont('helvetica', 'bold');
     doc.text("Call our Customer Service Center 24/7 :", rightEdge, callY, { align: 'right' });
     doc.setFont('helvetica', 'normal');
@@ -785,7 +814,7 @@ export async function generateAgodaPdfDoc(data) {
     doc.text("(Long distance charge may apply)", rightEdge, callY + 20.0, { align: 'right' });
 
     // 10. Notes Box (At bottom, black border)
-    const notesY = 482.0;
+    const notesY = 486.0;
     const notesH = 92.0;
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.6);
