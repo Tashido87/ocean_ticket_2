@@ -166,6 +166,12 @@ export function extractCityName(name) {
     if (lower.includes('klia') || lower.includes('kuala lumpur')) return 'Kuala Lumpur';
     if (lower.includes('senai') || lower.includes('johor bahru')) return 'Johor Bahru';
     if (lower.includes('suvarnabhumi') || lower.includes('don mueang') || lower.includes('bangkok')) return 'Bangkok';
+    if (lower.includes('yangon')) return 'Yangon';
+    if (lower.includes('mandalay')) return 'Mandalay';
+    if (lower.includes('narita') || lower.includes('haneda') || lower.includes('tokyo')) return 'Tokyo';
+    if (lower.includes('singapore') || lower.includes('changi')) return 'Singapore';
+    if (lower.includes('incheon') || lower.includes('seoul')) return 'Seoul';
+    if (lower.includes('kansai') || lower.includes('osaka')) return 'Osaka';
 
     return name
         .replace(/\([A-Z]{3}\)/g, '')
@@ -199,17 +205,23 @@ export function parseItineraryText(rawText) {
     else if (/\bFirst\s+Class\b/i.test(clean)) flightClass = 'First Class';
     else if (/\bEconomy\b/i.test(clean)) flightClass = 'Economy';
 
-    // 3. Airline Booking Reference (PNR)
+    // 3. Airline Booking Reference (PNR) - collect all unique PNRs if multiple
     let pnr = '';
-    const pnrTableMatch = clean.match(/(?:Economy|Business|Premium\s*Economy)\s+(?:--|[0-9A-Z-]+)\s+([A-Z0-9]{5,7})\b/i);
-    if (pnrTableMatch && !/^(cannot|exceed|person|flight|adult)$/i.test(pnrTableMatch[1])) {
-        pnr = pnrTableMatch[1].trim().toUpperCase();
-    } else {
-        const pnrMatch = clean.match(/(?:Airline\s*Booking\s*Reference|PNR\s*[:\s]*)[^\n\r]*?([A-Z0-9]{5,7})\b/i);
-        if (pnrMatch && !/^(cannot|exceed|person|flight|adult)$/i.test(pnrMatch[1])) {
-            pnr = pnrMatch[1].trim().toUpperCase();
+    const pnrMatches = [...clean.matchAll(/(?:Economy|Business|Premium\s*Economy)\s+(?:--|[0-9A-Z-]+)\s+([A-Z0-9]{5,7})\b/gi)];
+    const pnrs = [];
+    for (const m of pnrMatches) {
+        const val = m[1].trim().toUpperCase();
+        if (!/^(cannot|exceed|person|flight|adult)$/i.test(val) && !pnrs.includes(val)) {
+            pnrs.push(val);
         }
     }
+    if (pnrs.length === 0) {
+        const pnrMatch = clean.match(/(?:Airline\s*Booking\s*Reference|PNR\s*[:\s]*)[^\n\r]*?([A-Z0-9]{5,7})\b/i);
+        if (pnrMatch && !/^(cannot|exceed|person|flight|adult)$/i.test(pnrMatch[1])) {
+            pnrs.push(pnrMatch[1].trim().toUpperCase());
+        }
+    }
+    pnr = pnrs.join(' / ');
 
     // 4. E-Ticket No
     let eTicketNo = 'To be advised at check-in';
@@ -286,27 +298,7 @@ export function parseItineraryText(rawText) {
     const passengerName = passengers[0]?.name || '';
     const passengerType = passengers[0]?.type || 'Adult';
 
-    // 6. Flight Info
-    let flightNo = '';
-    let airlineName = airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad';
-    const flBlockMatch = clean.match(/Flight\s*Information[\s\S]*?(?:Baggage\s*Allowance|$)/i);
-    const flSearchText = flBlockMatch ? flBlockMatch[0] : clean;
-    const airlineMatch = flSearchText.match(/Airline\s+(.*?)\s+(AK\d{3,4}|FD\d{3,4}|QZ\d{3,4}|D7\d{3,4}|XJ\d{3,4}|Z2\d{3,4}|VJ\d{3,4}|VZ\d{3,4}|[A-Z0-9]{2}\s*\d{3,4})\b/i);
-    if (airlineMatch) {
-        airlineName = airlineMatch[1].trim();
-        flightNo = airlineMatch[2].replace(/\s+/g, '');
-    } else {
-        const flMatch = flSearchText.match(/\b(AK|FD|QZ|D7|XJ|Z2|VJ|VZ)\s*(\d{3,4})\b/i);
-        if (flMatch) {
-            flightNo = flMatch[1].toUpperCase() + flMatch[2];
-        }
-        const airNameMatch = flSearchText.match(/Airline\s*[:\t ]+([^\n\r]+)/i);
-        if (airNameMatch) {
-            airlineName = airNameMatch[1].replace(/(?:AK|FD|QZ|D7|XJ|Z2|VJ|VZ)\d+/i, '').trim() || airlineName;
-        }
-    }
-
-    // 7 & 8. Section-based Departure & Arrival Parser
+    // 6. Section-based Departure & Arrival Parser Helper
     function parseFlightSection(fullText, startWord, endWords) {
         const endGroup = endWords.map(w => `\\b${w}\\b`).join('|');
         const regex = new RegExp(`\\b${startWord}\\b([\\s\\S]*?)(?=${endGroup}|$)`, 'i');
@@ -338,12 +330,11 @@ export function parseItineraryText(rawText) {
             .replace(/\s+/g, ' ')
             .trim();
 
-        // Detect terminal at end: e.g. "Airport D", "Airport T1", "International Terminal 2", "Terminal 1"
         const endTermMatch = airport.match(/(?:,\s*)?(?:Terminal\s*([0-9A-Za-z]+)|T(\d+)|(?:\b([A-Z0-9])\b))\s*$/i);
         if (endTermMatch) {
             const val = endTermMatch[1] || endTermMatch[2] || endTermMatch[3];
             if (val && !/^(Airport|International|Domestic)$/i.test(val)) {
-                terminal = /^\d+$/.test(val) ? `Terminal ${val}` : `Terminal ${val}`;
+                terminal = `Terminal ${val}`;
                 airport = airport.substring(0, endTermMatch.index).trim();
             }
         } else {
@@ -361,32 +352,118 @@ export function parseItineraryText(rawText) {
         return { time, dateRaw, terminal, airport };
     }
 
-    const depSection = parseFlightSection(clean, 'Departure', ['Arrival']);
-    const arrSection = parseFlightSection(clean, 'Arrival', ['Airline', 'Flight', 'Baggage', 'Personal', 'Carry']);
+    // 7. Parse Multiple Flight Sectors
+    const flBlockMatch = clean.match(/Flight\s*Information([\s\S]*?)(?=Baggage\s*Allowance|$)/i);
+    const flText = flBlockMatch ? flBlockMatch[1] : clean;
 
-    const depTime = depSection.time;
-    const depDateFormatted = formatTicketDate(depSection.dateRaw);
-    const depTerminal = depSection.terminal;
-    const depCode = lookupAirportCode(depSection.airport);
-    let depAirport = depSection.airport;
-    if (depAirport && depCode && !depAirport.includes(`(${depCode})`)) {
-        depAirport += ` (${depCode})`;
+    const depMatches = [...flText.matchAll(/\bDeparture\b/gi)];
+    const flights = [];
+
+    if (depMatches.length === 0) {
+        const dep = parseFlightSection(clean, 'Departure', ['Arrival']);
+        const arr = parseFlightSection(clean, 'Arrival', ['Airline', 'Flight', 'Baggage', 'Personal', 'Carry']);
+        const depCode = lookupAirportCode(dep.airport);
+        let depAirport = dep.airport;
+        if (depAirport && depCode && !depAirport.includes(`(${depCode})`)) depAirport += ` (${depCode})`;
+        const arrCode = lookupAirportCode(arr.airport);
+        let arrAirport = arr.airport;
+        if (arrAirport && arrCode && !arrAirport.includes(`(${arrCode})`)) arrAirport += ` (${arrCode})`;
+        const depCity = extractCityName(dep.airport);
+        const arrCity = extractCityName(arr.airport);
+        const route = `${depCity || 'DEP'} (${depCode || 'DEP'}) - ${arrCity || 'ARR'} (${arrCode || 'ARR'})`;
+
+        flights.push({
+            flightNo: '',
+            airlineName: airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad',
+            depTime: dep.time,
+            depDateFormatted: formatTicketDate(dep.dateRaw),
+            depAirport,
+            depTerminal: dep.terminal,
+            arrTime: arr.time,
+            arrDateFormatted: formatTicketDate(arr.dateRaw),
+            arrAirport,
+            arrTerminal: arr.terminal,
+            route
+        });
+    } else {
+        for (let i = 0; i < depMatches.length; i++) {
+            const curIdx = depMatches[i].index;
+            const nextIdx = (i + 1 < depMatches.length) ? depMatches[i + 1].index : flText.length;
+            
+            const prevEnd = (i === 0) ? 0 : depMatches[i - 1].index;
+            const leadingText = flText.substring(prevEnd, curIdx);
+            
+            const leadingLines = leadingText.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+            let sectorHeader = '';
+            for (let j = leadingLines.length - 1; j >= 0; j--) {
+                const line = leadingLines[j];
+                if (line.includes('-') && !/transfer|baggage|flight information/i.test(line)) {
+                    sectorHeader = line;
+                    break;
+                }
+            }
+            
+            const segmentText = flText.substring(curIdx, nextIdx);
+            
+            const dep = parseFlightSection(segmentText, 'Departure', ['Arrival']);
+            const arr = parseFlightSection(segmentText, 'Arrival', ['Airline', 'Flight', 'Transfer', 'Baggage']);
+            
+            let sectorAirline = airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad';
+            let sectorFlightNo = '';
+            const airMatch = segmentText.match(/Airline\s+(.*?)\s+(AK\d{3,4}|FD\d{3,4}|QZ\d{3,4}|D7\d{3,4}|XJ\d{3,4}|Z2\d{3,4}|VJ\d{3,4}|VZ\d{3,4}|[A-Z0-9]{2}\s*\d{3,4})\b/i);
+            if (airMatch) {
+                sectorAirline = airMatch[1].trim();
+                sectorFlightNo = airMatch[2].replace(/\s+/g, '');
+            } else {
+                const fnMatch = segmentText.match(/\b(AK|FD|QZ|D7|XJ|Z2|VJ|VZ)\s*(\d{3,4})\b/i);
+                if (fnMatch) {
+                    sectorFlightNo = fnMatch[1].toUpperCase() + fnMatch[2];
+                }
+                const anMatch = segmentText.match(/Airline\s*[:\t ]+([^\\n\\r]+)/i);
+                if (anMatch) {
+                    sectorAirline = anMatch[1].replace(/(?:AK|FD|QZ|D7|XJ|Z2|VJ|VZ)\d+/i, '').trim() || sectorAirline;
+                }
+            }
+            
+            const depCode = lookupAirportCode(dep.airport);
+            let depAirport = dep.airport;
+            if (depAirport && depCode && !depAirport.includes(`(${depCode})`)) {
+                depAirport += ` (${depCode})`;
+            }
+            
+            const arrCode = lookupAirportCode(arr.airport);
+            let arrAirport = arr.airport;
+            if (arrAirport && arrCode && !arrAirport.includes(`(${arrCode})`)) {
+                arrAirport += ` (${arrCode})`;
+            }
+            
+            const depCity = extractCityName(dep.airport);
+            const arrCity = extractCityName(arr.airport);
+            let route = `${depCity || 'DEP'} (${depCode || 'DEP'}) - ${arrCity || 'ARR'} (${arrCode || 'ARR'})`;
+            if ((!depCity || !arrCity) && sectorHeader) {
+                route = sectorHeader;
+            }
+            
+            flights.push({
+                sectorHeader,
+                flightNo: sectorFlightNo,
+                airlineName: sectorAirline,
+                depTime: dep.time,
+                depDateFormatted: formatTicketDate(dep.dateRaw),
+                depAirport,
+                depTerminal: dep.terminal,
+                arrTime: arr.time,
+                arrDateFormatted: formatTicketDate(arr.dateRaw),
+                arrAirport,
+                arrTerminal: arr.terminal,
+                route
+            });
+        }
     }
 
-    const arrTime = arrSection.time;
-    const arrDateFormatted = formatTicketDate(arrSection.dateRaw);
-    const arrTerminal = arrSection.terminal;
-    const arrCode = lookupAirportCode(arrSection.airport);
-    let arrAirport = arrSection.airport;
-    if (arrAirport && arrCode && !arrAirport.includes(`(${arrCode})`)) {
-        arrAirport += ` (${arrCode})`;
-    }
+    const primaryFlight = flights[0] || {};
 
-    const depCity = extractCityName(depSection.airport) || 'Phu Quoc';
-    const arrCity = extractCityName(arrSection.airport) || 'Ho Chi Minh City';
-    const route = `${depCity} (${depCode || 'DEP'}) - ${arrCity} (${arrCode || 'ARR'})`;
-
-    // 10. Baggage
+    // 8. Baggage
     let checkedBaggage = '20 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm';
     const kgMatch = clean.match(/Checked\s*baggage\s*[:\t ]*(\d+\s*kg\s*per\s*person)/i);
     const dimMatch = clean.match(/Checked\s*baggage[\s\S]*?(?:cannot\s*exceed|max)\s*([0-9x\s]+cm)/i) ||
@@ -410,17 +487,19 @@ export function parseItineraryText(rawText) {
         passengerName,
         passengerType,
         passengers,
-        flightNo,
-        airlineName,
-        depTime,
-        depDateFormatted,
-        depAirport,
-        depTerminal,
-        arrTime,
-        arrDateFormatted,
-        arrAirport,
-        arrTerminal,
-        route,
+        flights,
+        // Primary flight fields for backward compatibility
+        flightNo: primaryFlight.flightNo || '',
+        airlineName: primaryFlight.airlineName || (airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad'),
+        depTime: primaryFlight.depTime || '',
+        depDateFormatted: primaryFlight.depDateFormatted || '',
+        depAirport: primaryFlight.depAirport || '',
+        depTerminal: primaryFlight.depTerminal || '',
+        arrTime: primaryFlight.arrTime || '',
+        arrDateFormatted: primaryFlight.arrDateFormatted || '',
+        arrAirport: primaryFlight.arrAirport || '',
+        arrTerminal: primaryFlight.arrTerminal || '',
+        route: primaryFlight.route || '',
         checkedBaggage,
         carryOnBaggage,
         personalItem
@@ -564,7 +643,12 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.setFont("helvetica", "bold");
     doc.text("Airline Booking Reference", col3X + 6, bookBoxY + 14);
     doc.setFont("helvetica", "bold");
-    doc.text(data.pnr || "", col4X + 6, bookBoxY + 14);
+    const pnrVal = data.pnr || "";
+    if (doc.getTextWidth(pnrVal) > (contentWidth - (col4X - marginX) - 12)) {
+        doc.setFontSize(8.0);
+    }
+    doc.text(pnrVal, col4X + 6, bookBoxY + 14);
+    doc.setFontSize(9.5);
 
     doc.setFont("helvetica", "bold");
     doc.text("E-Ticket No.", marginX + 6, bookBoxY + 34.5);
@@ -649,72 +733,95 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.text("Departure", flCol2 + 6, flHeaderY + 14.5);
     doc.text("Arrival", flCol3 + 6, flHeaderY + 14.5);
 
-    // Flight Row 1
-    const flRow1Y = flHeaderY + flHeaderHeight;
-    const flRow1Height = 47.5;
-    doc.setFillColor(...greyBg);
-    doc.rect(marginX, flRow1Y, contentWidth, flRow1Height, 'F');
-    doc.setDrawColor(...borderGrey);
-    doc.rect(marginX, flRow1Y, contentWidth, flRow1Height, 'S');
-    doc.line(flCol2, flRow1Y, flCol2, flRow1Y + flRow1Height);
-    doc.line(flCol3, flRow1Y, flCol3, flRow1Y + flRow1Height);
+    let currentFlY = flHeaderY + flHeaderHeight;
 
-    doc.setTextColor(...darkColor);
-    doc.setFontSize(9.5);
-    doc.setFont("helvetica", "bold");
-    doc.text(data.flightNo || "", marginX + 6, flRow1Y + 15);
-    doc.setFont("helvetica", "normal");
-    doc.text(data.airlineName || "", marginX + 6, flRow1Y + 28);
+    const flightsList = (data.flights && data.flights.length > 0)
+        ? data.flights
+        : [{
+            flightNo: data.flightNo || '',
+            airlineName: data.airlineName || '',
+            depTime: data.depTime || '',
+            depDateFormatted: data.depDateFormatted || '',
+            depAirport: data.depAirport || '',
+            depTerminal: data.depTerminal || '',
+            arrTime: data.arrTime || '',
+            arrDateFormatted: data.arrDateFormatted || '',
+            arrAirport: data.arrAirport || '',
+            arrTerminal: data.arrTerminal || '',
+            route: data.route || ''
+        }];
 
-    // Departure text
-    doc.setFont("helvetica", "bold");
-    doc.text(data.depTime || "", flCol2 + 6, flRow1Y + 15);
-    const depTimeWidth = doc.getTextWidth(data.depTime || "") + 1;
-    doc.setFont("helvetica", "normal");
-    doc.text(`, ${data.depDateFormatted || ""}`, flCol2 + 6 + depTimeWidth, flRow1Y + 15);
-    doc.text(data.depAirport || "", flCol2 + 6, flRow1Y + 27.5);
-    if (data.depTerminal) {
-        doc.text(data.depTerminal, flCol2 + 6, flRow1Y + 40);
-    }
+    flightsList.forEach((f) => {
+        const flRowHeight = 47.5;
+        doc.setFillColor(...greyBg);
+        doc.rect(marginX, currentFlY, contentWidth, flRowHeight, 'F');
+        doc.setDrawColor(...borderGrey);
+        doc.rect(marginX, currentFlY, contentWidth, flRowHeight, 'S');
+        doc.line(flCol2, currentFlY, flCol2, currentFlY + flRowHeight);
+        doc.line(flCol3, currentFlY, flCol3, currentFlY + flRowHeight);
 
-    // Arrival text
-    doc.setFont("helvetica", "bold");
-    doc.text(data.arrTime || "", flCol3 + 6, flRow1Y + 15);
-    const arrTimeWidth = doc.getTextWidth(data.arrTime || "") + 1;
-    doc.setFont("helvetica", "normal");
-    doc.text(`, ${data.arrDateFormatted || ""}`, flCol3 + 6 + arrTimeWidth, flRow1Y + 15);
-    const arrAirportLines = doc.splitTextToSize(data.arrAirport || "", contentWidth - (flCol3 - marginX) - 12);
-    doc.text(arrAirportLines, flCol3 + 6, flRow1Y + 27.5);
+        doc.setTextColor(...darkColor);
+        doc.setFontSize(9.5);
+        doc.setFont("helvetica", "bold");
+        doc.text(f.flightNo || "", marginX + 6, currentFlY + 15);
+        doc.setFont("helvetica", "normal");
+        doc.text(f.airlineName || "", marginX + 6, currentFlY + 28);
 
-    // Route Row
-    const flRow2Y = flRow1Y + flRow1Height;
-    const flRow2Height = 22.5;
-    doc.setFillColor(...greyBg);
-    doc.rect(marginX, flRow2Y, contentWidth, flRow2Height, 'F');
-    doc.setDrawColor(...borderGrey);
-    doc.rect(marginX, flRow2Y, contentWidth, flRow2Height, 'S');
-    doc.line(flCol2, flRow2Y, flCol2, flRow2Y + flRow2Height);
+        // Departure text
+        doc.setFont("helvetica", "bold");
+        doc.text(f.depTime || "", flCol2 + 6, currentFlY + 15);
+        const depTimeWidth = doc.getTextWidth(f.depTime || "") + 1;
+        doc.setFont("helvetica", "normal");
+        doc.text(`, ${f.depDateFormatted || ""}`, flCol2 + 6 + depTimeWidth, currentFlY + 15);
+        doc.text(f.depAirport || "", flCol2 + 6, currentFlY + 27.5);
+        if (f.depTerminal) {
+            doc.text(f.depTerminal, flCol2 + 6, currentFlY + 40);
+        }
 
-    doc.setFont("helvetica", "bold");
-    doc.text("Route", marginX + 6, flRow2Y + 15);
-    doc.setFont("helvetica", "normal");
-    doc.text(data.route || "", flCol2 + 6, flRow2Y + 15);
+        // Arrival text
+        doc.setFont("helvetica", "bold");
+        doc.text(f.arrTime || "", flCol3 + 6, currentFlY + 15);
+        const arrTimeWidth = doc.getTextWidth(f.arrTime || "") + 1;
+        doc.setFont("helvetica", "normal");
+        doc.text(`, ${f.arrDateFormatted || ""}`, flCol3 + 6 + arrTimeWidth, currentFlY + 15);
+        const arrAirportLines = doc.splitTextToSize(f.arrAirport || "", contentWidth - (flCol3 - marginX) - 12);
+        doc.text(arrAirportLines, flCol3 + 6, currentFlY + 27.5);
+        if (f.arrTerminal) {
+            doc.text(f.arrTerminal, flCol3 + 6, currentFlY + 40);
+        }
+
+        currentFlY += flRowHeight;
+
+        // Route Row
+        const flRouteRowHeight = 22.5;
+        doc.setFillColor(...greyBg);
+        doc.rect(marginX, currentFlY, contentWidth, flRouteRowHeight, 'F');
+        doc.setDrawColor(...borderGrey);
+        doc.rect(marginX, currentFlY, contentWidth, flRouteRowHeight, 'S');
+        doc.line(flCol2, currentFlY, flCol2, currentFlY + flRouteRowHeight);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Route", marginX + 6, currentFlY + 15);
+        doc.setFont("helvetica", "normal");
+        doc.text(f.route || "", flCol2 + 6, currentFlY + 15);
+
+        currentFlY += flRouteRowHeight;
+    });
 
     // Class Row
-    const flRow3Y = flRow2Y + flRow2Height;
-    const flRow3Height = 22.5;
+    const flClassRowHeight = 22.5;
     doc.setFillColor(...greyBg);
-    doc.rect(marginX, flRow3Y, contentWidth, flRow3Height, 'F');
+    doc.rect(marginX, currentFlY, contentWidth, flClassRowHeight, 'F');
     doc.setDrawColor(...borderGrey);
-    doc.rect(marginX, flRow3Y, contentWidth, flRow3Height, 'S');
-    doc.line(flCol2, flRow3Y, flCol2, flRow3Y + flRow3Height);
+    doc.rect(marginX, currentFlY, contentWidth, flClassRowHeight, 'S');
+    doc.line(flCol2, currentFlY, flCol2, currentFlY + flClassRowHeight);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Class", marginX + 6, flRow3Y + 15);
+    doc.text("Class", marginX + 6, currentFlY + 15);
     doc.setFont("helvetica", "normal");
-    doc.text(data.flightClass || "Economy", flCol2 + 6, flRow3Y + 15);
+    doc.text(data.flightClass || "Economy", flCol2 + 6, currentFlY + 15);
 
-    cursorY = flRow3Y + flRow3Height + 20;
+    cursorY = currentFlY + flClassRowHeight + (flightsList.length > 1 ? 14 : 20);
 
     // 5. BAGGAGE ALLOWANCE
     drawSectionTitle("Baggage Allowance", cursorY);
@@ -868,6 +975,22 @@ export function renderAirAsiaTicketHtml(data) {
         ? data.passengers
         : [{ name: data.passengerName || '', type: data.passengerType || 'Adult' }];
 
+    const flightsList = (data.flights && data.flights.length > 0)
+        ? data.flights
+        : [{
+            flightNo: data.flightNo || '',
+            airlineName: data.airlineName || (isVietJet ? 'VietJet Air' : 'AirAsia Berhad'),
+            depTime: data.depTime || '',
+            depDateFormatted: data.depDateFormatted || '',
+            depAirport: data.depAirport || '',
+            depTerminal: data.depTerminal || '',
+            arrTime: data.arrTime || '',
+            arrDateFormatted: data.arrDateFormatted || '',
+            arrAirport: data.arrAirport || '',
+            arrTerminal: data.arrTerminal || '',
+            route: data.route || ''
+        }];
+
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#333333; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:40px 48px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.35; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
         
@@ -938,26 +1061,28 @@ export function renderAirAsiaTicketHtml(data) {
                     </tr>
                 </thead>
                 <tbody>
+                    ${flightsList.map(f => `
                     <tr>
                         <td style="padding:10px; border:1px solid #CCCCCC; vertical-align:top;">
-                            <div style="font-weight:700; font-size:13px; color:#111111;">${data.flightNo || ''}</div>
-                            <div style="color:#555555; margin-top:2px;">${data.airlineName || ''}</div>
+                            <div style="font-weight:700; font-size:13px; color:#111111;">${f.flightNo || ''}</div>
+                            <div style="color:#555555; margin-top:2px;">${f.airlineName || ''}</div>
                         </td>
                         <td style="padding:10px; border:1px solid #CCCCCC; vertical-align:top;">
-                            <div><strong>${data.depTime || ''}</strong>, ${data.depDateFormatted || ''}</div>
-                            <div style="margin-top:2px; font-weight:500;">${data.depAirport || ''}</div>
-                            ${data.depTerminal ? `<div style="color:#555555; margin-top:2px;">${data.depTerminal}</div>` : ''}
+                            <div><strong>${f.depTime || ''}</strong>, ${f.depDateFormatted || ''}</div>
+                            <div style="margin-top:2px; font-weight:500;">${f.depAirport || ''}</div>
+                            ${f.depTerminal ? `<div style="color:#555555; margin-top:2px;">${f.depTerminal}</div>` : ''}
                         </td>
                         <td style="padding:10px; border:1px solid #CCCCCC; vertical-align:top;">
-                            <div><strong>${data.arrTime || ''}</strong>, ${data.arrDateFormatted || ''}</div>
-                            <div style="margin-top:2px; font-weight:500;">${data.arrAirport || ''}</div>
-                            ${data.arrTerminal ? `<div style="color:#555555; margin-top:2px;">${data.arrTerminal}</div>` : ''}
+                            <div><strong>${f.arrTime || ''}</strong>, ${f.arrDateFormatted || ''}</div>
+                            <div style="margin-top:2px; font-weight:500;">${f.arrAirport || ''}</div>
+                            ${f.arrTerminal ? `<div style="color:#555555; margin-top:2px;">${f.arrTerminal}</div>` : ''}
                         </td>
                     </tr>
                     <tr>
                         <td style="padding:7px 10px; border:1px solid #CCCCCC;"><strong>Route</strong></td>
-                        <td colspan="2" style="padding:7px 10px; border:1px solid #CCCCCC;">${data.route || ''}</td>
+                        <td colspan="2" style="padding:7px 10px; border:1px solid #CCCCCC;">${f.route || ''}</td>
                     </tr>
+                    `).join('')}
                     <tr>
                         <td style="padding:7px 10px; border:1px solid #CCCCCC;"><strong>Class</strong></td>
                         <td colspan="2" style="padding:7px 10px; border:1px solid #CCCCCC;">${data.flightClass || 'Economy'}</td>

@@ -1652,67 +1652,13 @@
                         </div>
                         <div id="aa_passengers_list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
 
-                        <div class="airasia-form-section-title">Flight Details</div>
-                        <div class="airasia-form-row">
-                            <div class="airasia-form-group" style="grid-column: 1 / -1;">
-                                <label for="aa_route">Route</label>
-                                <input type="text" id="aa_route" placeholder="e.g. Phu Quoc (PQC) - Ho Chi Minh City (SGN)">
-                            </div>
+                        <div class="airasia-form-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>Flight Sectors</span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="aa_add_flight_btn" style="padding:2px 8px; font-size:11px;">
+                                <i class="fa-solid fa-plus"></i> Add Sector
+                            </button>
                         </div>
-                        <div class="airasia-form-row">
-                            <div class="airasia-form-group">
-                                <label for="aa_flight_no">Flight Number</label>
-                                <input type="text" id="aa_flight_no" placeholder="e.g. VJ334 / AK6032">
-                            </div>
-                            <div class="airasia-form-group">
-                                <label for="aa_airline_name">Airline / Carrier</label>
-                                <input type="text" id="aa_airline_name" placeholder="VietJet Air / AirAsia">
-                            </div>
-                        </div>
-
-                        <div class="airasia-form-section-title">Departure</div>
-                        <div class="airasia-form-row">
-                            <div class="airasia-form-group">
-                                <label for="aa_dep_time">Departure Time</label>
-                                <input type="text" id="aa_dep_time" placeholder="e.g. 18:30">
-                            </div>
-                            <div class="airasia-form-group">
-                                <label for="aa_dep_date">Departure Date</label>
-                                <input type="text" id="aa_dep_date" placeholder="e.g. Thursday, 3 September 2026">
-                            </div>
-                        </div>
-                        <div class="airasia-form-row">
-                            <div class="airasia-form-group">
-                                <label for="aa_dep_airport">Departure Airport (with code)</label>
-                                <input type="text" id="aa_dep_airport" placeholder="e.g. Kuala Lumpur International Airport (KUL)">
-                            </div>
-                            <div class="airasia-form-group">
-                                <label for="aa_dep_terminal">Terminal (optional)</label>
-                                <input type="text" id="aa_dep_terminal" placeholder="Terminal 2">
-                            </div>
-                        </div>
-
-                        <div class="airasia-form-section-title">Arrival</div>
-                        <div class="airasia-form-row">
-                            <div class="airasia-form-group">
-                                <label for="aa_arr_time">Arrival Time</label>
-                                <input type="text" id="aa_arr_time" placeholder="e.g. 19:25">
-                            </div>
-                            <div class="airasia-form-group">
-                                <label for="aa_arr_date">Arrival Date</label>
-                                <input type="text" id="aa_arr_date" placeholder="e.g. Thursday, 3 September 2026">
-                            </div>
-                        </div>
-                        <div class="airasia-form-row">
-                            <div class="airasia-form-group">
-                                <label for="aa_arr_airport">Arrival Airport (with code)</label>
-                                <input type="text" id="aa_arr_airport" placeholder="e.g. Johor Bahru Senai International Airport (JHB)">
-                            </div>
-                            <div class="airasia-form-group">
-                                <label for="aa_arr_terminal">Terminal (optional)</label>
-                                <input type="text" id="aa_arr_terminal" placeholder="">
-                            </div>
-                        </div>
+                        <div id="aa_flights_list" style="display:flex; flex-direction:column; gap:12px; margin-bottom:12px;"></div>
 
                         <div class="airasia-form-section-title">Baggage Allowance</div>
                         <div class="airasia-form-group">
@@ -1926,6 +1872,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=55" type="module"></script>
+    <script src="main.js?v=56" type="module"></script>
 </body>
 </html>
