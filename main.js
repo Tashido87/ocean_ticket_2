@@ -23,7 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=6';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=7';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -2909,14 +2909,107 @@ function initializeAirAsiaGenerator() {
 
     if (!dropZone || !modal) return;
 
+    function renderPassengerRows(passengersList = []) {
+        const container = document.getElementById('aa_passengers_list');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!passengersList || passengersList.length === 0) {
+            passengersList = [{ name: '', type: 'Adult' }];
+        }
+
+        passengersList.forEach((p, idx) => {
+            const row = document.createElement('div');
+            row.className = 'aa_pax_row';
+            row.style.cssText = 'display:flex; gap:8px; align-items:flex-end; background:var(--apple-bg-secondary); padding:8px 10px; border-radius:8px; border:1px solid var(--apple-separator);';
+            row.innerHTML = `
+                <div style="flex:1;">
+                    <label style="font-size:11px; margin-bottom:2px; display:block; color:var(--apple-text-secondary); font-weight:600;">Passenger Name (${idx + 1})</label>
+                    <input type="text" class="aa_pax_name_input" value="${p.name || ''}" placeholder="PASSENGER FULL NAME" style="width:100%; font-weight:700; text-transform:uppercase;">
+                </div>
+                <div style="width:100px;">
+                    <label style="font-size:11px; margin-bottom:2px; display:block; color:var(--apple-text-secondary); font-weight:600;">Type</label>
+                    <select class="aa_pax_type_input" style="width:100%; font-size:12px;">
+                        <option value="Adult" ${p.type === 'Adult' ? 'selected' : ''}>Adult</option>
+                        <option value="Child" ${p.type === 'Child' ? 'selected' : ''}>Child</option>
+                        <option value="Infant" ${p.type === 'Infant' ? 'selected' : ''}>Infant</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-secondary aa_remove_pax_btn" style="padding:7px 10px; color:#dc2626; border-radius:6px;" title="Remove Passenger">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+
+            row.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('input', updatePreview);
+                el.addEventListener('change', updatePreview);
+            });
+
+            row.querySelector('.aa_remove_pax_btn').addEventListener('click', () => {
+                const totalRows = container.querySelectorAll('.aa_pax_row').length;
+                if (totalRows <= 1) {
+                    row.querySelector('.aa_pax_name_input').value = '';
+                    row.querySelector('.aa_pax_type_input').value = 'Adult';
+                } else {
+                    row.remove();
+                }
+                updatePreview();
+            });
+
+            container.appendChild(row);
+        });
+    }
+
+    function collectPassengers() {
+        const container = document.getElementById('aa_passengers_list');
+        if (!container) return [{ name: '', type: 'Adult' }];
+        const rows = container.querySelectorAll('.aa_pax_row');
+        const list = [];
+        rows.forEach(r => {
+            const name = (r.querySelector('.aa_pax_name_input')?.value || '').trim().toUpperCase();
+            const type = r.querySelector('.aa_pax_type_input')?.value || 'Adult';
+            if (name) {
+                list.push({ name, type });
+            }
+        });
+        return list.length > 0 ? list : [{ name: '', type: 'Adult' }];
+    }
+
+    const addPaxBtn = document.getElementById('aa_add_pax_btn');
+    addPaxBtn?.addEventListener('click', () => {
+        const currentPassengers = collectPassengers();
+        currentPassengers.push({ name: '', type: 'Adult' });
+        renderPassengerRows(currentPassengers);
+        const container = document.getElementById('aa_passengers_list');
+        const lastInput = container?.querySelector('.aa_pax_row:last-child .aa_pax_name_input');
+        if (lastInput) lastInput.focus();
+        updatePreview();
+    });
+
+    document.getElementById('aa_airline_select')?.addEventListener('change', (e) => {
+        const chosen = e.target.value;
+        const airlineInput = document.getElementById('aa_airline_name');
+        if (airlineInput) {
+            if (chosen === 'VietJet Air' && (!airlineInput.value || airlineInput.value === 'AirAsia Berhad')) {
+                airlineInput.value = 'VietJet Air';
+            } else if (chosen === 'AirAsia' && (!airlineInput.value || airlineInput.value === 'VietJet Air')) {
+                airlineInput.value = 'AirAsia Berhad';
+            }
+        }
+        updatePreview();
+    });
+
     function collectFormData() {
+        const passengers = collectPassengers();
         return {
+            airline: document.getElementById('aa_airline_select')?.value || 'AirAsia',
             bookingNo: document.getElementById('aa_booking_no')?.value || '',
             pnr: (document.getElementById('aa_pnr')?.value || '').trim().toUpperCase(),
             eTicketNo: document.getElementById('aa_eticket_no')?.value || '',
             flightClass: document.getElementById('aa_class')?.value || 'Economy',
-            passengerName: (document.getElementById('aa_pax_name')?.value || '').trim().toUpperCase(),
-            passengerType: document.getElementById('aa_pax_type')?.value || 'Adult',
+            passengers: passengers,
+            passengerName: passengers[0]?.name || '',
+            passengerType: passengers[0]?.type || 'Adult',
             flightNo: (document.getElementById('aa_flight_no')?.value || '').trim().toUpperCase(),
             airlineName: document.getElementById('aa_airline_name')?.value || 'AirAsia Berhad',
             depTime: document.getElementById('aa_dep_time')?.value || '',
@@ -2935,14 +3028,21 @@ function initializeAirAsiaGenerator() {
     }
 
     function populateForm(data) {
+        if (document.getElementById('aa_airline_select')) {
+            document.getElementById('aa_airline_select').value = data.airline || 'AirAsia';
+        }
         if (document.getElementById('aa_booking_no')) document.getElementById('aa_booking_no').value = data.bookingNo || '';
         if (document.getElementById('aa_pnr')) document.getElementById('aa_pnr').value = data.pnr || '';
         if (document.getElementById('aa_eticket_no')) document.getElementById('aa_eticket_no').value = data.eTicketNo || 'To be advised at check-in';
         if (document.getElementById('aa_class')) document.getElementById('aa_class').value = data.flightClass || 'Economy';
-        if (document.getElementById('aa_pax_name')) document.getElementById('aa_pax_name').value = data.passengerName || '';
-        if (document.getElementById('aa_pax_type')) document.getElementById('aa_pax_type').value = data.passengerType || 'Adult';
+        
+        const paxList = (data.passengers && data.passengers.length > 0)
+            ? data.passengers
+            : [{ name: data.passengerName || '', type: data.passengerType || 'Adult' }];
+        renderPassengerRows(paxList);
+
         if (document.getElementById('aa_flight_no')) document.getElementById('aa_flight_no').value = data.flightNo || '';
-        if (document.getElementById('aa_airline_name')) document.getElementById('aa_airline_name').value = data.airlineName || 'AirAsia Berhad';
+        if (document.getElementById('aa_airline_name')) document.getElementById('aa_airline_name').value = data.airlineName || (data.airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad');
         if (document.getElementById('aa_dep_time')) document.getElementById('aa_dep_time').value = data.depTime || '';
         if (document.getElementById('aa_dep_date')) document.getElementById('aa_dep_date').value = data.depDateFormatted || '';
         if (document.getElementById('aa_dep_airport')) document.getElementById('aa_dep_airport').value = data.depAirport || '';
@@ -2952,7 +3052,7 @@ function initializeAirAsiaGenerator() {
         if (document.getElementById('aa_arr_airport')) document.getElementById('aa_arr_airport').value = data.arrAirport || '';
         if (document.getElementById('aa_arr_terminal')) document.getElementById('aa_arr_terminal').value = data.arrTerminal || '';
         if (document.getElementById('aa_route')) document.getElementById('aa_route').value = data.route || '';
-        if (document.getElementById('aa_bag_checked')) document.getElementById('aa_bag_checked').value = data.checkedBaggage || '30 kg per person\nEach piece max 119 x 119 x 81 cm (total 319 cm)';
+        if (document.getElementById('aa_bag_checked')) document.getElementById('aa_bag_checked').value = data.checkedBaggage || '20 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm';
         if (document.getElementById('aa_bag_carry')) document.getElementById('aa_bag_carry').value = data.carryOnBaggage || '1 piece per person\nMax 56 x 36 x 23 cm per piece';
         if (document.getElementById('aa_bag_personal')) document.getElementById('aa_bag_personal').value = data.personalItem || '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
 
@@ -2986,9 +3086,10 @@ function initializeAirAsiaGenerator() {
             const parsedData = parseItineraryText(rawText);
             populateForm(parsedData);
             modal.classList.add('show');
-            showToast('AirAsia ticket data extracted successfully!', 'success');
+            const detectedName = parsedData.airline || 'Airline';
+            showToast(`${detectedName} ticket data extracted successfully!`, 'success');
         } catch (err) {
-            console.error('AirAsia PDF parsing error:', err);
+            console.error('PDF parsing error:', err);
             showToast(`PDF parsing failed: ${err.message}`, 'error');
         }
     }
@@ -3018,11 +3119,12 @@ function initializeAirAsiaGenerator() {
 
     manualBtn?.addEventListener('click', () => {
         populateForm({
+            airline: 'AirAsia',
             bookingNo: '',
             pnr: '',
             eTicketNo: 'To be advised at check-in',
             flightClass: 'Economy',
-            passengerName: '',
+            passengers: [{ name: '', type: 'Adult' }],
             passengerType: 'Adult',
             flightNo: 'AK',
             airlineName: 'AirAsia Berhad',

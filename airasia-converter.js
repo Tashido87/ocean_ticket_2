@@ -5,32 +5,49 @@
 
 import { showToast } from './utils.js';
 
-let cachedLogoDataUrl = null;
+let cachedAirAsiaLogoDataUrl = null;
+let cachedVietJetLogoDataUrl = null;
 
 /**
- * Preload and cache AirAsia logo as data URL for jsPDF and HTML preview
+ * Preload and cache Airline logo as data URL for jsPDF and HTML preview
  */
-export async function getAirAsiaLogoDataUrl() {
-    if (cachedLogoDataUrl) return cachedLogoDataUrl;
+export async function getAirlineLogoDataUrl(airline = 'AirAsia') {
+    const isVietJet = (airline === 'VietJet Air') || /vietjet/i.test(airline || '');
+    if (isVietJet && cachedVietJetLogoDataUrl) return cachedVietJetLogoDataUrl;
+    if (!isVietJet && cachedAirAsiaLogoDataUrl) return cachedAirAsiaLogoDataUrl;
+
+    const logoSrc = isVietJet ? 'vietjet-logo.png' : 'airasia-logo.png';
     try {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
         await new Promise((resolve, reject) => {
             img.onload = resolve;
             img.onerror = reject;
-            img.src = 'airasia-logo.png';
+            img.src = logoSrc;
         });
         const canvas = document.createElement('canvas');
         canvas.width = img.naturalWidth || img.width;
         canvas.height = img.naturalHeight || img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        cachedLogoDataUrl = canvas.toDataURL('image/png');
-        return cachedLogoDataUrl;
+        const dataUrl = canvas.toDataURL('image/png');
+        if (isVietJet) {
+            cachedVietJetLogoDataUrl = dataUrl;
+        } else {
+            cachedAirAsiaLogoDataUrl = dataUrl;
+        }
+        return dataUrl;
     } catch (err) {
-        console.warn('Failed to load airasia-logo.png as data URL', err);
-        return 'airasia-logo.png';
+        console.warn(`Failed to load ${logoSrc} as data URL`, err);
+        return logoSrc;
     }
+}
+
+/**
+ * Backward compatibility alias
+ */
+export async function getAirAsiaLogoDataUrl() {
+    return getAirlineLogoDataUrl('AirAsia');
 }
 
 /**
@@ -73,9 +90,36 @@ const AIRPORT_CODE_MAP = {
     'hat yai': 'HDY',
     'yangon': 'RGN',
     'mandalay': 'MDL',
+    'phu quoc': 'PQC',
+    'phú quốc': 'PQC',
     'ho chi minh': 'SGN',
+    'tan son nhat': 'SGN',
+    'saigon': 'SGN',
     'hanoi': 'HAN',
+    'noi bai': 'HAN',
     'da nang': 'DAD',
+    'cam ranh': 'CXR',
+    'nha trang': 'CXR',
+    'hai phong': 'HPH',
+    'cat bi': 'HPH',
+    'can tho': 'VCA',
+    'hue': 'HUI',
+    'phu bai': 'HUI',
+    'vinh': 'VII',
+    'da lat': 'DLI',
+    'dalat': 'DLI',
+    'lien khuong': 'DLI',
+    'quy nhon': 'UIH',
+    'phu cat': 'UIH',
+    'buon ma thuot': 'BMV',
+    'pleiku': 'PXU',
+    'dong hoi': 'VDH',
+    'chu lai': 'VCL',
+    'con dao': 'VCS',
+    'dien bien': 'DIN',
+    'rach gia': 'VKG',
+    'ca mau': 'CAH',
+    'van don': 'VDO',
     'jakarta': 'CGK',
     'bali': 'DPS',
     'denpasar': 'DPS',
@@ -101,7 +145,6 @@ const AIRPORT_CODE_MAP = {
 
 export function lookupAirportCode(name) {
     if (!name) return '';
-    // If code already present in parentheses
     const parenthesized = name.match(/\(([A-Z]{3})\)/);
     if (parenthesized) return parenthesized[1];
 
@@ -114,9 +157,20 @@ export function lookupAirportCode(name) {
 
 export function extractCityName(name) {
     if (!name) return '';
+    const lower = name.toLowerCase();
+    if (lower.includes('tan son nhat') || lower.includes('ho chi minh') || lower.includes('saigon')) return 'Ho Chi Minh City';
+    if (lower.includes('phu quoc') || lower.includes('phú quốc')) return 'Phu Quoc';
+    if (lower.includes('noi bai') || lower.includes('hanoi') || lower.includes('ha noi')) return 'Hanoi';
+    if (lower.includes('da nang')) return 'Da Nang';
+    if (lower.includes('cam ranh') || lower.includes('nha trang')) return 'Nha Trang';
+    if (lower.includes('klia') || lower.includes('kuala lumpur')) return 'Kuala Lumpur';
+    if (lower.includes('senai') || lower.includes('johor bahru')) return 'Johor Bahru';
+    if (lower.includes('suvarnabhumi') || lower.includes('don mueang') || lower.includes('bangkok')) return 'Bangkok';
+
     return name
         .replace(/\([A-Z]{3}\)/g, '')
-        .replace(/\s*(?:International|Airport|Airfield|Senai|Terminal\s*\d+|T\d+).*/i, '')
+        .replace(/\s*(?:International|Airport|Airfield|Senai|Terminal\s*[0-9A-Z]+|T\d+).*/i, '')
+        .replace(/[,\-\/]+$/, '')
         .trim();
 }
 
@@ -126,11 +180,19 @@ export function extractCityName(name) {
 export function parseItineraryText(rawText) {
     const clean = rawText.replace(/\u2236/g, ':');
 
+    // 0. Airline Auto-Detection
+    let airline = 'AirAsia';
+    if (/(?:vietjet|viet\s*jet|\bVJ\d{3,4}\b|\bVZ\d{3,4}\b)/i.test(clean)) {
+        airline = 'VietJet Air';
+    } else if (/(?:airasia|air\s*asia|\b(?:AK|FD|QZ|D7|XJ|Z2)\d{3,4}\b)/i.test(clean)) {
+        airline = 'AirAsia';
+    }
+
     // 1. Booking No
     const bookingNoMatch = clean.match(/Booking\s*No\.?\s*([0-9A-Z]+)/i);
     const bookingNo = bookingNoMatch ? bookingNoMatch[1].trim() : '';
 
-    // 2. Class - explicitly check for Cabin class only (do NOT match "(First name)")
+    // 2. Class - explicitly check for Cabin class only
     let flightClass = 'Economy';
     if (/\bPremium\s*Economy\b/i.test(clean)) flightClass = 'Premium Economy';
     else if (/\bBusiness\b/i.test(clean)) flightClass = 'Business';
@@ -156,51 +218,95 @@ export function parseItineraryText(rawText) {
         eTicketNo = eticketMatch[1].trim();
     }
 
-    // 5. Passenger Name & Type
-    let passengerName = '';
-    let passengerType = 'Adult';
-    // Priority 1: Baggage section explicitly has "NAME (Adults)"
-    const paxBaggageMatch = clean.match(/\b([A-Z][A-Z\s]{2,35})\s*\((Adults?|Children|Infants?)\)/i);
-    if (paxBaggageMatch && !/^(kuala|johor|singapore|bangkok|baggage|flight|airline|personal|carry)/i.test(paxBaggageMatch[1].trim())) {
-        passengerName = paxBaggageMatch[1].trim();
-        passengerType = paxBaggageMatch[2].replace(/s$/i, '');
-    } else {
-        // Priority 2: Trip.com passenger table "Reference SITT MON (First name) AUNG (Last name) Economy"
-        const nameBlockMatch = clean.match(/Reference[\s\n]+([A-Z\s\(\)]+?)(?=\s+(?:Economy|Business|Premium|--))/i) ||
-                               clean.match(/Name[\s\S]*?Reference[\s\n]+([A-Z\s\(\)]+?)(?=\s+(?:Economy|Business|Premium|--))/i);
-        if (nameBlockMatch) {
-            let n = nameBlockMatch[1];
-            n = n.replace(/\(First\s*name\)/gi, '')
-                 .replace(/\(Last\s*name\)/gi, '')
-                 .replace(/Reference/gi, '')
-                 .replace(/\s+/g, ' ')
-                 .trim();
-            if (n) passengerName = n;
+    // 5. Passengers (Supports Multiple Passengers)
+    const passengers = [];
+    const lines = clean.split(/[\r\n]+/);
+
+    // Method A: Baggage section passenger lines "NAME (Adults)"
+    for (const line of lines) {
+        const m = line.trim().match(/^([A-Za-z\s]{3,45})\s*\((Adults?|Children|Infants?)\)$/i);
+        if (m) {
+            const rawName = m[1].replace(/\s+/g, ' ').trim().toUpperCase();
+            if (!/^(kuala|johor|singapore|bangkok|baggage|flight|airline|personal|carry|phu quoc|ho chi|vietjet|airasia)/i.test(rawName)) {
+                const pType = m[2].replace(/s$/i, '');
+                const formattedType = pType.toLowerCase() === 'adult' ? 'Adult' : pType;
+                if (!passengers.some(p => p.name === rawName)) {
+                    passengers.push({ name: rawName, type: formattedType });
+                }
+            }
         }
     }
-    if (passengerType.toLowerCase() === 'adult') passengerType = 'Adult';
+
+    // Method B: Passenger Table lines with (First name) or (Last name)
+    if (passengers.length === 0) {
+        for (const line of lines) {
+            if (line.includes('(First name)') || line.includes('(Last name)') || /--\s+[A-Z0-9]{5,7}\b/i.test(line)) {
+                let n = line.replace(/\(First\s*name\)/gi, '')
+                            .replace(/\(Last\s*name\)/gi, '')
+                            .replace(/(?:Economy|Business|Premium|--|[A-Z0-9]{5,7}).*/i, '')
+                            .replace(/\s+/g, ' ')
+                            .trim()
+                            .toUpperCase();
+                if (n && n.length > 2 && !/^(name|class|reference|airline|booking)/i.test(n)) {
+                    if (!passengers.some(p => p.name === n)) {
+                        passengers.push({ name: n, type: 'Adult' });
+                    }
+                }
+            }
+        }
+    }
+
+    // Method C: Fallback single match
+    if (passengers.length === 0) {
+        let singleName = '';
+        let singleType = 'Adult';
+        const paxBaggageMatch = clean.match(/\b([A-Z][A-Z\s]{2,35})\s*\((Adults?|Children|Infants?)\)/i);
+        if (paxBaggageMatch && !/^(kuala|johor|singapore|bangkok|baggage|flight|airline|personal|carry)/i.test(paxBaggageMatch[1].trim())) {
+            singleName = paxBaggageMatch[1].trim().toUpperCase();
+            singleType = paxBaggageMatch[2].replace(/s$/i, '');
+        } else {
+            const nameBlockMatch = clean.match(/Reference[\s\n]+([A-Z\s\(\)]+?)(?=\s+(?:Economy|Business|Premium|--))/i) ||
+                                   clean.match(/Name[\s\S]*?Reference[\s\n]+([A-Z\s\(\)]+?)(?=\s+(?:Economy|Business|Premium|--))/i);
+            if (nameBlockMatch) {
+                let n = nameBlockMatch[1]
+                    .replace(/\(First\s*name\)/gi, '')
+                    .replace(/\(Last\s*name\)/gi, '')
+                    .replace(/Reference/gi, '')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .toUpperCase();
+                if (n) singleName = n;
+            }
+        }
+        if (singleName) {
+            passengers.push({ name: singleName, type: singleType === 'adult' ? 'Adult' : singleType });
+        }
+    }
+
+    const passengerName = passengers[0]?.name || '';
+    const passengerType = passengers[0]?.type || 'Adult';
 
     // 6. Flight Info
     let flightNo = '';
-    let airlineName = 'AirAsia Berhad';
+    let airlineName = airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad';
     const flBlockMatch = clean.match(/Flight\s*Information[\s\S]*?(?:Baggage\s*Allowance|$)/i);
     const flSearchText = flBlockMatch ? flBlockMatch[0] : clean;
-    const airlineMatch = flSearchText.match(/Airline\s+(.*?)\s+(AK\d{3,4}|FD\d{3,4}|QZ\d{3,4}|D7\d{3,4}|XJ\d{3,4}|Z2\d{3,4}|[A-Z0-9]{2}\s*\d{3,4})\b/i);
+    const airlineMatch = flSearchText.match(/Airline\s+(.*?)\s+(AK\d{3,4}|FD\d{3,4}|QZ\d{3,4}|D7\d{3,4}|XJ\d{3,4}|Z2\d{3,4}|VJ\d{3,4}|VZ\d{3,4}|[A-Z0-9]{2}\s*\d{3,4})\b/i);
     if (airlineMatch) {
         airlineName = airlineMatch[1].trim();
         flightNo = airlineMatch[2].replace(/\s+/g, '');
     } else {
-        const flMatch = flSearchText.match(/\b(AK|FD|QZ|D7|XJ|Z2)\s*(\d{3,4})\b/i);
+        const flMatch = flSearchText.match(/\b(AK|FD|QZ|D7|XJ|Z2|VJ|VZ)\s*(\d{3,4})\b/i);
         if (flMatch) {
             flightNo = flMatch[1].toUpperCase() + flMatch[2];
         }
         const airNameMatch = flSearchText.match(/Airline\s*[:\t ]+([^\n\r]+)/i);
         if (airNameMatch) {
-            airlineName = airNameMatch[1].replace(/AK\d+|FD\d+|QZ\d+|D7\d+|XJ\d+|Z2\d+/i, '').trim() || airlineName;
+            airlineName = airNameMatch[1].replace(/(?:AK|FD|QZ|D7|XJ|Z2|VJ|VZ)\d+/i, '').trim() || airlineName;
         }
     }
 
-    // 7 & 8. Section-based Departure & Arrival Parser (Robust against any spacing or line breaks)
+    // 7 & 8. Section-based Departure & Arrival Parser
     function parseFlightSection(fullText, startWord, endWords) {
         const endGroup = endWords.map(w => `\\b${w}\\b`).join('|');
         const regex = new RegExp(`\\b${startWord}\\b([\\s\\S]*?)(?=${endGroup}|$)`, 'i');
@@ -208,7 +314,7 @@ export function parseItineraryText(rawText) {
         if (!match) return { time: '', dateRaw: '', terminal: '', airport: '' };
         let block = match[1].trim();
 
-        // 1. Time (supports colon, dot, unicode ratio, or fullwidth colon)
+        // 1. Time
         let time = '';
         const timeMatch = block.match(/\b(\d{1,2})\s*[:.∶：]\s*(\d{2})\b/);
         if (timeMatch) {
@@ -224,20 +330,33 @@ export function parseItineraryText(rawText) {
             block = block.replace(dateMatch[0], ' ');
         }
 
-        // 3. Terminal
+        // 3. Airport & Terminal
         let terminal = '';
-        const termMatch = block.match(/\b(T\d+|Terminal\s*\d+)\b/i);
-        if (termMatch) {
-            terminal = termMatch[0].replace(/^T(\d+)/i, 'Terminal $1');
-            block = block.replace(termMatch[0], ' ');
-        }
-
-        // 4. Airport Name
         let airport = block
             .replace(/^[,\s\-\t:]+/, '')
             .replace(/[,\s\-\t:]+$/, '')
             .replace(/\s+/g, ' ')
             .trim();
+
+        // Detect terminal at end: e.g. "Airport D", "Airport T1", "International Terminal 2", "Terminal 1"
+        const endTermMatch = airport.match(/(?:,\s*)?(?:Terminal\s*([0-9A-Za-z]+)|T(\d+)|(?:\b([A-Z0-9])\b))\s*$/i);
+        if (endTermMatch) {
+            const val = endTermMatch[1] || endTermMatch[2] || endTermMatch[3];
+            if (val && !/^(Airport|International|Domestic)$/i.test(val)) {
+                terminal = /^\d+$/.test(val) ? `Terminal ${val}` : `Terminal ${val}`;
+                airport = airport.substring(0, endTermMatch.index).trim();
+            }
+        } else {
+            const explicitTermMatch = airport.match(/\b(Terminal\s*[0-9A-Z]+|T\d+)\b/i);
+            if (explicitTermMatch) {
+                terminal = explicitTermMatch[0].replace(/^T(\d+)/i, 'Terminal $1');
+                airport = airport.replace(explicitTermMatch[0], ' ').trim();
+            }
+        }
+
+        if (!/airport/i.test(airport) && /international/i.test(airport)) {
+            airport += ' Airport';
+        }
 
         return { time, dateRaw, terminal, airport };
     }
@@ -263,31 +382,34 @@ export function parseItineraryText(rawText) {
         arrAirport += ` (${arrCode})`;
     }
 
-    const depCity = extractCityName(depSection.airport) || 'Kuala Lumpur';
-    const arrCity = extractCityName(arrSection.airport) || 'Johor Bahru';
+    const depCity = extractCityName(depSection.airport) || 'Phu Quoc';
+    const arrCity = extractCityName(arrSection.airport) || 'Ho Chi Minh City';
     const route = `${depCity} (${depCode || 'DEP'}) - ${arrCity} (${arrCode || 'ARR'})`;
 
     // 10. Baggage
-    let checkedBaggage = '30 kg per person\nEach piece max 119 x 119 x 81 cm (total 319 cm)';
-    const kgMatch = clean.match(/Checked\s*baggage\s*[\t: ]*(\d+\s*kg\s*per\s*person)/i);
-    const dimMatch = clean.match(/(?:cannot\s*exceed|max)\s*(\d+\s*cm)\s*\(([0-9x\s]+cm)\)/i);
+    let checkedBaggage = '20 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm';
+    const kgMatch = clean.match(/Checked\s*baggage\s*[:\t ]*(\d+\s*kg\s*per\s*person)/i);
+    const dimMatch = clean.match(/Checked\s*baggage[\s\S]*?(?:cannot\s*exceed|max)\s*([0-9x\s]+cm)/i) ||
+                     clean.match(/(?:cannot\s*exceed|max)\s*(\d+\s*cm)\s*\(([0-9x\s]+cm)\)/i);
     if (kgMatch && dimMatch) {
-        const dimStr = dimMatch[2].replace(/\s+/g, ' ').replace(/x/g, ' x ');
-        checkedBaggage = `${kgMatch[1].trim()}\nEach piece max ${dimStr} (total ${dimMatch[1].trim()})`;
+        const dimStr = (dimMatch[1] || dimMatch[2]).replace(/\s+/g, ' ').replace(/x/g, ' x ');
+        checkedBaggage = `${kgMatch[1].trim()}\nEach piece max ${dimStr}`;
     } else if (kgMatch) {
-        checkedBaggage = `${kgMatch[1].trim()}\nEach piece max 119 x 119 x 81 cm (total 319 cm)`;
+        checkedBaggage = `${kgMatch[1].trim()}\nEach piece max 119 x 119 x 81 cm`;
     }
 
     const carryOnBaggage = '1 piece per person\nMax 56 x 36 x 23 cm per piece';
     const personalItem = '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
 
     return {
+        airline,
         bookingNo,
         pnr,
         flightClass,
         eTicketNo,
         passengerName,
         passengerType,
+        passengers,
         flightNo,
         airlineName,
         depTime,
@@ -348,7 +470,8 @@ export async function generateAirAsiaPdfDoc(data) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
-    const logoDataUrl = await getAirAsiaLogoDataUrl();
+    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
+    const logoDataUrl = await getAirlineLogoDataUrl(isVietJet ? 'VietJet Air' : 'AirAsia');
 
     // A4 dimensions in pt: 595.28 x 841.89
     const marginX = 48.5;
@@ -366,7 +489,11 @@ export async function generateAirAsiaPdfDoc(data) {
     // 1. HEADER
     if (logoDataUrl) {
         try {
-            doc.addImage(logoDataUrl, 'PNG', marginX, cursorY, 147, 63);
+            if (isVietJet) {
+                doc.addImage(logoDataUrl, 'PNG', marginX, cursorY + 2, 115, 65);
+            } else {
+                doc.addImage(logoDataUrl, 'PNG', marginX, cursorY, 147, 63);
+            }
         } catch (e) {
             console.warn('Could not add logo to PDF', e);
         }
@@ -472,22 +599,31 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.text("Name", marginX + 6, paxHeaderY + 14.5);
     doc.text("Type", paxColSplit + 6, paxHeaderY + 14.5);
 
+    const paxList = (data.passengers && data.passengers.length > 0)
+        ? data.passengers
+        : [{ name: data.passengerName || '', type: data.passengerType || 'Adult' }];
+
     const paxRowHeight = 22.5;
-    const paxRowY = paxHeaderY + paxHeaderHeight;
-    doc.setFillColor(...greyBg);
-    doc.rect(marginX, paxRowY, contentWidth, paxRowHeight, 'F');
-    doc.setDrawColor(...borderGrey);
-    doc.rect(marginX, paxRowY, contentWidth, paxRowHeight, 'S');
-    doc.line(paxColSplit, paxRowY, paxColSplit, paxRowY + paxRowHeight);
+    let paxRowY = paxHeaderY + paxHeaderHeight;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(...darkColor);
-    doc.text(data.passengerName || "", marginX + 6, paxRowY + 15);
-    doc.setFont("helvetica", "normal");
-    doc.text(data.passengerType || "Adult", paxColSplit + 6, paxRowY + 15);
+    paxList.forEach((pax) => {
+        doc.setFillColor(...greyBg);
+        doc.rect(marginX, paxRowY, contentWidth, paxRowHeight, 'F');
+        doc.setDrawColor(...borderGrey);
+        doc.rect(marginX, paxRowY, contentWidth, paxRowHeight, 'S');
+        doc.line(paxColSplit, paxRowY, paxColSplit, paxRowY + paxRowHeight);
 
-    cursorY = paxRowY + paxRowHeight + 20;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...darkColor);
+        doc.text(pax.name || "", marginX + 6, paxRowY + 15);
+        doc.setFont("helvetica", "normal");
+        doc.text(pax.type || "Adult", paxColSplit + 6, paxRowY + 15);
+
+        paxRowY += paxRowHeight;
+    });
+
+    cursorY = paxRowY + 20;
 
     // 4. FLIGHT INFORMATION
     drawSectionTitle("Flight Information", cursorY);
@@ -704,10 +840,14 @@ export async function generateAirAsiaPdfDoc(data) {
  * Download the generated vector PDF
  */
 export async function downloadAirAsiaPdf(data) {
-    const doc = await generateAirAsiaPdfDoc(data);
-    const safeName = (data.passengerName || 'AirAsia').replace(/[^a-zA-Z0-9]/g, '_');
+    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
+    const prefix = isVietJet ? 'VietJet' : 'AirAsia';
+    const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
+    const safeName = primaryName.replace(/[^a-zA-Z0-9]/g, '_');
     const safePnr = (data.pnr || data.bookingNo || 'Itinerary').replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `AirAsia_Ticket_${safeName}_${safePnr}.pdf`;
+    const filename = `${prefix}_Ticket_${safeName}_${safePnr}.pdf`;
+
+    const doc = await generateAirAsiaPdfDoc(data);
     doc.save(filename);
     return filename;
 }
@@ -716,10 +856,17 @@ export async function downloadAirAsiaPdf(data) {
  * Generate preview HTML markup that renders identically to the PDF
  */
 export function renderAirAsiaTicketHtml(data) {
-    const logoSrc = cachedLogoDataUrl || 'airasia-logo.png';
+    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
+    const logoSrc = isVietJet ? (cachedVietJetLogoDataUrl || 'vietjet-logo.png') : (cachedAirAsiaLogoDataUrl || 'airasia-logo.png');
+    const airlineTitle = isVietJet ? 'VietJet Air' : 'AirAsia';
+
     const checkedLines = (data.checkedBaggage || '').split('\n');
     const carryLines = (data.carryOnBaggage || '').split('\n');
     const personalLines = (data.personalItem || '').split('\n');
+
+    const paxList = (data.passengers && data.passengers.length > 0)
+        ? data.passengers
+        : [{ name: data.passengerName || '', type: data.passengerType || 'Adult' }];
 
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#333333; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:40px 48px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.35; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
@@ -727,7 +874,7 @@ export function renderAirAsiaTicketHtml(data) {
         <!-- Header -->
         <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px;">
             <div style="width:190px; height:80px; display:flex; align-items:center;">
-                <img src="${logoSrc}" alt="AirAsia" style="max-width:100%; max-height:100%; object-fit:contain;">
+                <img src="${logoSrc}" alt="${airlineTitle}" style="max-width:100%; max-height:100%; object-fit:contain;">
             </div>
             <div style="text-align:right;">
                 <div style="font-size:26px; font-weight:800; color:#E31E24; letter-spacing:0.5px; line-height:1.1;">E-TICKET</div>
@@ -769,10 +916,12 @@ export function renderAirAsiaTicketHtml(data) {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td style="padding:8px 10px; border:1px solid #CCCCCC; font-weight:700;">${data.passengerName || ''}</td>
-                        <td style="padding:8px 10px; border:1px solid #CCCCCC;">${data.passengerType || 'Adult'}</td>
-                    </tr>
+                    ${paxList.map(p => `
+                        <tr>
+                            <td style="padding:8px 10px; border:1px solid #CCCCCC; font-weight:700;">${p.name || ''}</td>
+                            <td style="padding:8px 10px; border:1px solid #CCCCCC;">${p.type || 'Adult'}</td>
+                        </tr>
+                    `).join('')}
                 </tbody>
             </table>
         </div>
@@ -887,9 +1036,12 @@ export async function downloadAirAsiaImage(data) {
         backgroundColor: '#ffffff'
     });
 
-    const safeName = (data.passengerName || 'AirAsia').replace(/[^a-zA-Z0-9]/g, '_');
+    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
+    const prefix = isVietJet ? 'VietJet' : 'AirAsia';
+    const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
+    const safeName = primaryName.replace(/[^a-zA-Z0-9]/g, '_');
     const safePnr = (data.pnr || data.bookingNo || 'Itinerary').replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `AirAsia_Ticket_${safeName}_${safePnr}.png`;
+    const filename = `${prefix}_Ticket_${safeName}_${safePnr}.png`;
 
     const link = document.createElement('a');
     link.download = filename;
@@ -905,6 +1057,10 @@ export async function shareAirAsiaTicket(data) {
     const filename = await downloadAirAsiaPdf(data);
     showToast(`PDF downloaded: ${filename}`, 'success');
 
+    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
+    const prefix = isVietJet ? 'VietJet' : 'AirAsia';
+    const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
+
     if (navigator.share && navigator.canShare) {
         try {
             const doc = await generateAirAsiaPdfDoc(data);
@@ -912,14 +1068,14 @@ export async function shareAirAsiaTicket(data) {
             const file = new File([blob], filename, { type: 'application/pdf' });
             if (navigator.canShare({ files: [file] })) {
                 await navigator.share({
-                    title: `AirAsia E-Ticket - ${data.passengerName || ''}`,
-                    text: `AirAsia E-Ticket Itinerary Receipt for booking ${data.bookingNo || ''} (PNR: ${data.pnr || ''})`,
+                    title: `${prefix} E-Ticket - ${primaryName}`,
+                    text: `${prefix} E-Ticket Itinerary Receipt for booking ${data.bookingNo || ''} (PNR: ${data.pnr || ''})`,
                     files: [file]
                 });
             } else {
                 await navigator.share({
-                    title: `AirAsia E-Ticket - ${data.passengerName || ''}`,
-                    text: `AirAsia E-Ticket Receipt for booking ${data.bookingNo || ''} (PNR: ${data.pnr || ''})`
+                    title: `${prefix} E-Ticket - ${primaryName}`,
+                    text: `${prefix} E-Ticket Receipt for booking ${data.bookingNo || ''} (PNR: ${data.pnr || ''})`
                 });
             }
         } catch (e) {

@@ -1313,20 +1313,20 @@
                             <div class="service-toast" id="hotelToast"></div>
                         </div>
 
-                        <!-- AIRASIA E-TICKET GENERATOR -->
+                        <!-- AIRASIA & VIETJET E-TICKET GENERATOR -->
                         <div class="service-panel" id="airAsiaPanel">
                             <div class="service-panel-header">
                                 <span class="service-panel-icon" style="background: rgba(227, 30, 36, 0.1); color: #E31E24;"><i class="fa-solid fa-plane-departure"></i></span>
                                 <div>
-                                    <h2>AirAsia E-Ticket Generator</h2>
-                                    <p class="service-panel-desc">Convert Trip.com / OTA PDF itinerary into official AirAsia E-Ticket Itinerary Receipt</p>
+                                    <h2>AirAsia & VietJet E-Ticket Generator</h2>
+                                    <p class="service-panel-desc">Auto-detects Trip.com / OTA PDF itinerary and converts into official AirAsia or VietJet Air E-Ticket</p>
                                 </div>
                             </div>
 
                             <div class="airasia-upload-zone" id="airAsiaDropZone">
                                 <i class="fa-solid fa-file-pdf" style="font-size: 2.4rem; color: #E31E24; margin-bottom: 0.5rem; display:block;"></i>
                                 <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; color: var(--apple-text);">Drop Trip.com / OTA PDF here or click to browse</div>
-                                <div style="font-size: 0.8rem; color: var(--apple-text-secondary);">Auto-extracts PNR, passenger, flight schedule, and generates official AirAsia PDF</div>
+                                <div style="font-size: 0.8rem; color: var(--apple-text-secondary);">Auto-detects AirAsia & VietJet Air, extracts PNR, passengers, schedule & baggage</div>
                                 <input type="file" id="airAsiaFileInput" accept=".pdf" style="display: none;">
                             </div>
 
@@ -1532,12 +1532,12 @@
     </div>
 
 
-    <!-- AirAsia E-Ticket Generator Modal -->
+    <!-- AirAsia & VietJet E-Ticket Generator Modal -->
     <div id="airAsiaModal" class="modal">
         <div class="modal-content glass-card" style="max-width: 1200px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
             <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--apple-separator); padding-bottom:12px; margin-bottom:14px;">
                 <h2 style="font-size:1.15rem; margin:0; display:flex; align-items:center; gap:8px;">
-                    <i class="fa-solid fa-plane-departure" style="color:#E31E24;"></i> AirAsia E-Ticket Generator & Preview
+                    <i class="fa-solid fa-plane-departure" style="color:#E31E24;"></i> <span id="airAsiaModalTitle">AirAsia & VietJet E-Ticket Generator</span>
                 </h2>
                 <button type="button" class="modal-close" id="airAsiaModalCloseBtn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--apple-text-secondary);">&times;</button>
             </div>
@@ -1548,6 +1548,16 @@
                     <div class="airasia-form-scroll">
                         <div style="background: rgba(227, 30, 36, 0.08); border: 1px solid rgba(227, 30, 36, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: var(--apple-text);">
                             <i class="fa-solid fa-circle-check" style="color:#E31E24;"></i> Itinerary extracted! Review or modify any details below. Live preview updates automatically.
+                        </div>
+
+                        <div class="airasia-form-row" style="margin-top:12px;">
+                            <div class="airasia-form-group" style="grid-column: 1 / -1;">
+                                <label for="aa_airline_select" style="font-weight:700;">Airline Template <span style="font-size:11px; font-weight:normal; color:var(--apple-blue); margin-left:6px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Detected</span></label>
+                                <select id="aa_airline_select" style="font-weight:600; font-size:13px;">
+                                    <option value="AirAsia">AirAsia (Red Template)</option>
+                                    <option value="VietJet Air">VietJet Air (Red Template)</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="airasia-form-section-title">Booking Details</div>
@@ -1572,37 +1582,29 @@
                             </div>
                         </div>
 
-                        <div class="airasia-form-section-title">Passenger Information</div>
-                        <div class="airasia-form-row">
-                            <div class="airasia-form-group" style="grid-column: 1 / -1;">
-                                <label for="aa_pax_name">Passenger Name</label>
-                                <input type="text" id="aa_pax_name" placeholder="Passenger Full Name">
-                            </div>
+                        <div class="airasia-form-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>Passenger Information</span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="aa_add_pax_btn" style="padding:2px 8px; font-size:11px;">
+                                <i class="fa-solid fa-plus"></i> Add Passenger
+                            </button>
                         </div>
-                        <div class="airasia-form-row">
-                            <div class="airasia-form-group">
-                                <label for="aa_pax_type">Passenger Type</label>
-                                <select id="aa_pax_type">
-                                    <option value="Adult" selected>Adult</option>
-                                    <option value="Child">Child</option>
-                                    <option value="Infant">Infant</option>
-                                </select>
-                            </div>
-                            <div class="airasia-form-group">
-                                <label for="aa_route">Route</label>
-                                <input type="text" id="aa_route" placeholder="e.g. Kuala Lumpur (KUL) - Johor Bahru (JHB)">
-                            </div>
-                        </div>
+                        <div id="aa_passengers_list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;"></div>
 
                         <div class="airasia-form-section-title">Flight Details</div>
                         <div class="airasia-form-row">
+                            <div class="airasia-form-group" style="grid-column: 1 / -1;">
+                                <label for="aa_route">Route</label>
+                                <input type="text" id="aa_route" placeholder="e.g. Phu Quoc (PQC) - Ho Chi Minh City (SGN)">
+                            </div>
+                        </div>
+                        <div class="airasia-form-row">
                             <div class="airasia-form-group">
                                 <label for="aa_flight_no">Flight Number</label>
-                                <input type="text" id="aa_flight_no" placeholder="e.g. AK6032">
+                                <input type="text" id="aa_flight_no" placeholder="e.g. VJ334 / AK6032">
                             </div>
                             <div class="airasia-form-group">
                                 <label for="aa_airline_name">Airline / Carrier</label>
-                                <input type="text" id="aa_airline_name" placeholder="AirAsia Berhad">
+                                <input type="text" id="aa_airline_name" placeholder="VietJet Air / AirAsia">
                             </div>
                         </div>
 
@@ -1685,6 +1687,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=38" type="module"></script>
+    <script src="main.js?v=39" type="module"></script>
 </body>
 </html>
