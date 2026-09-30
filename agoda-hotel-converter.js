@@ -1,6 +1,7 @@
 /**
  * Agoda China Visa Hotel Booking Confirmation Generator
  * Generates official Agoda Booking Confirmations for China Visa applications.
+ * Exactly matches official colors, layout, and spacing.
  */
 
 import { showToast } from './utils.js';
@@ -91,7 +92,6 @@ export function formatAgodaDate(dateInput) {
         let d;
         if (typeof dateInput === 'string') {
             const trimmed = dateInput.trim();
-            // Handle DD/MM/YYYY
             if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
                 const parts = trimmed.split('/');
                 d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
@@ -116,7 +116,7 @@ export function formatAgodaDate(dateInput) {
 }
 
 /**
- * Calculates a default cancellation date (e.g., 15-30 days before arrival)
+ * Calculates a default cancellation date (e.g., 20 days before arrival)
  */
 export function calculateDefaultCancellationDate(arrivalDateStr) {
     try {
@@ -136,7 +136,7 @@ export function calculateDefaultCancellationDate(arrivalDateStr) {
 }
 
 /**
- * Generate preview HTML markup that renders identically to the Agoda Booking Confirmation
+ * Generate preview HTML markup that renders identically to the original Agoda Booking Confirmation
  */
 export function renderAgodaHotelHtml(data) {
     const logoSrc = cachedAgodaLogoDataUrl || 'agoda-logo.png';
@@ -169,10 +169,10 @@ export function renderAgodaHotelHtml(data) {
     <div class="agoda-booking-wrapper" id="agodaBookingDocument" style="background:#ffffff; color:#000000; font-family:'Liberation Sans', Arial, Helvetica, sans-serif; width:100%; max-width:708px; margin:0 auto; box-sizing:border-box; line-height:1.25; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
         
         <!-- Outer Border Container -->
-        <div style="border:1.2px solid #000000; padding:10px 14px 12px 14px; background:#ffffff; box-sizing:border-box;">
+        <div style="border:1.1px solid #000000; padding:10px 14px 14px 14px; background:#ffffff; box-sizing:border-box;">
             
             <!-- 1. Header Row -->
-            <div style="display:flex; justify-content:space-between; align-items:flex-end; padding:2px 2px 8px 2px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; padding:2px 2px 6px 2px;">
                 <div style="width:90px; height:46px; display:flex; align-items:center;">
                     <img src="${logoSrc}" alt="agoda" style="max-width:100%; max-height:100%; object-fit:contain;">
                 </div>
@@ -202,127 +202,117 @@ export function renderAgodaHotelHtml(data) {
             </div>
 
             <!-- 3. Main Details Grid (Two Columns) -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 6px; font-size: 9.5px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; font-size: 9.5px;">
                 
-                <!-- Left Column -->
-                <div style="display:flex; flex-direction:column; gap:4.5px;">
+                <!-- Left Column (NO gray background on top items; white boxes only for Property, Address, Contact) -->
+                <div style="display:flex; flex-direction:column; gap:5px;">
                     <!-- Booking ID -->
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; height:18px;">
                         <span style="width:125px; color:#000000;">Booking ID :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
-                            ${bookingId}
-                        </div>
+                        <span style="font-weight:bold; color:#000000; font-size:9.5px;">${bookingId}</span>
                     </div>
 
                     <!-- Booking Reference No -->
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; height:18px;">
                         <span style="width:125px; color:#000000;">Booking Reference No :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
-                            ${bookingRefNo}
-                        </div>
+                        <span style="font-weight:bold; color:#000000; font-size:9.5px;">${bookingRefNo}</span>
                     </div>
 
                     <!-- Client -->
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; height:18px;">
                         <span style="width:125px; color:#000000;">Client :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:10px; color:#000000;">
-                            ${clientName}
-                        </div>
+                        <span style="font-weight:bold; color:#000000; font-size:10.5px;">${clientName}</span>
                     </div>
 
                     <!-- Member ID -->
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; height:18px;">
                         <span style="width:125px; color:#000000;">Member ID :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
-                            ${memberId}
-                        </div>
+                        <span style="font-weight:bold; color:#000000; font-size:9.5px;">${memberId}</span>
                     </div>
 
                     <!-- Country of Residence -->
-                    <div style="display:flex; align-items:center;">
+                    <div style="display:flex; align-items:center; height:18px;">
                         <span style="width:125px; color:#000000;">Country of Residence :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
-                            ${countryOfResidence}
-                        </div>
+                        <span style="font-weight:bold; color:#000000; font-size:9.5px;">${countryOfResidence}</span>
                     </div>
 
-                    <!-- Property -->
-                    <div style="display:flex; align-items:center;">
+                    <!-- Property (White box with thin border) -->
+                    <div style="display:flex; align-items:center; height:19px; margin-top:2px;">
                         <span style="width:125px; color:#000000;">Property :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000; padding:0 4px; text-align:center; overflow:hidden;">
+                        <div style="flex:1; background:#ffffff; border:1px solid #c0c0c0; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000; padding:0 4px; overflow:hidden;">
                             ${propertyName}
                         </div>
                     </div>
 
-                    <!-- Address (multiline) -->
-                    <div style="display:flex; align-items:stretch;">
-                        <span style="width:125px; color:#000000; padding-top:6px;">Address :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; min-height:40px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:bold; font-size:9px; line-height:1.3; color:#000000; padding:4px 6px; text-align:center;">
+                    <!-- Address (White box with thin border, multiline) -->
+                    <div style="display:flex; align-items:stretch; min-height:40px; margin-top:2px;">
+                        <span style="width:125px; color:#000000; padding-top:4px;">Address :</span>
+                        <div style="flex:1; background:#ffffff; border:1px solid #c0c0c0; border-radius:2px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:bold; font-size:9px; line-height:1.25; color:#000000; padding:3px 4px; text-align:center;">
                             ${propertyAddress.split('\n').join('<br>')}
                         </div>
                     </div>
 
-                    <!-- Property Contact Number -->
-                    <div style="display:flex; align-items:center;">
+                    <!-- Property Contact Number (White box with thin border) -->
+                    <div style="display:flex; align-items:center; height:19px; margin-top:2px;">
                         <span style="width:125px; color:#000000;">Property Contact Number :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                        <div style="flex:1; background:#ffffff; border:1px solid #c0c0c0; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${propertyContact}
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column -->
-                <div style="display:flex; flex-direction:column; gap:4.5px;">
+                <!-- Right Column (Inside a unified light-gray container with WHITE boxes inside) -->
+                <div style="background:#ebebeb; border:1px solid #dcdcdc; border-radius:4px; padding:6px 10px; display:flex; flex-direction:column; gap:4.5px;">
                     <!-- Number of Rooms -->
-                    <div style="display:flex; align-items:center;">
-                        <span style="width:125px; color:#000000;">Number of Rooms :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="color:#000000;">Number of Rooms :</span>
+                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${numRooms}
                         </div>
                     </div>
 
                     <!-- Number of Extra Beds -->
-                    <div style="display:flex; align-items:center;">
-                        <span style="width:125px; color:#000000;">Number of Extra Beds :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="color:#000000;">Number of Extra Beds :</span>
+                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${numExtraBeds}
                         </div>
                     </div>
 
                     <!-- Number of Adults -->
-                    <div style="display:flex; align-items:center;">
-                        <span style="width:125px; color:#000000;">Number of Adults :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="color:#000000;">Number of Adults :</span>
+                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${numAdults}
                         </div>
                     </div>
 
                     <!-- Number of Children -->
-                    <div style="display:flex; align-items:center;">
-                        <span style="width:125px; color:#000000;">Number of Children :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="color:#000000;">Number of Children :</span>
+                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${numChildren}
                         </div>
                     </div>
 
                     <!-- Room Type -->
-                    <div style="display:flex; align-items:center;">
-                        <span style="width:125px; color:#000000;">Room Type :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="color:#000000;">Room Type :</span>
+                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:17px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                             ${roomType}
                         </div>
                     </div>
 
                     <!-- Promotion -->
-                    <div style="display:flex; align-items:center;">
-                        <span style="width:125px; color:#000000;">Promotion :</span>
-                        <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:19px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:8.8px; color:#000000; padding:0 4px; white-space:nowrap; overflow:hidden;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span style="color:#000000;">Promotion :</span>
+                        <div style="width:160px; background:#ffffff; border:1px solid #d4d4d4; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:8.6px; color:#000000; padding:0 3px; white-space:nowrap; overflow:hidden;">
                             ${promotion}
                         </div>
                     </div>
 
                     <!-- Promotion condition note -->
-                    <div style="font-size:9.2px; color:#000000; margin-top:3px; padding-left:2px;">
+                    <div style="font-size:9px; color:#000000; margin-top:2px;">
                         For Full Promotion details and conditions see confirmation email
                     </div>
                 </div>
@@ -330,67 +320,65 @@ export function renderAgodaHotelHtml(data) {
             </div>
 
             <!-- 4. Cancellation Policy Banner -->
-            <div style="background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; padding:5px 8px; margin:6px 0; font-size:9.5px; line-height:1.35; color:#000000;">
+            <div style="background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; padding:5px 8px; margin:7px 0; font-size:9.5px; line-height:1.35; color:#000000;">
                 <strong>Cancellation Policy:</strong> Risk-free booking! You can cancel until ${cancellationDate} and pay nothing! If you fail to arrive or cancel the booking, no refund will be given. If you fail to arrive or cancel the booking, no refund will be given.
             </div>
 
             <!-- 5. Benefits Included Banner -->
-            <div style="background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; padding:4px 8px; margin-bottom:6px; font-size:9.5px; color:#000000;">
+            <div style="background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; padding:4px 8px; margin-bottom:10px; font-size:9.5px; color:#000000;">
                 Benefits Included Express check-in, Free WiFi
             </div>
 
             <!-- 6. Dates Row (Arrival & Departure) -->
-            <div style="display:flex; gap:16px; margin:7px 0; font-size:9.5px; align-items:center;">
-                <div style="display:flex; align-items:center; flex:1;">
-                    <span style="font-weight:bold; margin-right:8px; width:65px;">Arrival :</span>
-                    <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+            <div style="display:flex; align-items:center; gap:20px; margin:10px 0 14px 0; font-size:9.5px;">
+                <div style="display:flex; align-items:center;">
+                    <span style="font-weight:bold; margin-right:8px; width:55px;">Arrival :</span>
+                    <div style="width:140px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; height:19px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                         ${arrivalDate}
                     </div>
                 </div>
-                <div style="display:flex; align-items:center; flex:1;">
-                    <span style="font-weight:bold; margin-right:8px; width:75px;">Departure :</span>
-                    <div class="agoda-pill-box" style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                <div style="display:flex; align-items:center;">
+                    <span style="font-weight:bold; margin-right:8px; width:70px;">Departure :</span>
+                    <div style="width:140px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; height:19px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                         ${departureDate}
                     </div>
                 </div>
             </div>
 
-            <!-- 7. Booked And Payable By / Signature Section -->
-            <div style="display:flex; gap:14px; margin-top:8px; margin-bottom:8px; align-items:stretch;">
-                <!-- Left Box -->
-                <div style="flex:1; display:flex; flex-direction:column;">
+            <!-- 7. Booked And Payable By / Signature Section (Properly separated, NO overlap!) -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+                <!-- Left Box: Booked And Payable By -->
+                <div style="flex:1; max-width:410px;">
                     <div style="font-weight:bold; font-size:9.5px; margin-bottom:4px;">Booked And Payable By :</div>
-                    <div style="flex:1; background:#ebebeb; border:1px solid #d4d4d4; border-radius:4px; padding:8px 10px; font-size:9.5px; line-height:1.45; color:#000000;">
+                    <div style="background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; padding:8px 10px; font-size:9.5px; line-height:1.45; color:#000000;">
                         Agoda Company Pte, Ltd.<br>
                         30 Cecil Street, Prudential Tower #19-08,<br>
                         Singapore 049712
                     </div>
                 </div>
-                <!-- Right Box (Stamp & Signature) -->
-                <div style="width:190px; height:98px; background:#ffffff; border:1px solid #d4d4d4; border-radius:4px; display:flex; align-items:center; justify-content:center; padding:4px; box-sizing:border-box;">
+                <!-- Right Box: Stamp & Signature -->
+                <div style="width:190px; height:98px; background:#ffffff; border:1px solid #d4d4d4; border-radius:3px; display:flex; align-items:center; justify-content:center; padding:3px; box-sizing:border-box;">
                     <img src="${stampSrc}" alt="Authorized Stamp & Signature" style="max-width:100%; max-height:100%; object-fit:contain;">
                 </div>
             </div>
 
-            <!-- 8. Remarks & Customer Support Row -->
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:10px; margin-bottom:8px; font-size:9.5px;">
-                <!-- Remarks -->
-                <div style="font-weight:bold; line-height:1.4; color:#000000;">
-                    <div>Remarks :</div>
-                    <div>${remarksTaxes}</div>
-                    <div>${remarksSpecial}</div>
-                    <div>All special requests are subject to availability upon arrival</div>
-                </div>
-                <!-- Customer Support -->
-                <div style="text-align:right; line-height:1.4; color:#000000;">
-                    <div style="font-weight:bold;">Call our Customer Service Center 24/7 :</div>
-                    <div>Customer Support : +60 3 2053 1869, +1 866 656 8207</div>
-                    <div style="font-weight:normal;">(Long distance charge may apply)</div>
-                </div>
+            <!-- 8. Remarks Section -->
+            <div style="font-weight:bold; font-size:9.5px; line-height:1.45; color:#000000; margin-bottom:32px;">
+                <div>Remarks :</div>
+                <div>${remarksTaxes}</div>
+                <div>${remarksSpecial}</div>
+                <div>All special requests are subject to availability upon arrival</div>
             </div>
 
-            <!-- 9. Notes Section -->
-            <div style="border:1px solid #000000; border-radius:4px; padding:6px 10px; margin-top:8px; font-size:9.5px; line-height:1.35; color:#000000;">
+            <!-- 9. Customer Support Row (Pushed down to the bottom right) -->
+            <div style="text-align:right; font-size:9.5px; line-height:1.4; color:#000000; margin-bottom:14px;">
+                <div style="font-weight:bold;">Call our Customer Service Center 24/7 :</div>
+                <div>Customer Support : +60 3 2053 1869, +1 866 656 8207</div>
+                <div style="font-weight:normal;">(Long distance charge may apply)</div>
+            </div>
+
+            <!-- 10. Notes Section (Placed cleanly at the bottom) -->
+            <div style="border:1.1px solid #000000; border-radius:3px; padding:7px 10px; font-size:9.5px; line-height:1.35; color:#000000;">
                 <div style="font-weight:bold; margin-bottom:3px;">Notes</div>
                 <div style="display:flex; align-items:flex-start;">
                     <span style="margin-right:5px; font-size:11px;">•</span>
@@ -406,7 +394,7 @@ export function renderAgodaHotelHtml(data) {
 }
 
 /**
- * Generate native jsPDF vector document
+ * Generate native jsPDF vector document matching original coordinates
  */
 export async function generateAgodaPdfDoc(data) {
     if (!window.jspdf || !window.jspdf.jsPDF) {
@@ -452,17 +440,15 @@ export async function generateAgodaPdfDoc(data) {
     doc.setLineWidth(0.8);
     doc.rect(outerX, outerY, outerW, outerH, 'S');
 
-    const innerX = 41.5;
-    const innerW = 518.4;
+    const innerX = 41.9;
+    const innerW = 517.6;
     const rightEdge = innerX + innerW;
 
     // 1. Header
-    // Logo
     if (logoDataUrl) {
         doc.addImage(logoDataUrl, 'PNG', innerX, outerY + 5, 58.8, 30.8);
     }
 
-    // Right Header Text
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20.2);
     
@@ -477,10 +463,10 @@ export async function generateAgodaPdfDoc(data) {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.3);
-    doc.text("Please present either an electronic or paper copy of your booking confirmation upon check-in.", rightEdge, outerY + 34, { align: 'right' });
+    doc.text("Please present either an electronic or paper copy of your booking confirmation upon check-in.", rightEdge, outerY + 35, { align: 'right' });
 
     // 2. Grey Repeating Banner Strip
-    const stripY = outerY + 40;
+    const stripY = 78.4;
     const stripH = 10.1;
     doc.setFillColor(197, 197, 195);
     doc.rect(innerX, stripY, innerW, stripH, 'F');
@@ -495,224 +481,244 @@ export async function generateAgodaPdfDoc(data) {
         doc.text("agoda", textX, stripY + 7.5, { align: 'center' });
     }
 
-    // Colors for rounded pills
-    const pillBg = [235, 235, 235];
-    const pillBorder = [212, 212, 212];
-    doc.setDrawColor(...pillBorder);
-    doc.setLineWidth(0.5);
+    // 3. Middle Section:
+    // Left column: NO gray background for top 5 rows; thin white boxes for Property, Address, Contact
+    // Right column: BIG gray background box covering the entire right column!
 
-    // 3. Two-Column Details
-    const leftPillX = 136.6;
-    const leftPillW = 147.9;
-    const rightLabelX = 298.5;
-    const rightPillX = 380.8;
-    const rightPillW = 170.3;
+    // Right Column Background Container:
+    const rightColX = 292.9;
+    const rightColW = 266.6;
+    const rightColY = 96.8;
+    const rightColH = 123.8;
+    doc.setFillColor(220, 220, 220); // #dcdcdc
+    doc.rect(rightColX, rightColY, rightColW, rightColH, 'F');
 
-    let curY = stripY + 18.4;
-    const rowH = 13.5;
-    const rowGap = 3.0;
+    // Left Column items:
+    const labelX = 44.7;
+    const valueX = 143.3;
 
-    function drawPill(x, y, w, h, text, isMultiline = false, fontSize = 7.3, isBold = true) {
-        doc.setFillColor(...pillBg);
-        doc.roundedRect(x, y, w, h, 3, 3, 'FD');
-        doc.setFont('helvetica', isBold ? 'bold' : 'normal');
-        doc.setFontSize(fontSize);
-        doc.setTextColor(0, 0, 0);
-        if (isMultiline) {
-            const lines = text.split('\n');
-            const startY = y + (h / 2) - ((lines.length - 1) * 4.5);
-            lines.forEach((line, idx) => {
-                doc.text(line.trim(), x + (w / 2), startY + (idx * 9) + 2.5, { align: 'center' });
-            });
-        } else {
-            doc.text(String(text || ''), x + (w / 2), y + (h / 2) + 2.5, { align: 'center' });
-        }
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.3);
+    doc.setTextColor(0, 0, 0);
+
+    // Row 1: Booking ID
+    doc.text("Booking ID :", labelX, 105.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(bookingId, valueX, 105.5);
+
+    // Row 2: Booking Reference No
+    doc.setFont('helvetica', 'normal');
+    doc.text("Booking Reference No :", labelX, 121.2);
+    if (bookingRefNo) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(bookingRefNo, valueX, 121.2);
     }
 
-    // Row 1: Booking ID | Number of Rooms
+    // Row 3: Client
+    doc.setFont('helvetica', 'normal');
+    doc.text("Client :", labelX, 137.0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.0);
+    doc.text(clientName, valueX, 137.0);
+
+    // Row 4: Member ID
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.3);
+    doc.text("Member ID :", labelX, 152.6);
+    doc.setFont('helvetica', 'bold');
+    doc.text(memberId, valueX, 152.6);
+
+    // Row 5: Country of Residence
+    doc.setFont('helvetica', 'normal');
+    doc.text("Country of Residence :", labelX, 168.3);
+    doc.setFont('helvetica', 'bold');
+    doc.text(countryOfResidence, valueX, 168.3);
+
+    // Row 6: Property (White box with thin border)
+    doc.setFont('helvetica', 'normal');
+    doc.text("Property :", labelX, 184.0);
+    const boxX = 136.6;
+    const boxW = 147.9;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(212, 212, 212);
+    doc.setLineWidth(0.5);
+    doc.rect(boxX, 175.3, boxW, 14.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.3);
+    doc.text(propertyName, boxX + (boxW / 2), 185.0, { align: 'center' });
+
+    // Row 7: Address (White box with thin border, multiline)
+    doc.setFont('helvetica', 'normal');
+    doc.text("Address :", labelX, 202.0);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(boxX, 192.6, boxW, 31.9, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.8);
+    const addrLines = propertyAddress.split('\n');
+    if (addrLines.length > 1) {
+        doc.text(addrLines[0].trim(), boxX + (boxW / 2), 205.5, { align: 'center' });
+        doc.text(addrLines[1].trim(), boxX + (boxW / 2), 215.5, { align: 'center' });
+    } else {
+        doc.text(propertyAddress.trim(), boxX + (boxW / 2), 210.5, { align: 'center' });
+    }
+
+    // Row 8: Property Contact Number (White box with thin border)
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.3);
+    doc.text("Property Contact Number :", labelX, 235.8);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(boxX, 227.4, boxW, 14.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.text(propertyContact, boxX + (boxW / 2), 237.0, { align: 'center' });
+
+    // Right Column rows (Inside gray container, with WHITE boxes):
+    const rLabelX = 298.8;
+    const rBoxX = 380.8;
+    const rBoxW = 170.3;
+
+    function drawWhiteRightBox(y, h, text, isSmall = false) {
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(212, 212, 212);
+        doc.setLineWidth(0.5);
+        doc.rect(rBoxX, y, rBoxW, h, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(isSmall ? 6.7 : 7.3);
+        doc.setTextColor(0, 0, 0);
+        doc.text(String(text || ''), rBoxX + (rBoxW / 2), y + (h / 2) + 2.5, { align: 'center' });
+    }
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.3);
     doc.setTextColor(0, 0, 0);
-    doc.text("Booking ID :", innerX, curY + 9.5);
-    drawPill(leftPillX, curY, leftPillW, rowH, bookingId);
+
+    doc.text("Number of Rooms :", rLabelX, 107.0);
+    drawWhiteRightBox(99.6, 14.6, numRooms);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.3);
-    doc.text("Number of Rooms :", rightLabelX, curY + 9.5);
-    drawPill(rightPillX, curY, rightPillW, rowH, numRooms);
-
-    // Row 2: Booking Reference No | Number of Extra Beds
-    curY += rowH + rowGap;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.3);
-    doc.text("Booking Reference No :", innerX, curY + 9.5);
-    drawPill(leftPillX, curY, leftPillW, rowH, bookingRefNo);
+    doc.text("Number of Extra Beds :", rLabelX, 124.5);
+    drawWhiteRightBox(117.0, 14.6, numExtraBeds);
 
     doc.setFont('helvetica', 'normal');
-    doc.text("Number of Extra Beds :", rightLabelX, curY + 9.5);
-    drawPill(rightPillX, curY, rightPillW, rowH, numExtraBeds);
-
-    // Row 3: Client | Number of Adults
-    curY += rowH + rowGap;
-    doc.setFont('helvetica', 'normal');
-    doc.text("Client :", innerX, curY + 9.5);
-    drawPill(leftPillX, curY, leftPillW, rowH, clientName, false, 8.0, true);
+    doc.text("Number of Adults :", rLabelX, 141.8);
+    drawWhiteRightBox(134.4, 14.6, numAdults);
 
     doc.setFont('helvetica', 'normal');
-    doc.text("Number of Adults :", rightLabelX, curY + 9.5);
-    drawPill(rightPillX, curY, rightPillW, rowH, numAdults);
-
-    // Row 4: Member ID | Number of Children
-    curY += rowH + rowGap;
-    doc.setFont('helvetica', 'normal');
-    doc.text("Member ID :", innerX, curY + 9.5);
-    drawPill(leftPillX, curY, leftPillW, rowH, memberId);
+    doc.text("Number of Children :", rLabelX, 159.2);
+    drawWhiteRightBox(151.7, 14.6, numChildren);
 
     doc.setFont('helvetica', 'normal');
-    doc.text("Number of Children :", rightLabelX, curY + 9.5);
-    drawPill(rightPillX, curY, rightPillW, rowH, numChildren);
-
-    // Row 5: Country of Residence | Room Type
-    curY += rowH + rowGap;
-    doc.setFont('helvetica', 'normal');
-    doc.text("Country of Residence :", innerX, curY + 9.5);
-    drawPill(leftPillX, curY, leftPillW, rowH, countryOfResidence);
+    doc.text("Room Type :", rLabelX, 176.5);
+    drawWhiteRightBox(169.1, 14.6, roomType);
 
     doc.setFont('helvetica', 'normal');
-    doc.text("Room Type :", rightLabelX, curY + 9.5);
-    drawPill(rightPillX, curY, rightPillW, rowH, roomType);
+    doc.text("Promotion :", rLabelX, 194.5);
+    drawWhiteRightBox(186.5, 15.7, promotion, true);
 
-    // Row 6: Property | Promotion
-    curY += rowH + rowGap;
-    doc.setFont('helvetica', 'normal');
-    doc.text("Property :", innerX, curY + 9.5);
-    drawPill(leftPillX, curY, leftPillW, rowH, propertyName);
-
-    doc.setFont('helvetica', 'normal');
-    doc.text("Promotion :", rightLabelX, curY + 9.5);
-    drawPill(rightPillX, curY, rightPillW, 14.5, promotion, false, 6.7, true);
-
-    // Promotion note below
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.8);
-    doc.setTextColor(0, 0, 0);
-    doc.text("For Full Promotion details and conditions see confirmation email", rightLabelX, curY + 24);
+    doc.text("For Full Promotion details and conditions see confirmation email", rLabelX, 213.5);
 
-    // Row 7: Address (multiline)
-    curY += rowH + rowGap;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.3);
-    doc.text("Address :", innerX, curY + 9.5);
-    drawPill(leftPillX, curY, leftPillW, 31.0, propertyAddress, true, 6.8, true);
-
-    // Row 8: Property Contact Number
-    curY += 31.0 + rowGap;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.3);
-    doc.text("Property Contact Number :", innerX, curY + 9.5);
-    drawPill(leftPillX, curY, leftPillW, rowH, propertyContact);
-
-    // 4. Cancellation Policy Banner
-    curY += rowH + 6.0;
-    const cancelH = 25.5;
-    doc.setFillColor(...pillBg);
-    doc.roundedRect(innerX, curY, innerW, cancelH, 3, 3, 'FD');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.1);
-    doc.setTextColor(0, 0, 0);
-    
-    // Line 1:
-    const cancelText1 = `Cancellation Policy: Risk-free booking! You can cancel until ${cancellationDate} and pay nothing! If you fail to arrive or cancel the booking, no refund will be`;
-    doc.text(cancelText1, innerX + 4.5, curY + 9.5);
-    // Line 2:
-    const cancelText2 = "given. If you fail to arrive or cancel the booking, no refund will be given.";
-    doc.text(cancelText2, innerX + 4.5, curY + 19.5);
-
-    // 5. Benefits Included Banner
-    curY += cancelH + 3.0;
-    const benefitH = 15.5;
-    doc.setFillColor(...pillBg);
-    doc.roundedRect(innerX, curY, innerW, benefitH, 3, 3, 'FD');
+    // 4. Cancellation Policy Banner (Gray)
+    const cancelY = 247.5;
+    const cancelH = 25.8;
+    doc.setFillColor(220, 220, 220);
+    doc.rect(innerX, cancelY, innerW, cancelH, 'F');
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.2);
-    doc.text("Benefits Included Express check-in, Free WiFi", innerX + 4.5, curY + 10.5);
+    doc.setTextColor(0, 0, 0);
+    const cancelMsg1 = `Cancellation Policy: Risk-free booking! You can cancel until ${cancellationDate} and pay nothing! If you fail to arrive or cancel the booking, no refund will be`;
+    const cancelMsg2 = `given. If you fail to arrive or cancel the booking, no refund will be given.`;
+    doc.text(cancelMsg1, innerX + 4.5, cancelY + 10.0);
+    doc.text(cancelMsg2, innerX + 4.5, cancelY + 20.0);
 
-    // 6. Dates Row (Arrival & Departure)
-    curY += benefitH + 5.0;
+    // 5. Benefits Included Banner (Gray)
+    const benefitY = 276.1;
+    const benefitH = 15.7;
+    doc.setFillColor(220, 220, 220);
+    doc.rect(innerX, benefitY, innerW, benefitH, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.3);
+    doc.text("Benefits Included Express check-in, Free WiFi", innerX + 4.5, benefitY + 10.5);
+
+    // 6. Dates Row (Arrival & Departure pills are Gray)
+    const datesY = 301.3;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
-    doc.text("Arrival :", innerX + 6.0, curY + 10.0);
-    drawPill(86.5, curY, 131.0, 14.5, arrivalDate, false, 7.3, true);
+    doc.text("Arrival :", innerX + 6.0, datesY + 9.0);
 
-    doc.setFont('helvetica', 'bold');
-    doc.text("Departure :", 226.5, curY + 10.0);
-    drawPill(280.5, curY, 131.0, 14.5, departureDate, false, 7.3, true);
+    // Arrival pill (Gray)
+    doc.setFillColor(220, 220, 220);
+    doc.rect(86.8, datesY, 131.1, 12.3, 'F');
+    doc.text(arrivalDate, 86.8 + (131.1 / 2), datesY + 9.0, { align: 'center' });
 
-    // 7. Booked And Payable By / Signature Section
-    // Stamp box on right
-    const stampBoxX = 419.0;
-    const stampBoxY = curY;
-    const stampBoxW = 133.5;
-    const stampBoxH = 72.0;
+    doc.text("Departure :", 226.8, datesY + 9.0);
+    // Departure pill (Gray)
+    doc.setFillColor(220, 220, 220);
+    doc.rect(280.6, datesY, 131.1, 12.3, 'F');
+    doc.text(departureDate, 280.6 + (131.1 / 2), datesY + 9.0, { align: 'center' });
 
+    // 7. Stamp & Signature Box (Starts at y=301.3, h=72.3, on right side)
+    const stampBoxX = 418.9;
+    const stampBoxY = 301.3;
+    const stampBoxW = 133.9;
+    const stampBoxH = 72.3;
     doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(...pillBorder);
-    doc.roundedRect(stampBoxX, stampBoxY, stampBoxW, stampBoxH, 3, 3, 'FD');
+    doc.setDrawColor(212, 212, 212);
+    doc.setLineWidth(0.5);
+    doc.rect(stampBoxX, stampBoxY, stampBoxW, stampBoxH, 'FD');
     if (stampDataUrl) {
         doc.addImage(stampDataUrl, 'PNG', stampBoxX + 2, stampBoxY + 1, stampBoxW - 4, stampBoxH - 2);
     }
 
-    // Booked and payable by on left
-    curY += 19.0;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.3);
-    doc.text("Booked And Payable By :", innerX + 6.0, curY);
-
-    const payableBoxY = curY + 3.5;
-    const payableBoxW = 356.5;
-    const payableBoxH = 32.5;
-    doc.setFillColor(...pillBg);
-    doc.roundedRect(innerX + 6.0, payableBoxY, payableBoxW, payableBoxH, 3, 3, 'FD');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.3);
-    doc.text("Agoda Company Pte, Ltd.", innerX + 11.0, payableBoxY + 9.5);
-    doc.text("30 Cecil Street, Prudential Tower #19-08,", innerX + 11.0, payableBoxY + 19.5);
-    doc.text("Singapore 049712", innerX + 11.0, payableBoxY + 28.5);
-
-    // 8. Remarks & Customer Support
-    curY = stampBoxY + stampBoxH + 11.5;
-
-    // Left Remarks
+    // Booked And Payable By (On left, below Arrival/Departure - NO OVERLAP!)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
     doc.setTextColor(0, 0, 0);
-    doc.text("Remarks :", innerX, curY);
-    doc.text(remarksTaxes, innerX, curY + 10.0);
-    doc.text(remarksSpecial, innerX, curY + 20.0);
-    doc.text("All special requests are subject to availability upon arrival", innerX, curY + 30.0);
+    doc.text("Booked And Payable By :", innerX + 6.0, 327.5);
 
-    // Right Customer Support
-    doc.setFont('helvetica', 'bold');
-    doc.text("Call our Customer Service Center 24/7 :", rightEdge, curY, { align: 'right' });
+    // Booked and Payable By Box (Gray)
+    const payableBoxY = 334.9;
+    const payableBoxW = 357.4;
+    const payableBoxH = 32.5;
+    doc.setFillColor(220, 220, 220);
+    doc.rect(54.3, payableBoxY, payableBoxW, payableBoxH, 'F');
+
     doc.setFont('helvetica', 'normal');
-    doc.text("Customer Support : +60 3 2053 1869, +1 866 656 8207", rightEdge, curY + 10.0, { align: 'right' });
-    doc.text("(Long distance charge may apply)", rightEdge, curY + 20.0, { align: 'right' });
+    doc.setFontSize(7.3);
+    doc.text("Agoda Company Pte, Ltd.", 60.0, payableBoxY + 9.5);
+    doc.text("30 Cecil Street, Prudential Tower #19-08,", 60.0, payableBoxY + 19.5);
+    doc.text("Singapore 049712", 60.0, payableBoxY + 28.5);
 
-    // 9. Notes Box at Bottom
-    curY += 38.0;
-    const notesBoxH = 43.5;
+    // 8. Remarks (On Left, below Booked and Payable By)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.3);
+    doc.text("Remarks :", innerX, 392.0);
+    doc.text(remarksTaxes, innerX, 402.0);
+    doc.text(remarksSpecial, innerX, 412.0);
+    doc.text("All special requests are subject to availability upon arrival", innerX, 422.0);
+
+    // 9. Call our Customer Service Center 24/7 (Pushed down on the right side)
+    doc.setFont('helvetica', 'bold');
+    doc.text("Call our Customer Service Center 24/7 :", rightEdge, 453.5, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.text("Customer Support : +60 3 2053 1869, +1 866 656 8207", rightEdge, 463.5, { align: 'right' });
+    doc.text("(Long distance charge may apply)", rightEdge, 473.5, { align: 'right' });
+
+    // 10. Notes Box (At bottom, black border)
+    const notesY = 485.0;
+    const notesH = 43.7;
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.6);
-    doc.rect(innerX, curY, innerW, notesBoxH, 'S');
+    doc.rect(innerX, notesY, innerW, notesH, 'S');
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
-    doc.text("Notes", innerX + 6.0, curY + 11.0);
+    doc.text("Notes", innerX + 6.0, notesY + 11.0);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.1);
-    doc.text("• All rooms are guaranteed on the day of arrival. In the case of a no-show, your room(s) will be released and you will be subject to the terms and", innerX + 6.0, curY + 22.0);
-    doc.text("   conditions of the Cancellation/No-Show Policy specified at the time you made the booking as well as noted in the Confirmation Email.", innerX + 6.0, curY + 32.0);
+    doc.text("• All rooms are guaranteed on the day of arrival. In the case of a no-show, your room(s) will be released and you will be subject to the terms and", innerX + 6.0, notesY + 21.0);
+    doc.text("   conditions of the Cancellation/No-Show Policy specified at the time you made the booking as well as noted in the Confirmation Email.", innerX + 6.0, notesY + 31.0);
 
     return doc;
 }
