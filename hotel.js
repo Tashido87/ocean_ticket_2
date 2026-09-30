@@ -1277,7 +1277,8 @@ export function renderHotelReservations() {
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${statusBadge}</td>
                     <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;" class="search-row-actions">
                         <div style="display: flex; gap: 0.25rem; justify-content: center;">
-                            <button class="icon-btn" title="Hotel Voucher" onclick="window.exportHotelVoucher('${res.id}')"><i class="fa-solid fa-file-invoice"></i></button>
+                            <button class="icon-btn" title="Download Voucher" onclick="window.exportHotelVoucher('${res.id}', false)"><i class="fa-solid fa-file-arrow-down"></i></button>
+                            <button class="icon-btn" title="Share Voucher" onclick="window.exportHotelVoucher('${res.id}', true)"><i class="fa-solid fa-share-nodes"></i></button>
                             <button class="icon-btn" title="View Details" onclick="window.showHotelDetailsAction('${res.id}')"><i class="fa-solid fa-eye"></i></button>
                             <button class="icon-btn" title="Edit Reservation" onclick="window.editHotelReservation('${res.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                             <button class="icon-btn btn-danger" title="Delete" onclick="window.deleteHotelReservationAction('${res.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -1356,7 +1357,7 @@ window.setHotelPage = (page) => {
     renderHotelReservations();
 };
 
-export async function exportHotelVoucher(id) {
+export async function exportHotelVoucher(id, isShare = false) {
     const res = state.allHotels.find(h => h.id === id);
     if (!res) {
         showToast('Reservation not found.', 'error');
@@ -1463,21 +1464,7 @@ export async function exportHotelVoucher(id) {
             if (!blob) return;
             const file = new File([blob], filename, { type: 'image/png' });
 
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: `Hotel Voucher - ${hotelName}`,
-                        text: `Hotel Confirmation Voucher for ${clientName} at ${hotelName} (${res.checkin} - ${res.checkout})`
-                    });
-                    showToast('Voucher shared successfully!', 'success');
-                    return;
-                } catch (err) {
-                    if (err.name !== 'AbortError') console.warn('Share error:', err);
-                    else return;
-                }
-            }
-
+            // Always download voucher first
             const link = document.createElement('a');
             link.download = filename;
             link.href = URL.createObjectURL(blob);
@@ -1488,6 +1475,19 @@ export async function exportHotelVoucher(id) {
                 URL.revokeObjectURL(link.href);
             }, 1000);
             showToast('Hotel Voucher downloaded!', 'success');
+
+            // If user clicked Share, also trigger Web Share
+            if (isShare && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: `Hotel Voucher - ${hotelName}`,
+                        text: `Hotel Confirmation Voucher for ${clientName} at ${hotelName} (${res.checkin} - ${res.checkout})`
+                    });
+                } catch (err) {
+                    if (err.name !== 'AbortError') console.warn('Share error:', err);
+                }
+            }
         }, 'image/png');
     } catch (err) {
         console.error(err);

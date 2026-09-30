@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="styles.css?v=25">
     <link rel="stylesheet" href="landing.css">
     <link rel="stylesheet" href="sell.css">
-    <link rel="stylesheet" href="apple-ui.css?v=7">
+    <link rel="stylesheet" href="apple-ui.css?v=8">
     <link rel="stylesheet" href="pnr-detail.css?v=1">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -792,13 +792,13 @@
                             <span class="step-num">1</span>
                             <span class="step-title">Flight</span>
                         </button>
-                        <button type="button" class="mobile-step-btn" data-step="section-passengers">
+                        <button type="button" class="mobile-step-btn" data-step="section-client">
                             <span class="step-num">2</span>
-                            <span class="step-title">Pax</span>
+                            <span class="step-title">Client</span>
                         </button>
-                        <button type="button" class="mobile-step-btn" data-step="section-pricing">
+                        <button type="button" class="mobile-step-btn" data-step="section-passengers">
                             <span class="step-num">3</span>
-                            <span class="step-title">Price</span>
+                            <span class="step-title">Pax</span>
                         </button>
                         <button type="button" class="mobile-step-btn" data-step="section-payment">
                             <span class="step-num">4</span>
@@ -1043,52 +1043,63 @@
                         </button>
                     </div>
 
-                    <!-- ========== STICKY PAYMENT SUMMARY BAR ========== -->
-                    <div class="sticky-summary-bar" id="stickySummaryBar">
-                        <div class="sticky-summary-inner">
-                            <div class="summary-stats">
-                                <div class="summary-stat">
-                                    <span class="stat-label">Passengers</span>
-                                    <span class="stat-value" id="summaryPaxCount">0</span>
-                                </div>
-                                <div class="summary-stat">
-                                    <span class="stat-label">Total Net</span>
-                                    <span class="stat-value is-positive" id="summaryTotal">0 MMK</span>
-                                </div>
-                                <div class="summary-stat">
-                                    <span class="stat-label">Commission</span>
-                                    <span class="stat-value is-muted" id="summaryCommission">0 MMK</span>
-                                </div>
+                    <!-- ========== SECTION 4: PAYMENT & REVIEW ========== -->
+                    <div class="sell-section" id="section-payment">
+                        <div class="sell-section-header">
+                            <span class="section-icon"><i class="fa-solid fa-credit-card"></i></span>
+                            <div class="section-titles">
+                                <h3>Payment &amp; Review</h3>
+                                <p class="section-subtitle">Review total, payment details, and submit ticket</p>
                             </div>
-                            <div class="summary-payment-controls">
-                                <div class="paid-toggle">
-                                    <label class="paid-switch" for="paid">
-                                        <input type="checkbox" id="paid">
-                                        <span class="paid-slider"></span>
-                                    </label>
-                                    <span class="paid-label">Paid</span>
+                        </div>
+
+                        <!-- Sticky / Step Summary Bar -->
+                        <div class="sticky-summary-bar is-visible" id="stickySummaryBar">
+                            <div class="sticky-summary-inner">
+                                <div class="summary-stats">
+                                    <div class="summary-stat">
+                                        <span class="stat-label">Passengers</span>
+                                        <span class="stat-value" id="summaryPaxCount">0</span>
+                                    </div>
+                                    <div class="summary-stat">
+                                        <span class="stat-label">Total Net</span>
+                                        <span class="stat-value is-positive" id="summaryTotal">0 MMK</span>
+                                    </div>
+                                    <div class="summary-stat">
+                                        <span class="stat-label">Commission</span>
+                                        <span class="stat-value is-muted" id="summaryCommission">0 MMK</span>
+                                    </div>
                                 </div>
-                                <div class="form-group" style="margin:0; min-width:160px;">
-                                    <select id="payment_method" aria-label="Payment Method">
-                                        <option value="">Payment Method</option>
-                                        <option value="KBZ Pay">KBZ Pay</option>
-                                        <option value="Mobile Banking">Mobile Banking</option>
-                                        <option value="Aya Pay">Aya Pay</option>
-                                        <option value="UAB Pay">UAB Pay</option>
-                                        <option value="Cash">Cash</option>
-                                    </select>
+                                <div class="summary-payment-controls">
+                                    <div class="paid-toggle">
+                                        <label class="paid-switch" for="paid">
+                                            <input type="checkbox" id="paid">
+                                            <span class="paid-slider"></span>
+                                        </label>
+                                        <span class="paid-label">Paid</span>
+                                    </div>
+                                    <div class="form-group" style="margin:0; min-width:160px;">
+                                        <select id="payment_method" aria-label="Payment Method">
+                                            <option value="">Payment Method</option>
+                                            <option value="KBZ Pay">KBZ Pay</option>
+                                            <option value="Mobile Banking">Mobile Banking</option>
+                                            <option value="Aya Pay">Aya Pay</option>
+                                            <option value="UAB Pay">UAB Pay</option>
+                                            <option value="Cash">Cash</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin:0; min-width:140px;">
+                                        <input type="text" id="paid_date" placeholder="Paid Date" autocomplete="off">
+                                    </div>
                                 </div>
-                                <div class="form-group" style="margin:0; min-width:140px;">
-                                    <input type="text" id="paid_date" placeholder="Paid Date" autocomplete="off">
+                                <div class="summary-actions">
+                                    <button type="button" class="btn btn-secondary" id="cancelSellBtn">
+                                        <i class="fa-solid fa-xmark"></i> Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary" id="sellTicketSubmitBtn">
+                                        <i class="fa-solid fa-check"></i> Submit
+                                    </button>
                                 </div>
-                            </div>
-                            <div class="summary-actions">
-                                <button type="button" class="btn btn-secondary" id="cancelSellBtn">
-                                    <i class="fa-solid fa-xmark"></i> Cancel
-                                </button>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fa-solid fa-check"></i> Submit
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -1446,9 +1457,10 @@
                         </label>
                     </div>
                 </div>
-                 <div class="form-actions" style="margin-top: 2rem;">
+                 <div class="form-actions" style="margin-top: 2rem; display:flex; gap:10px; justify-content:flex-end;">
                     <button type="button" class="btn btn-secondary" onclick="document.getElementById('exportConfirmModal').classList.remove('show')">Cancel</button>
-                    <button id="confirmExportBtn" type="button" class="btn btn-primary">Export PDF</button>
+                    <button id="confirmExportBtn" type="button" class="btn btn-primary" style="display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-file-arrow-down"></i> Download PDF</button>
+                    <button id="confirmShareBtn" type="button" class="btn btn-secondary" style="display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-share-nodes"></i> Share</button>
                 </div>
             </div>
         </div>
@@ -1483,6 +1495,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=28" type="module"></script>
+    <script src="main.js?v=29" type="module"></script>
 </body>
 </html>

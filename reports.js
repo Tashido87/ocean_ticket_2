@@ -131,7 +131,7 @@ export function exportSelectedToExcel() {
 /**
  * Exports the Agent Report to a PDF file.
  */
-export async function exportToPdf() {
+export async function exportToPdf(isShare = false) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const exportType = document.querySelector('input[name="exportType"]:checked').value;
@@ -513,8 +513,27 @@ export async function exportToPdf() {
         });
     }
 
-    doc.save(`agent_report_${new Date().toISOString().slice(0,10)}.pdf`);
+    const filename = `agent_report_${new Date().toISOString().slice(0,10)}.pdf`;
+    doc.save(filename);
     exportConfirmModal.classList.remove('show');
+
+    if (isShare && navigator.share && navigator.canShare) {
+        try {
+            const blob = doc.output('blob');
+            if (blob) {
+                const file = new File([blob], filename, { type: 'application/pdf' });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Agent Report PDF',
+                        text: `Agent Report (${dateRangeString || 'Export'})`
+                    });
+                }
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') console.warn('Share error:', err);
+        }
+    }
 }
 
 /**

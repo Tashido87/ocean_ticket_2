@@ -1058,6 +1058,15 @@ export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = 
             const safeBrand = brand.displayName.replace(/[^a-z0-9]/gi, '_');
             const filename = `${safeName}_${safeBrand}_${type}${invoiceGroups.length > 1 ? `-${index + 1}` : ''}.png`;
 
+            // Always download the invoice image first
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            await new Promise((resolve) => setTimeout(resolve, 300));
+
             if (isShare && navigator.share && navigator.canShare) {
                 const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
                 if (blob) {
@@ -1070,22 +1079,12 @@ export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = 
                                 text: `${type} for ${data.group.clientName}`
                             });
                             showToast('Invoice shared successfully!', 'success');
-                            continue;
                         } catch (err) {
                             if (err.name !== 'AbortError') console.warn('Share error:', err);
-                            else continue;
                         }
                     }
                 }
             }
-
-            const link = document.createElement('a');
-            link.download = filename;
-            link.href = canvas.toDataURL('image/png');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            await new Promise((resolve) => setTimeout(resolve, 400));
         } catch (error) {
             console.error(error);
             showToast('Failed to generate image.', 'error');

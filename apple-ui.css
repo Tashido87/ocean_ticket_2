@@ -2726,6 +2726,12 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
     display: none;
 }
 
+@media (min-width: 769px) {
+    #section-payment .sell-section-header {
+        display: none;
+    }
+}
+
 @media (max-width: 768px) {
     .mobile-sell-stepper {
         display: flex;
@@ -2736,6 +2742,11 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
         background: rgba(120, 120, 128, 0.08);
         border-radius: 12px;
         overflow-x: auto;
+        position: sticky;
+        top: 60px;
+        z-index: 20;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
     }
     .mobile-step-btn {
         flex: 1;
@@ -2773,6 +2784,52 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
         background: #0f4c75;
         color: #ffffff;
     }
+
+    /* Mobile Sell Sections - Only Active Section is visible */
+    #sellForm .sell-section {
+        display: none !important;
+    }
+    #sellForm .sell-section.active-mobile-step {
+        display: block !important;
+        animation: fadeInStep 0.22s ease-in-out;
+    }
+    @keyframes fadeInStep {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* In-flow payment review in Step 4 on mobile */
+    #sellForm .sticky-summary-bar {
+        position: static !important;
+        display: block !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0.5rem 0 !important;
+        background: transparent !important;
+    }
+    #section-payment .sticky-summary-inner {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 1rem !important;
+    }
+    #section-payment .summary-payment-controls {
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 0.75rem !important;
+    }
+    #section-payment .summary-payment-controls .form-group {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+    #section-payment .summary-actions {
+        width: 100% !important;
+        display: flex !important;
+        gap: 0.75rem !important;
+    }
+    #section-payment .summary-actions .btn {
+        flex: 1 !important;
+    }
+
     .mobile-step-actions {
         display: flex;
         justify-content: space-between;

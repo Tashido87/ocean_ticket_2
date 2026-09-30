@@ -1586,7 +1586,7 @@ export function setupMobileSellStepper() {
     const form = document.getElementById('sellForm');
     if (!stepper || !form || stepper.dataset.stepperBound === 'true') return;
 
-    const sections = ['section-booking', 'section-passengers', 'section-pricing', 'section-payment'];
+    const sections = ['section-booking', 'section-client', 'section-passengers', 'section-payment'];
 
     const applyStep = (stepId) => {
         if (!sections.includes(stepId)) return;
@@ -1603,7 +1603,7 @@ export function setupMobileSellStepper() {
         });
 
         if (window.innerWidth <= 768) {
-            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            stepper.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     };
 
@@ -1621,12 +1621,13 @@ export function setupMobileSellStepper() {
 
         let innerHtml = '';
         if (prevId) {
-            innerHtml += `<button type="button" class="btn btn-secondary btn-sm" data-goto="${prevId}"><i class="fa-solid fa-arrow-left"></i> Back</button>`;
+            const prevLabel = prevId === 'section-booking' ? 'Flight' : prevId === 'section-client' ? 'Client' : 'Passengers';
+            innerHtml += `<button type="button" class="btn btn-secondary btn-sm" data-goto="${prevId}"><i class="fa-solid fa-arrow-left"></i> ${prevLabel}</button>`;
         } else {
             innerHtml += `<div></div>`;
         }
         if (nextId) {
-            const nextLabel = nextId === 'section-passengers' ? 'Next: Passengers' : nextId === 'section-pricing' ? 'Next: Pricing' : 'Next: Payment';
+            const nextLabel = nextId === 'section-client' ? 'Next: Client Details' : nextId === 'section-passengers' ? 'Next: Passengers' : 'Next: Payment & Review';
             innerHtml += `<button type="button" class="btn btn-primary btn-sm" data-goto="${nextId}">${nextLabel} <i class="fa-solid fa-arrow-right"></i></button>`;
         }
         actionsDiv.innerHTML = innerHtml;
@@ -1640,9 +1641,10 @@ export function setupMobileSellStepper() {
         });
     };
 
-    addActionButtons('section-booking', null, 'section-passengers');
-    addActionButtons('section-passengers', 'section-booking', 'section-pricing');
-    addActionButtons('section-pricing', 'section-passengers', 'section-payment');
+    addActionButtons('section-booking', null, 'section-client');
+    addActionButtons('section-client', 'section-booking', 'section-passengers');
+    addActionButtons('section-passengers', 'section-client', 'section-payment');
+    addActionButtons('section-payment', 'section-passengers', null);
 
     applyStep('section-booking');
     stepper.dataset.stepperBound = 'true';
@@ -1685,6 +1687,15 @@ export function setupPnrAutoParser() {
         'BAGAN': 'Bagan (NYU)',
         'HEH': 'Heho (HEH)',
         'HEHO': 'Heho (HEH)',
+        'THL': 'Tachileik (THL)',
+        'TACHILEIK': 'Tachileik (THL)',
+        'KAW': 'Kawthaung (KAW)',
+        'KAWTHAUNG': 'Kawthaung (KAW)',
+        'MYT': 'Myitkyina (MYT)',
+        'MYITKYINA': 'Myitkyina (MYT)',
+        'SNW': 'Thandwe (SNW)',
+        'THANDWE': 'Thandwe (SNW)',
+        'MNU': 'Mawlamyine (MNU)',
         'BKK': 'Bangkok (BKK)',
         'DMK': 'Bangkok (DMK)',
         'BANGKOK': 'Bangkok (BKK)',
@@ -1696,19 +1707,60 @@ export function setupPnrAutoParser() {
         'CHIANG MAI': 'Chiang Mai (CNX)',
         'HKT': 'Phuket (HKT)',
         'PHUKET': 'Phuket (HKT)',
+        'LHR': 'London (LHR)',
+        'LGW': 'London (LGW)',
+        'LONDON': 'London (LHR)',
+        'DXB': 'Dubai (DXB)',
+        'DUBAI': 'Dubai (DXB)',
+        'DOH': 'Doha (DOH)',
+        'DOHA': 'Doha (DOH)',
+        'CAN': 'Guangzhou (CAN)',
+        'KMG': 'Kunming (KMG)',
+        'ICN': 'Seoul (ICN)',
+        'NRT': 'Tokyo (NRT)',
+        'HND': 'Tokyo (HND)',
+        'TPE': 'Taipei (TPE)',
+        'HKG': 'Hong Kong (HKG)',
+        'DPS': 'Bali (DPS)',
         'DAD': 'Da Nang (DAD)',
         'HAN': 'Hanoi (HAN)',
         'SGN': 'Ho Chi Minh (SGN)',
-        'DXB': 'Dubai (DXB)',
-        'DOH': 'Doha (DOH)',
-        'CAN': 'Guangzhou (CAN)',
-        'KMG': 'Kunming (KMG)'
+        'SYD': 'Sydney (SYD)',
+        'MEL': 'Melbourne (MEL)',
+        'CDG': 'Paris (CDG)',
+        'FRA': 'Frankfurt (FRA)',
+        'AMS': 'Amsterdam (AMS)',
+        'JFK': 'New York (JFK)',
+        'LAX': 'Los Angeles (LAX)',
+        'SFO': 'San Francisco (SFO)'
     };
 
     const monthMap = {
         'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04',
         'MAY': '05', 'JUN': '06', 'JUL': '07', 'AUG': '08',
         'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
+    };
+
+    const toTitleCase = (str) => {
+        return String(str || '').toLowerCase().replace(/(?:^|\s|-)\S/g, c => c.toUpperCase()).trim();
+    };
+
+    const formatPassengerName = (raw) => {
+        if (!raw) return '';
+        // Strip titles: MR, MRS, MS, MISS, MSTR, DR, DAW, U
+        let str = raw.replace(/\b(MR|MRS|MS|MISS|MSTR|DR|DAW|U)\b/gi, '').trim();
+        str = str.replace(/\s+/g, ' ');
+        if (str.includes('/')) {
+            const parts = str.split('/');
+            const surname = parts[0].trim();
+            const given = parts.slice(1).join(' ').trim();
+            if (given && surname) {
+                str = `${given} ${surname}`;
+            } else {
+                str = `${given || surname}`;
+            }
+        }
+        return toTitleCase(str);
     };
 
     const parseText = (text) => {
@@ -1757,13 +1809,19 @@ export function setupPnrAutoParser() {
         else if (upper.includes('CZ') || upper.includes('CHINA SOUTHERN')) res.airline = 'China Southern';
         else if (upper.includes('MU') || upper.includes('CHINA EASTERN')) res.airline = 'China Eastern';
 
-        const gdsSegmentRegex = /(\d{1,2})([A-Z]{3})(?:\d{2,4})?\s+([A-Z]{3})[\s\-\/]+([A-Z]{3})/i;
+        // GDS Segment match: supports day-of-week, 6-letter city pairs like BKKLHR, and spaced pairs
+        const gdsSegmentRegex = /(\d{1,2})([A-Z]{3})(?:\d{2,4})?(?:\s*[1-7])?\s+([A-Z]{3})\s*[\s\-\/]*([A-Z]{3})\b/i;
         const segMatch = text.match(gdsSegmentRegex);
         if (segMatch) {
             const day = String(segMatch[1]).padStart(2, '0');
             const mStr = segMatch[2].toUpperCase();
             const month = monthMap[mStr] || '01';
-            const year = new Date().getFullYear();
+            const now = new Date();
+            let year = now.getFullYear();
+            const targetMonth = parseInt(month, 10) - 1;
+            if (targetMonth < now.getMonth() - 2) {
+                year += 1;
+            }
             res.travelDate = `${day}/${month}/${year}`;
 
             const depCode = segMatch[3].toUpperCase();
@@ -1771,9 +1829,18 @@ export function setupPnrAutoParser() {
             res.departure = airportMap[depCode] || depCode;
             res.destination = airportMap[destCode] || destCode;
         } else {
-            const dmyMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-            if (dmyMatch) {
-                res.travelDate = `${String(dmyMatch[1]).padStart(2, '0')}/${String(dmyMatch[2]).padStart(2, '0')}/${dmyMatch[3]}`;
+            // Standalone GDS Date like 30SEP or 30SEP2026
+            const standaloneGdsDate = text.match(/\b(\d{1,2})([A-Z]{3})(?:(\d{2,4}))?\b/i);
+            if (standaloneGdsDate && monthMap[standaloneGdsDate[2].toUpperCase()]) {
+                const day = String(standaloneGdsDate[1]).padStart(2, '0');
+                const month = monthMap[standaloneGdsDate[2].toUpperCase()];
+                let year = standaloneGdsDate[3] ? (standaloneGdsDate[3].length === 2 ? `20${standaloneGdsDate[3]}` : standaloneGdsDate[3]) : new Date().getFullYear();
+                res.travelDate = `${day}/${month}/${year}`;
+            } else {
+                const dmyMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+                if (dmyMatch) {
+                    res.travelDate = `${String(dmyMatch[1]).padStart(2, '0')}/${String(dmyMatch[2]).padStart(2, '0')}/${dmyMatch[3]}`;
+                }
             }
 
             const routeRegex = /\b([A-Z]{3})\s*(?:TO|-|\/)\s*([A-Z]{3})\b/i;
@@ -1784,32 +1851,36 @@ export function setupPnrAutoParser() {
             }
         }
 
-        const paxRegex = /(?:^|\n)\s*(?:\d+\.?\d*|\d+\.)\s*([A-Z\s\/]+(?:MR|MRS|MS|MISS|MSTR|DR|DAW|U)?)(?:\s*\((CHD|INF|CHILD|INFANT)\))?/gim;
+        // Multi-passenger regex: handles multiple passengers per line (e.g. 1.KHANT/KAUNG MR 2.YINT/NAY YE MR)
+        const paxRegex = /(?:^|\s)(?:\d+\.?\d*|\d+\.)\s*([A-Za-z][A-Za-z\/\s]+?(?:\s+(?:MR|MRS|MS|MISS|MSTR|DR|DAW|U))?)(?=\s+\d+\.|\s*\(|\r?\n|$)/gi;
         let match;
         const foundNames = new Set();
         while ((match = paxRegex.exec(text)) !== null) {
             let rawName = match[1].trim();
-            if (rawName && !rawName.startsWith('8M') && !rawName.startsWith('UB') && !rawName.startsWith('TG') && rawName.length > 3) {
-                let clean = rawName;
-                if (clean.includes('/')) {
-                    const parts = clean.split('/');
-                    clean = `${parts[0]} ${parts[1]}`.trim();
-                }
-                const paxType = (match[2] && (match[2].includes('INF') ? 'infant' : match[2].includes('CH') ? 'child' : 'adult')) || 'adult';
-                if (!foundNames.has(clean)) {
-                    foundNames.add(clean);
+            // Discard flight tokens like TG 910, 8M 335
+            if (rawName && !/^(TG|8M|UB|SQ|MH|VJ|AK|FD|VN|PG|DD|TR|CX|EK|QR|CZ|MU)\s*\d+/i.test(rawName) && rawName.length > 2) {
+                const clean = formatPassengerName(rawName);
+                if (clean && !foundNames.has(clean.toUpperCase())) {
+                    foundNames.add(clean.toUpperCase());
+                    const contextSnippet = text.substring(match.index, match.index + match[0].length + 15).toUpperCase();
+                    let paxType = 'adult';
+                    if (contextSnippet.includes('INF') || rawName.toUpperCase().includes('INF')) paxType = 'infant';
+                    else if (contextSnippet.includes('CHD') || contextSnippet.includes('CHILD') || rawName.toUpperCase().includes('MSTR')) paxType = 'child';
                     res.passengers.push({ name: clean, type: paxType });
                 }
             }
         }
 
         if (res.passengers.length === 0) {
-            const altPaxRegex = /(?:PAX|PASSENGER(?:\s*NAME)?)\s*[:=]\s*([^\n\r,]+)/gi;
+            const altPaxRegex = /(?:PAX|PASSENGER(?:\s*NAME)?|NAME)\s*[:=]\s*([^\n\r,]+)/gi;
             while ((match = altPaxRegex.exec(text)) !== null) {
                 let name = match[1].trim();
-                if (name && !foundNames.has(name)) {
-                    foundNames.add(name);
-                    res.passengers.push({ name, type: 'adult' });
+                if (name && name.length > 2) {
+                    const clean = formatPassengerName(name);
+                    if (clean && !foundNames.has(clean.toUpperCase())) {
+                        foundNames.add(clean.toUpperCase());
+                        res.passengers.push({ name: clean, type: 'adult' });
+                    }
                 }
             }
         }
@@ -1866,12 +1937,23 @@ export function setupPnrAutoParser() {
             }
         }
 
+        const intlKeywords = ['BKK', 'DMK', 'SIN', 'KUL', 'CNX', 'HKT', 'LHR', 'LGW', 'DXB', 'DOH', 'CAN', 'KMG', 'ICN', 'NRT', 'HND', 'TPE', 'HKG', 'DPS', 'SYD', 'MEL', 'CDG', 'FRA', 'AMS', 'JFK', 'LAX', 'SFO'];
+        const isIntl = intlKeywords.some(k => (parsedResult.departure || '').toUpperCase().includes(k) || (parsedResult.destination || '').toUpperCase().includes(k));
+        const flightToggle = document.getElementById('flightTypeToggle');
+        if (isIntl && flightToggle && !flightToggle.checked) {
+            flightToggle.checked = true;
+            flightToggle.dispatchEvent(new Event('change'));
+        }
+
         if (parsedResult.departure) {
             const depSelect = document.getElementById('departure');
             if (depSelect) {
                 let found = false;
+                const depClean = parsedResult.departure.toUpperCase();
                 for (const opt of depSelect.options) {
-                    if (opt.value === parsedResult.departure || opt.text.includes(parsedResult.departure)) {
+                    const optVal = opt.value.toUpperCase();
+                    const optText = opt.text.toUpperCase();
+                    if (optVal === depClean || optText === depClean || optText.includes(depClean) || (depClean.length === 3 && optText.includes(`(${depClean})`))) {
                         depSelect.value = opt.value;
                         found = true;
                         break;
@@ -1891,8 +1973,11 @@ export function setupPnrAutoParser() {
             const destSelect = document.getElementById('destination');
             if (destSelect) {
                 let found = false;
+                const destClean = parsedResult.destination.toUpperCase();
                 for (const opt of destSelect.options) {
-                    if (opt.value === parsedResult.destination || opt.text.includes(parsedResult.destination)) {
+                    const optVal = opt.value.toUpperCase();
+                    const optText = opt.text.toUpperCase();
+                    if (optVal === destClean || optText === destClean || optText.includes(destClean) || (destClean.length === 3 && optText.includes(`(${destClean})`))) {
                         destSelect.value = opt.value;
                         found = true;
                         break;

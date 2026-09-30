@@ -1210,9 +1210,10 @@ export function showHotelDetails(hotel) {
                  <div class="details-item"><i class="fa-solid fa-hand-holding-dollar"></i><div class="details-item-content"><div class="label">Commission (Profit)</div><div class="value">${(hotel.commission || 0).toLocaleString()} MMK</div></div></div>
             </div>
         </div>
-        <div class="form-actions" style="margin-top: 1rem;">
-            <button class="btn btn-primary" id="modalHotelVoucherBtn" style="background:#0f4c75; border-color:#0f4c75; margin-right:0.5rem;"><i class="fa-solid fa-file-invoice"></i> Hotel Voucher</button>
+        <div class="form-actions" style="margin-top: 1rem; display:flex; gap:0.5rem; justify-content:flex-end;">
             <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
+            <button class="btn btn-primary" id="modalHotelVoucherBtn" style="background:#0f4c75; border-color:#0f4c75;"><i class="fa-solid fa-file-arrow-down"></i> Download Voucher</button>
+            <button class="btn btn-secondary" id="modalHotelVoucherShareBtn"><i class="fa-solid fa-share-nodes"></i> Share</button>
         </div>
     `;
     openModal(content, 'solid-modal');
@@ -1222,7 +1223,15 @@ export function showHotelDetails(hotel) {
     if (voucherBtn) {
         voucherBtn.addEventListener('click', async () => {
             const { exportHotelVoucher } = await import('./hotel.js');
-            exportHotelVoucher(hotel.id);
+            exportHotelVoucher(hotel.id, false);
+        });
+    }
+
+    const voucherShareBtn = document.getElementById('modalHotelVoucherShareBtn');
+    if (voucherShareBtn) {
+        voucherShareBtn.addEventListener('click', async () => {
+            const { exportHotelVoucher } = await import('./hotel.js');
+            exportHotelVoucher(hotel.id, true);
         });
     }
 

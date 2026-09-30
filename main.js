@@ -598,7 +598,8 @@ function setupEventListeners() {
 
     document.getElementById('exportExcelBtn').addEventListener('click', exportSelectedToExcel);
     document.getElementById('exportPdfBtn').addEventListener('click', () => document.getElementById('exportConfirmModal').classList.add('show'));
-    document.getElementById('confirmExportBtn').addEventListener('click', exportToPdf);
+    document.getElementById('confirmExportBtn').addEventListener('click', () => exportToPdf(false));
+    document.getElementById('confirmShareBtn')?.addEventListener('click', () => exportToPdf(true));
     document.getElementById('exportPrivateReportBtn').addEventListener('click', async () => {
         await exportPrivateReportToPdf();
         updateComparisonChart();
