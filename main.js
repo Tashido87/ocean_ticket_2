@@ -3199,7 +3199,6 @@ function initializeChinaHotelGenerator() {
     const closeBtn = document.getElementById('chinaHotelModalCloseBtn');
     const cancelBtn = document.getElementById('chinaHotelCancelBtn');
     const downloadPdfBtn = document.getElementById('chinaHotelDownloadPdfBtn');
-    const downloadImgBtn = document.getElementById('chinaHotelDownloadImgBtn');
     const shareBtn = document.getElementById('chinaHotelShareBtn');
     const previewContainer = document.getElementById('agodaPreviewContainer');
     const rollBookingBtn = document.getElementById('agoda_roll_booking_id');
@@ -3468,18 +3467,6 @@ function initializeChinaHotelGenerator() {
         } catch (err) {
             console.error('PDF generation error:', err);
             showToast(`PDF generation failed: ${err.message}`, 'error');
-        }
-    });
-
-    downloadImgBtn?.addEventListener('click', async () => {
-        showToast('Rendering high-resolution image...', 'info');
-        try {
-            const data = collectFormData();
-            const filename = await downloadAgodaImage(data);
-            showToast(`Image saved: ${filename}`, 'success');
-        } catch (err) {
-            console.error('Image export error:', err);
-            showToast(`Image export failed: ${err.message}`, 'error');
         }
     });
 
