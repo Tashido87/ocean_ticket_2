@@ -379,7 +379,7 @@ export function renderAgodaHotelHtml(data = {}) {
                     <!-- Promotion -->
                     <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="color:#000000;">Promotion :</span>
-                        <div style="width:165px; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:8.6px; color:#000000; padding:0 3px; white-space:nowrap; overflow:hidden;">
+                        <div style="width:165px; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:7.4px; color:#000000; padding:0 3px; white-space:nowrap;">
                             ${promotion}
                         </div>
                     </div>
@@ -980,31 +980,82 @@ export async function downloadAgodaPdf(data) {
 }
 
 /**
- * Export booking as image (PNG) using html2canvas
+ * Export booking as image (PNG)
+ * Renders the official PDF directly to canvas via PDF.js to guarantee 100% identical dimensions, layout, and quality as the PDF.
  */
 export async function downloadAgodaImage(data) {
-    if (!window.html2canvas) {
-        throw new Error('html2canvas library is not loaded');
-    }
-    const previewEl = document.getElementById('agodaBookingDocument');
-    if (!previewEl) return;
-
-    const canvas = await window.html2canvas(previewEl, {
-        scale: 2.5,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-    });
-
     const clientName = (data.clientName || 'Guest').trim();
     const safeName = clientName.replace(/[^a-zA-Z0-9]/g, '_');
     const safeId = (data.bookingId || 'Agoda').replace(/[^a-zA-Z0-9]/g, '_');
     const filename = `Agoda_Hotel_Booking_${safeName}_${safeId}.png`;
 
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    return filename;
+    // 1. Primary method: Render from PDF using PDF.js for 100% identical layout and dimensions
+    if (window.pdfjsLib) {
+        try {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            const doc = await generateAgodaPdfDoc(data);
+            const pdfArrayBuffer = doc.output('arraybuffer');
+            const loadingTask = window.pdfjsLib.getDocument({ data: pdfArrayBuffer });
+            const pdf = await loadingTask.promise;
+            const page = await pdf.getPage(1);
+
+            // Scale 2.5 on A4 (595.28 x 841.89 pt) produces 1488 x 2105 px high-resolution image
+            const scale = 2.5;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(viewport.width);
+            canvas.height = Math.round(viewport.height);
+            const ctx = canvas.getContext('2d');
+
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return filename;
+        } catch (pdfErr) {
+            console.warn('PDF.js image export failed, falling back to html2canvas', pdfErr);
+        }
+    }
+
+    // 2. Fallback method: html2canvas with full A4 width container (794px)
+    if (window.html2canvas) {
+        const previewEl = document.getElementById('agodaBookingDocument');
+        if (previewEl) {
+            const container = document.createElement('div');
+            container.style.position = 'fixed';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+            container.style.width = '794px';
+            container.style.background = '#ffffff';
+            container.appendChild(previewEl.cloneNode(true));
+            document.body.appendChild(container);
+            try {
+                const targetNode = container.firstElementChild;
+                targetNode.style.width = '794px';
+                targetNode.style.maxWidth = '794px';
+                const canvas = await window.html2canvas(targetNode, {
+                    scale: 2.0,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return filename;
+            } finally {
+                document.body.removeChild(container);
+            }
+        }
+    }
+
+    throw new Error('Image export failed: no supported rendering library available');
 }
 
 /**
