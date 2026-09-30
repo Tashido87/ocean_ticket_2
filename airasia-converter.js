@@ -7,16 +7,19 @@ import { showToast } from './utils.js';
 
 let cachedAirAsiaLogoDataUrl = null;
 let cachedVietJetLogoDataUrl = null;
+let cachedThaiLogoDataUrl = null;
 
 /**
  * Preload and cache Airline logo as data URL for jsPDF and HTML preview
  */
 export async function getAirlineLogoDataUrl(airline = 'AirAsia') {
+    const isThai = (airline === 'Thai Airways') || /thai\s*airways/i.test(airline || '');
     const isVietJet = (airline === 'VietJet Air') || /vietjet/i.test(airline || '');
+    if (isThai && cachedThaiLogoDataUrl) return cachedThaiLogoDataUrl;
     if (isVietJet && cachedVietJetLogoDataUrl) return cachedVietJetLogoDataUrl;
-    if (!isVietJet && cachedAirAsiaLogoDataUrl) return cachedAirAsiaLogoDataUrl;
+    if (!isThai && !isVietJet && cachedAirAsiaLogoDataUrl) return cachedAirAsiaLogoDataUrl;
 
-    const logoSrc = isVietJet ? 'vietjet-logo.png' : 'airasia-logo.png';
+    const logoSrc = isThai ? 'thai-airways-logo.png' : (isVietJet ? 'vietjet-logo.png' : 'airasia-logo.png');
     try {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
@@ -31,7 +34,9 @@ export async function getAirlineLogoDataUrl(airline = 'AirAsia') {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const dataUrl = canvas.toDataURL('image/png');
-        if (isVietJet) {
+        if (isThai) {
+            cachedThaiLogoDataUrl = dataUrl;
+        } else if (isVietJet) {
             cachedVietJetLogoDataUrl = dataUrl;
         } else {
             cachedAirAsiaLogoDataUrl = dataUrl;
@@ -140,7 +145,22 @@ const AIRPORT_CODE_MAP = {
     'shanghai': 'PVG',
     'phnom penh': 'PNH',
     'siem reap': 'REP',
-    'vientiane': 'VTE'
+    'vientiane': 'VTE',
+    'london': 'LHR',
+    'heathrow': 'LHR',
+    'gatwick': 'LGW',
+    'frankfurt': 'FRA',
+    'paris': 'CDG',
+    'charles de gaulle': 'CDG',
+    'zurich': 'ZRH',
+    'sydney': 'SYD',
+    'melbourne': 'MEL',
+    'brisbane': 'BNE',
+    'perth': 'PER',
+    'dubai': 'DXB',
+    'doha': 'DOH',
+    'delhi': 'DEL',
+    'mumbai': 'BOM'
 };
 
 export function lookupAirportCode(name) {
@@ -172,6 +192,12 @@ export function extractCityName(name) {
     if (lower.includes('singapore') || lower.includes('changi')) return 'Singapore';
     if (lower.includes('incheon') || lower.includes('seoul')) return 'Seoul';
     if (lower.includes('kansai') || lower.includes('osaka')) return 'Osaka';
+    if (lower.includes('london') || lower.includes('heathrow') || lower.includes('gatwick')) return 'London';
+    if (lower.includes('paris') || lower.includes('charles de gaulle')) return 'Paris';
+    if (lower.includes('frankfurt')) return 'Frankfurt';
+    if (lower.includes('zurich')) return 'Zurich';
+    if (lower.includes('sydney')) return 'Sydney';
+    if (lower.includes('melbourne')) return 'Melbourne';
 
     return name
         .replace(/\([A-Z]{3}\)/g, '')
@@ -188,62 +214,147 @@ export function parseItineraryText(rawText) {
 
     // 0. Airline Auto-Detection
     let airline = 'AirAsia';
-    if (/(?:vietjet|viet\s*jet|\bVJ\d{3,4}\b|\bVZ\d{3,4}\b)/i.test(clean)) {
+    const isThai = /(?:thai\s*airways|\bTG\s*\d{3,4}\b)/i.test(clean);
+    const isVietJet = /(?:vietjet|viet\s*jet|\bVJ\d{3,4}\b|\bVZ\d{3,4}\b)/i.test(clean);
+    const isAirAsia = /(?:airasia|air\s*asia|\b(?:AK|FD|QZ|D7|XJ|Z2)\d{3,4}\b)/i.test(clean);
+
+    if (isThai) {
+        airline = 'Thai Airways';
+    } else if (isVietJet) {
         airline = 'VietJet Air';
-    } else if (/(?:airasia|air\s*asia|\b(?:AK|FD|QZ|D7|XJ|Z2)\d{3,4}\b)/i.test(clean)) {
+    } else if (isAirAsia) {
         airline = 'AirAsia';
     }
 
-    // 1. Booking No
+    // 1. Booking No & PNR
+    let pnr = '';
+    let bookingNo = '';
+    const thaiBookingRefMatch = clean.match(/Booking\s*Ref(?:erence)?[:\s]*([A-Z0-9]{5,7})\b/i);
+    if (thaiBookingRefMatch) {
+        pnr = thaiBookingRefMatch[1].trim().toUpperCase();
+        bookingNo = pnr;
+    }
     const bookingNoMatch = clean.match(/Booking\s*No\.?\s*([0-9A-Z]+)/i);
-    const bookingNo = bookingNoMatch ? bookingNoMatch[1].trim() : '';
+    if (bookingNoMatch && !bookingNo) {
+        bookingNo = bookingNoMatch[1].trim();
+    }
+    if (!pnr) {
+        const pnrMatches = [...clean.matchAll(/(?:Economy|Business|Premium\s*Economy)\s+(?:--|[0-9A-Z-]+)\s+([A-Z0-9]{5,7})\b/gi)];
+        const pnrs = [];
+        for (const m of pnrMatches) {
+            const val = m[1].trim().toUpperCase();
+            if (!/^(cannot|exceed|person|flight|adult)$/i.test(val) && !pnrs.includes(val)) {
+                pnrs.push(val);
+            }
+        }
+        if (pnrs.length === 0) {
+            const pnrMatch = clean.match(/(?:Airline\s*Booking\s*Reference|PNR\s*[:\s]*)[^\n\r]*?([A-Z0-9]{5,7})\b/i);
+            if (pnrMatch && !/^(cannot|exceed|person|flight|adult)$/i.test(pnrMatch[1])) {
+                pnrs.push(pnrMatch[1].trim().toUpperCase());
+            }
+        }
+        pnr = pnrs.join(' / ');
+        if (!bookingNo && pnr) bookingNo = pnr;
+    }
 
     // 2. Class - explicitly check for Cabin class only
     let flightClass = 'Economy';
-    if (/\bPremium\s*Economy\b/i.test(clean)) flightClass = 'Premium Economy';
+    const classDetailMatch = clean.match(/Class\s*\n\s*([^\n\r]+)/i) || clean.match(/\b(Economy\s*\([A-Z]\)|Business\s*\([A-Z]\)|First\s*\([A-Z]\))\b/i);
+    if (classDetailMatch) {
+        flightClass = classDetailMatch[1].trim();
+    } else if (/\bPremium\s*Economy\b/i.test(clean)) flightClass = 'Premium Economy';
     else if (/\bBusiness\b/i.test(clean)) flightClass = 'Business';
     else if (/\bFirst\s+Class\b/i.test(clean)) flightClass = 'First Class';
     else if (/\bEconomy\b/i.test(clean)) flightClass = 'Economy';
 
-    // 3. Airline Booking Reference (PNR) - collect all unique PNRs if multiple
-    let pnr = '';
-    const pnrMatches = [...clean.matchAll(/(?:Economy|Business|Premium\s*Economy)\s+(?:--|[0-9A-Z-]+)\s+([A-Z0-9]{5,7})\b/gi)];
-    const pnrs = [];
-    for (const m of pnrMatches) {
-        const val = m[1].trim().toUpperCase();
-        if (!/^(cannot|exceed|person|flight|adult)$/i.test(val) && !pnrs.includes(val)) {
-            pnrs.push(val);
-        }
+    // 3. Issued Date
+    let issuedDate = '';
+    const issuedDateMatch = clean.match(/Issued\s*Date[:\s]*([0-9]{1,2}\s+[A-Za-z]{3,}\s+[0-9]{4}|[A-Za-z]{3,}\s+[0-9]{1,2},?\s+[0-9]{4})/i);
+    if (issuedDateMatch) {
+        issuedDate = issuedDateMatch[1].trim();
+    } else {
+        const today = new Date();
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        issuedDate = `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
     }
-    if (pnrs.length === 0) {
-        const pnrMatch = clean.match(/(?:Airline\s*Booking\s*Reference|PNR\s*[:\s]*)[^\n\r]*?([A-Z0-9]{5,7})\b/i);
-        if (pnrMatch && !/^(cannot|exceed|person|flight|adult)$/i.test(pnrMatch[1])) {
-            pnrs.push(pnrMatch[1].trim().toUpperCase());
-        }
-    }
-    pnr = pnrs.join(' / ');
 
-    // 4. E-Ticket No
+    // 4. Check-in notice
+    let checkinNotice = '';
+    const checkinMatch = clean.match(/Check-in\s*(\([^)]+\))?[:\s\-]*([0-9]{1,2}\s+[A-Za-z]{3,}\s+[0-9]{4},?\s*[0-9]{1,2}:[0-9]{2}\s*(?:AM|PM)?)/i) ||
+                         clean.match(/CHECK IN\s*(\([^)]+\))?[:\s\-]*([^\n\r]+)/i);
+    if (checkinMatch) {
+        checkinNotice = checkinMatch[0].replace(/[\r\n]+/g, ' ').trim();
+    }
+
+    // 5. E-Ticket No
     let eTicketNo = 'To be advised at check-in';
     const eticketMatch = clean.match(/E-ticket\s*No\.?\s*([0-9-]{10,})/i);
     if (eticketMatch && !eticketMatch[1].includes('--')) {
         eTicketNo = eticketMatch[1].trim();
     }
 
-    // 5. Passengers (Supports Multiple Passengers)
+    // 6. Passengers (Supports Multiple Passengers)
     const passengers = [];
     const lines = clean.split(/[\r\n]+/);
 
-    // Method A: Baggage section passenger lines "NAME (Adults)"
-    for (const line of lines) {
-        const m = line.trim().match(/^([A-Za-z\s]{3,45})\s*\((Adults?|Children|Infants?)\)$/i);
-        if (m) {
+    // Method Thai Airways Table format
+    const thaiPaxSection = clean.match(/Passenger\s*Details\s+([\s\S]*?)(?=Baggage|Notes|Important|$)/i);
+    if (thaiPaxSection) {
+        const pLines = thaiPaxSection[1].split(/[\r\n]+/).map(s => s.trim()).filter(s => s && !/^(Name|E-Ticket|Passport|Expiry|Passenger|Details)/i.test(s));
+        let i = 0;
+        while (i < pLines.length) {
+            const nameCandidate = pLines[i];
+            if (nameCandidate && nameCandidate.length > 2 && !/^\d+$/.test(nameCandidate)) {
+                let pTicket = (i + 1 < pLines.length && /^\d{10,}$/.test(pLines[i + 1])) ? pLines[i + 1] : '';
+                let pPassport = (i + 2 < pLines.length && /^[A-Z0-9]{6,10}$/.test(pLines[i + 2])) ? pLines[i + 2] : '';
+                let pExpiry = (i + 3 < pLines.length && /^\d{4}-\d{2}-\d{2}$/.test(pLines[i + 3])) ? pLines[i + 3] : '';
+                if (pTicket) {
+                    passengers.push({
+                        name: nameCandidate.toUpperCase(),
+                        type: 'Adult',
+                        eticket: pTicket,
+                        eTicketNo: pTicket,
+                        passport: pPassport,
+                        expiry: pExpiry
+                    });
+                    i += 4;
+                    continue;
+                }
+            }
+            i++;
+        }
+    }
+
+    // Method Thai Direct OCR/confirmation:
+    if (passengers.length === 0) {
+        const thaiBlockMatches = [...clean.matchAll(/([A-Z\s]{3,40})\s+([A-Z0-9]{6,10})[\r\n\s]+(Adult|Child|Infant)?\s*(\d{4}-\d{2}-\d{2})?[\r\n\s]+(?:E-Ticket\s*Number:?\s*(\d{10,}))/gi)];
+        for (const m of thaiBlockMatches) {
             const rawName = m[1].replace(/\s+/g, ' ').trim().toUpperCase();
-            if (!/^(kuala|johor|singapore|bangkok|baggage|flight|airline|personal|carry|phu quoc|ho chi|vietjet|airasia)/i.test(rawName)) {
-                const pType = m[2].replace(/s$/i, '');
-                const formattedType = pType.toLowerCase() === 'adult' ? 'Adult' : pType;
-                if (!passengers.some(p => p.name === rawName)) {
-                    passengers.push({ name: rawName, type: formattedType });
+            if (!/^(kuala|bangkok|baggage|flight|airline|primary|contact)/i.test(rawName)) {
+                passengers.push({
+                    name: rawName,
+                    passport: m[2],
+                    type: m[3] || 'Adult',
+                    expiry: m[4] || '',
+                    eticket: m[5] || '',
+                    eTicketNo: m[5] || ''
+                });
+            }
+        }
+    }
+
+    // Method A: Baggage section passenger lines "NAME (Adults)"
+    if (passengers.length === 0) {
+        for (const line of lines) {
+            const m = line.trim().match(/^([A-Za-z\s]{3,45})\s*\((Adults?|Children|Infants?)\)$/i);
+            if (m) {
+                const rawName = m[1].replace(/\s+/g, ' ').trim().toUpperCase();
+                if (!/^(kuala|johor|singapore|bangkok|baggage|flight|airline|personal|carry|phu quoc|ho chi|vietjet|airasia)/i.test(rawName)) {
+                    const pType = m[2].replace(/s$/i, '');
+                    const formattedType = pType.toLowerCase() === 'adult' ? 'Adult' : pType;
+                    if (!passengers.some(p => p.name === rawName)) {
+                        passengers.push({ name: rawName, type: formattedType, eticket: '', passport: '', expiry: '' });
+                    }
                 }
             }
         }
@@ -261,7 +372,32 @@ export function parseItineraryText(rawText) {
                             .toUpperCase();
                 if (n && n.length > 2 && !/^(name|class|reference|airline|booking)/i.test(n)) {
                     if (!passengers.some(p => p.name === n)) {
-                        passengers.push({ name: n, type: 'Adult' });
+                        passengers.push({ name: n, type: 'Adult', eticket: '', passport: '', expiry: '' });
+                    }
+                }
+            }
+        }
+    }
+
+    // Method B2: Numbered passenger lines "1. NAME (Adult)" or "1. NAME E-Ticket: ..."
+    if (passengers.length === 0) {
+        for (const line of lines) {
+            const numMatch = line.trim().match(/^(\d+)[\.\)]\s+([A-Za-z\s]{3,45}?)(?:\s+(Adult|Child|Infant)|\s+E-?Ticket|\s+Passport|\s*$)/i);
+            if (numMatch) {
+                const rawName = numMatch[2].replace(/\s+/g, ' ').trim().toUpperCase();
+                if (rawName && rawName.length > 2 && !/^(kuala|johor|singapore|bangkok|baggage|flight|airline|personal|carry|route|terminal)/i.test(rawName)) {
+                    const pTicketMatch = line.match(/(?:E-?Ticket|Ticket|Tkt)[:\s]*([0-9-]{10,})/i);
+                    const pPassportMatch = line.match(/(?:Passport|PPT)[:\s]*([A-Z0-9]{6,10})/i);
+                    const pExpiryMatch = line.match(/(?:Expiry|Exp)[:\s]*([0-9-]{4,10})/i);
+                    if (!passengers.some(p => p.name === rawName)) {
+                        passengers.push({
+                            name: rawName,
+                            type: numMatch[3] ? (numMatch[3].toLowerCase() === 'adult' ? 'Adult' : numMatch[3]) : 'Adult',
+                            eticket: pTicketMatch ? pTicketMatch[1].trim() : '',
+                            eTicketNo: pTicketMatch ? pTicketMatch[1].trim() : '',
+                            passport: pPassportMatch ? pPassportMatch[1].trim() : '',
+                            expiry: pExpiryMatch ? pExpiryMatch[1].trim() : ''
+                        });
                     }
                 }
             }
@@ -291,14 +427,14 @@ export function parseItineraryText(rawText) {
             }
         }
         if (singleName) {
-            passengers.push({ name: singleName, type: singleType === 'adult' ? 'Adult' : singleType });
+            passengers.push({ name: singleName, type: singleType === 'adult' ? 'Adult' : singleType, eticket: '', passport: '', expiry: '' });
         }
     }
 
     const passengerName = passengers[0]?.name || '';
     const passengerType = passengers[0]?.type || 'Adult';
 
-    // 6. Section-based Departure & Arrival Parser Helper
+    // 7. Section-based Departure & Arrival Parser Helper
     function parseFlightSection(fullText, startWord, endWords) {
         const endGroup = endWords.map(w => `\\b${w}\\b`).join('|');
         const regex = new RegExp(`\\b${startWord}\\b([\\s\\S]*?)(?=${endGroup}|$)`, 'i');
@@ -316,7 +452,7 @@ export function parseItineraryText(rawText) {
 
         // 2. Date
         let dateRaw = '';
-        const dateMatch = block.match(/\b([A-Za-z]{3,}\s+\d{1,2},?\s*\d{4}|\d{1,2}\s+[A-Za-z]{3,},?\s*\d{4}|\d{1,2}[-\/]\d{1,2}[-\/]\d{4}|\d{4}[-\/]\d{1,2}[-\/]\d{1,2})\b/);
+        const dateMatch = block.match(/\b([A-Za-z]{3,}\s+\d{1,2},?\s*\d{4}|\d{1,2}\s+[A-Za-z]{3,},?\s*\d{4}|\d{1,2}[-\/]\d{1,2}[-\/]\d{4}|\d{4}[-\/]\d{1,2}[-\/]\d{4})\b/);
         if (dateMatch) {
             dateRaw = dateMatch[0].trim();
             block = block.replace(dateMatch[0], ' ');
@@ -352,102 +488,103 @@ export function parseItineraryText(rawText) {
         return { time, dateRaw, terminal, airport };
     }
 
-    // 7. Parse Multiple Flight Sectors
-    const flBlockMatch = clean.match(/Flight\s*Information([\s\S]*?)(?=Baggage\s*Allowance|$)/i);
-    const flText = flBlockMatch ? flBlockMatch[1] : clean;
-
-    const depMatches = [...flText.matchAll(/\bDeparture\b/gi)];
+    // 8. Parse Multiple Flight Sectors
     const flights = [];
 
-    if (depMatches.length === 0) {
-        const dep = parseFlightSection(clean, 'Departure', ['Arrival']);
-        const arr = parseFlightSection(clean, 'Arrival', ['Airline', 'Flight', 'Baggage', 'Personal', 'Carry']);
-        const depCode = lookupAirportCode(dep.airport);
-        let depAirport = dep.airport;
-        if (depAirport && depCode && !depAirport.includes(`(${depCode})`)) depAirport += ` (${depCode})`;
-        const arrCode = lookupAirportCode(arr.airport);
-        let arrAirport = arr.airport;
-        if (arrAirport && arrCode && !arrAirport.includes(`(${arrCode})`)) arrAirport += ` (${arrCode})`;
-        const depCity = extractCityName(dep.airport);
-        const arrCity = extractCityName(arr.airport);
-        const route = `${depCity || 'DEP'} (${depCode || 'DEP'}) - ${arrCity || 'ARR'} (${arrCode || 'ARR'})`;
+    // Check Thai Airways direct Flight Details block:
+    const thaiFlMatch = clean.match(/Flight\s*Details\s+([\s\S]*?)(?=Passenger\s*Details|Baggage|Notes|$)/i);
+    if (airline === 'Thai Airways' && thaiFlMatch) {
+        const tfText = thaiFlMatch[1].trim();
+        const tfLines = tfText.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+        
+        let headerRoute = '';
+        let routeMatch = tfLines[0]?.match(/^([A-Za-z\s]+?)\s+(?:v|»|✈|->|-)\s+([A-Za-z\s]+?)$/i);
+        let depCity = routeMatch ? routeMatch[1].trim() : '';
+        let arrCity = routeMatch ? routeMatch[2].trim() : '';
+
+        let flightNo = 'TG 910';
+        let carrier = 'Thai Airways International';
+        let flCarrierMatch = tfLines[1]?.match(/(TG\s*\d{3,4})\s*(?:\||-)?\s*(.*)/i);
+        if (flCarrierMatch) {
+            flightNo = flCarrierMatch[1].toUpperCase();
+            carrier = flCarrierMatch[2].trim() || carrier;
+        }
+
+        let depTime = tfLines[2] || '';
+        let arrTime = tfLines[3] || '';
+        let depDateFormatted = tfLines[4] || '';
+        let arrDateFormatted = tfLines[5] || '';
+        let depAirport = tfLines[6] || '';
+        let arrAirport = tfLines[7] || '';
+
+        const durationMatch = tfText.match(/Duration\s*\n\s*([^\n\r]+)/i);
+        const aircraftMatch = tfText.match(/Aircraft\s*\n\s*([^\n\r]+)/i);
+        const classMatch = tfText.match(/Class\s*\n\s*([^\n\r]+)/i);
+        const routeCodeMatch = tfText.match(/Route\s*\n\s*([^\n\r]+)/i);
+
+        const duration = durationMatch ? durationMatch[1].trim() : '12h 30min, Non-Stop';
+        const aircraft = aircraftMatch ? aircraftMatch[1].trim() : 'Boeing 777-300ER';
+        const secClass = classMatch ? classMatch[1].trim() : flightClass;
+        const route = routeCodeMatch ? routeCodeMatch[1].trim() : (depCity && arrCity ? `${depCity} - ${arrCity}` : 'BKK - LHR');
+
+        let depTerminal = '';
+        let arrTerminal = '';
+        const depTermMatch = depAirport.match(/,\s*(Terminal\s*[0-9A-Z]+|T\d+)/i);
+        if (depTermMatch) {
+            depTerminal = depTermMatch[1];
+            depAirport = depAirport.replace(depTermMatch[0], '').trim();
+        }
+        const arrTermMatch = arrAirport.match(/,\s*(Terminal\s*[0-9A-Z]+|T\d+)/i);
+        if (arrTermMatch) {
+            arrTerminal = arrTermMatch[1];
+            arrAirport = arrAirport.replace(arrTermMatch[0], '').trim();
+        }
 
         flights.push({
-            flightNo: '',
-            airlineName: airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad',
-            depTime: dep.time,
-            depDateFormatted: formatTicketDate(dep.dateRaw),
+            sectorHeader: headerRoute,
+            flightNo,
+            airlineName: carrier,
+            depTime,
+            depDateFormatted,
             depAirport,
-            depTerminal: dep.terminal,
-            arrTime: arr.time,
-            arrDateFormatted: formatTicketDate(arr.dateRaw),
+            depTerminal,
+            arrTime,
+            arrDateFormatted,
             arrAirport,
-            arrTerminal: arr.terminal,
-            route
+            arrTerminal,
+            route,
+            duration,
+            aircraft,
+            flightClass: secClass
         });
-    } else {
-        for (let i = 0; i < depMatches.length; i++) {
-            const curIdx = depMatches[i].index;
-            const nextIdx = (i + 1 < depMatches.length) ? depMatches[i + 1].index : flText.length;
-            
-            const prevEnd = (i === 0) ? 0 : depMatches[i - 1].index;
-            const leadingText = flText.substring(prevEnd, curIdx);
-            
-            const leadingLines = leadingText.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
-            let sectorHeader = '';
-            for (let j = leadingLines.length - 1; j >= 0; j--) {
-                const line = leadingLines[j];
-                if (line.includes('-') && !/transfer|baggage|flight information/i.test(line)) {
-                    sectorHeader = line;
-                    break;
-                }
-            }
-            
-            const segmentText = flText.substring(curIdx, nextIdx);
-            
-            const dep = parseFlightSection(segmentText, 'Departure', ['Arrival']);
-            const arr = parseFlightSection(segmentText, 'Arrival', ['Airline', 'Flight', 'Transfer', 'Baggage']);
-            
-            let sectorAirline = airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad';
-            let sectorFlightNo = '';
-            const airMatch = segmentText.match(/Airline\s+(.*?)\s+(AK\d{3,4}|FD\d{3,4}|QZ\d{3,4}|D7\d{3,4}|XJ\d{3,4}|Z2\d{3,4}|VJ\d{3,4}|VZ\d{3,4}|[A-Z0-9]{2}\s*\d{3,4})\b/i);
-            if (airMatch) {
-                sectorAirline = airMatch[1].trim();
-                sectorFlightNo = airMatch[2].replace(/\s+/g, '');
-            } else {
-                const fnMatch = segmentText.match(/\b(AK|FD|QZ|D7|XJ|Z2|VJ|VZ)\s*(\d{3,4})\b/i);
-                if (fnMatch) {
-                    sectorFlightNo = fnMatch[1].toUpperCase() + fnMatch[2];
-                }
-                const anMatch = segmentText.match(/Airline\s*[:\t ]+([^\\n\\r]+)/i);
-                if (anMatch) {
-                    sectorAirline = anMatch[1].replace(/(?:AK|FD|QZ|D7|XJ|Z2|VJ|VZ)\d+/i, '').trim() || sectorAirline;
-                }
-            }
-            
+    }
+
+    // If flights is still empty, parse using standard sector method
+    if (flights.length === 0) {
+        const flBlockMatch = clean.match(/Flight\s*Information([\s\S]*?)(?=Baggage\s*Allowance|$)/i);
+        const flText = flBlockMatch ? flBlockMatch[1] : clean;
+
+        const depMatches = [...flText.matchAll(/\bDeparture\b/gi)];
+
+        if (depMatches.length === 0) {
+            const dep = parseFlightSection(clean, 'Departure', ['Arrival']);
+            const arr = parseFlightSection(clean, 'Arrival', ['Airline', 'Flight', 'Baggage', 'Personal', 'Carry']);
             const depCode = lookupAirportCode(dep.airport);
             let depAirport = dep.airport;
-            if (depAirport && depCode && !depAirport.includes(`(${depCode})`)) {
-                depAirport += ` (${depCode})`;
-            }
-            
+            if (depAirport && depCode && !depAirport.includes(`(${depCode})`)) depAirport += ` (${depCode})`;
             const arrCode = lookupAirportCode(arr.airport);
             let arrAirport = arr.airport;
-            if (arrAirport && arrCode && !arrAirport.includes(`(${arrCode})`)) {
-                arrAirport += ` (${arrCode})`;
-            }
-            
+            if (arrAirport && arrCode && !arrAirport.includes(`(${arrCode})`)) arrAirport += ` (${arrCode})`;
             const depCity = extractCityName(dep.airport);
             const arrCity = extractCityName(arr.airport);
-            let route = `${depCity || 'DEP'} (${depCode || 'DEP'}) - ${arrCity || 'ARR'} (${arrCode || 'ARR'})`;
-            if ((!depCity || !arrCity) && sectorHeader) {
-                route = sectorHeader;
-            }
-            
+            const route = `${depCity || 'DEP'} (${depCode || 'DEP'}) - ${arrCity || 'ARR'} (${arrCode || 'ARR'})`;
+
+            const defaultCarrier = airline === 'Thai Airways' ? 'Thai Airways International' : (airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad');
+            const defaultFlightNo = airline === 'Thai Airways' ? 'TG 910' : '';
+
             flights.push({
-                sectorHeader,
-                flightNo: sectorFlightNo,
-                airlineName: sectorAirline,
+                flightNo: defaultFlightNo,
+                airlineName: defaultCarrier,
                 depTime: dep.time,
                 depDateFormatted: formatTicketDate(dep.dateRaw),
                 depAirport,
@@ -456,34 +593,161 @@ export function parseItineraryText(rawText) {
                 arrDateFormatted: formatTicketDate(arr.dateRaw),
                 arrAirport,
                 arrTerminal: arr.terminal,
-                route
+                route,
+                duration: '12h 30min, Non-Stop',
+                aircraft: 'Boeing 777-300ER',
+                flightClass
             });
+        } else {
+            for (let i = 0; i < depMatches.length; i++) {
+                const curIdx = depMatches[i].index;
+                const nextIdx = (i + 1 < depMatches.length) ? depMatches[i + 1].index : flText.length;
+                
+                const prevEnd = (i === 0) ? 0 : depMatches[i - 1].index;
+                const leadingText = flText.substring(prevEnd, curIdx);
+                
+                const leadingLines = leadingText.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+                let sectorHeader = '';
+                for (let j = leadingLines.length - 1; j >= 0; j--) {
+                    const line = leadingLines[j];
+                    if (line.includes('-') && !/transfer|baggage|flight information/i.test(line)) {
+                        sectorHeader = line;
+                        break;
+                    }
+                }
+                
+                const segmentText = flText.substring(curIdx, nextIdx);
+                
+                const dep = parseFlightSection(segmentText, 'Departure', ['Arrival']);
+                const arr = parseFlightSection(segmentText, 'Arrival', ['Airline', 'Flight', 'Transfer', 'Baggage']);
+                
+                let sectorAirline = airline === 'Thai Airways' ? 'Thai Airways International' : (airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad');
+                let sectorFlightNo = '';
+                
+                const airMatch = segmentText.match(/Airline\s+(.*?)\s+(AK\d{3,4}|FD\d{3,4}|QZ\d{3,4}|D7\d{3,4}|XJ\d{3,4}|Z2\d{3,4}|VJ\d{3,4}|VZ\d{3,4}|TG\s*\d{3,4}|[A-Z0-9]{2}\s*\d{3,4})\b/i);
+                if (airMatch) {
+                    sectorAirline = airMatch[1].trim();
+                    sectorFlightNo = airMatch[2].replace(/\s+/g, '');
+                    if (/^TG\d/i.test(sectorFlightNo)) sectorFlightNo = sectorFlightNo.replace(/^TG/i, 'TG ');
+                } else {
+                    const fnMatch = segmentText.match(/\b(AK|FD|QZ|D7|XJ|Z2|VJ|VZ|TG)\s*(\d{3,4})\b/i);
+                    if (fnMatch) {
+                        sectorFlightNo = fnMatch[1].toUpperCase() === 'TG' ? `TG ${fnMatch[2]}` : (fnMatch[1].toUpperCase() + fnMatch[2]);
+                    }
+                    const anMatch = segmentText.match(/Airline\s*[:\t ]+([^\\n\\r]+)/i);
+                    if (anMatch) {
+                        sectorAirline = anMatch[1].replace(/(?:AK|FD|QZ|D7|XJ|Z2|VJ|VZ|TG)\d+/i, '').trim() || sectorAirline;
+                    }
+                }
+                
+                const depCode = lookupAirportCode(dep.airport);
+                let depAirport = dep.airport;
+                if (depAirport && depCode && !depAirport.includes(`(${depCode})`)) {
+                    depAirport += ` (${depCode})`;
+                }
+                
+                const arrCode = lookupAirportCode(arr.airport);
+                let arrAirport = arr.airport;
+                if (arrAirport && arrCode && !arrAirport.includes(`(${arrCode})`)) {
+                    arrAirport += ` (${arrCode})`;
+                }
+                
+                const depCity = extractCityName(dep.airport);
+                const arrCity = extractCityName(arr.airport);
+                let route = `${depCity || 'DEP'} (${depCode || 'DEP'}) - ${arrCity || 'ARR'} (${arrCode || 'ARR'})`;
+                if ((!depCity || !arrCity) && sectorHeader) {
+                    route = sectorHeader;
+                }
+
+                const acMatch = segmentText.match(/(Boeing\s*[\w-]+|Airbus\s*[\w-]+|A3\d{2}[\w-]*|B7\d{2}[\w-]*)/i);
+                const aircraft = acMatch ? acMatch[1].trim() : 'Boeing 777-300ER';
+
+                const durMatch = segmentText.match(/(\d+h\s*\d+m(?:in)?)/i);
+                const duration = durMatch ? durMatch[1].trim() : '12h 30min, Non-Stop';
+                
+                flights.push({
+                    sectorHeader,
+                    flightNo: sectorFlightNo || (airline === 'Thai Airways' ? 'TG 910' : ''),
+                    airlineName: sectorAirline,
+                    depTime: dep.time,
+                    depDateFormatted: formatTicketDate(dep.dateRaw),
+                    depAirport,
+                    depTerminal: dep.terminal,
+                    arrTime: arr.time,
+                    arrDateFormatted: formatTicketDate(arr.dateRaw),
+                    arrAirport,
+                    arrTerminal: arr.terminal,
+                    route,
+                    duration,
+                    aircraft,
+                    flightClass
+                });
+            }
         }
     }
 
     const primaryFlight = flights[0] || {};
 
-    // 8. Baggage
-    const bagBlock = clean.match(/Checked\s*baggage[\s\S]*?(?=(?:Carry-on|Personal|Important|$))/i);
-    const bagText = bagBlock ? bagBlock[0] : clean;
-
-    const weightMatch = bagText.match(/(\d+)\s*kg/i);
-    const weightVal = weightMatch ? weightMatch[1] : (airline === 'VietJet Air' ? '20' : '30');
-
-    const dimMatch = bagText.match(/\(([0-9\s*xX]+cm)\)/i) ||
-                     bagText.match(/(?:cannot\s*exceed|max)[\s\S]*?([0-9\s*xX]{7,}cm)/i);
-    let dimStr = '119 x 119 x 81 cm';
-    if (dimMatch) {
-        dimStr = dimMatch[1].replace(/\s+/g, ' ').replace(/[xX]/g, ' x ').trim();
+    // Auto-calculate check-in notice if not already extracted
+    if (!checkinNotice && flights.length > 0) {
+        const depCode = lookupAirportCode(primaryFlight.depAirport) || 'BKK';
+        if (primaryFlight.depTime && primaryFlight.depDateFormatted) {
+            try {
+                const d = new Date(`${primaryFlight.depDateFormatted} ${primaryFlight.depTime}`);
+                if (!isNaN(d.getTime())) {
+                    d.setHours(d.getHours() - 3);
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const hours = d.getHours();
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const h12 = hours % 12 || 12;
+                    checkinNotice = `(${depCode}) ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${h12}:${minutes} ${ampm}`;
+                }
+            } catch (e) {}
+        }
+        if (!checkinNotice) {
+            checkinNotice = `(${depCode}) 3 hours before departure`;
+        }
     }
 
-    const totalMatch = bagText.match(/cannot\s*exceed\s*(\d+\s*cm)/i);
-    const totalStr = totalMatch ? ` (total ${totalMatch[1]})` : '';
+    // 9. Baggage
+    let checkedBaggage = '30 kg per person\nEach piece max 119 x 119 x 81 cm (total 319 cm)';
+    let carryOnBaggage = '1 piece per person\nMax 56 x 36 x 23 cm per piece';
+    let personalItem = '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
 
-    const checkedBaggage = `${weightVal} kg per person\nEach piece max ${dimStr}${totalStr}`;
+    if (airline === 'Thai Airways') {
+        const thaiBagMatch = clean.match(/Checked:\s*([^\n\r]+)/i);
+        if (thaiBagMatch) {
+            checkedBaggage = `Checked: ${thaiBagMatch[1].trim()}`;
+        } else {
+            const bagWeight = clean.match(/(\d+)\s*kg/i);
+            if (bagWeight && bagWeight[1] === '23') {
+                checkedBaggage = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
+            } else if (bagWeight) {
+                checkedBaggage = `Checked: ${bagWeight[1]} kg   |   Carry-on: 7 kg`;
+            } else {
+                checkedBaggage = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
+            }
+        }
+    } else {
+        const bagBlock = clean.match(/Checked\s*baggage[\s\S]*?(?=(?:Carry-on|Personal|Important|$))/i);
+        const bagText = bagBlock ? bagBlock[0] : clean;
 
-    const carryOnBaggage = '1 piece per person\nMax 56 x 36 x 23 cm per piece';
-    const personalItem = '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
+        const weightMatch = bagText.match(/(\d+)\s*kg/i);
+        const weightVal = weightMatch ? weightMatch[1] : (airline === 'VietJet Air' ? '20' : '30');
+
+        const dimMatch = bagText.match(/\(([0-9\s*xX]+cm)\)/i) ||
+                         bagText.match(/(?:cannot\s*exceed|max)[\s\S]*?([0-9\s*xX]{7,}cm)/i);
+        let dimStr = '119 x 119 x 81 cm';
+        if (dimMatch) {
+            dimStr = dimMatch[1].replace(/\s+/g, ' ').replace(/[xX]/g, ' x ').trim();
+        }
+
+        const totalMatch = bagText.match(/cannot\s*exceed\s*(\d+\s*cm)/i);
+        const totalStr = totalMatch ? ` (total ${totalMatch[1]})` : '';
+
+        checkedBaggage = `${weightVal} kg per person\nEach piece max ${dimStr}${totalStr}`;
+    }
 
     return {
         airline,
@@ -491,13 +755,15 @@ export function parseItineraryText(rawText) {
         pnr,
         flightClass,
         eTicketNo,
+        issuedDate,
+        checkinNotice,
         passengerName,
         passengerType,
         passengers,
         flights,
         // Primary flight fields for backward compatibility
         flightNo: primaryFlight.flightNo || '',
-        airlineName: primaryFlight.airlineName || (airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad'),
+        airlineName: primaryFlight.airlineName || (airline === 'Thai Airways' ? 'Thai Airways International' : (airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad')),
         depTime: primaryFlight.depTime || '',
         depDateFormatted: primaryFlight.depDateFormatted || '',
         depAirport: primaryFlight.depAirport || '',
@@ -507,6 +773,8 @@ export function parseItineraryText(rawText) {
         arrAirport: primaryFlight.arrAirport || '',
         arrTerminal: primaryFlight.arrTerminal || '',
         route: primaryFlight.route || '',
+        duration: primaryFlight.duration || '12h 30min, Non-Stop',
+        aircraft: primaryFlight.aircraft || 'Boeing 777-300ER',
         checkedBaggage,
         carryOnBaggage,
         personalItem
@@ -550,9 +818,426 @@ export async function extractTextFromPdf(file) {
 
 
 /**
+ * Generate native vector jsPDF document for Thai Airways matching official template
+ */
+export async function generateThaiAirwaysPdfDoc(data) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
+
+    const logoDataUrl = await getAirlineLogoDataUrl('Thai Airways');
+
+    const marginX = 42.5;
+    const contentWidth = 510.3;
+    const rightX = marginX + contentWidth;
+
+    const purpleColor = [61, 30, 109]; // #3D1E6D
+    const goldColor = [217, 163, 0];   // #D9A300
+    const darkColor = [51, 51, 51];    // #333333
+    const tableBg = [246, 243, 251];   // #F6F3FB
+    const tableBorder = [213, 203, 232]; // #D5CBE8
+    const goldBoxBg = [253, 246, 227]; // #FDF6E3
+    const lightPurple = [240, 232, 255]; // #F0E8FF
+    const mutedColor = [136, 136, 136]; // #888888
+
+    let cursorY = 44;
+
+    // Helper for pagination
+    function checkPageOverflow(neededHeight) {
+        if (cursorY + neededHeight > 780) {
+            doc.addPage();
+            cursorY = 44;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(...purpleColor);
+            doc.text(`E-TICKET (Continued) - Booking Ref: ${pnr}`, marginX, cursorY + 10);
+            cursorY += 24;
+        }
+    }
+
+    // Header
+    if (logoDataUrl) {
+        try {
+            doc.addImage(logoDataUrl, 'PNG', marginX, cursorY, 147.4, 43.4);
+        } catch (e) {
+            console.warn('Could not add Thai Airways logo to PDF', e);
+        }
+    }
+
+    const pnr = (data.pnr || data.bookingNo || '').trim().toUpperCase();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(...purpleColor);
+    doc.text("E-TICKET", rightX, cursorY + 15, { align: "right" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...darkColor);
+    doc.text("Booking Confirmed", rightX, cursorY + 27, { align: "right" });
+    doc.text("Thai Airways International (TG)", rightX, cursorY + 39, { align: "right" });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...purpleColor);
+    doc.text(`Booking Ref: ${pnr}`, rightX, cursorY + 57, { align: "right" });
+
+    cursorY += 76;
+
+    // Top Gold Divider Line
+    doc.setDrawColor(...goldColor);
+    doc.setLineWidth(2.5);
+    doc.line(marginX, cursorY, rightX, cursorY);
+    cursorY += 15;
+
+    // Top Summary Table (6 boxes)
+    const summaryBoxY = cursorY;
+    const summaryHeight = 58.5;
+    doc.setFillColor(...tableBg);
+    doc.rect(marginX, summaryBoxY, contentWidth, summaryHeight, 'F');
+    doc.setDrawColor(...tableBorder);
+    doc.setLineWidth(0.5);
+    doc.rect(marginX, summaryBoxY, contentWidth, summaryHeight, 'S');
+
+    // Horizontal split
+    doc.line(marginX, summaryBoxY + 23.5, rightX, summaryBoxY + 23.5);
+
+    // Vertical splits
+    const col2X = marginX + 85.0;
+    const col3X = marginX + 198.4;
+    const col4X = marginX + 283.5;
+    const col5X = marginX + 396.9;
+    const col6X = marginX + 459.2;
+
+    doc.line(col2X, summaryBoxY, col2X, summaryBoxY + summaryHeight);
+    doc.line(col3X, summaryBoxY, col3X, summaryBoxY + summaryHeight);
+    doc.line(col4X, summaryBoxY, col4X, summaryBoxY + summaryHeight);
+    doc.line(col5X, summaryBoxY, col5X, summaryBoxY + summaryHeight);
+    doc.line(col6X, summaryBoxY, col6X, summaryBoxY + summaryHeight);
+
+    // Row 1
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...darkColor);
+    doc.text("Booking Ref", marginX + 5, summaryBoxY + 15);
+    doc.setFontSize(12);
+    doc.text(pnr, col2X + 5, summaryBoxY + 15.5);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("Issued Date", col3X + 5, summaryBoxY + 15);
+    doc.setFont("helvetica", "normal");
+    doc.text(data.issuedDate || formatTicketDate(new Date()), col4X + 5, summaryBoxY + 15);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Passengers", col5X + 5, summaryBoxY + 15);
+    doc.setFont("helvetica", "normal");
+    const paxList = (data.passengers && data.passengers.length > 0)
+        ? data.passengers
+        : [{ name: data.passengerName || '', type: data.passengerType || 'Adult' }];
+    doc.text(`${paxList.length} Adult${paxList.length > 1 ? 's' : ''}`, col6X + 5, summaryBoxY + 15);
+
+    // Row 2
+    const flightsList = (data.flights && data.flights.length > 0)
+        ? data.flights
+        : [{
+            flightNo: data.flightNo || 'TG 910',
+            airlineName: data.airlineName || 'Thai Airways International',
+            depTime: data.depTime || '',
+            depDateFormatted: data.depDateFormatted || '',
+            depAirport: data.depAirport || '',
+            depTerminal: data.depTerminal || '',
+            arrTime: data.arrTime || '',
+            arrDateFormatted: data.arrDateFormatted || '',
+            arrAirport: data.arrAirport || '',
+            arrTerminal: data.arrTerminal || '',
+            duration: data.duration || '12h 30min, Non-Stop',
+            aircraft: data.aircraft || 'Boeing 777-300ER',
+            flightClass: data.flightClass || 'Economy (T)',
+            route: data.route || ''
+        }];
+    const firstFlight = flightsList[0] || {};
+    const depCode = lookupAirportCode(firstFlight.depAirport) || 'BKK';
+    let checkinText = data.checkinNotice || '';
+    if (!checkinText) {
+        checkinText = `(${depCode}) 3 hours before departure`;
+    }
+    const checkinLabel = checkinText.includes('(') ? `Check-in ${checkinText.match(/\([^)]+\)/)?.[0] || ''}` : `Check-in (${depCode})`;
+    const checkinVal = checkinText.replace(/Check-in\s*(\([^)]+\))?[:\s\-]*/i, '').trim() || checkinText;
+
+    doc.setFont("helvetica", "bold");
+    doc.text(checkinLabel, marginX + 5, summaryBoxY + 38.5);
+    doc.setFont("helvetica", "normal");
+    doc.text(checkinVal, col2X + 5, summaryBoxY + 38.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Status", col3X + 5, summaryBoxY + 38.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("Confirmed", col4X + 5, summaryBoxY + 38.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Alliance", col5X + 5, summaryBoxY + 38.5);
+    doc.setFont("helvetica", "normal");
+    doc.text("Star", col6X + 5, summaryBoxY + 32.5);
+    doc.text("Alliance", col6X + 5, summaryBoxY + 44.5);
+
+    cursorY += summaryHeight + 16;
+
+    // Flight Details Heading
+    checkPageOverflow(180);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...purpleColor);
+    doc.text("Flight Details", marginX, cursorY);
+    cursorY += 8;
+
+    // Flight Sectors Loop
+    flightsList.forEach((f) => {
+        checkPageOverflow(165);
+        const depCity = extractCityName(f.depAirport) || 'Bangkok';
+        const arrCity = extractCityName(f.arrAirport) || 'London';
+        const routeStr = f.route || `${lookupAirportCode(f.depAirport) || 'BKK'} - ${lookupAirportCode(f.arrAirport) || 'LHR'}`;
+
+        // Upper Purple Box
+        const upperBoxH = 109;
+        doc.setFillColor(...purpleColor);
+        doc.rect(marginX, cursorY, contentWidth, upperBoxH, 'F');
+
+        // Header inside purple box
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${depCity}   `, marginX + 8, cursorY + 21);
+        const depCityW = doc.getTextWidth(`${depCity}   `);
+
+        try {
+            doc.setFont("ZapfDingbats");
+            doc.text("v", marginX + 8 + depCityW, cursorY + 21);
+        } catch (e) {
+            doc.setFont("helvetica", "bold");
+            doc.text("✈", marginX + 8 + depCityW, cursorY + 21);
+        }
+        const planeW = 12;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text(`   ${arrCity}`, marginX + 8 + depCityW + planeW, cursorY + 21);
+
+        doc.setFontSize(9);
+        const flightLabel = `${f.flightNo || 'TG 910'}  |  ${f.airlineName || 'Thai Airways International'}`;
+        doc.text(flightLabel, rightX - 8, cursorY + 18, { align: "right" });
+
+        // Times
+        doc.setFontSize(13);
+        doc.setFont("helvetica", "bold");
+        doc.text(f.depTime || "", marginX + 8, cursorY + 52);
+        doc.text(f.arrTime || "", marginX + 263, cursorY + 52);
+
+        // Dates
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...lightPurple);
+        doc.text(f.depDateFormatted || "", marginX + 8, cursorY + 76);
+        doc.text(f.arrDateFormatted || "", marginX + 263, cursorY + 76);
+
+        // Airports
+        const depAirStr = `${f.depAirport || ''}${f.depTerminal ? ', ' + f.depTerminal : ''}`;
+        const arrAirStr = `${f.arrAirport || ''}${f.arrTerminal ? ', ' + f.arrTerminal : ''}`;
+        doc.text(depAirStr, marginX + 8, cursorY + 100);
+        doc.text(arrAirStr, marginX + 263, cursorY + 100);
+
+        cursorY += upperBoxH;
+
+        // Lower Gold/Cream Box
+        const lowerBoxH = 47;
+        doc.setFillColor(...goldBoxBg);
+        doc.rect(marginX, cursorY, contentWidth, lowerBoxH, 'F');
+        doc.setDrawColor(...goldColor);
+        doc.setLineWidth(0.5);
+        doc.rect(marginX, cursorY, contentWidth, lowerBoxH, 'S');
+
+        // Divider lines
+        doc.line(marginX, cursorY + 23.5, rightX, cursorY + 23.5);
+        const goldCol2 = marginX + 79.4;
+        const goldCol3 = marginX + 255.1;
+        const goldCol4 = marginX + 334.5;
+        doc.line(goldCol2, cursorY, goldCol2, cursorY + lowerBoxH);
+        doc.line(goldCol3, cursorY, goldCol3, cursorY + lowerBoxH);
+        doc.line(goldCol4, cursorY, goldCol4, cursorY + lowerBoxH);
+
+        // Row 1
+        doc.setTextColor(...darkColor);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("Duration", marginX + 6, cursorY + 15);
+        doc.setFont("helvetica", "normal");
+        doc.text(f.duration || "12h 30min, Non-Stop", goldCol2 + 6, cursorY + 15);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Aircraft", goldCol3 + 6, cursorY + 15);
+        doc.setFont("helvetica", "normal");
+        doc.text(f.aircraft || "Boeing 777-300ER", goldCol4 + 6, cursorY + 15);
+
+        // Row 2
+        doc.setFont("helvetica", "bold");
+        doc.text("Class", marginX + 6, cursorY + 38.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(f.flightClass || data.flightClass || "Economy (T)", goldCol2 + 6, cursorY + 38.5);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Route", goldCol3 + 6, cursorY + 38.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(routeStr, goldCol4 + 6, cursorY + 38.5);
+
+        cursorY += lowerBoxH + 16;
+    });
+
+    // Passenger Details Section
+    checkPageOverflow(paxList.length * 24 + 40);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...purpleColor);
+    doc.text("Passenger Details", marginX, cursorY);
+    cursorY += 8;
+
+    // Table Header
+    const paxHeaderH = 23;
+    doc.setFillColor(...purpleColor);
+    doc.rect(marginX, cursorY, contentWidth, paxHeaderH, 'F');
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+
+    const pCol2 = marginX + 153.4;
+    const pCol3 = marginX + 300.8;
+    const pCol4 = marginX + 408.5;
+
+    doc.text("Name", marginX + 6, cursorY + 15);
+    doc.text("E-Ticket No.", pCol2 + 6, cursorY + 15);
+    doc.text("Passport", pCol3 + 6, cursorY + 15);
+    doc.text("Expiry", pCol4 + 6, cursorY + 15);
+
+    cursorY += paxHeaderH;
+
+    // Passenger Rows
+    const paxRowH = 23.5;
+    paxList.forEach((p, idx) => {
+        const bg = (idx % 2 === 0) ? tableBg : [255, 255, 255];
+        doc.setFillColor(...bg);
+        doc.rect(marginX, cursorY, contentWidth, paxRowH, 'F');
+        doc.setDrawColor(...tableBorder);
+        doc.setLineWidth(0.5);
+        doc.rect(marginX, cursorY, contentWidth, paxRowH, 'S');
+
+        doc.line(pCol2, cursorY, pCol2, cursorY + paxRowH);
+        doc.line(pCol3, cursorY, pCol3, cursorY + paxRowH);
+        doc.line(pCol4, cursorY, pCol4, cursorY + paxRowH);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...darkColor);
+        doc.text(p.name || "", marginX + 6, cursorY + 15);
+
+        doc.setFont("helvetica", "normal");
+        doc.text(p.eticket || p.eTicketNo || data.eTicketNo || "", pCol2 + 6, cursorY + 15);
+        doc.text(p.passport || "", pCol3 + 6, cursorY + 15);
+        doc.text(p.expiry || "", pCol4 + 6, cursorY + 15);
+
+        cursorY += paxRowH;
+    });
+
+    cursorY += 16;
+
+    // Baggage & Extra Services Section
+    checkPageOverflow(paxList.length * 24 + 40);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...purpleColor);
+    doc.text("Baggage & Extra Services", marginX, cursorY);
+    cursorY += 8;
+
+    const bagRowH = 23.5;
+    const totalBagH = bagRowH * paxList.length;
+    doc.setFillColor(...goldBoxBg);
+    doc.rect(marginX, cursorY, contentWidth, totalBagH, 'F');
+    doc.setDrawColor(...goldColor);
+    doc.setLineWidth(0.5);
+    doc.rect(marginX, cursorY, contentWidth, totalBagH, 'S');
+
+    const bagColSplit = marginX + 142.1;
+    doc.line(bagColSplit, cursorY, bagColSplit, cursorY + totalBagH);
+
+    paxList.forEach((p, idx) => {
+        const rowY = cursorY + (idx * bagRowH);
+        if (idx > 0) {
+            doc.line(marginX, rowY, rightX, rowY);
+        }
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...darkColor);
+        doc.text(p.name || "", marginX + 6, rowY + 15);
+
+        doc.setFont("helvetica", "normal");
+        const bagInfo = p.baggage || data.checkedBaggage || "Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg";
+        doc.text(bagInfo, bagColSplit + 6, rowY + 15);
+    });
+
+    cursorY += totalBagH + 16;
+
+    // Notes Section
+    checkPageOverflow(75);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...purpleColor);
+    doc.text("Notes", marginX, cursorY);
+    cursorY += 14;
+
+    const notesBullets = [
+        "•  Passengers must present the valid ID used to purchase the ticket at check-in; boarding pass or this itinerary may also be required.",
+        "•  Tickets must be used in the sequence set out in the itinerary, otherwise the airline reserves the right to refuse carriage.",
+        "•  Extra services (preferred seat / additional baggage, etc.): to change seats, flights or travel dates, please contact THAI Worldwide Office or\n   THAI Contact Center (+66-2-3561111).",
+        "•  Carriage is subject to the Geneva Convention / Warsaw Treaty System where applicable to the journey."
+    ];
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...darkColor);
+
+    notesBullets.forEach(b => {
+        const lines = b.split('\n');
+        lines.forEach(l => {
+            doc.text(l, marginX + 6, cursorY);
+            cursorY += 12;
+        });
+        cursorY += 2;
+    });
+
+    cursorY += 10;
+
+    // Bottom Gold Rule
+    doc.setDrawColor(...goldColor);
+    doc.setLineWidth(1.5);
+    doc.line(marginX, cursorY, rightX, cursorY);
+    cursorY += 16;
+
+    // Centered Footer
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...mutedColor);
+    const depCity = extractCityName(firstFlight.depAirport) || 'Bangkok';
+    const arrCity = extractCityName(firstFlight.arrAirport) || 'London';
+    const depDateShort = firstFlight.depDateFormatted ? firstFlight.depDateFormatted.replace(/^[A-Za-z]+day,\s*/, '').toUpperCase() : '';
+    const footerMsg = `thaiairways.com   |   Booking Ref ${pnr}   |   ${firstFlight.flightNo || 'TG 910'} ${depCity} - ${arrCity}, ${depDateShort}`;
+    doc.text(footerMsg, marginX + contentWidth / 2, cursorY, { align: "center" });
+
+    return doc;
+}
+
+/**
  * Generate native vector jsPDF document matching the exact official template
  */
 export async function generateAirAsiaPdfDoc(data) {
+    if (data.airline === 'Thai Airways' || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '')) {
+        return generateThaiAirwaysPdfDoc(data);
+    }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
@@ -954,8 +1639,9 @@ export async function generateAirAsiaPdfDoc(data) {
  * Download the generated vector PDF
  */
 export async function downloadAirAsiaPdf(data) {
+    const isThai = (data.airline === 'Thai Airways') || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '');
     const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
-    const prefix = isVietJet ? 'VietJet' : 'AirAsia';
+    const prefix = isThai ? 'ThaiAirways' : (isVietJet ? 'VietJet' : 'AirAsia');
     const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
     const safeName = primaryName.replace(/[^a-zA-Z0-9]/g, '_');
     const safePnr = (data.pnr || data.bookingNo || 'Itinerary').replace(/[^a-zA-Z0-9]/g, '_');
@@ -967,9 +1653,210 @@ export async function downloadAirAsiaPdf(data) {
 }
 
 /**
+ * Generate preview HTML markup for Thai Airways matching official template
+ */
+export function renderThaiAirwaysTicketHtml(data) {
+    const logoSrc = cachedThaiLogoDataUrl || 'thai-airways-logo.png';
+    const pnr = (data.pnr || data.bookingNo || '').trim().toUpperCase();
+    const issuedDate = data.issuedDate || formatTicketDate(new Date());
+
+    const paxList = (data.passengers && data.passengers.length > 0)
+        ? data.passengers
+        : [{ name: data.passengerName || '', type: data.passengerType || 'Adult', eticket: data.eTicketNo || '', passport: '', expiry: '' }];
+
+    const flightsList = (data.flights && data.flights.length > 0)
+        ? data.flights
+        : [{
+            flightNo: data.flightNo || 'TG 910',
+            airlineName: data.airlineName || 'Thai Airways International',
+            depTime: data.depTime || '',
+            depDateFormatted: data.depDateFormatted || '',
+            depAirport: data.depAirport || '',
+            depTerminal: data.depTerminal || '',
+            arrTime: data.arrTime || '',
+            arrDateFormatted: data.arrDateFormatted || '',
+            arrAirport: data.arrAirport || '',
+            arrTerminal: data.arrTerminal || '',
+            duration: data.duration || '12h 30min, Non-Stop',
+            aircraft: data.aircraft || 'Boeing 777-300ER',
+            flightClass: data.flightClass || 'Economy (T)',
+            route: data.route || ''
+        }];
+
+    const firstFlight = flightsList[0] || {};
+    const depCode = lookupAirportCode(firstFlight.depAirport) || 'BKK';
+    let checkinText = data.checkinNotice || '';
+    if (!checkinText) {
+        checkinText = `(${depCode}) 3 hours before departure`;
+    }
+    const checkinLabel = checkinText.includes('(') ? `Check-in ${checkinText.match(/\([^)]+\)/)?.[0] || ''}` : `Check-in (${depCode})`;
+    const checkinVal = checkinText.replace(/Check-in\s*(\([^)]+\))?[:\s\-]*/i, '').trim() || checkinText;
+
+    const depCity = extractCityName(firstFlight.depAirport) || 'Bangkok';
+    const arrCity = extractCityName(firstFlight.arrAirport) || 'London';
+    const depDateShort = firstFlight.depDateFormatted ? firstFlight.depDateFormatted.replace(/^[A-Za-z]+day,\s*/, '').toUpperCase() : '';
+
+    return `
+    <div class="airasia-ticket-wrapper thai-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#333333; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:40px 48px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.35; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
+        
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px;">
+            <div style="width:190px; height:80px; display:flex; align-items:center;">
+                <img src="${logoSrc}" alt="Thai Airways" style="max-width:100%; max-height:100%; object-fit:contain;">
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:26px; font-weight:800; color:#3D1E6D; letter-spacing:0.5px; line-height:1.1;">E-TICKET</div>
+                <div style="font-size:12px; color:#444444; margin-top:4px;">Booking Confirmed</div>
+                <div style="font-size:12px; color:#444444; margin-top:2px;">Thai Airways International (TG)</div>
+                <div style="font-size:18px; font-weight:800; color:#3D1E6D; margin-top:4px;">Booking Ref: ${pnr}</div>
+            </div>
+        </div>
+
+        <!-- Top Gold Rule -->
+        <div style="height:3.5px; background:#D9A300; margin-bottom:20px;"></div>
+
+        <!-- Summary Table (6 boxes) -->
+        <div style="margin-bottom:22px;">
+            <table style="width:100%; border-collapse:collapse; background:#F6F3FB; border:1px solid #D5CBE8; font-size:12px;">
+                <tr>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; width:17%;"><strong>Booking Ref</strong></td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; width:22%; font-weight:800; font-size:13px; color:#111111;">${pnr}</td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; width:16%;"><strong>Issued Date</strong></td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; width:22%; color:#111111;">${issuedDate}</td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; width:13%;"><strong>Passengers</strong></td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; width:10%; color:#111111;">${paxList.length} Adult${paxList.length > 1 ? 's' : ''}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8;"><strong>${checkinLabel}</strong></td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; color:#111111;">${checkinVal}</td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8;"><strong>Status</strong></td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; font-weight:800; color:#111111;">Confirmed</td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8;"><strong>Alliance</strong></td>
+                    <td style="padding:8px 10px; border:1px solid #D5CBE8; line-height:1.2; color:#111111;">Star<br>Alliance</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Flight Details Section -->
+        <div style="margin-bottom:22px;">
+            <div style="font-size:15px; font-weight:800; color:#3D1E6D; margin-bottom:8px;">Flight Details</div>
+            
+            ${flightsList.map(f => {
+                const sDepCity = extractCityName(f.depAirport) || 'Bangkok';
+                const sArrCity = extractCityName(f.arrAirport) || 'London';
+                const sRoute = f.route || `${lookupAirportCode(f.depAirport) || 'BKK'} - ${lookupAirportCode(f.arrAirport) || 'LHR'}`;
+                return `
+                <div style="margin-bottom:14px; border-radius:4px; overflow:hidden; border:1px solid #3D1E6D;">
+                    <!-- Purple Upper Box -->
+                    <div style="background:#3D1E6D; color:#ffffff; padding:9px 14px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:16px; font-weight:800; letter-spacing:0.3px;">
+                            ${sDepCity} <span style="font-size:15px; margin:0 6px;">✈</span> ${sArrCity}
+                        </div>
+                        <div style="font-size:12px; font-weight:700;">
+                            ${f.flightNo || 'TG 910'} &nbsp;|&nbsp; ${f.airlineName || 'Thai Airways International'}
+                        </div>
+                    </div>
+                    <div style="background:#3D1E6D; color:#ffffff; padding:12px 14px 16px 14px; display:grid; grid-template-columns:1fr 1fr; gap:20px; border-top:1px solid rgba(255,255,255,0.15);">
+                        <div>
+                            <div style="font-size:18px; font-weight:800; letter-spacing:0.5px;">${f.depTime || ''}</div>
+                            <div style="font-size:11px; color:#F0E8FF; margin-top:4px;">${f.depDateFormatted || ''}</div>
+                            <div style="font-size:11px; color:#F0E8FF; margin-top:3px;">${f.depAirport || ''}${f.depTerminal ? ', ' + f.depTerminal : ''}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:18px; font-weight:800; letter-spacing:0.5px;">${f.arrTime || ''}</div>
+                            <div style="font-size:11px; color:#F0E8FF; margin-top:4px;">${f.arrDateFormatted || ''}</div>
+                            <div style="font-size:11px; color:#F0E8FF; margin-top:3px;">${f.arrAirport || ''}${f.arrTerminal ? ', ' + f.arrTerminal : ''}</div>
+                        </div>
+                    </div>
+
+                    <!-- Cream Lower Box -->
+                    <table style="width:100%; border-collapse:collapse; background:#FDF6E3; border-top:1px solid #D9A300; font-size:12px;">
+                        <tr>
+                            <td style="padding:7px 10px; border:1px solid #D9A300; width:16%;"><strong>Duration</strong></td>
+                            <td style="padding:7px 10px; border:1px solid #D9A300; width:34%;">${f.duration || '12h 30min, Non-Stop'}</td>
+                            <td style="padding:7px 10px; border:1px solid #D9A300; width:16%;"><strong>Aircraft</strong></td>
+                            <td style="padding:7px 10px; border:1px solid #D9A300; width:34%;">${f.aircraft || 'Boeing 777-300ER'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:7px 10px; border:1px solid #D9A300;"><strong>Class</strong></td>
+                            <td style="padding:7px 10px; border:1px solid #D9A300;">${f.flightClass || data.flightClass || 'Economy (T)'}</td>
+                            <td style="padding:7px 10px; border:1px solid #D9A300;"><strong>Route</strong></td>
+                            <td style="padding:7px 10px; border:1px solid #D9A300;">${sRoute}</td>
+                        </tr>
+                    </table>
+                </div>
+                `;
+            }).join('')}
+        </div>
+
+        <!-- Passenger Details Section -->
+        <div style="margin-bottom:22px;">
+            <div style="font-size:15px; font-weight:800; color:#3D1E6D; margin-bottom:8px;">Passenger Details</div>
+            <table style="width:100%; border-collapse:collapse; border:1px solid #D5CBE8; font-size:12px;">
+                <thead>
+                    <tr style="background:#3D1E6D; color:#ffffff;">
+                        <th style="padding:8px 10px; text-align:left; border:1px solid #D5CBE8; width:30%; font-weight:700;">Name</th>
+                        <th style="padding:8px 10px; text-align:left; border:1px solid #D5CBE8; width:30%; font-weight:700;">E-Ticket No.</th>
+                        <th style="padding:8px 10px; text-align:left; border:1px solid #D5CBE8; width:22%; font-weight:700;">Passport</th>
+                        <th style="padding:8px 10px; text-align:left; border:1px solid #D5CBE8; width:18%; font-weight:700;">Expiry</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${paxList.map((p, idx) => `
+                        <tr style="background:${idx % 2 === 0 ? '#F6F3FB' : '#FFFFFF'};">
+                            <td style="padding:8px 10px; border:1px solid #D5CBE8; font-weight:700; color:#111111;">${p.name || ''}</td>
+                            <td style="padding:8px 10px; border:1px solid #D5CBE8; color:#111111;">${p.eticket || p.eTicketNo || data.eTicketNo || ''}</td>
+                            <td style="padding:8px 10px; border:1px solid #D5CBE8; color:#111111;">${p.passport || ''}</td>
+                            <td style="padding:8px 10px; border:1px solid #D5CBE8; color:#111111;">${p.expiry || ''}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Baggage & Extra Services Section -->
+        <div style="margin-bottom:22px;">
+            <div style="font-size:15px; font-weight:800; color:#3D1E6D; margin-bottom:8px;">Baggage & Extra Services</div>
+            <table style="width:100%; border-collapse:collapse; background:#FDF6E3; border:1px solid #D9A300; font-size:12px;">
+                ${paxList.map(p => `
+                    <tr>
+                        <td style="padding:8px 10px; border:1px solid #D9A300; width:28%; font-weight:700; color:#111111;">${p.name || ''}</td>
+                        <td style="padding:8px 10px; border:1px solid #D9A300; width:72%; color:#111111;">${p.baggage || data.checkedBaggage || 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg'}</td>
+                    </tr>
+                `).join('')}
+            </table>
+        </div>
+
+        <!-- Notes Section -->
+        <div style="margin-bottom:20px;">
+            <div style="font-size:15px; font-weight:800; color:#3D1E6D; margin-bottom:8px;">Notes</div>
+            <ul style="margin:0; padding-left:18px; font-size:11px; color:#333333; line-height:1.55;">
+                <li style="margin-bottom:4px;">Passengers must present the valid ID used to purchase the ticket at check-in; boarding pass or this itinerary may also be required.</li>
+                <li style="margin-bottom:4px;">Tickets must be used in the sequence set out in the itinerary, otherwise the airline reserves the right to refuse carriage.</li>
+                <li style="margin-bottom:4px;">Extra services (preferred seat / additional baggage, etc.): to change seats, flights or travel dates, please contact THAI Worldwide Office or THAI Contact Center (+66-2-3561111).</li>
+                <li style="margin-bottom:4px;">Carriage is subject to the Geneva Convention / Warsaw Treaty System where applicable to the journey.</li>
+            </ul>
+        </div>
+
+        <!-- Bottom Gold Rule -->
+        <div style="height:2px; background:#D9A300; margin-bottom:14px;"></div>
+
+        <!-- Footer Receipt Note -->
+        <div style="text-align:center; font-size:11px; color:#888888; line-height:1.4;">
+            thaiairways.com &nbsp;&nbsp;|&nbsp;&nbsp; Booking Ref ${pnr} &nbsp;&nbsp;|&nbsp;&nbsp; ${firstFlight.flightNo || 'TG 910'} ${depCity} - ${arrCity}, ${depDateShort}
+        </div>
+
+    </div>
+    `;
+}
+
+/**
  * Generate preview HTML markup that renders identically to the PDF
  */
 export function renderAirAsiaTicketHtml(data) {
+    if (data.airline === 'Thai Airways' || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '')) {
+        return renderThaiAirwaysTicketHtml(data);
+    }
     const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
     const logoSrc = isVietJet ? (cachedVietJetLogoDataUrl || 'vietjet-logo.png') : (cachedAirAsiaLogoDataUrl || 'airasia-logo.png');
     const airlineTitle = isVietJet ? 'VietJet Air' : 'AirAsia';
@@ -1168,8 +2055,9 @@ export async function downloadAirAsiaImage(data) {
         backgroundColor: '#ffffff'
     });
 
+    const isThai = (data.airline === 'Thai Airways') || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '');
     const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
-    const prefix = isVietJet ? 'VietJet' : 'AirAsia';
+    const prefix = isThai ? 'ThaiAirways' : (isVietJet ? 'VietJet' : 'AirAsia');
     const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
     const safeName = primaryName.replace(/[^a-zA-Z0-9]/g, '_');
     const safePnr = (data.pnr || data.bookingNo || 'Itinerary').replace(/[^a-zA-Z0-9]/g, '_');
@@ -1189,8 +2077,9 @@ export async function shareAirAsiaTicket(data) {
     const filename = await downloadAirAsiaPdf(data);
     showToast(`PDF downloaded: ${filename}`, 'success');
 
+    const isThai = (data.airline === 'Thai Airways') || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '');
     const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
-    const prefix = isVietJet ? 'VietJet' : 'AirAsia';
+    const prefix = isThai ? 'ThaiAirways' : (isVietJet ? 'VietJet' : 'AirAsia');
     const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
 
     if (navigator.share && navigator.canShare) {

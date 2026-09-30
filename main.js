@@ -23,7 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=9';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=11';
 import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=13';
 
 // UI Modules
@@ -2914,29 +2914,48 @@ function initializeAirAsiaGenerator() {
         container.innerHTML = '';
 
         if (!passengersList || passengersList.length === 0) {
-            passengersList = [{ name: '', type: 'Adult' }];
+            passengersList = [{ name: '', type: 'Adult', eticket: '', passport: '', expiry: '' }];
         }
 
         passengersList.forEach((p, idx) => {
             const row = document.createElement('div');
             row.className = 'aa_pax_row';
-            row.style.cssText = 'display:flex; gap:8px; align-items:flex-end; background:var(--apple-bg-secondary); padding:8px 10px; border-radius:8px; border:1px solid var(--apple-separator);';
+            row.style.cssText = 'background:var(--apple-bg-secondary); padding:10px 12px; border-radius:8px; border:1px solid var(--apple-separator); display:flex; flex-direction:column; gap:8px;';
             row.innerHTML = `
-                <div style="flex:1;">
-                    <label style="font-size:11px; margin-bottom:2px; display:block; color:var(--apple-text-secondary); font-weight:600;">Passenger Name (${idx + 1})</label>
-                    <input type="text" class="aa_pax_name_input" value="${p.name || ''}" placeholder="PASSENGER FULL NAME" style="width:100%; font-weight:700; text-transform:uppercase;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:12px; font-weight:700; color:var(--apple-text);"><i class="fa-solid fa-user" style="color:var(--apple-blue); margin-right:4px;"></i> Passenger ${idx + 1}</span>
+                    <button type="button" class="btn btn-sm aa_remove_pax_btn" style="padding:1px 6px; font-size:11px; border:none; background:transparent; color:#ff3b30; cursor:pointer;" title="Remove Passenger">
+                        <i class="fa-solid fa-trash-can"></i> Remove
+                    </button>
                 </div>
-                <div style="width:100px;">
-                    <label style="font-size:11px; margin-bottom:2px; display:block; color:var(--apple-text-secondary); font-weight:600;">Type</label>
-                    <select class="aa_pax_type_input" style="width:100%; font-size:12px;">
-                        <option value="Adult" ${p.type === 'Adult' ? 'selected' : ''}>Adult</option>
-                        <option value="Child" ${p.type === 'Child' ? 'selected' : ''}>Child</option>
-                        <option value="Infant" ${p.type === 'Infant' ? 'selected' : ''}>Infant</option>
-                    </select>
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group" style="flex:2;">
+                        <label style="font-size:10.5px;">Passenger Name</label>
+                        <input type="text" class="aa_pax_name_input" value="${escapeAaHtml(p.name || '')}" placeholder="PASSENGER FULL NAME" style="font-weight:700; text-transform:uppercase;">
+                    </div>
+                    <div class="airasia-form-group" style="flex:1;">
+                        <label style="font-size:10.5px;">Type</label>
+                        <select class="aa_pax_type_input" style="font-size:12px;">
+                            <option value="Adult" ${p.type === 'Adult' ? 'selected' : ''}>Adult</option>
+                            <option value="Child" ${p.type === 'Child' ? 'selected' : ''}>Child</option>
+                            <option value="Infant" ${p.type === 'Infant' ? 'selected' : ''}>Infant</option>
+                        </select>
+                    </div>
                 </div>
-                <button type="button" class="btn btn-secondary aa_remove_pax_btn" style="padding:7px 10px; color:#dc2626; border-radius:6px;" title="Remove Passenger">
-                    <i class="fa-solid fa-trash-can"></i>
-                </button>
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">E-Ticket No.</label>
+                        <input type="text" class="aa_pax_ticket_input" value="${escapeAaHtml(p.eticket || p.eTicketNo || '')}" placeholder="e.g. 2172350542658">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Passport No.</label>
+                        <input type="text" class="aa_pax_passport_input" value="${escapeAaHtml(p.passport || '')}" placeholder="e.g. MJ432310" style="text-transform:uppercase;">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Passport Expiry</label>
+                        <input type="text" class="aa_pax_expiry_input" value="${escapeAaHtml(p.expiry || '')}" placeholder="e.g. 2029-09-12">
+                    </div>
+                </div>
             `;
 
             row.querySelectorAll('input, select').forEach(el => {
@@ -2949,6 +2968,9 @@ function initializeAirAsiaGenerator() {
                 if (totalRows <= 1) {
                     row.querySelector('.aa_pax_name_input').value = '';
                     row.querySelector('.aa_pax_type_input').value = 'Adult';
+                    row.querySelector('.aa_pax_ticket_input').value = '';
+                    row.querySelector('.aa_pax_passport_input').value = '';
+                    row.querySelector('.aa_pax_expiry_input').value = '';
                 } else {
                     row.remove();
                 }
@@ -2961,17 +2983,20 @@ function initializeAirAsiaGenerator() {
 
     function collectPassengers() {
         const container = document.getElementById('aa_passengers_list');
-        if (!container) return [{ name: '', type: 'Adult' }];
+        if (!container) return [{ name: '', type: 'Adult', eticket: '', passport: '', expiry: '' }];
         const rows = container.querySelectorAll('.aa_pax_row');
         const list = [];
         rows.forEach(r => {
             const name = (r.querySelector('.aa_pax_name_input')?.value || '').trim().toUpperCase();
             const type = r.querySelector('.aa_pax_type_input')?.value || 'Adult';
+            const eticket = (r.querySelector('.aa_pax_ticket_input')?.value || '').trim();
+            const passport = (r.querySelector('.aa_pax_passport_input')?.value || '').trim().toUpperCase();
+            const expiry = (r.querySelector('.aa_pax_expiry_input')?.value || '').trim();
             if (name) {
-                list.push({ name, type });
+                list.push({ name, type, eticket, eTicketNo: eticket, passport, expiry });
             }
         });
-        return list.length > 0 ? list : [{ name: '', type: 'Adult' }];
+        return list.length > 0 ? list : [{ name: '', type: 'Adult', eticket: '', passport: '', expiry: '' }];
     }
 
     const addPaxBtn = document.getElementById('aa_add_pax_btn');
@@ -3011,17 +3036,31 @@ function initializeAirAsiaGenerator() {
                 <div class="airasia-form-row" style="margin-bottom:8px;">
                     <div class="airasia-form-group" style="grid-column: 1 / -1;">
                         <label style="font-size:11px;">Route</label>
-                        <input type="text" class="aa_flight_route" value="${escapeAaHtml(f.route || '')}" placeholder="e.g. Yangon (RGN) - Bangkok (DMK)">
+                        <input type="text" class="aa_flight_route" value="${escapeAaHtml(f.route || '')}" placeholder="e.g. Bangkok (BKK) - London (LHR)">
                     </div>
                 </div>
                 <div class="airasia-form-row" style="margin-bottom:8px;">
                     <div class="airasia-form-group">
                         <label style="font-size:11px;">Flight Number</label>
-                        <input type="text" class="aa_flight_no" value="${escapeAaHtml(f.flightNo || '')}" placeholder="e.g. FD252 / VJ334" style="text-transform:uppercase; font-weight:700;">
+                        <input type="text" class="aa_flight_no" value="${escapeAaHtml(f.flightNo || '')}" placeholder="e.g. TG 910 / FD252 / VJ334" style="text-transform:uppercase; font-weight:700;">
                     </div>
                     <div class="airasia-form-group">
                         <label style="font-size:11px;">Airline / Carrier</label>
-                        <input type="text" class="aa_flight_airline" value="${escapeAaHtml(f.airlineName || '')}" placeholder="e.g. Thai AirAsia">
+                        <input type="text" class="aa_flight_airline" value="${escapeAaHtml(f.airlineName || '')}" placeholder="e.g. Thai Airways International">
+                    </div>
+                </div>
+                <div class="airasia-form-row" style="margin-bottom:8px;">
+                    <div class="airasia-form-group">
+                        <label style="font-size:11px;">Duration</label>
+                        <input type="text" class="aa_flight_duration" value="${escapeAaHtml(f.duration || '12h 30min, Non-Stop')}" placeholder="e.g. 12h 30min, Non-Stop">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:11px;">Aircraft</label>
+                        <input type="text" class="aa_flight_aircraft" value="${escapeAaHtml(f.aircraft || 'Boeing 777-300ER')}" placeholder="e.g. Boeing 777-300ER">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:11px;">Sector Class</label>
+                        <input type="text" class="aa_flight_class" value="${escapeAaHtml(f.flightClass || 'Economy (T)')}" placeholder="e.g. Economy (T)">
                     </div>
                 </div>
                 
@@ -3029,17 +3068,17 @@ function initializeAirAsiaGenerator() {
                 <div class="airasia-form-row" style="margin-bottom:6px;">
                     <div class="airasia-form-group">
                         <label style="font-size:10.5px;">Departure Time</label>
-                        <input type="text" class="aa_flight_dep_time" value="${escapeAaHtml(f.depTime || '')}" placeholder="e.g. 08:30">
+                        <input type="text" class="aa_flight_dep_time" value="${escapeAaHtml(f.depTime || '')}" placeholder="e.g. 00:45">
                     </div>
                     <div class="airasia-form-group">
                         <label style="font-size:10.5px;">Departure Date</label>
-                        <input type="text" class="aa_flight_dep_date" value="${escapeAaHtml(f.depDateFormatted || '')}" placeholder="e.g. Sunday, 4 October 2026">
+                        <input type="text" class="aa_flight_dep_date" value="${escapeAaHtml(f.depDateFormatted || '')}" placeholder="e.g. Wednesday, 30 September 2026">
                     </div>
                 </div>
                 <div class="airasia-form-row" style="margin-bottom:8px;">
                     <div class="airasia-form-group">
                         <label style="font-size:10.5px;">Departure Airport (with code)</label>
-                        <input type="text" class="aa_flight_dep_airport" value="${escapeAaHtml(f.depAirport || '')}" placeholder="e.g. Yangon International Airport (RGN)">
+                        <input type="text" class="aa_flight_dep_airport" value="${escapeAaHtml(f.depAirport || '')}" placeholder="e.g. Bangkok - Suvarnabhumi Intl (BKK)">
                     </div>
                     <div class="airasia-form-group">
                         <label style="font-size:10.5px;">Terminal</label>
@@ -3051,21 +3090,21 @@ function initializeAirAsiaGenerator() {
                 <div class="airasia-form-row" style="margin-bottom:6px;">
                     <div class="airasia-form-group">
                         <label style="font-size:10.5px;">Arrival Time</label>
-                        <input type="text" class="aa_flight_arr_time" value="${escapeAaHtml(f.arrTime || '')}" placeholder="e.g. 10:20">
+                        <input type="text" class="aa_flight_arr_time" value="${escapeAaHtml(f.arrTime || '')}" placeholder="e.g. 07:15">
                     </div>
                     <div class="airasia-form-group">
                         <label style="font-size:10.5px;">Arrival Date</label>
-                        <input type="text" class="aa_flight_arr_date" value="${escapeAaHtml(f.arrDateFormatted || '')}" placeholder="e.g. Sunday, 4 October 2026">
+                        <input type="text" class="aa_flight_arr_date" value="${escapeAaHtml(f.arrDateFormatted || '')}" placeholder="e.g. Wednesday, 30 September 2026">
                     </div>
                 </div>
                 <div class="airasia-form-row">
                     <div class="airasia-form-group">
                         <label style="font-size:10.5px;">Arrival Airport (with code)</label>
-                        <input type="text" class="aa_flight_arr_airport" value="${escapeAaHtml(f.arrAirport || '')}" placeholder="e.g. Don Mueang International Airport (DMK)">
+                        <input type="text" class="aa_flight_arr_airport" value="${escapeAaHtml(f.arrAirport || '')}" placeholder="e.g. London - Heathrow (LHR), Terminal 2">
                     </div>
                     <div class="airasia-form-group">
                         <label style="font-size:10.5px;">Terminal</label>
-                        <input type="text" class="aa_flight_arr_terminal" value="${escapeAaHtml(f.arrTerminal || '')}" placeholder="Terminal 1">
+                        <input type="text" class="aa_flight_arr_terminal" value="${escapeAaHtml(f.arrTerminal || '')}" placeholder="Terminal 2">
                     </div>
                 </div>
             `;
@@ -3079,7 +3118,7 @@ function initializeAirAsiaGenerator() {
                 const currentFlights = collectFlights();
                 currentFlights.splice(idx, 1);
                 renderFlightRows(currentFlights.length > 0 ? currentFlights : [{
-                    flightNo: '', airlineName: 'AirAsia Berhad', depTime: '', depDateFormatted: '', depAirport: '', depTerminal: '', arrTime: '', arrDateFormatted: '', arrAirport: '', arrTerminal: '', route: ''
+                    flightNo: '', airlineName: 'AirAsia Berhad', duration: '12h 30min, Non-Stop', aircraft: 'Boeing 777-300ER', flightClass: 'Economy', depTime: '', depDateFormatted: '', depAirport: '', depTerminal: '', arrTime: '', arrDateFormatted: '', arrAirport: '', arrTerminal: '', route: ''
                 }]);
                 updatePreview();
             });
@@ -3098,6 +3137,9 @@ function initializeAirAsiaGenerator() {
                 route: (card.querySelector('.aa_flight_route')?.value || '').trim(),
                 flightNo: (card.querySelector('.aa_flight_no')?.value || '').trim().toUpperCase(),
                 airlineName: (card.querySelector('.aa_flight_airline')?.value || '').trim(),
+                duration: (card.querySelector('.aa_flight_duration')?.value || '').trim(),
+                aircraft: (card.querySelector('.aa_flight_aircraft')?.value || '').trim(),
+                flightClass: (card.querySelector('.aa_flight_class')?.value || '').trim(),
                 depTime: (card.querySelector('.aa_flight_dep_time')?.value || '').trim(),
                 depDateFormatted: (card.querySelector('.aa_flight_dep_date')?.value || '').trim(),
                 depAirport: (card.querySelector('.aa_flight_dep_airport')?.value || '').trim(),
@@ -3114,9 +3156,15 @@ function initializeAirAsiaGenerator() {
     const addFlightBtn = document.getElementById('aa_add_flight_btn');
     addFlightBtn?.addEventListener('click', () => {
         const currentFlights = collectFlights();
+        const currentA = document.getElementById('aa_airline_select')?.value;
+        const defaultA = currentA === 'Thai Airways' ? 'Thai Airways International' : (currentA === 'VietJet Air' ? 'VietJet Air' : 'Thai AirAsia');
+        const defaultFN = currentA === 'Thai Airways' ? 'TG 910' : '';
         currentFlights.push({
-            flightNo: '',
-            airlineName: document.getElementById('aa_airline_select')?.value === 'VietJet Air' ? 'VietJet Air' : 'Thai AirAsia',
+            flightNo: defaultFN,
+            airlineName: defaultA,
+            duration: '12h 30min, Non-Stop',
+            aircraft: 'Boeing 777-300ER',
+            flightClass: 'Economy (T)',
             depTime: '',
             depDateFormatted: '',
             depAirport: '',
@@ -3135,6 +3183,13 @@ function initializeAirAsiaGenerator() {
     });
 
     document.getElementById('aa_airline_select')?.addEventListener('change', (e) => {
+        const selectedAirline = e.target.value;
+        const bagCheckedEl = document.getElementById('aa_bag_checked');
+        if (selectedAirline === 'Thai Airways') {
+            if (bagCheckedEl && (!bagCheckedEl.value || bagCheckedEl.value.includes('119 x 119'))) {
+                bagCheckedEl.value = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
+            }
+        }
         updatePreview();
     });
 
@@ -3148,12 +3203,16 @@ function initializeAirAsiaGenerator() {
             pnr: (document.getElementById('aa_pnr')?.value || '').trim().toUpperCase(),
             eTicketNo: document.getElementById('aa_eticket_no')?.value || '',
             flightClass: document.getElementById('aa_class')?.value || 'Economy',
+            issuedDate: document.getElementById('aa_issued_date')?.value || '',
+            checkinNotice: document.getElementById('aa_checkin_notice')?.value || '',
             passengers: passengers,
             passengerName: passengers[0]?.name || '',
             passengerType: passengers[0]?.type || 'Adult',
             flights: flights,
             flightNo: primaryFlight.flightNo || '',
             airlineName: primaryFlight.airlineName || 'AirAsia Berhad',
+            duration: primaryFlight.duration || '12h 30min, Non-Stop',
+            aircraft: primaryFlight.aircraft || 'Boeing 777-300ER',
             depTime: primaryFlight.depTime || '',
             depDateFormatted: primaryFlight.depDateFormatted || '',
             depAirport: primaryFlight.depAirport || '',
@@ -3177,10 +3236,12 @@ function initializeAirAsiaGenerator() {
         if (document.getElementById('aa_pnr')) document.getElementById('aa_pnr').value = data.pnr || '';
         if (document.getElementById('aa_eticket_no')) document.getElementById('aa_eticket_no').value = data.eTicketNo || 'To be advised at check-in';
         if (document.getElementById('aa_class')) document.getElementById('aa_class').value = data.flightClass || 'Economy';
+        if (document.getElementById('aa_issued_date')) document.getElementById('aa_issued_date').value = data.issuedDate || '';
+        if (document.getElementById('aa_checkin_notice')) document.getElementById('aa_checkin_notice').value = data.checkinNotice || '';
         
         const paxList = (data.passengers && data.passengers.length > 0)
             ? data.passengers
-            : [{ name: data.passengerName || '', type: data.passengerType || 'Adult' }];
+            : [{ name: data.passengerName || '', type: data.passengerType || 'Adult', eticket: data.eTicketNo || '', passport: '', expiry: '' }];
         renderPassengerRows(paxList);
 
         const flList = (data.flights && data.flights.length > 0)
@@ -3188,6 +3249,9 @@ function initializeAirAsiaGenerator() {
             : [{
                 flightNo: data.flightNo || '',
                 airlineName: data.airlineName || (data.airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad'),
+                duration: data.duration || '12h 30min, Non-Stop',
+                aircraft: data.aircraft || 'Boeing 777-300ER',
+                flightClass: data.flightClass || 'Economy (T)',
                 depTime: data.depTime || '',
                 depDateFormatted: data.depDateFormatted || '',
                 depAirport: data.depAirport || '',
@@ -3200,7 +3264,7 @@ function initializeAirAsiaGenerator() {
             }];
         renderFlightRows(flList);
 
-        if (document.getElementById('aa_bag_checked')) document.getElementById('aa_bag_checked').value = data.checkedBaggage || '30 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm';
+        if (document.getElementById('aa_bag_checked')) document.getElementById('aa_bag_checked').value = data.checkedBaggage || (data.airline === 'Thai Airways' ? 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg' : '30 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm');
         if (document.getElementById('aa_bag_carry')) document.getElementById('aa_bag_carry').value = data.carryOnBaggage || '1 piece per person\nMax 56 x 36 x 23 cm per piece';
         if (document.getElementById('aa_bag_personal')) document.getElementById('aa_bag_personal').value = data.personalItem || '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
 
