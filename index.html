@@ -1342,18 +1342,25 @@
                             <div class="service-toast" id="airAsiaToast"></div>
                         </div>
 
-                        <!-- CHINA VISA HOTEL BOOKING (AGODA) -->
+                        <!-- AGODA HOTEL BOOKING -->
                         <div class="service-panel" id="chinaHotelPanel">
                             <div class="service-panel-header">
                                 <span class="service-panel-icon" style="background: rgba(225, 37, 27, 0.1); color: #e1251b;"><i class="fa-solid fa-hotel"></i></span>
                                 <div>
-                                    <h2>China Visa Hotel Booking</h2>
-                                    <p class="service-panel-desc">Generate official Agoda Booking Confirmation for China Visa application with auto-generated IDs</p>
+                                    <h2>Agoda Hotel Booking</h2>
+                                    <p class="service-panel-desc">Generate official Agoda Booking Confirmation (Guangzhou, Singapore, etc.) with auto-generated IDs</p>
                                 </div>
                             </div>
 
                             <div style="background: var(--apple-bg-secondary); border: 1px solid var(--apple-separator); border-radius: 10px; padding: 14px; margin-bottom: 1rem;">
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                                    <div class="form-group" style="margin: 0;">
+                                        <label for="service_hotel_destination" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Destination</label>
+                                        <select id="service_hotel_destination" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); font-weight: 600;">
+                                            <option value="Guangzhou">Guangzhou (Grand Park Guangzhou)</option>
+                                            <option value="Singapore">Singapore (Village Hotel Bugis)</option>
+                                        </select>
+                                    </div>
                                     <div class="form-group" style="margin: 0;">
                                         <label for="service_hotel_client_name" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Client / Guest Name</label>
                                         <input type="text" id="service_hotel_client_name" placeholder="e.g. AUNG KHIN NYUNT" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); text-transform: uppercase; font-weight: 600;">
@@ -1727,13 +1734,13 @@
         </div>
     </div>
 
-    <!-- China Visa Hotel Booking (Agoda) Modal -->
+    <!-- Agoda Hotel Booking Modal -->
     <div id="chinaHotelModal" class="modal">
         <div class="modal-content glass-card" style="max-width: 1240px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
             <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--apple-separator); padding-bottom:12px; margin-bottom:14px;">
                 <h2 style="font-size:1.15rem; margin:0; display:flex; align-items:center; gap:8px;">
                     <i class="fa-solid fa-hotel" style="color:#e1251b;"></i>
-                    <span style="font-weight:700; color:var(--apple-text);">China Visa Hotel Booking</span>
+                    <span style="font-weight:700; color:var(--apple-text);">Agoda Hotel Booking</span>
                     <span style="font-size:12px; background:rgba(225, 37, 27, 0.1); color:#e1251b; padding:2px 8px; border-radius:12px; font-weight:600;">Agoda Confirmation</span>
                 </h2>
                 <button type="button" class="modal-close" id="chinaHotelModalCloseBtn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--apple-text-secondary);">&times;</button>
@@ -1745,6 +1752,18 @@
                     <div class="airasia-form-scroll">
                         <div style="background: rgba(225, 37, 27, 0.08); border: 1px solid rgba(225, 37, 27, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: var(--apple-text);">
                             <i class="fa-solid fa-circle-check" style="color:#e1251b;"></i> Edit booking details below. Booking ID & Member ID are auto-generated. Live preview updates automatically.
+                        </div>
+
+                        <!-- Destination Preset Section -->
+                        <div class="airasia-form-section-title" style="color:#e1251b; border-color:rgba(225,37,27,0.2);">Destination / Property Preset</div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group" style="grid-column: 1 / -1;">
+                                <label for="agoda_destination" style="font-weight:700;">Select Destination</label>
+                                <select id="agoda_destination" style="font-weight:600; padding:8px 10px; border-radius:8px; border:1px solid var(--apple-separator); background:var(--apple-input-bg); color:var(--apple-text);">
+                                    <option value="Guangzhou">Guangzhou (Grand Park Guangzhou Hotel)</option>
+                                    <option value="Singapore">Singapore (Village Hotel Bugis by Far East Hospitality)</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Booking Details Section -->
@@ -1896,6 +1915,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=43" type="module"></script>
+    <script src="main.js?v=44" type="module"></script>
 </body>
 </html>

@@ -24,7 +24,7 @@ import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=7';
-import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate } from './agoda-hotel-converter.js?v=2';
+import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=3';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -3208,7 +3208,10 @@ function initializeChinaHotelGenerator() {
     if (!modal) return;
 
     function collectFormData() {
+        const dest = document.getElementById('agoda_destination')?.value || 'Guangzhou';
+        const preset = DESTINATION_PRESETS[dest] || DESTINATION_PRESETS.Guangzhou;
         return {
+            destination: dest,
             bookingId: document.getElementById('agoda_booking_id')?.value || generateRandomBookingId(),
             memberId: document.getElementById('agoda_member_id')?.value || generateRandomMemberId(),
             bookingRefNo: document.getElementById('agoda_booking_ref_no')?.value || '',
@@ -3222,15 +3225,20 @@ function initializeChinaHotelGenerator() {
             promotion: document.getElementById('agoda_promotion')?.value || 'Long Stay Deal. Price includes 10% discount!',
             arrivalDate: document.getElementById('agoda_arrival_date')?.value || 'October 16, 2026',
             departureDate: document.getElementById('agoda_departure_date')?.value || 'October 26, 2026',
-            propertyName: document.getElementById('agoda_property_name')?.value || 'Grand Park Guangzhou Hotel',
-            propertyAddress: document.getElementById('agoda_property_address')?.value || '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina',
-            propertyContact: document.getElementById('agoda_property_contact')?.value || '+86 871 6538 6688',
+            propertyName: document.getElementById('agoda_property_name')?.value || preset.propertyName,
+            propertyAddress: document.getElementById('agoda_property_address')?.value || preset.propertyAddress,
+            propertyContact: document.getElementById('agoda_property_contact')?.value || preset.propertyContact,
             cancellationDate: document.getElementById('agoda_cancellation_date')?.value || '',
             remarksSpecial: document.getElementById('agoda_remarks_special')?.value || 'NonSmoke,LargeBed'
         };
     }
 
     function populateForm(data = {}) {
+        const dest = data.destination || document.getElementById('agoda_destination')?.value || 'Guangzhou';
+        const preset = DESTINATION_PRESETS[dest] || DESTINATION_PRESETS.Guangzhou;
+        if (document.getElementById('agoda_destination')) {
+            document.getElementById('agoda_destination').value = dest;
+        }
         if (document.getElementById('agoda_booking_id')) {
             document.getElementById('agoda_booking_id').value = data.bookingId || generateRandomBookingId();
         }
@@ -3271,13 +3279,13 @@ function initializeChinaHotelGenerator() {
             document.getElementById('agoda_departure_date').value = data.departureDate || 'October 26, 2026';
         }
         if (document.getElementById('agoda_property_name')) {
-            document.getElementById('agoda_property_name').value = data.propertyName || 'Grand Park Guangzhou Hotel';
+            document.getElementById('agoda_property_name').value = data.propertyName || preset.propertyName;
         }
         if (document.getElementById('agoda_property_address')) {
-            document.getElementById('agoda_property_address').value = data.propertyAddress || '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina';
+            document.getElementById('agoda_property_address').value = data.propertyAddress || preset.propertyAddress;
         }
         if (document.getElementById('agoda_property_contact')) {
-            document.getElementById('agoda_property_contact').value = data.propertyContact || '+86 871 6538 6688';
+            document.getElementById('agoda_property_contact').value = data.propertyContact || preset.propertyContact;
         }
         if (document.getElementById('agoda_cancellation_date')) {
             document.getElementById('agoda_cancellation_date').value = data.cancellationDate || calculateDefaultCancellationDate(data.arrivalDate || 'October 16, 2026');
@@ -3294,6 +3302,22 @@ function initializeChinaHotelGenerator() {
         const currentData = collectFormData();
         previewContainer.innerHTML = renderAgodaHotelHtml(currentData);
     }
+
+    // Destination preset selector in modal
+    document.getElementById('agoda_destination')?.addEventListener('change', (e) => {
+        const selectedDest = e.target.value;
+        const preset = DESTINATION_PRESETS[selectedDest] || DESTINATION_PRESETS.Guangzhou;
+        if (document.getElementById('agoda_property_name')) {
+            document.getElementById('agoda_property_name').value = preset.propertyName;
+        }
+        if (document.getElementById('agoda_property_address')) {
+            document.getElementById('agoda_property_address').value = preset.propertyAddress;
+        }
+        if (document.getElementById('agoda_property_contact')) {
+            document.getElementById('agoda_property_contact').value = preset.propertyContact;
+        }
+        updatePreview();
+    });
 
     // Form inputs live sync
     const formInputs = modal.querySelectorAll('.airasia-form-scroll input, .airasia-form-scroll select, .airasia-form-scroll textarea');
@@ -3345,16 +3369,22 @@ function initializeChinaHotelGenerator() {
     });
 
     function openHotelEditorWithData() {
+        const quickDest = document.getElementById('service_hotel_destination')?.value || 'Guangzhou';
+        const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Guangzhou;
         const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim();
         const quickArrival = (document.getElementById('service_hotel_arrival')?.value || '').trim();
         const quickDeparture = (document.getElementById('service_hotel_departure')?.value || '').trim();
 
         populateForm({
+            destination: quickDest,
             bookingId: generateRandomBookingId(),
             memberId: generateRandomMemberId(),
             clientName: quickClient || 'AUNG KHIN NYUNT',
             arrivalDate: quickArrival ? formatAgodaDate(quickArrival) : 'October 16, 2026',
             departureDate: quickDeparture ? formatAgodaDate(quickDeparture) : 'October 26, 2026',
+            propertyName: preset.propertyName,
+            propertyAddress: preset.propertyAddress,
+            propertyContact: preset.propertyContact,
             numRooms: 1,
             numExtraBeds: 0,
             numAdults: 1,
@@ -3367,14 +3397,20 @@ function initializeChinaHotelGenerator() {
     openBtn?.addEventListener('click', openHotelEditorWithData);
 
     quickBtn?.addEventListener('click', async () => {
+        const quickDest = document.getElementById('service_hotel_destination')?.value || 'Guangzhou';
+        const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Guangzhou;
         const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim() || 'AUNG KHIN NYUNT';
         const quickArrival = (document.getElementById('service_hotel_arrival')?.value || '').trim();
         const quickDeparture = (document.getElementById('service_hotel_departure')?.value || '').trim();
 
         const data = {
+            destination: quickDest,
             bookingId: generateRandomBookingId(),
             memberId: generateRandomMemberId(),
             clientName: quickClient,
+            propertyName: preset.propertyName,
+            propertyAddress: preset.propertyAddress,
+            propertyContact: preset.propertyContact,
             arrivalDate: quickArrival ? formatAgodaDate(quickArrival) : 'October 16, 2026',
             departureDate: quickDeparture ? formatAgodaDate(quickDeparture) : 'October 26, 2026',
             numRooms: 1,

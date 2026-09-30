@@ -1,13 +1,47 @@
 /**
- * Agoda China Visa Hotel Booking Confirmation Generator
- * Generates official Agoda Booking Confirmations for China Visa applications.
+ * Agoda Hotel Booking Confirmation Generator
+ * Generates official Agoda Booking Confirmations (Guangzhou, Singapore, etc.).
  * Exactly matches official colors, layout, and spacing.
  */
 
 import { showToast } from './utils.js';
 
+export const DESTINATION_PRESETS = {
+    Guangzhou: {
+        destination: 'Guangzhou',
+        propertyName: 'Grand Park Guangzhou Hotel',
+        propertyAddress: '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina',
+        propertyContact: '+86 871 6538 6688',
+        stampFile: 'agoda-stamp.png'
+    },
+    Singapore: {
+        destination: 'Singapore',
+        propertyName: 'Village Hotel Bugis by Far East Hospitality',
+        propertyAddress: '90 Victoria Street, Bugis, Singapore,\nSingapore, 188061',
+        propertyContact: '+65 6297 2828',
+        stampFile: 'agoda-stamp-singapore.png'
+    }
+};
+
 let cachedAgodaLogoDataUrl = null;
 let cachedAgodaStampDataUrl = null;
+let cachedAgodaSingaporeStampDataUrl = null;
+
+async function loadImgToDataUrl(src) {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = src;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL('image/png');
+}
 
 /**
  * Preload and cache Agoda logo as data URL for jsPDF and HTML preview
@@ -16,19 +50,7 @@ export async function getAgodaLogoDataUrl() {
     if (cachedAgodaLogoDataUrl) return cachedAgodaLogoDataUrl;
     const logoSrc = 'agoda-logo.png';
     try {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-            img.src = logoSrc;
-        });
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = await loadImgToDataUrl(logoSrc);
         cachedAgodaLogoDataUrl = dataUrl;
         return dataUrl;
     } catch (err) {
@@ -38,31 +60,41 @@ export async function getAgodaLogoDataUrl() {
 }
 
 /**
- * Preload and cache Agoda stamp & signature as data URL
+ * Preload and cache Agoda stamp & signature as data URL for specified destination
  */
-export async function getAgodaStampDataUrl() {
-    if (cachedAgodaStampDataUrl) return cachedAgodaStampDataUrl;
-    const stampSrc = 'agoda-stamp.png';
-    try {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-            img.src = stampSrc;
-        });
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const dataUrl = canvas.toDataURL('image/png');
-        cachedAgodaStampDataUrl = dataUrl;
-        return dataUrl;
-    } catch (err) {
-        console.warn('Failed to load agoda-stamp.png as data URL', err);
-        return stampSrc;
+export async function getAgodaStampDataUrl(destination = 'Guangzhou') {
+    const isSingapore = String(destination || '').trim().toLowerCase() === 'singapore';
+    if (isSingapore) {
+        if (cachedAgodaSingaporeStampDataUrl) return cachedAgodaSingaporeStampDataUrl;
+        const stampSrc = 'agoda-stamp-singapore.png';
+        try {
+            const dataUrl = await loadImgToDataUrl(stampSrc);
+            cachedAgodaSingaporeStampDataUrl = dataUrl;
+            return dataUrl;
+        } catch (err) {
+            console.warn('Failed to load agoda-stamp-singapore.png as data URL', err);
+            return stampSrc;
+        }
+    } else {
+        if (cachedAgodaStampDataUrl) return cachedAgodaStampDataUrl;
+        const stampSrc = 'agoda-stamp.png';
+        try {
+            const dataUrl = await loadImgToDataUrl(stampSrc);
+            cachedAgodaStampDataUrl = dataUrl;
+            return dataUrl;
+        } catch (err) {
+            console.warn('Failed to load agoda-stamp.png as data URL', err);
+            return stampSrc;
+        }
     }
+}
+
+export async function preloadAgodaAssets() {
+    await Promise.allSettled([
+        getAgodaLogoDataUrl(),
+        getAgodaStampDataUrl('Guangzhou'),
+        getAgodaStampDataUrl('Singapore')
+    ]);
 }
 
 /**
@@ -138,18 +170,24 @@ export function calculateDefaultCancellationDate(arrivalDateStr) {
 /**
  * Generate preview HTML markup that renders identically to the original Agoda Booking Confirmation
  */
-export function renderAgodaHotelHtml(data) {
+export function renderAgodaHotelHtml(data = {}) {
+    const destination = (data.destination || 'Guangzhou').trim();
+    const isSingapore = destination.toLowerCase() === 'singapore';
+    const preset = isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Guangzhou;
+
     const logoSrc = cachedAgodaLogoDataUrl || 'agoda-logo.png';
-    const stampSrc = cachedAgodaStampDataUrl || 'agoda-stamp.png';
+    const stampSrc = isSingapore
+        ? (cachedAgodaSingaporeStampDataUrl || 'agoda-stamp-singapore.png')
+        : (cachedAgodaStampDataUrl || 'agoda-stamp.png');
 
     const clientName = (data.clientName || 'AUNG KHIN NYUNT').trim().toUpperCase();
     const bookingId = data.bookingId || generateRandomBookingId();
     const memberId = data.memberId || generateRandomMemberId();
     const bookingRefNo = data.bookingRefNo || '';
     const countryOfResidence = data.countryOfResidence || 'Myanmar';
-    const propertyName = data.propertyName || 'Grand Park Guangzhou Hotel';
-    const propertyAddress = data.propertyAddress || '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina';
-    const propertyContact = data.propertyContact || '+86 871 6538 6688';
+    const propertyName = data.propertyName || preset.propertyName;
+    const propertyAddress = data.propertyAddress || preset.propertyAddress;
+    const propertyContact = data.propertyContact || preset.propertyContact;
 
     const numRooms = data.numRooms !== undefined && data.numRooms !== '' ? data.numRooms : 1;
     const numExtraBeds = data.numExtraBeds !== undefined && data.numExtraBeds !== '' ? data.numExtraBeds : 0;
@@ -376,12 +414,24 @@ export function renderAgodaHotelHtml(data) {
             </div>
 
             <!-- 10. Notes Section (Placed cleanly at the bottom) -->
-            <div style="border:1.1px solid #000000; border-radius:3px; padding:7px 10px; font-size:9.5px; line-height:1.35; color:#000000;">
-                <div style="font-weight:bold; margin-bottom:3px;">Notes</div>
-                <div style="display:flex; align-items:flex-start;">
-                    <span style="margin-right:5px; font-size:11px;">•</span>
-                    <div>
-                        All rooms are guaranteed on the day of arrival. In the case of a no-show, your room(s) will be released and you will be subject to the terms and conditions of the Cancellation/No-Show Policy specified at the time you made the booking as well as noted in the Confirmation Email.
+            <div style="border:1.1px solid #000000; border-radius:3px; padding:7px 10px; font-size:9.2px; line-height:1.35; color:#000000;">
+                <div style="font-weight:bold; margin-bottom:4px; font-size:9.5px;">Notes</div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <div style="display:flex; align-items:flex-start;">
+                        <span style="margin-right:5px; font-size:10px; line-height:1.2;">•</span>
+                        <div><span style="color:#d90000; font-weight:bold;">IMPORTANT:</span> At check-in, you must present a valid photo ID with your address confirming the same name as the lead guest on the booking. For bookings paid with a credit card, you may also need to present the card used to make the payment. Failure to do so may result in the hotel requesting additional payment or your reservation not being honored.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start;">
+                        <span style="margin-right:5px; font-size:10px; line-height:1.2;">•</span>
+                        <div>All rooms are guaranteed on the day of arrival. In the case of a no-show, your room(s) will be released and you will be subject to the terms and conditions of the Cancellation/No-Show Policy specified at the time you made the booking as well as noted in the Confirmation Email.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start;">
+                        <span style="margin-right:5px; font-size:10px; line-height:1.2;">•</span>
+                        <div>The total price for this booking does not include mini-bar items, telephone usage, laundry service, etc. The property will bill you directly.</div>
+                    </div>
+                    <div style="display:flex; align-items:flex-start;">
+                        <span style="margin-right:5px; font-size:10px; line-height:1.2;">•</span>
+                        <div>In cases where Breakfast is included with the room rate, please note that certain properties may charge extra for children travelling with their parents. If applicable, the property will bill you directly. Upon arrival, if you have any questions, please verify with the property.</div>
                     </div>
                 </div>
             </div>
@@ -401,17 +451,21 @@ export async function generateAgodaPdfDoc(data) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
+    const destination = String(data.destination || 'Guangzhou').trim();
+    const isSingapore = destination.toLowerCase() === 'singapore';
+    const preset = isSingapore ? DESTINATION_PRESETS.Singapore : DESTINATION_PRESETS.Guangzhou;
+
     const logoDataUrl = await getAgodaLogoDataUrl();
-    const stampDataUrl = await getAgodaStampDataUrl();
+    const stampDataUrl = await getAgodaStampDataUrl(destination);
 
     const clientName = (data.clientName || 'AUNG KHIN NYUNT').trim().toUpperCase();
     const bookingId = String(data.bookingId || generateRandomBookingId());
     const memberId = String(data.memberId || generateRandomMemberId());
     const bookingRefNo = String(data.bookingRefNo || '');
     const countryOfResidence = String(data.countryOfResidence || 'Myanmar');
-    const propertyName = String(data.propertyName || 'Grand Park Guangzhou Hotel');
-    const propertyAddress = String(data.propertyAddress || '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina');
-    const propertyContact = String(data.propertyContact || '+86 871 6538 6688');
+    const propertyName = String(data.propertyName || preset.propertyName);
+    const propertyAddress = String(data.propertyAddress || preset.propertyAddress);
+    const propertyContact = String(data.propertyContact || preset.propertyContact);
 
     const numRooms = String(data.numRooms !== undefined && data.numRooms !== '' ? data.numRooms : 1);
     const numExtraBeds = String(data.numExtraBeds !== undefined && data.numExtraBeds !== '' ? data.numExtraBeds : 0);
@@ -430,7 +484,7 @@ export async function generateAgodaPdfDoc(data) {
     const outerX = 35.2;
     const outerY = 38.6;
     const outerW = 531.0;
-    const outerH = 496.8;
+    const outerH = 545.0;
 
     // Outer boundary line
     doc.setDrawColor(0, 0, 0);
@@ -702,19 +756,61 @@ export async function generateAgodaPdfDoc(data) {
 
     // 10. Notes Box (At bottom, black border)
     const notesY = 485.0;
-    const notesH = 43.7;
+    const notesH = 92.0;
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.6);
     doc.rect(innerX, notesY, innerW, notesH, 'S');
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
-    doc.text("Notes", innerX + 6.0, notesY + 11.0);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Notes", innerX + 6.0, notesY + 9.5);
+
+    const noteStep = 8.6;
+    const bulletIndent = 11.5;
+    doc.setFontSize(6.7);
+
+    // Bullet 1
+    let curNoteY = notesY + 19.0;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.text("•", innerX + 6.0, curNoteY);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(217, 0, 0);
+    doc.text("IMPORTANT:", innerX + bulletIndent, curNoteY);
+    const impWidth = doc.getTextWidth("IMPORTANT: ");
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.1);
-    doc.text("• All rooms are guaranteed on the day of arrival. In the case of a no-show, your room(s) will be released and you will be subject to the terms and", innerX + 6.0, notesY + 21.0);
-    doc.text("   conditions of the Cancellation/No-Show Policy specified at the time you made the booking as well as noted in the Confirmation Email.", innerX + 6.0, notesY + 31.0);
+    doc.setTextColor(0, 0, 0);
+    doc.text("At check-in, you must present a valid photo ID with your address confirming the same name as the lead guest on the booking. For", innerX + bulletIndent + impWidth, curNoteY);
+
+    curNoteY += noteStep;
+    doc.text("bookings paid with a credit card, you may also need to present the card used to make the payment. Failure to do so may result in the hotel", innerX + bulletIndent, curNoteY);
+
+    curNoteY += noteStep;
+    doc.text("requesting additional payment or your reservation not being honored.", innerX + bulletIndent, curNoteY);
+
+    // Bullet 2
+    curNoteY += noteStep + 1.6;
+    doc.text("•", innerX + 6.0, curNoteY);
+    doc.text("All rooms are guaranteed on the day of arrival. In the case of a no-show, your room(s) will be released and you will be subject to the terms and", innerX + bulletIndent, curNoteY);
+
+    curNoteY += noteStep;
+    doc.text("conditions of the Cancellation/No-Show Policy specified at the time you made the booking as well as noted in the Confirmation Email.", innerX + bulletIndent, curNoteY);
+
+    // Bullet 3
+    curNoteY += noteStep + 1.6;
+    doc.text("•", innerX + 6.0, curNoteY);
+    doc.text("The total price for this booking does not include mini-bar items, telephone usage, laundry service, etc. The property will bill you directly.", innerX + bulletIndent, curNoteY);
+
+    // Bullet 4
+    curNoteY += noteStep + 1.6;
+    doc.text("•", innerX + 6.0, curNoteY);
+    doc.text("In cases where Breakfast is included with the room rate, please note that certain properties may charge extra for children travelling with their", innerX + bulletIndent, curNoteY);
+
+    curNoteY += noteStep;
+    doc.text("parents. If applicable, the property will bill you directly. Upon arrival, if you have any questions, please verify with the property.", innerX + bulletIndent, curNoteY);
 
     return doc;
 }
