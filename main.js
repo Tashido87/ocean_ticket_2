@@ -512,7 +512,7 @@ function setupEventListeners() {
     });
 
     const handleAppRefresh = async () => {
-        const icons = document.querySelectorAll('#sidebarRefreshBtn i, #headerRefreshBtn i, #settingsRefreshAppBtn i');
+        const icons = document.querySelectorAll('#sidebarRefreshBtn i, #settingsRefreshAppBtn i');
         icons.forEach(i => i.classList.add('fa-spin'));
         showToast('Refreshing application...', 'info');
 
@@ -535,7 +535,6 @@ function setupEventListeners() {
     };
 
     document.getElementById('sidebarRefreshBtn')?.addEventListener('click', handleAppRefresh);
-    document.getElementById('headerRefreshBtn')?.addEventListener('click', handleAppRefresh);
     document.getElementById('settingsRefreshAppBtn')?.addEventListener('click', handleAppRefresh);
 
     initGlobalSearch();
