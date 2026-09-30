@@ -464,16 +464,23 @@ export function parseItineraryText(rawText) {
     const primaryFlight = flights[0] || {};
 
     // 8. Baggage
-    let checkedBaggage = '20 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm';
-    const kgMatch = clean.match(/Checked\s*baggage\s*[:\t ]*(\d+\s*kg\s*per\s*person)/i);
-    const dimMatch = clean.match(/Checked\s*baggage[\s\S]*?(?:cannot\s*exceed|max)\s*([0-9x\s]+cm)/i) ||
-                     clean.match(/(?:cannot\s*exceed|max)\s*(\d+\s*cm)\s*\(([0-9x\s]+cm)\)/i);
-    if (kgMatch && dimMatch) {
-        const dimStr = (dimMatch[1] || dimMatch[2]).replace(/\s+/g, ' ').replace(/x/g, ' x ');
-        checkedBaggage = `${kgMatch[1].trim()}\nEach piece max ${dimStr}`;
-    } else if (kgMatch) {
-        checkedBaggage = `${kgMatch[1].trim()}\nEach piece max 119 x 119 x 81 cm`;
+    const bagBlock = clean.match(/Checked\s*baggage[\s\S]*?(?=(?:Carry-on|Personal|Important|$))/i);
+    const bagText = bagBlock ? bagBlock[0] : clean;
+
+    const weightMatch = bagText.match(/(\d+)\s*kg/i);
+    const weightVal = weightMatch ? weightMatch[1] : (airline === 'VietJet Air' ? '20' : '30');
+
+    const dimMatch = bagText.match(/\(([0-9\s*xX]+cm)\)/i) ||
+                     bagText.match(/(?:cannot\s*exceed|max)[\s\S]*?([0-9\s*xX]{7,}cm)/i);
+    let dimStr = '119 x 119 x 81 cm';
+    if (dimMatch) {
+        dimStr = dimMatch[1].replace(/\s+/g, ' ').replace(/[xX]/g, ' x ').trim();
     }
+
+    const totalMatch = bagText.match(/cannot\s*exceed\s*(\d+\s*cm)/i);
+    const totalStr = totalMatch ? ` (total ${totalMatch[1]})` : '';
+
+    const checkedBaggage = `${weightVal} kg per person\nEach piece max ${dimStr}${totalStr}`;
 
     const carryOnBaggage = '1 piece per person\nMax 56 x 36 x 23 cm per piece';
     const personalItem = '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
@@ -883,7 +890,7 @@ export async function generateAirAsiaPdfDoc(data) {
     const bullets = [
         {
             lead: "• Please arrive at the airport at least ",
-            bold: "2 hours",
+            bold: "3 hours",
             tail: " before departure to allow enough time for check-in."
         },
         {
@@ -1126,7 +1133,7 @@ export function renderAirAsiaTicketHtml(data) {
         <div style="margin-bottom:20px;">
             <div style="font-size:15px; font-weight:700; color:#E31E24; margin-bottom:8px;">Important Information</div>
             <ul style="margin:0; padding-left:18px; font-size:11.5px; color:#333333; line-height:1.5;">
-                <li style="margin-bottom:4px;">Please arrive at the airport at least <strong>2 hours</strong> before departure to allow enough time for check-in.</li>
+                <li style="margin-bottom:4px;">Please arrive at the airport at least <strong>3 hours</strong> before departure to allow enough time for check-in.</li>
                 <li style="margin-bottom:4px;">During airport procedures, passengers must present the valid ID used to purchase the ticket. Your boarding pass or itinerary may also be required.</li>
                 <li style="margin-bottom:4px;">Tickets must be used in the sequence set out in the itinerary, otherwise the airline reserves the right to refuse carriage.</li>
                 <li style="margin-bottom:4px;">Please check the baggage information above for full details before travelling.</li>
