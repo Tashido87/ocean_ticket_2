@@ -162,7 +162,6 @@ export function renderAgodaHotelHtml(data) {
     const departureDate = formatAgodaDate(data.departureDate || 'October 26, 2026');
     const cancellationDate = data.cancellationDate || calculateDefaultCancellationDate(arrivalDate);
 
-    const remarksTaxes = data.remarksTaxes || 'Included : Taxes and fees USD 51.22';
     const remarksSpecial = data.remarksSpecial || 'NonSmoke,LargeBed';
 
     return `
@@ -365,7 +364,6 @@ export function renderAgodaHotelHtml(data) {
             <!-- 8. Remarks Section -->
             <div style="font-weight:bold; font-size:9.5px; line-height:1.45; color:#000000; margin-bottom:32px;">
                 <div>Remarks :</div>
-                <div>${remarksTaxes}</div>
                 <div>${remarksSpecial}</div>
                 <div>All special requests are subject to availability upon arrival</div>
             </div>
@@ -426,7 +424,6 @@ export async function generateAgodaPdfDoc(data) {
     const departureDate = formatAgodaDate(data.departureDate || 'October 26, 2026');
     const cancellationDate = data.cancellationDate || calculateDefaultCancellationDate(arrivalDate);
 
-    const remarksTaxes = String(data.remarksTaxes || 'Included : Taxes and fees USD 51.22');
     const remarksSpecial = String(data.remarksSpecial || 'NonSmoke,LargeBed');
 
     // Page: 595.28 x 841.89 pt
@@ -693,9 +690,8 @@ export async function generateAgodaPdfDoc(data) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
     doc.text("Remarks :", innerX, 392.0);
-    doc.text(remarksTaxes, innerX, 402.0);
-    doc.text(remarksSpecial, innerX, 412.0);
-    doc.text("All special requests are subject to availability upon arrival", innerX, 422.0);
+    doc.text(remarksSpecial, innerX, 402.0);
+    doc.text("All special requests are subject to availability upon arrival", innerX, 412.0);
 
     // 9. Call our Customer Service Center 24/7 (Pushed down on the right side)
     doc.setFont('helvetica', 'bold');

@@ -3226,7 +3226,6 @@ function initializeChinaHotelGenerator() {
             propertyAddress: document.getElementById('agoda_property_address')?.value || '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina',
             propertyContact: document.getElementById('agoda_property_contact')?.value || '+86 871 6538 6688',
             cancellationDate: document.getElementById('agoda_cancellation_date')?.value || '',
-            remarksTaxes: document.getElementById('agoda_remarks_taxes')?.value || 'Included : Taxes and fees USD 51.22',
             remarksSpecial: document.getElementById('agoda_remarks_special')?.value || 'NonSmoke,LargeBed'
         };
     }
@@ -3282,9 +3281,6 @@ function initializeChinaHotelGenerator() {
         }
         if (document.getElementById('agoda_cancellation_date')) {
             document.getElementById('agoda_cancellation_date').value = data.cancellationDate || calculateDefaultCancellationDate(data.arrivalDate || 'October 16, 2026');
-        }
-        if (document.getElementById('agoda_remarks_taxes')) {
-            document.getElementById('agoda_remarks_taxes').value = data.remarksTaxes || 'Included : Taxes and fees USD 51.22';
         }
         if (document.getElementById('agoda_remarks_special')) {
             document.getElementById('agoda_remarks_special').value = data.remarksSpecial || 'NonSmoke,LargeBed';
