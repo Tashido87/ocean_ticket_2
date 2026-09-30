@@ -24,7 +24,7 @@ import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=7';
-import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=7';
+import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=8';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -3288,7 +3288,9 @@ function initializeChinaHotelGenerator() {
             document.getElementById('agoda_property_contact').value = data.propertyContact || preset.propertyContact;
         }
         if (document.getElementById('agoda_cancellation_date')) {
-            document.getElementById('agoda_cancellation_date').value = data.cancellationDate || calculateDefaultCancellationDate(data.arrivalDate || 'October 16, 2026');
+            const cancelInput = document.getElementById('agoda_cancellation_date');
+            cancelInput.value = data.cancellationDate || calculateDefaultCancellationDate(data.arrivalDate || 'October 16, 2026');
+            cancelInput.dataset.autoFilled = data.cancellationDate ? 'false' : 'true';
         }
         if (document.getElementById('agoda_remarks_special')) {
             document.getElementById('agoda_remarks_special').value = data.remarksSpecial || 'NonSmoke,LargeBed';

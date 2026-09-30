@@ -154,7 +154,7 @@ export function formatAgodaDate(dateInput) {
 }
 
 /**
- * Calculates a default cancellation date (e.g., 20 days before arrival)
+ * Calculates a default cancellation date (3 days / 72 hours before arrival date)
  */
 export function calculateDefaultCancellationDate(arrivalDateStr) {
     try {
@@ -166,11 +166,12 @@ export function calculateDefaultCancellationDate(arrivalDateStr) {
             d = new Date(arrivalDateStr);
         }
         if (d && !isNaN(d.getTime())) {
-            const cancelDate = new Date(d.getTime() - (20 * 24 * 60 * 60 * 1000));
+            // 3 days (72 hours) before arrival
+            const cancelDate = new Date(d.getTime() - (3 * 24 * 60 * 60 * 1000));
             return formatAgodaDate(cancelDate);
         }
     } catch (e) {}
-    return 'August 30, 2026';
+    return 'October 13, 2026';
 }
 
 /**
