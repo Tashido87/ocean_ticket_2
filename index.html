@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="styles.css?v=25">
     <link rel="stylesheet" href="landing.css">
     <link rel="stylesheet" href="sell.css">
-    <link rel="stylesheet" href="apple-ui.css?v=10">
+    <link rel="stylesheet" href="apple-ui.css?v=11">
     <link rel="stylesheet" href="pnr-detail.css?v=1">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,6 +29,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
     
 </head>
@@ -1312,6 +1313,35 @@
                             <div class="service-toast" id="hotelToast"></div>
                         </div>
 
+                        <!-- AIRASIA E-TICKET GENERATOR -->
+                        <div class="service-panel" id="airAsiaPanel">
+                            <div class="service-panel-header">
+                                <span class="service-panel-icon" style="background: rgba(227, 30, 36, 0.1); color: #E31E24;"><i class="fa-solid fa-plane-departure"></i></span>
+                                <div>
+                                    <h2>AirAsia E-Ticket Generator</h2>
+                                    <p class="service-panel-desc">Convert Trip.com / OTA PDF itinerary into official AirAsia E-Ticket Itinerary Receipt</p>
+                                </div>
+                            </div>
+
+                            <div class="airasia-upload-zone" id="airAsiaDropZone">
+                                <i class="fa-solid fa-file-pdf" style="font-size: 2.4rem; color: #E31E24; margin-bottom: 0.5rem; display:block;"></i>
+                                <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; color: var(--apple-text);">Drop Trip.com / OTA PDF here or click to browse</div>
+                                <div style="font-size: 0.8rem; color: var(--apple-text-secondary);">Auto-extracts PNR, passenger, flight schedule, and generates official AirAsia PDF</div>
+                                <input type="file" id="airAsiaFileInput" accept=".pdf" style="display: none;">
+                            </div>
+
+                            <div class="service-actions" style="margin-top: 1rem; display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" class="btn-service btn-generate" id="airAsiaUploadBtn" style="background: #E31E24; border-color: #E31E24; color: #fff;">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Choose PDF File
+                                </button>
+                                <button type="button" class="btn-service btn-clear" id="airAsiaManualBtn">
+                                    <i class="fa-solid fa-pen-to-square"></i> Manual / Blank Form
+                                </button>
+                            </div>
+
+                            <div class="service-toast" id="airAsiaToast"></div>
+                        </div>
+
                         <!-- DOWNLOAD DOCUMENTS -->
                         <div class="service-panel service-panel-wide" id="documentsPanel">
                             <div class="service-panel-header">
@@ -1502,8 +1532,159 @@
     </div>
 
 
+    <!-- AirAsia E-Ticket Generator Modal -->
+    <div id="airAsiaModal" class="modal">
+        <div class="modal-content glass-card" style="max-width: 1200px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--apple-separator); padding-bottom:12px; margin-bottom:14px;">
+                <h2 style="font-size:1.15rem; margin:0; display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-plane-departure" style="color:#E31E24;"></i> AirAsia E-Ticket Generator & Preview
+                </h2>
+                <button type="button" class="modal-close" id="airAsiaModalCloseBtn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--apple-text-secondary);">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="padding:0; overflow:hidden; flex:1;">
+                <div class="airasia-modal-layout">
+                    <!-- Form Column -->
+                    <div class="airasia-form-scroll">
+                        <div style="background: rgba(227, 30, 36, 0.08); border: 1px solid rgba(227, 30, 36, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: var(--apple-text);">
+                            <i class="fa-solid fa-circle-check" style="color:#E31E24;"></i> Itinerary extracted! Review or modify any details below. Live preview updates automatically.
+                        </div>
+
+                        <div class="airasia-form-section-title">Booking Details</div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="aa_booking_no">Booking No.</label>
+                                <input type="text" id="aa_booking_no" placeholder="1658114947014387">
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="aa_pnr">Airline PNR</label>
+                                <input type="text" id="aa_pnr" placeholder="N728NB">
+                            </div>
+                        </div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="aa_eticket_no">E-Ticket No.</label>
+                                <input type="text" id="aa_eticket_no" placeholder="To be advised at check-in">
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="aa_class">Class</label>
+                                <input type="text" id="aa_class" placeholder="Economy">
+                            </div>
+                        </div>
+
+                        <div class="airasia-form-section-title">Passenger Information</div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group" style="grid-column: 1 / -1;">
+                                <label for="aa_pax_name">Passenger Name</label>
+                                <input type="text" id="aa_pax_name" placeholder="SITT MON AUNG">
+                            </div>
+                        </div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="aa_pax_type">Passenger Type</label>
+                                <select id="aa_pax_type">
+                                    <option value="Adult" selected>Adult</option>
+                                    <option value="Child">Child</option>
+                                    <option value="Infant">Infant</option>
+                                </select>
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="aa_route">Route</label>
+                                <input type="text" id="aa_route" placeholder="Kuala Lumpur (KUL) - Johor Bahru (JHB)">
+                            </div>
+                        </div>
+
+                        <div class="airasia-form-section-title">Flight Details</div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="aa_flight_no">Flight Number</label>
+                                <input type="text" id="aa_flight_no" placeholder="AK6032">
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="aa_airline_name">Airline / Carrier</label>
+                                <input type="text" id="aa_airline_name" placeholder="AirAsia Berhad">
+                            </div>
+                        </div>
+
+                        <div class="airasia-form-section-title">Departure</div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="aa_dep_time">Departure Time</label>
+                                <input type="text" id="aa_dep_time" placeholder="18:30">
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="aa_dep_date">Departure Date</label>
+                                <input type="text" id="aa_dep_date" placeholder="Thursday, 3 September 2026">
+                            </div>
+                        </div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="aa_dep_airport">Departure Airport (with code)</label>
+                                <input type="text" id="aa_dep_airport" placeholder="Kuala Lumpur International Airport (KUL)">
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="aa_dep_terminal">Terminal (optional)</label>
+                                <input type="text" id="aa_dep_terminal" placeholder="Terminal 2">
+                            </div>
+                        </div>
+
+                        <div class="airasia-form-section-title">Arrival</div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="aa_arr_time">Arrival Time</label>
+                                <input type="text" id="aa_arr_time" placeholder="19:25">
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="aa_arr_date">Arrival Date</label>
+                                <input type="text" id="aa_arr_date" placeholder="Thursday, 3 September 2026">
+                            </div>
+                        </div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="aa_arr_airport">Arrival Airport (with code)</label>
+                                <input type="text" id="aa_arr_airport" placeholder="Johor Bahru Senai International Airport (JHB)">
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="aa_arr_terminal">Terminal (optional)</label>
+                                <input type="text" id="aa_arr_terminal" placeholder="">
+                            </div>
+                        </div>
+
+                        <div class="airasia-form-section-title">Baggage Allowance</div>
+                        <div class="airasia-form-group">
+                            <label for="aa_bag_checked">Checked Baggage</label>
+                            <textarea id="aa_bag_checked" rows="2" placeholder="30 kg per person&#10;Each piece max 119 x 119 x 81 cm (total 319 cm)"></textarea>
+                        </div>
+                        <div class="airasia-form-group">
+                            <label for="aa_bag_carry">Carry-on Baggage</label>
+                            <textarea id="aa_bag_carry" rows="2" placeholder="1 piece per person&#10;Max 56 x 36 x 23 cm per piece"></textarea>
+                        </div>
+                        <div class="airasia-form-group">
+                            <label for="aa_bag_personal">Personal Item</label>
+                            <textarea id="aa_bag_personal" rows="2" placeholder="1 piece per person&#10;Max 40 x 30 x 10 cm per piece, fits under the seat in front of you"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Live Preview Column -->
+                    <div class="airasia-preview-scroll">
+                        <div id="airAsiaPreviewContainer" style="width:100%; max-width:800px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--apple-separator); padding-top:12px; margin-top:14px; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary" id="airAsiaCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-secondary" id="airAsiaDownloadImgBtn"><i class="fa-solid fa-image"></i> Save Photo</button>
+                <button type="button" class="btn btn-secondary" id="airAsiaShareBtn" style="color:var(--apple-blue);"><i class="fa-solid fa-share-nodes"></i> Share</button>
+                <button type="button" class="btn btn-primary" id="airAsiaDownloadPdfBtn" style="background:#E31E24; border-color:#E31E24; color:#ffffff;">
+                    <i class="fa-solid fa-file-pdf"></i> Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=32" type="module"></script>
+    <script src="main.js?v=33" type="module"></script>
 </body>
 </html>

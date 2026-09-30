@@ -2902,3 +2902,97 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
     color: #ffffff;
 }
 
+/* --- AIRASIA E-TICKET GENERATOR --- */
+.airasia-upload-zone {
+    border: 2px dashed rgba(227, 30, 36, 0.35);
+    border-radius: 14px;
+    padding: 24px 20px;
+    text-align: center;
+    background: rgba(227, 30, 36, 0.02);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 12px 0 14px;
+}
+.airasia-upload-zone:hover,
+.airasia-upload-zone.dragover {
+    border-color: #E31E24;
+    background: rgba(227, 30, 36, 0.06);
+    transform: translateY(-1px);
+}
+.airasia-modal-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 18px;
+    align-items: start;
+    max-height: 82vh;
+}
+.airasia-form-scroll {
+    max-height: 78vh;
+    overflow-y: auto;
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.airasia-preview-scroll {
+    max-height: 78vh;
+    overflow-y: auto;
+    background: #525659;
+    padding: 20px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+}
+.airasia-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.airasia-form-group label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--apple-text-secondary);
+}
+.airasia-form-group input,
+.airasia-form-group select,
+.airasia-form-group textarea {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--apple-separator);
+    background: var(--apple-input-bg);
+    color: var(--apple-text);
+    font-size: 0.85rem;
+    box-sizing: border-box;
+}
+.airasia-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.airasia-form-section-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #E31E24;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    border-bottom: 1px solid rgba(227, 30, 36, 0.2);
+    padding-bottom: 4px;
+}
+
+@media (max-width: 900px) {
+    .airasia-modal-layout {
+        grid-template-columns: 1fr;
+    }
+    .airasia-form-scroll,
+    .airasia-preview-scroll {
+        max-height: none;
+    }
+    .airasia-preview-scroll {
+        padding: 8px;
+    }
+    .airasia-ticket-wrapper {
+        padding: 20px 16px !important;
+    }
+}
+

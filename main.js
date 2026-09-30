@@ -23,6 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -2892,7 +2893,200 @@ export function updateComparisonChart() {
     state.charts.comparisonChart = new Chart(ctx, chartConfig);
 }
 
+// --- AIRASIA E-TICKET GENERATOR LOGIC ---
+function initializeAirAsiaGenerator() {
+    const dropZone = document.getElementById('airAsiaDropZone');
+    const fileInput = document.getElementById('airAsiaFileInput');
+    const uploadBtn = document.getElementById('airAsiaUploadBtn');
+    const manualBtn = document.getElementById('airAsiaManualBtn');
+    const modal = document.getElementById('airAsiaModal');
+    const closeBtn = document.getElementById('airAsiaModalCloseBtn');
+    const cancelBtn = document.getElementById('airAsiaCancelBtn');
+    const downloadPdfBtn = document.getElementById('airAsiaDownloadPdfBtn');
+    const downloadImgBtn = document.getElementById('airAsiaDownloadImgBtn');
+    const shareBtn = document.getElementById('airAsiaShareBtn');
+    const previewContainer = document.getElementById('airAsiaPreviewContainer');
 
+    if (!dropZone || !modal) return;
+
+    function collectFormData() {
+        return {
+            bookingNo: document.getElementById('aa_booking_no')?.value || '',
+            pnr: (document.getElementById('aa_pnr')?.value || '').trim().toUpperCase(),
+            eTicketNo: document.getElementById('aa_eticket_no')?.value || '',
+            flightClass: document.getElementById('aa_class')?.value || 'Economy',
+            passengerName: (document.getElementById('aa_pax_name')?.value || '').trim().toUpperCase(),
+            passengerType: document.getElementById('aa_pax_type')?.value || 'Adult',
+            flightNo: (document.getElementById('aa_flight_no')?.value || '').trim().toUpperCase(),
+            airlineName: document.getElementById('aa_airline_name')?.value || 'AirAsia Berhad',
+            depTime: document.getElementById('aa_dep_time')?.value || '',
+            depDateFormatted: document.getElementById('aa_dep_date')?.value || '',
+            depAirport: document.getElementById('aa_dep_airport')?.value || '',
+            depTerminal: document.getElementById('aa_dep_terminal')?.value || '',
+            arrTime: document.getElementById('aa_arr_time')?.value || '',
+            arrDateFormatted: document.getElementById('aa_arr_date')?.value || '',
+            arrAirport: document.getElementById('aa_arr_airport')?.value || '',
+            arrTerminal: document.getElementById('aa_arr_terminal')?.value || '',
+            route: document.getElementById('aa_route')?.value || '',
+            checkedBaggage: document.getElementById('aa_bag_checked')?.value || '',
+            carryOnBaggage: document.getElementById('aa_bag_carry')?.value || '',
+            personalItem: document.getElementById('aa_bag_personal')?.value || ''
+        };
+    }
+
+    function populateForm(data) {
+        if (document.getElementById('aa_booking_no')) document.getElementById('aa_booking_no').value = data.bookingNo || '';
+        if (document.getElementById('aa_pnr')) document.getElementById('aa_pnr').value = data.pnr || '';
+        if (document.getElementById('aa_eticket_no')) document.getElementById('aa_eticket_no').value = data.eTicketNo || 'To be advised at check-in';
+        if (document.getElementById('aa_class')) document.getElementById('aa_class').value = data.flightClass || 'Economy';
+        if (document.getElementById('aa_pax_name')) document.getElementById('aa_pax_name').value = data.passengerName || '';
+        if (document.getElementById('aa_pax_type')) document.getElementById('aa_pax_type').value = data.passengerType || 'Adult';
+        if (document.getElementById('aa_flight_no')) document.getElementById('aa_flight_no').value = data.flightNo || '';
+        if (document.getElementById('aa_airline_name')) document.getElementById('aa_airline_name').value = data.airlineName || 'AirAsia Berhad';
+        if (document.getElementById('aa_dep_time')) document.getElementById('aa_dep_time').value = data.depTime || '';
+        if (document.getElementById('aa_dep_date')) document.getElementById('aa_dep_date').value = data.depDateFormatted || '';
+        if (document.getElementById('aa_dep_airport')) document.getElementById('aa_dep_airport').value = data.depAirport || '';
+        if (document.getElementById('aa_dep_terminal')) document.getElementById('aa_dep_terminal').value = data.depTerminal || '';
+        if (document.getElementById('aa_arr_time')) document.getElementById('aa_arr_time').value = data.arrTime || '';
+        if (document.getElementById('aa_arr_date')) document.getElementById('aa_arr_date').value = data.arrDateFormatted || '';
+        if (document.getElementById('aa_arr_airport')) document.getElementById('aa_arr_airport').value = data.arrAirport || '';
+        if (document.getElementById('aa_arr_terminal')) document.getElementById('aa_arr_terminal').value = data.arrTerminal || '';
+        if (document.getElementById('aa_route')) document.getElementById('aa_route').value = data.route || '';
+        if (document.getElementById('aa_bag_checked')) document.getElementById('aa_bag_checked').value = data.checkedBaggage || '30 kg per person\nEach piece max 119 x 119 x 81 cm (total 319 cm)';
+        if (document.getElementById('aa_bag_carry')) document.getElementById('aa_bag_carry').value = data.carryOnBaggage || '1 piece per person\nMax 56 x 36 x 23 cm per piece';
+        if (document.getElementById('aa_bag_personal')) document.getElementById('aa_bag_personal').value = data.personalItem || '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
+
+        updatePreview();
+    }
+
+    function updatePreview() {
+        if (!previewContainer) return;
+        const currentData = collectFormData();
+        previewContainer.innerHTML = renderAirAsiaTicketHtml(currentData);
+    }
+
+    const formInputs = modal.querySelectorAll('.airasia-form-scroll input, .airasia-form-scroll select, .airasia-form-scroll textarea');
+    formInputs.forEach(input => {
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+    });
+
+    async function handleFile(file) {
+        if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+            showToast('Please select a valid PDF file.', 'error');
+            return;
+        }
+
+        showToast('Extracting itinerary from PDF...', 'info');
+        try {
+            const rawText = await extractTextFromPdf(file);
+            if (!rawText || rawText.trim().length < 30) {
+                showToast('Could not extract text from PDF (it might be a scanned image). Opening form for manual review.', 'warning');
+            }
+            const parsedData = parseItineraryText(rawText);
+            populateForm(parsedData);
+            modal.classList.add('show');
+            showToast('AirAsia ticket data extracted successfully!', 'success');
+        } catch (err) {
+            console.error('AirAsia PDF parsing error:', err);
+            showToast(`PDF parsing failed: ${err.message}`, 'error');
+        }
+    }
+
+    uploadBtn?.addEventListener('click', () => fileInput?.click());
+    dropZone?.addEventListener('click', () => fileInput?.click());
+
+    fileInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) handleFile(file);
+        e.target.value = '';
+    });
+
+    dropZone?.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone?.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    dropZone?.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleFile(file);
+    });
+
+    manualBtn?.addEventListener('click', () => {
+        populateForm({
+            bookingNo: '',
+            pnr: '',
+            eTicketNo: 'To be advised at check-in',
+            flightClass: 'Economy',
+            passengerName: '',
+            passengerType: 'Adult',
+            flightNo: 'AK',
+            airlineName: 'AirAsia Berhad',
+            depTime: '12:00',
+            depDateFormatted: '',
+            depAirport: 'Kuala Lumpur International Airport (KUL)',
+            depTerminal: 'Terminal 2',
+            arrTime: '13:00',
+            arrDateFormatted: '',
+            arrAirport: '',
+            arrTerminal: '',
+            route: '',
+            checkedBaggage: '30 kg per person\nEach piece max 119 x 119 x 81 cm (total 319 cm)',
+            carryOnBaggage: '1 piece per person\nMax 56 x 36 x 23 cm per piece',
+            personalItem: '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you'
+        });
+        modal.classList.add('show');
+    });
+
+    closeBtn?.addEventListener('click', () => modal.classList.remove('show'));
+    cancelBtn?.addEventListener('click', () => modal.classList.remove('show'));
+
+    downloadPdfBtn?.addEventListener('click', async () => {
+        try {
+            downloadPdfBtn.disabled = true;
+            downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+            const data = collectFormData();
+            const filename = await downloadAirAsiaPdf(data);
+            showToast(`AirAsia PDF downloaded: ${filename}`, 'success');
+        } catch (err) {
+            console.error('PDF generation error:', err);
+            showToast(`Could not generate PDF: ${err.message}`, 'error');
+        } finally {
+            downloadPdfBtn.disabled = false;
+            downloadPdfBtn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Download PDF';
+        }
+    });
+
+    downloadImgBtn?.addEventListener('click', async () => {
+        try {
+            downloadImgBtn.disabled = true;
+            downloadImgBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving Image...';
+            const data = collectFormData();
+            const filename = await downloadAirAsiaImage(data);
+            showToast(`Image saved: ${filename}`, 'success');
+        } catch (err) {
+            console.error('Image generation error:', err);
+            showToast(`Could not save image: ${err.message}`, 'error');
+        } finally {
+            downloadImgBtn.disabled = false;
+            downloadImgBtn.innerHTML = '<i class="fa-solid fa-image"></i> Save Photo';
+        }
+    });
+
+    shareBtn?.addEventListener('click', async () => {
+        try {
+            const data = collectFormData();
+            await shareAirAsiaTicket(data);
+        } catch (err) {
+            console.error('Share error:', err);
+            showToast(`Share failed: ${err.message}`, 'error');
+        }
+    });
+}
 
 // --- APP START ---
 window.onload = async () => {
@@ -2901,6 +3095,7 @@ window.onload = async () => {
     initializeTimePicker();
     setupEventListeners();
     initializeUISettings();
+    initializeAirAsiaGenerator();
     // Show today's date in the header
     const headerDateEl = document.getElementById('headerTodayDateText');
     if (headerDateEl) {
