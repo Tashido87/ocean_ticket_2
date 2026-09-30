@@ -382,7 +382,14 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.setFontSize(9);
     doc.setTextColor(...darkColor);
     doc.text("Itinerary Receipt", rightX, cursorY + 41, { align: "right" });
-    doc.text(`Booking No. ${data.bookingNo || ''}`, rightX, cursorY + 53, { align: "right" });
+
+    const bookNoVal = data.bookingNo || '';
+    const bookNoLabel = "Booking No. ";
+    doc.setFont("helvetica", "bold");
+    doc.text(bookNoVal, rightX, cursorY + 53, { align: "right" });
+    const bookNoValWidth = doc.getTextWidth(bookNoVal);
+    doc.setFont("helvetica", "normal");
+    doc.text(bookNoLabel, rightX - bookNoValWidth, cursorY + 53, { align: "right" });
 
     cursorY += 74;
 
@@ -424,12 +431,12 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...darkColor);
     doc.text("Booking No.", marginX + 6, bookBoxY + 14);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "bold");
     doc.text(data.bookingNo || "", col2X + 6, bookBoxY + 14);
 
     doc.setFont("helvetica", "bold");
     doc.text("Airline Booking Reference", col3X + 6, bookBoxY + 14);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "bold");
     doc.text(data.pnr || "", col4X + 6, bookBoxY + 14);
 
     doc.setFont("helvetica", "bold");
@@ -473,10 +480,11 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.rect(marginX, paxRowY, contentWidth, paxRowHeight, 'S');
     doc.line(paxColSplit, paxRowY, paxColSplit, paxRowY + paxRowHeight);
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(...darkColor);
     doc.text(data.passengerName || "", marginX + 6, paxRowY + 15);
+    doc.setFont("helvetica", "normal");
     doc.text(data.passengerType || "Adult", paxColSplit + 6, paxRowY + 15);
 
     cursorY = paxRowY + paxRowHeight + 20;
@@ -737,9 +745,9 @@ export function renderAirAsiaTicketHtml(data) {
             <table style="width:100%; border-collapse:collapse; background:#F5F5F5; border:1px solid #CCCCCC; font-size:12px;">
                 <tr>
                     <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%;"><strong>Booking No.</strong></td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%;">${data.bookingNo || ''}</td>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%; font-weight:700;">${data.bookingNo || ''}</td>
                     <td style="padding:7px 10px; border:1px solid #CCCCCC; width:28%;"><strong>Airline Booking Reference</strong></td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:22%; font-weight:600;">${data.pnr || ''}</td>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:22%; font-weight:700;">${data.pnr || ''}</td>
                 </tr>
                 <tr>
                     <td style="padding:7px 10px; border:1px solid #CCCCCC;"><strong>E-Ticket No.</strong></td>
@@ -762,7 +770,7 @@ export function renderAirAsiaTicketHtml(data) {
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="padding:8px 10px; border:1px solid #CCCCCC; font-weight:600;">${data.passengerName || ''}</td>
+                        <td style="padding:8px 10px; border:1px solid #CCCCCC; font-weight:700;">${data.passengerName || ''}</td>
                         <td style="padding:8px 10px; border:1px solid #CCCCCC;">${data.passengerType || 'Adult'}</td>
                     </tr>
                 </tbody>
