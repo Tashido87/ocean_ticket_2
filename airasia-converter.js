@@ -130,20 +130,23 @@ export function parseItineraryText(rawText) {
     const bookingNoMatch = clean.match(/Booking\s*No\.?\s*([0-9A-Z]+)/i);
     const bookingNo = bookingNoMatch ? bookingNoMatch[1].trim() : '';
 
-    // 2. Airline Booking Reference (PNR)
-    let pnr = '';
-    const pnrMatch = clean.match(/Airline\s*Booking\s*Reference\s*(?:[^\n]*\n)?([A-Z0-9]{5,8})\b/i) ||
-                     clean.match(/(?:Economy|Business|Premium)\s*(?:--|[0-9A-Z-]+)?\s*([A-Z0-9]{5,8})\b/i) ||
-                     clean.match(/PNR\s*[:\s]*([A-Z0-9]{5,8})\b/i);
-    if (pnrMatch) {
-        pnr = pnrMatch[1].trim();
-    }
-
-    // 3. Class
+    // 2. Class - explicitly check for Cabin class only (do NOT match "(First name)")
     let flightClass = 'Economy';
-    const classMatch = clean.match(/\b(Economy|Business|Premium\s*Economy|First)\b/i);
-    if (classMatch) {
-        flightClass = classMatch[1];
+    if (/\bPremium\s*Economy\b/i.test(clean)) flightClass = 'Premium Economy';
+    else if (/\bBusiness\b/i.test(clean)) flightClass = 'Business';
+    else if (/\bFirst\s+Class\b/i.test(clean)) flightClass = 'First Class';
+    else if (/\bEconomy\b/i.test(clean)) flightClass = 'Economy';
+
+    // 3. Airline Booking Reference (PNR)
+    let pnr = '';
+    const pnrTableMatch = clean.match(/(?:Economy|Business|Premium\s*Economy)\s+(?:--|[0-9A-Z-]+)\s+([A-Z0-9]{5,7})\b/i);
+    if (pnrTableMatch && !/^(cannot|exceed|person|flight|adult)$/i.test(pnrTableMatch[1])) {
+        pnr = pnrTableMatch[1].trim().toUpperCase();
+    } else {
+        const pnrMatch = clean.match(/(?:Airline\s*Booking\s*Reference|PNR\s*[:\s]*)[^\n\r]*?([A-Z0-9]{5,7})\b/i);
+        if (pnrMatch && !/^(cannot|exceed|person|flight|adult)$/i.test(pnrMatch[1])) {
+            pnr = pnrMatch[1].trim().toUpperCase();
+        }
     }
 
     // 4. E-Ticket No
@@ -156,14 +159,15 @@ export function parseItineraryText(rawText) {
     // 5. Passenger Name & Type
     let passengerName = '';
     let passengerType = 'Adult';
-    // Check Baggage section first: "NAME (Adults)"
-    const paxBaggageMatch = clean.match(/\n\s*([A-Z\s]{3,})\s*\((Adults?|Children|Infants?)\)/i);
-    if (paxBaggageMatch) {
+    // Priority 1: Baggage section explicitly has "NAME (Adults)"
+    const paxBaggageMatch = clean.match(/\b([A-Z][A-Z\s]{2,35})\s*\((Adults?|Children|Infants?)\)/i);
+    if (paxBaggageMatch && !/^(kuala|johor|singapore|bangkok|baggage|flight|airline|personal|carry)/i.test(paxBaggageMatch[1].trim())) {
         passengerName = paxBaggageMatch[1].trim();
         passengerType = paxBaggageMatch[2].replace(/s$/i, '');
     } else {
-        // Try Name table in Trip.com
-        const nameBlockMatch = clean.match(/(?:Reference|Name\s+Class)[\s\S]*?\n([\s\S]*?)(?:Economy|Business|Premium|--)/i);
+        // Priority 2: Trip.com passenger table "Reference SITT MON (First name) AUNG (Last name) Economy"
+        const nameBlockMatch = clean.match(/Reference[\s\n]+([A-Z\s\(\)]+?)(?=\s+(?:Economy|Business|Premium|--))/i) ||
+                               clean.match(/Name[\s\S]*?Reference[\s\n]+([A-Z\s\(\)]+?)(?=\s+(?:Economy|Business|Premium|--))/i);
         if (nameBlockMatch) {
             let n = nameBlockMatch[1];
             n = n.replace(/\(First\s*name\)/gi, '')
@@ -179,23 +183,20 @@ export function parseItineraryText(rawText) {
     // 6. Flight Info
     let flightNo = '';
     let airlineName = 'AirAsia Berhad';
-    const flInfoBlock = clean.match(/Flight\s*Information[\s\S]*?(?:Baggage\s*Allowance|$)/i);
-    const flSearchText = flInfoBlock ? flInfoBlock[0] : clean;
-    const airlineLineMatch = flSearchText.match(/Airline\s*[\t: ]+([^\n\r]+)/i);
-    if (airlineLineMatch) {
-        const rawAirlineLine = airlineLineMatch[1].trim();
-        const flCodeMatch = rawAirlineLine.match(/([A-Z0-9]{2,3}\s*\d{3,4})/);
-        if (flCodeMatch) {
-            flightNo = flCodeMatch[1].replace(/\s+/g, '');
-            airlineName = rawAirlineLine.replace(flCodeMatch[0], '').trim() || airlineName;
-        } else {
-            airlineName = rawAirlineLine;
-        }
+    const flBlockMatch = clean.match(/Flight\s*Information[\s\S]*?(?:Baggage\s*Allowance|$)/i);
+    const flSearchText = flBlockMatch ? flBlockMatch[0] : clean;
+    const airlineMatch = flSearchText.match(/Airline\s+(.*?)\s+(AK\d{3,4}|FD\d{3,4}|QZ\d{3,4}|D7\d{3,4}|XJ\d{3,4}|Z2\d{3,4}|[A-Z0-9]{2}\s*\d{3,4})\b/i);
+    if (airlineMatch) {
+        airlineName = airlineMatch[1].trim();
+        flightNo = airlineMatch[2].replace(/\s+/g, '');
     } else {
-        // Fallback search for flight code like AK6032, FD3564, etc.
-        const generalFlMatch = clean.match(/\b(AK|FD|QZ|D7|XJ|Z2)\s*(\d{3,4})\b/i);
-        if (generalFlMatch) {
-            flightNo = generalFlMatch[1].toUpperCase() + generalFlMatch[2];
+        const flMatch = flSearchText.match(/\b(AK|FD|QZ|D7|XJ|Z2)\s*(\d{3,4})\b/i);
+        if (flMatch) {
+            flightNo = flMatch[1].toUpperCase() + flMatch[2];
+        }
+        const airNameMatch = flSearchText.match(/Airline\s*[:\t ]+([^\n\r]+)/i);
+        if (airNameMatch) {
+            airlineName = airNameMatch[1].replace(/AK\d+|FD\d+|QZ\d+|D7\d+|XJ\d+|Z2\d+/i, '').trim() || airlineName;
         }
     }
 
@@ -204,11 +205,11 @@ export function parseItineraryText(rawText) {
     let depDateRaw = '';
     let depAirport = '';
     let depTerminal = '';
-    const depMatch = flSearchText.match(/Departure\s*[\t: ]*(\d{1,2}:\d{2}),?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4}),?\s*([^\n\r]+)/i);
+    const depMatch = flSearchText.match(/Departure\s*[\t: ]*(\d{1,2}:\d{2}),?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4}),?\s*(.*?)(?=\s*Arrival\b|[\r\n]{2}|$)/i);
     if (depMatch) {
         depTime = depMatch[1].trim();
         depDateRaw = depMatch[2].trim();
-        depAirport = depMatch[3].trim();
+        depAirport = depMatch[3].replace(/[\r\n]+/g, ' ').trim();
         const termMatch = depAirport.match(/\b(T\d+|Terminal\s*\d+)\b/i);
         if (termMatch) {
             depTerminal = termMatch[0].replace(/^T(\d+)/i, 'Terminal $1');
@@ -221,11 +222,11 @@ export function parseItineraryText(rawText) {
     let arrDateRaw = '';
     let arrAirport = '';
     let arrTerminal = '';
-    const arrMatch = flSearchText.match(/Arrival\s*[\t: ]*(\d{1,2}:\d{2}),?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4}),?\s*([^\n\r]+)/i);
+    const arrMatch = flSearchText.match(/Arrival\s*[\t: ]*(\d{1,2}:\d{2}),?\s*([A-Za-z]+\s+\d{1,2},?\s*\d{4}),?\s*(.*?)(?=\s*Airline\b|[\r\n]{2}|$)/i);
     if (arrMatch) {
         arrTime = arrMatch[1].trim();
         arrDateRaw = arrMatch[2].trim();
-        arrAirport = arrMatch[3].trim();
+        arrAirport = arrMatch[3].replace(/[\r\n]+/g, ' ').trim();
         const termMatch = arrAirport.match(/\b(T\d+|Terminal\s*\d+)\b/i);
         if (termMatch) {
             arrTerminal = termMatch[0].replace(/^T(\d+)/i, 'Terminal $1');
@@ -302,11 +303,22 @@ export async function extractTextFromPdf(file) {
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += pageText + '\n';
+        let pageText = '';
+        let lastY = null;
+        for (const item of textContent.items) {
+            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+                pageText += '\n';
+            } else if (pageText.length > 0 && !pageText.endsWith('\n') && !pageText.endsWith(' ')) {
+                pageText += ' ';
+            }
+            pageText += item.str;
+            lastY = item.transform[5];
+        }
+        fullText += pageText + '\n\n';
     }
     return fullText;
 }
+
 
 /**
  * Generate native vector jsPDF document matching the exact official template
