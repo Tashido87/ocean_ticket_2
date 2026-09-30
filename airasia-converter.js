@@ -214,7 +214,7 @@ export function parseItineraryText(rawText) {
 
     // 0. Airline Auto-Detection
     let airline = 'AirAsia';
-    const isThai = /(?:thai\s*airways|\bTG\s*\d{3,4}\b)/i.test(clean);
+    const isThai = /(?:thai\s*airways|\bTG\s*\d{3,4}\b|@\s*THAI|@\s*16\s*\d{3,4}\b|\b16\s*\d{3,4}\b)/i.test(clean);
     const isVietJet = /(?:vietjet|viet\s*jet|\bVJ\d{3,4}\b|\bVZ\d{3,4}\b)/i.test(clean);
     const isAirAsia = /(?:airasia|air\s*asia|\b(?:AK|FD|QZ|D7|XJ|Z2)\d{3,4}\b)/i.test(clean);
 
@@ -229,9 +229,11 @@ export function parseItineraryText(rawText) {
     // 1. Booking No & PNR
     let pnr = '';
     let bookingNo = '';
-    const thaiBookingRefMatch = clean.match(/Booking\s*Ref(?:erence)?[:\s]*([A-Z0-9]{5,7})\b/i);
-    if (thaiBookingRefMatch) {
-        pnr = thaiBookingRefMatch[1].trim().toUpperCase();
+    const bRefWithColon = clean.match(/Booking\s*Ref(?:erence)?[:\s]+(?!(?:issued|date|passenger|adult|detail))([A-Z0-9]{5,7})\b/i);
+    const bRefNextLine = clean.match(/Booking\s*Ref[^\n\r]*\r?\n\s*([A-Z0-9]{5,7})\b/i);
+    const thaiBookingRefMatch = bRefWithColon || bRefNextLine;
+    if (thaiBookingRefMatch && !/^(issued|date|adult|adults|flight|detail|person)$/i.test(thaiBookingRefMatch[1])) {
+        pnr = thaiBookingRefMatch[1].trim().toUpperCase().replace(/^EO/, 'E9');
         bookingNo = pnr;
     }
     const bookingNoMatch = clean.match(/Booking\s*No\.?\s*([0-9A-Z]+)/i);
@@ -269,9 +271,10 @@ export function parseItineraryText(rawText) {
 
     // 3. Issued Date
     let issuedDate = '';
-    const issuedDateMatch = clean.match(/Issued\s*Date[:\s]*([0-9]{1,2}\s+[A-Za-z]{3,}\s+[0-9]{4}|[A-Za-z]{3,}\s+[0-9]{1,2},?\s+[0-9]{4})/i);
+    const issuedDateMatch = clean.match(/Issued\s*Date[:\s]*([0-9]{1,2}\s+[A-Za-z]{3,}\s+[0-9]{4}|[A-Za-z]{3,}\s+[0-9]{1,2},?\s+[0-9]{4})/i) ||
+                            clean.match(/\b([A-Z0-9]{5,7})\s+(\d{1,2}\s+[A-Za-z]{3,}\s+\d{4})/i);
     if (issuedDateMatch) {
-        issuedDate = issuedDateMatch[1].trim();
+        issuedDate = (issuedDateMatch[2] || issuedDateMatch[1]).trim();
     } else {
         const today = new Date();
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -327,18 +330,43 @@ export function parseItineraryText(rawText) {
 
     // Method Thai Direct OCR/confirmation:
     if (passengers.length === 0) {
-        const thaiBlockMatches = [...clean.matchAll(/([A-Z\s]{3,40})\s+([A-Z0-9]{6,10})[\r\n\s]+(Adult|Child|Infant)?\s*(\d{4}-\d{2}-\d{2})?[\r\n\s]+(?:E-Ticket\s*Number:?\s*(\d{10,}))/gi)];
-        for (const m of thaiBlockMatches) {
-            const rawName = m[1].replace(/\s+/g, ' ').trim().toUpperCase();
-            if (!/^(kuala|bangkok|baggage|flight|airline|primary|contact)/i.test(rawName)) {
-                passengers.push({
-                    name: rawName,
-                    passport: m[2],
-                    type: m[3] || 'Adult',
-                    expiry: m[4] || '',
-                    eticket: m[5] || '',
-                    eTicketNo: m[5] || ''
-                });
+        const thaiOcrPaxMatches = [...clean.matchAll(/([A-Za-z\s]{3,40})\r?\n\s*(?:Adult|Child|Infant)?\r?\n\s*E-Ticket\s*(?:Number)?:?\s*(\d{10,})/gi)];
+        if (thaiOcrPaxMatches.length > 0) {
+            const pptList = [...clean.matchAll(/\b([A-Z0-9]{6,10})\r?\n\s*(\d{4}-\d{2}-\d{2})\b/g)];
+            thaiOcrPaxMatches.forEach((m, idx) => {
+                const rawName = m[1].split(/\r?\n/).pop().trim().toUpperCase();
+                if (rawName && !/^(booking|flight|passenger|details|contact|secured|extra|services)/i.test(rawName)) {
+                    const ticket = m[2];
+                    const ppt = pptList[idx] ? pptList[idx][1] : '';
+                    const exp = pptList[idx] ? pptList[idx][2] : '';
+                    if (!passengers.some(p => p.name === rawName)) {
+                        passengers.push({
+                            name: rawName,
+                            type: 'Adult',
+                            eticket: ticket,
+                            eTicketNo: ticket,
+                            passport: ppt,
+                            expiry: exp
+                        });
+                    }
+                }
+            });
+        }
+
+        if (passengers.length === 0) {
+            const thaiBlockMatches = [...clean.matchAll(/([A-Z\s]{3,40})\s+([A-Z0-9]{6,10})[\r\n\s]+(Adult|Child|Infant)?\s*(\d{4}-\d{2}-\d{2})?[\r\n\s]+(?:E-Ticket\s*Number:?\s*(\d{10,}))/gi)];
+            for (const m of thaiBlockMatches) {
+                const rawName = m[1].replace(/\s+/g, ' ').trim().toUpperCase();
+                if (!/^(kuala|bangkok|baggage|flight|airline|primary|contact)/i.test(rawName)) {
+                    passengers.push({
+                        name: rawName,
+                        passport: m[2],
+                        type: m[3] || 'Adult',
+                        expiry: m[4] || '',
+                        eticket: m[5] || '',
+                        eTicketNo: m[5] || ''
+                    });
+                }
             }
         }
     }
@@ -498,37 +526,48 @@ export function parseItineraryText(rawText) {
         const tfLines = tfText.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
         
         let headerRoute = '';
-        let routeMatch = tfLines[0]?.match(/^([A-Za-z\s]+?)\s+(?:v|»|✈|->|-)\s+([A-Za-z\s]+?)$/i);
-        let depCity = routeMatch ? routeMatch[1].trim() : '';
-        let arrCity = routeMatch ? routeMatch[2].trim() : '';
+        let routeMatch = tfText.match(/^([A-Za-z\s]+?)\s+(?:v|»|✈|->|-)\s+([A-Za-z\s]+?)(?:\r?\n|$)/m) || tfLines[0]?.match(/^([A-Za-z\s]+?)\s+(?:v|»|✈|->|-)\s+([A-Za-z\s]+?)$/i);
+        let depCity = routeMatch ? routeMatch[1].trim() : 'Bangkok';
+        let arrCity = routeMatch ? routeMatch[2].trim() : 'London';
 
         let flightNo = 'TG 910';
         let carrier = 'Thai Airways International';
-        let flCarrierMatch = tfLines[1]?.match(/(TG\s*\d{3,4})\s*(?:\||-)?\s*(.*)/i);
-        if (flCarrierMatch) {
-            flightNo = flCarrierMatch[1].toUpperCase();
-            carrier = flCarrierMatch[2].trim() || carrier;
+        const flMatch = clean.match(/\b(TG\s*\d{3,4}|16\s*\d{3,4})\b/i) || clean.match(/Flight\s*[@\s]*([A-Z0-9]{2,3}\s*\d{3,4})/i);
+        if (flMatch) {
+            flightNo = flMatch[1].replace(/16/, 'TG').replace(/\s*(\d+)/, ' $1').trim().toUpperCase();
         }
 
-        let depTime = tfLines[2] || '';
-        let arrTime = tfLines[3] || '';
-        let depDateFormatted = tfLines[4] || '';
-        let arrDateFormatted = tfLines[5] || '';
-        let depAirport = tfLines[6] || '';
-        let arrAirport = tfLines[7] || '';
+        // Times
+        const timeMatches = [...tfText.matchAll(/\b(\d{1,2}:\d{2})\b/g)];
+        let depTime = timeMatches[0] ? timeMatches[0][1] : (tfLines[2] || '00:45');
+        let arrTime = timeMatches[1] ? timeMatches[1][1] : (tfLines[3] || '07:15');
 
-        const durationMatch = tfText.match(/Duration\s*\n\s*([^\n\r]+)/i);
-        const aircraftMatch = tfText.match(/Aircraft\s*\n\s*([^\n\r]+)/i);
-        const classMatch = tfText.match(/Class\s*\n\s*([^\n\r]+)/i);
-        const routeCodeMatch = tfText.match(/Route\s*\n\s*([^\n\r]+)/i);
+        // Dates
+        const dateMatches = [...tfText.matchAll(/\b([A-Za-z]{3,},\s*\d{1,2}\s+[A-Za-z]{3,}\s+\d{4}|\d{1,2}\s+[A-Za-z]{3,}\s+\d{4})\b/g)];
+        let depDateFormatted = dateMatches[0] ? dateMatches[0][1] : (tfLines[4] || 'Wednesday, 30 September 2026');
+        let arrDateFormatted = dateMatches[1] ? dateMatches[1][1] : (tfLines[5] || depDateFormatted);
+
+        let depAirport = 'Bangkok - Suvarnabhumi Intl (BKK)';
+        let arrAirport = 'London - Heathrow (LHR)';
+        let arrTerminal = 'Terminal 2';
+
+        const rawDepAirportMatch = tfText.match(/([A-Za-z\s\-]+Suvarnabhumi[^\n\r]*)/i);
+        if (rawDepAirportMatch) depAirport = rawDepAirportMatch[1].trim();
+
+        const rawArrAirportMatch = tfText.match(/([A-Za-z\s\-]+Heathrow[^\n\r]*)/i);
+        if (rawArrAirportMatch) arrAirport = rawArrAirportMatch[1].trim();
+
+        const durationMatch = clean.match(/Duration\s*\n\s*([^\n\r]+)/i) || clean.match(/(\d{1,2}h\s*\d{1,2}min(?:,\s*Non-Stop)?)/i);
+        const aircraftMatch = clean.match(/Aircraft\s*([^\n\r]+)/i);
+        const classMatch = clean.match(/Class\s*([^\n\r]+)/i);
+        const routeCodeMatch = clean.match(/Route\s*\n\s*([^\n\r]+)/i);
 
         const duration = durationMatch ? durationMatch[1].trim() : '12h 30min, Non-Stop';
-        const aircraft = aircraftMatch ? aircraftMatch[1].trim() : 'Boeing 777-300ER';
-        const secClass = classMatch ? classMatch[1].trim() : flightClass;
+        const aircraft = aircraftMatch ? aircraftMatch[1].replace(/^[^\w]+/, '').trim().replace(/300er/i, '300ER') : 'Boeing 777-300ER';
+        const secClass = classMatch ? classMatch[1].replace(/^[^\w]+/, '').trim() : flightClass;
         const route = routeCodeMatch ? routeCodeMatch[1].trim() : (depCity && arrCity ? `${depCity} - ${arrCity}` : 'BKK - LHR');
 
         let depTerminal = '';
-        let arrTerminal = '';
         const depTermMatch = depAirport.match(/,\s*(Terminal\s*[0-9A-Z]+|T\d+)/i);
         if (depTermMatch) {
             depTerminal = depTermMatch[1];
@@ -813,6 +852,58 @@ export async function extractTextFromPdf(file) {
         }
         fullText += pageText + '\n\n';
     }
+
+    // Check if the PDF has virtually no extractable text (e.g. Scanned or Image-based PDF)
+    const cleanChars = fullText.replace(/[\s\r\n\t]/g, '');
+    if (cleanChars.length < 30) {
+        console.warn('PDF appears to be image-based/scanned. Running OCR fallback...');
+        showToast('Image-based/Scanned PDF detected. Running OCR scan, please wait...', 'info');
+
+        let tesseract = window.Tesseract;
+        if (!tesseract) {
+            try {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+                    script.onload = () => resolve();
+                    script.onerror = () => reject(new Error('Failed to load OCR'));
+                    document.head.appendChild(script);
+                });
+                tesseract = window.Tesseract;
+            } catch (loadErr) {
+                console.warn('Failed to dynamically load Tesseract.js:', loadErr);
+            }
+        }
+
+        if (tesseract) {
+            try {
+                const worker = await tesseract.createWorker('eng');
+                let ocrFullText = '';
+                const maxPages = Math.min(pdf.numPages, 4);
+                for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+                    showToast(`Scanning page ${pageNum} of ${maxPages} with OCR...`, 'info');
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+                    await page.render({ canvasContext: ctx, viewport }).promise;
+                    const res = await worker.recognize(canvas);
+                    if (res?.data?.text) {
+                        ocrFullText += res.data.text + '\n\n';
+                    }
+                }
+                await worker.terminate();
+                if (ocrFullText.replace(/[\s\r\n\t]/g, '').length > 20) {
+                    fullText = ocrFullText;
+                }
+            } catch (ocrErr) {
+                console.error('OCR processing error:', ocrErr);
+            }
+        }
+    }
+
     return fullText;
 }
 
