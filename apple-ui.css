@@ -2996,3 +2996,20 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
     }
 }
 
+/* Agoda China Visa Hotel Booking Confirmation */
+.agoda-booking-wrapper {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    border-radius: 4px;
+    background: #ffffff;
+    max-width: 720px;
+    width: 100%;
+}
+.agoda-pill-box {
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+@media (max-width: 900px) {
+    .agoda-booking-wrapper {
+        padding: 4px !important;
+    }
+}
+

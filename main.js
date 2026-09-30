@@ -22,8 +22,8 @@ import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, expor
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=24';
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
-import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=7';
+import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate } from './agoda-hotel-converter.js?v=1';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -3190,6 +3190,254 @@ function initializeAirAsiaGenerator() {
     });
 }
 
+// --- CHINA VISA HOTEL BOOKING (AGODA) GENERATOR LOGIC ---
+function initializeChinaHotelGenerator() {
+    const openBtn = document.getElementById('openChinaHotelBtn');
+    const quickBtn = document.getElementById('quickChinaHotelBtn');
+    const modal = document.getElementById('chinaHotelModal');
+    const closeBtn = document.getElementById('chinaHotelModalCloseBtn');
+    const cancelBtn = document.getElementById('chinaHotelCancelBtn');
+    const downloadPdfBtn = document.getElementById('chinaHotelDownloadPdfBtn');
+    const downloadImgBtn = document.getElementById('chinaHotelDownloadImgBtn');
+    const shareBtn = document.getElementById('chinaHotelShareBtn');
+    const previewContainer = document.getElementById('agodaPreviewContainer');
+    const rollBookingBtn = document.getElementById('agoda_roll_booking_id');
+    const rollMemberBtn = document.getElementById('agoda_roll_member_id');
+
+    if (!modal) return;
+
+    function collectFormData() {
+        return {
+            bookingId: document.getElementById('agoda_booking_id')?.value || generateRandomBookingId(),
+            memberId: document.getElementById('agoda_member_id')?.value || generateRandomMemberId(),
+            bookingRefNo: document.getElementById('agoda_booking_ref_no')?.value || '',
+            clientName: (document.getElementById('agoda_client_name')?.value || 'AUNG KHIN NYUNT').trim().toUpperCase(),
+            countryOfResidence: document.getElementById('agoda_country')?.value || 'Myanmar',
+            numAdults: parseInt(document.getElementById('agoda_num_adults')?.value || '1', 10),
+            numChildren: parseInt(document.getElementById('agoda_num_children')?.value || '0', 10),
+            numRooms: parseInt(document.getElementById('agoda_num_rooms')?.value || '1', 10),
+            numExtraBeds: parseInt(document.getElementById('agoda_num_extra_beds')?.value || '0', 10),
+            roomType: document.getElementById('agoda_room_type')?.value || 'Superior Deluxe',
+            promotion: document.getElementById('agoda_promotion')?.value || 'Long Stay Deal. Price includes 10% discount!',
+            arrivalDate: document.getElementById('agoda_arrival_date')?.value || 'October 16, 2026',
+            departureDate: document.getElementById('agoda_departure_date')?.value || 'October 26, 2026',
+            propertyName: document.getElementById('agoda_property_name')?.value || 'Grand Park Guangzhou Hotel',
+            propertyAddress: document.getElementById('agoda_property_address')?.value || '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina',
+            propertyContact: document.getElementById('agoda_property_contact')?.value || '+86 871 6538 6688',
+            cancellationDate: document.getElementById('agoda_cancellation_date')?.value || '',
+            remarksTaxes: document.getElementById('agoda_remarks_taxes')?.value || 'Included : Taxes and fees USD 51.22',
+            remarksSpecial: document.getElementById('agoda_remarks_special')?.value || 'NonSmoke,LargeBed'
+        };
+    }
+
+    function populateForm(data = {}) {
+        if (document.getElementById('agoda_booking_id')) {
+            document.getElementById('agoda_booking_id').value = data.bookingId || generateRandomBookingId();
+        }
+        if (document.getElementById('agoda_member_id')) {
+            document.getElementById('agoda_member_id').value = data.memberId || generateRandomMemberId();
+        }
+        if (document.getElementById('agoda_booking_ref_no')) {
+            document.getElementById('agoda_booking_ref_no').value = data.bookingRefNo || '';
+        }
+        if (document.getElementById('agoda_client_name')) {
+            document.getElementById('agoda_client_name').value = data.clientName || 'AUNG KHIN NYUNT';
+        }
+        if (document.getElementById('agoda_country')) {
+            document.getElementById('agoda_country').value = data.countryOfResidence || 'Myanmar';
+        }
+        if (document.getElementById('agoda_num_adults')) {
+            document.getElementById('agoda_num_adults').value = data.numAdults !== undefined ? data.numAdults : 1;
+        }
+        if (document.getElementById('agoda_num_children')) {
+            document.getElementById('agoda_num_children').value = data.numChildren !== undefined ? data.numChildren : 0;
+        }
+        if (document.getElementById('agoda_num_rooms')) {
+            document.getElementById('agoda_num_rooms').value = data.numRooms !== undefined ? data.numRooms : 1;
+        }
+        if (document.getElementById('agoda_num_extra_beds')) {
+            document.getElementById('agoda_num_extra_beds').value = data.numExtraBeds !== undefined ? data.numExtraBeds : 0;
+        }
+        if (document.getElementById('agoda_room_type')) {
+            document.getElementById('agoda_room_type').value = data.roomType || 'Superior Deluxe';
+        }
+        if (document.getElementById('agoda_promotion')) {
+            document.getElementById('agoda_promotion').value = data.promotion || 'Long Stay Deal. Price includes 10% discount!';
+        }
+        if (document.getElementById('agoda_arrival_date')) {
+            document.getElementById('agoda_arrival_date').value = data.arrivalDate || 'October 16, 2026';
+        }
+        if (document.getElementById('agoda_departure_date')) {
+            document.getElementById('agoda_departure_date').value = data.departureDate || 'October 26, 2026';
+        }
+        if (document.getElementById('agoda_property_name')) {
+            document.getElementById('agoda_property_name').value = data.propertyName || 'Grand Park Guangzhou Hotel';
+        }
+        if (document.getElementById('agoda_property_address')) {
+            document.getElementById('agoda_property_address').value = data.propertyAddress || '20 Hong Hua Qiao, Wuhua, Guangzhou,\nChina';
+        }
+        if (document.getElementById('agoda_property_contact')) {
+            document.getElementById('agoda_property_contact').value = data.propertyContact || '+86 871 6538 6688';
+        }
+        if (document.getElementById('agoda_cancellation_date')) {
+            document.getElementById('agoda_cancellation_date').value = data.cancellationDate || calculateDefaultCancellationDate(data.arrivalDate || 'October 16, 2026');
+        }
+        if (document.getElementById('agoda_remarks_taxes')) {
+            document.getElementById('agoda_remarks_taxes').value = data.remarksTaxes || 'Included : Taxes and fees USD 51.22';
+        }
+        if (document.getElementById('agoda_remarks_special')) {
+            document.getElementById('agoda_remarks_special').value = data.remarksSpecial || 'NonSmoke,LargeBed';
+        }
+
+        updatePreview();
+    }
+
+    function updatePreview() {
+        if (!previewContainer) return;
+        const currentData = collectFormData();
+        previewContainer.innerHTML = renderAgodaHotelHtml(currentData);
+    }
+
+    // Form inputs live sync
+    const formInputs = modal.querySelectorAll('.airasia-form-scroll input, .airasia-form-scroll select, .airasia-form-scroll textarea');
+    formInputs.forEach(input => {
+        input.addEventListener('input', () => {
+            if (input.id === 'agoda_arrival_date') {
+                const cancelInput = document.getElementById('agoda_cancellation_date');
+                if (cancelInput && (!cancelInput.value || cancelInput.dataset.autoFilled === 'true')) {
+                    cancelInput.value = calculateDefaultCancellationDate(input.value);
+                    cancelInput.dataset.autoFilled = 'true';
+                }
+            }
+            updatePreview();
+        });
+        input.addEventListener('change', () => {
+            if (input.id === 'agoda_arrival_date') {
+                const cancelInput = document.getElementById('agoda_cancellation_date');
+                if (cancelInput && (!cancelInput.value || cancelInput.dataset.autoFilled === 'true')) {
+                    cancelInput.value = calculateDefaultCancellationDate(input.value);
+                    cancelInput.dataset.autoFilled = 'true';
+                }
+            }
+            updatePreview();
+        });
+    });
+
+    document.getElementById('agoda_cancellation_date')?.addEventListener('input', (e) => {
+        e.target.dataset.autoFilled = 'false';
+    });
+
+    // Roll Booking ID button
+    rollBookingBtn?.addEventListener('click', () => {
+        const input = document.getElementById('agoda_booking_id');
+        if (input) {
+            input.value = generateRandomBookingId();
+            updatePreview();
+            showToast('New Booking ID generated!', 'info');
+        }
+    });
+
+    // Roll Member ID button
+    rollMemberBtn?.addEventListener('click', () => {
+        const input = document.getElementById('agoda_member_id');
+        if (input) {
+            input.value = generateRandomMemberId();
+            updatePreview();
+            showToast('New Member ID generated!', 'info');
+        }
+    });
+
+    function openHotelEditorWithData() {
+        const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim();
+        const quickArrival = (document.getElementById('service_hotel_arrival')?.value || '').trim();
+        const quickDeparture = (document.getElementById('service_hotel_departure')?.value || '').trim();
+
+        populateForm({
+            bookingId: generateRandomBookingId(),
+            memberId: generateRandomMemberId(),
+            clientName: quickClient || 'AUNG KHIN NYUNT',
+            arrivalDate: quickArrival ? formatAgodaDate(quickArrival) : 'October 16, 2026',
+            departureDate: quickDeparture ? formatAgodaDate(quickDeparture) : 'October 26, 2026',
+            numRooms: 1,
+            numExtraBeds: 0,
+            numAdults: 1,
+            numChildren: 0
+        });
+
+        modal.classList.add('show');
+    }
+
+    openBtn?.addEventListener('click', openHotelEditorWithData);
+
+    quickBtn?.addEventListener('click', async () => {
+        const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim() || 'AUNG KHIN NYUNT';
+        const quickArrival = (document.getElementById('service_hotel_arrival')?.value || '').trim();
+        const quickDeparture = (document.getElementById('service_hotel_departure')?.value || '').trim();
+
+        const data = {
+            bookingId: generateRandomBookingId(),
+            memberId: generateRandomMemberId(),
+            clientName: quickClient,
+            arrivalDate: quickArrival ? formatAgodaDate(quickArrival) : 'October 16, 2026',
+            departureDate: quickDeparture ? formatAgodaDate(quickDeparture) : 'October 26, 2026',
+            numRooms: 1,
+            numExtraBeds: 0,
+            numAdults: 1,
+            numChildren: 0
+        };
+
+        showToast('Generating Agoda Booking PDF...', 'info');
+        try {
+            const filename = await downloadAgodaPdf(data);
+            showToast(`PDF downloaded: ${filename}`, 'success');
+        } catch (e) {
+            console.error(e);
+            showToast(`Error generating PDF: ${e.message}`, 'error');
+        }
+    });
+
+    closeBtn?.addEventListener('click', () => modal.classList.remove('show'));
+    cancelBtn?.addEventListener('click', () => modal.classList.remove('show'));
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('show');
+    });
+
+    downloadPdfBtn?.addEventListener('click', async () => {
+        showToast('Generating official Agoda PDF...', 'info');
+        try {
+            const data = collectFormData();
+            const filename = await downloadAgodaPdf(data);
+            showToast(`PDF downloaded: ${filename}`, 'success');
+        } catch (err) {
+            console.error('PDF generation error:', err);
+            showToast(`PDF generation failed: ${err.message}`, 'error');
+        }
+    });
+
+    downloadImgBtn?.addEventListener('click', async () => {
+        showToast('Rendering high-resolution image...', 'info');
+        try {
+            const data = collectFormData();
+            const filename = await downloadAgodaImage(data);
+            showToast(`Image saved: ${filename}`, 'success');
+        } catch (err) {
+            console.error('Image export error:', err);
+            showToast(`Image export failed: ${err.message}`, 'error');
+        }
+    });
+
+    shareBtn?.addEventListener('click', async () => {
+        try {
+            const data = collectFormData();
+            await shareAgodaBooking(data);
+        } catch (err) {
+            console.error('Share error:', err);
+            showToast(`Share failed: ${err.message}`, 'error');
+        }
+    });
+}
+
 // --- APP START ---
 window.onload = async () => {
     // Initialize UI components that don't depend on data
@@ -3198,6 +3446,7 @@ window.onload = async () => {
     setupEventListeners();
     initializeUISettings();
     initializeAirAsiaGenerator();
+    initializeChinaHotelGenerator();
     // Show today's date in the header
     const headerDateEl = document.getElementById('headerTodayDateText');
     if (headerDateEl) {

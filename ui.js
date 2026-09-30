@@ -274,8 +274,8 @@ export function initializeDatepickers() {
         autohide: true,
         todayHighlight: true
     };
-    // Added 'hotel-arrival' and 'hotel-departure' to the list below
-    const allDatePickers = ['searchStartDate', 'searchEndDate', 'searchTravelDate', 'booking_departing_on', 'booking_returning_on', 'exportStartDate', 'exportEndDate', 'issued_date', 'departing_on', 'return_date', 'paid_date', 'booking_end_date', 'update_departing_on', 'update_paid_date', 'invoice_date', 'hotel-arrival', 'hotel-departure'];
+    // Added 'hotel-arrival', 'hotel-departure', and China Visa Hotel Booking datepickers
+    const allDatePickers = ['searchStartDate', 'searchEndDate', 'searchTravelDate', 'booking_departing_on', 'booking_returning_on', 'exportStartDate', 'exportEndDate', 'issued_date', 'departing_on', 'return_date', 'paid_date', 'booking_end_date', 'update_departing_on', 'update_paid_date', 'invoice_date', 'hotel-arrival', 'hotel-departure', 'service_hotel_arrival', 'service_hotel_departure', 'agoda_arrival_date', 'agoda_departure_date'];
     
     allDatePickers.forEach(id => {
         const el = document.getElementById(id);
@@ -290,6 +290,8 @@ export function initializeDatepickers() {
     setupDepartureReturnDatepickers('booking_departing_on', 'booking_returning_on');
     setupDepartureReturnDatepickers('hotel-arrival', 'hotel-departure');
     setupDepartureReturnDatepickers('hotel_res_checkin', 'hotel_res_checkout');
+    setupDepartureReturnDatepickers('service_hotel_arrival', 'service_hotel_departure');
+    setupDepartureReturnDatepickers('agoda_arrival_date', 'agoda_departure_date');
 }
 
 /**
