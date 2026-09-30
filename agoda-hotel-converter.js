@@ -10,7 +10,7 @@ export const DESTINATION_PRESETS = {
     Bangkok: {
         destination: 'Bangkok',
         propertyName: 'Grande Centre Point Ratchadamri',
-        propertyAddress: '153/2 Mahatlek Luang 1, Ratchadamri Rd Lumpini,\nPathumwan, Bangkok (and vicinity), Thailand',
+        propertyAddress: '153/2 Mahatlek Luang 1, Ratchadamri Rd,\nLumpini, Pathumwan,\nBangkok (and vicinity), Thailand',
         propertyContact: '+66 209 19000',
         stampFile: 'agoda-stamp.png',
         bookedPayableTitle: 'Booked And Payable By :',
@@ -30,7 +30,7 @@ export const DESTINATION_PRESETS = {
     'Kuala Lumpur': {
         destination: 'Kuala Lumpur',
         propertyName: 'THE FACE Style Hotel',
-        propertyAddress: '1020 Jalan Sultan Ismail, Kuala Lumpur (and vicinity),\nMalaysia',
+        propertyAddress: '1020 Jalan Sultan Ismail,\nKuala Lumpur (and vicinity), Malaysia',
         propertyContact: '+60 3216 81688',
         stampFile: 'agoda-stamp.png',
         bookedPayableTitle: 'Booked And Payable By :',
@@ -318,7 +318,7 @@ export function renderAgodaHotelHtml(data = {}) {
                     <!-- Address (White box with thin border, multiline, left-aligned) -->
                     <div style="display:flex; align-items:flex-start; margin-top:3px;">
                         <span style="width:125px; color:#000000; padding-top:4px;">Address :</span>
-                        <div style="flex:1; background:#ffffff; border:1px solid #c0c0c0; border-radius:2px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; font-weight:bold; font-size:9px; line-height:1.25; color:#000000; padding:4px 6px; text-align:left;">
+                        <div style="flex:1; background:#ffffff; border:1px solid #c0c0c0; border-radius:2px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; font-weight:bold; font-size:8.5px; line-height:1.25; color:#000000; padding:4px 6px; text-align:left; word-break:break-word;">
                             ${propertyAddress.split('\n').join('<br>')}
                         </div>
                     </div>
@@ -633,37 +633,86 @@ export async function generateAgodaPdfDoc(data) {
     doc.setFontSize(7.3);
     doc.text("Property :", labelX, 184.0);
     const boxX = 136.6;
-    const boxW = 147.9;
+    const boxW = 148.5;
+    const maxTextW = boxW - 8.0;
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(212, 212, 212);
     doc.setLineWidth(0.5);
-    const pLines = propertyName.split('\n');
-    const pBoxH = pLines.length > 1 ? 22.0 : 15.0;
-    doc.rect(boxX, 175.3, boxW, pBoxH, 'FD');
+
+    const rawPLines = propertyName.split('\n').map(l => l.trim()).filter(Boolean);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.2);
-    if (pLines.length > 1) {
-        doc.text(pLines[0].trim(), boxX + 4.5, 183.0);
-        doc.text(pLines[1].trim(), boxX + 4.5, 192.5);
+    let pLines = [];
+    rawPLines.forEach(l => pLines.push(...doc.splitTextToSize(l, maxTextW)));
+    const pBoxH = pLines.length > 1 ? (pLines.length === 2 ? 22.0 : 28.0) : 15.0;
+    doc.rect(boxX, 175.3, boxW, pBoxH, 'FD');
+    if (pLines.length === 1) {
+        doc.text(pLines[0].trim(), boxX + 4.0, 185.0);
+    } else if (pLines.length === 2) {
+        doc.text(pLines[0].trim(), boxX + 4.0, 183.0);
+        doc.text(pLines[1].trim(), boxX + 4.0, 192.5);
     } else {
-        doc.text(propertyName.trim(), boxX + 4.5, 185.0);
+        doc.setFontSize(6.4);
+        pLines.forEach((pl, idx) => {
+            doc.text(pl.trim(), boxX + 4.0, 182.0 + (idx * 8.5));
+        });
     }
 
     // Row 7: Address (White box with thin border, multiline, left-aligned)
     const addrBoxStartY = 175.3 + pBoxH + 3.0;
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.3);
     doc.text("Address :", labelX, addrBoxStartY + 10.0);
     doc.setFillColor(255, 255, 255);
-    const addrLines = propertyAddress.split('\n');
-    const addrBoxH = addrLines.length > 1 ? 26.0 : 15.0;
+    doc.setDrawColor(212, 212, 212);
+    doc.setLineWidth(0.5);
+
+    const rawAddrLines = propertyAddress.split('\n').map(l => l.trim()).filter(Boolean);
+    let addrFontSize = 6.8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(addrFontSize);
+    let addrLines = [];
+    rawAddrLines.forEach(l => addrLines.push(...doc.splitTextToSize(l, maxTextW)));
+
+    if (addrLines.length >= 3) {
+        addrFontSize = 6.2;
+        doc.setFontSize(addrFontSize);
+        addrLines = [];
+        rawAddrLines.forEach(l => addrLines.push(...doc.splitTextToSize(l, maxTextW)));
+    }
+    if (addrLines.length >= 4) {
+        addrFontSize = 5.6;
+        doc.setFontSize(addrFontSize);
+        addrLines = [];
+        rawAddrLines.forEach(l => addrLines.push(...doc.splitTextToSize(l, maxTextW)));
+    }
+
+    let addrBoxH = 15.0;
+    if (addrLines.length === 2) {
+        addrBoxH = 22.0;
+    } else if (addrLines.length === 3) {
+        addrBoxH = 27.0;
+    } else if (addrLines.length >= 4) {
+        addrBoxH = 32.0;
+    }
+
     doc.rect(boxX, addrBoxStartY, boxW, addrBoxH, 'FD');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.8);
-    if (addrLines.length > 1) {
-        doc.text(addrLines[0].trim(), boxX + 4.5, addrBoxStartY + 11.0);
-        doc.text(addrLines[1].trim(), boxX + 4.5, addrBoxStartY + 20.5);
+    doc.setFontSize(addrFontSize);
+
+    if (addrLines.length === 1) {
+        doc.text(addrLines[0].trim(), boxX + 4.0, addrBoxStartY + 10.5);
+    } else if (addrLines.length === 2) {
+        doc.text(addrLines[0].trim(), boxX + 4.0, addrBoxStartY + 9.5);
+        doc.text(addrLines[1].trim(), boxX + 4.0, addrBoxStartY + 18.0);
+    } else if (addrLines.length === 3) {
+        doc.text(addrLines[0].trim(), boxX + 4.0, addrBoxStartY + 8.5);
+        doc.text(addrLines[1].trim(), boxX + 4.0, addrBoxStartY + 16.5);
+        doc.text(addrLines[2].trim(), boxX + 4.0, addrBoxStartY + 24.5);
     } else {
-        doc.text(propertyAddress.trim(), boxX + 4.5, addrBoxStartY + 11.0);
+        addrLines.forEach((al, idx) => {
+            doc.text(al.trim(), boxX + 4.0, addrBoxStartY + 7.5 + (idx * 7.5));
+        });
     }
 
     // Row 8: Property Contact Number (Only if propertyContact is provided)
