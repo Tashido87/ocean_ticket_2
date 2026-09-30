@@ -210,7 +210,7 @@ export function renderAgodaHotelHtml(data = {}) {
             
             <!-- 1. Header Row -->
             <div style="display:flex; justify-content:space-between; align-items:flex-end; padding:2px 2px 6px 2px;">
-                <div style="width:90px; height:46px; display:flex; align-items:center;">
+                <div style="width:115px; height:52px; display:flex; align-items:center;">
                     <img src="${logoSrc}" alt="agoda" style="max-width:100%; max-height:100%; object-fit:contain;">
                 </div>
                 <div style="text-align:right;">
@@ -366,36 +366,39 @@ export function renderAgodaHotelHtml(data = {}) {
                 Benefits Included Express check-in, Free WiFi
             </div>
 
-            <!-- 6. Dates Row (Arrival & Departure) -->
-            <div style="display:flex; align-items:center; gap:20px; margin:10px 0 14px 0; font-size:9.5px;">
+            <!-- 6. Dates Row (Arrival & Departure) - Enclosed in gray border box, moved down -->
+            <div style="background:#ffffff; border:1px solid #d4d4d4; border-radius:3px; padding:6px 12px; margin:14px 0 16px 0; display:flex; align-items:center; gap:24px; font-size:9.5px; box-sizing:border-box;">
                 <div style="display:flex; align-items:center;">
-                    <span style="font-weight:bold; margin-right:8px; width:55px;">Arrival :</span>
-                    <div style="width:140px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; height:19px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                    <span style="font-weight:bold; margin-right:8px; width:55px; color:#000000;">Arrival :</span>
+                    <div style="width:145px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                         ${arrivalDate}
                     </div>
                 </div>
                 <div style="display:flex; align-items:center;">
-                    <span style="font-weight:bold; margin-right:8px; width:70px;">Departure :</span>
-                    <div style="width:140px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; height:19px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                    <span style="font-weight:bold; margin-right:8px; width:70px; color:#000000;">Departure :</span>
+                    <div style="width:145px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; height:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
                         ${departureDate}
                     </div>
                 </div>
             </div>
 
-            <!-- 7. Booked And Payable By / Signature Section (Properly separated, NO overlap!) -->
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
-                <!-- Left Box: Booked And Payable By -->
-                <div style="flex:1; max-width:410px;">
-                    <div style="font-weight:bold; font-size:9.5px; margin-bottom:4px;">Booked And Payable By :</div>
-                    <div style="background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; padding:8px 10px; font-size:9.5px; line-height:1.45; color:#000000;">
+            <!-- 7. Booked And Payable By / Signature Section -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;">
+                <!-- Left Box: Booked And Payable By (Enclosed in gray box with title inside) -->
+                <div style="flex:1; max-width:410px; background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; padding:9px 12px; font-size:9.5px; box-sizing:border-box;">
+                    <div style="font-weight:bold; margin-bottom:5px; color:#000000;">Booked And Payable By :</div>
+                    <div style="line-height:1.45; color:#000000;">
                         Agoda Company Pte, Ltd.<br>
                         30 Cecil Street, Prudential Tower #19-08,<br>
                         Singapore 049712
                     </div>
                 </div>
                 <!-- Right Box: Stamp & Signature -->
-                <div style="width:190px; height:98px; background:#ffffff; border:1px solid #d4d4d4; border-radius:3px; display:flex; align-items:center; justify-content:center; padding:3px; box-sizing:border-box;">
-                    <img src="${stampSrc}" alt="Authorized Stamp & Signature" style="max-width:100%; max-height:100%; object-fit:contain;">
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div style="font-weight:bold; font-size:9.5px; color:#000000; margin-bottom:4px; text-align:center;">Authorized Stamp & Signature :</div>
+                    <div style="width:190px; height:98px; background:#ffffff; border:1px solid #d4d4d4; border-radius:3px; display:flex; align-items:center; justify-content:center; padding:3px; box-sizing:border-box;">
+                        <img src="${stampSrc}" alt="Authorized Stamp & Signature" style="max-width:100%; max-height:100%; object-fit:contain;">
+                    </div>
                 </div>
             </div>
 
@@ -497,7 +500,7 @@ export async function generateAgodaPdfDoc(data) {
 
     // 1. Header
     if (logoDataUrl) {
-        doc.addImage(logoDataUrl, 'PNG', innerX, outerY + 5, 58.8, 30.8);
+        doc.addImage(logoDataUrl, 'PNG', innerX, outerY + 3.5, 68.0, 34.6);
     }
 
     doc.setFont('helvetica', 'bold');
@@ -691,71 +694,98 @@ export async function generateAgodaPdfDoc(data) {
     doc.setFontSize(7.3);
     doc.text("Benefits Included Express check-in, Free WiFi", innerX + 4.5, benefitY + 10.5);
 
-    // 6. Dates Row (Arrival & Departure pills are Gray)
-    const datesY = 301.3;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.3);
-    doc.text("Arrival :", innerX + 6.0, datesY + 9.0);
-
-    // Arrival pill (Gray)
-    doc.setFillColor(220, 220, 220);
-    doc.rect(86.8, datesY, 131.1, 12.3, 'F');
-    doc.text(arrivalDate, 86.8 + (131.1 / 2), datesY + 9.0, { align: 'center' });
-
-    doc.text("Departure :", 226.8, datesY + 9.0);
-    // Departure pill (Gray)
-    doc.setFillColor(220, 220, 220);
-    doc.rect(280.6, datesY, 131.1, 12.3, 'F');
-    doc.text(departureDate, 280.6 + (131.1 / 2), datesY + 9.0, { align: 'center' });
-
-    // 7. Stamp & Signature Box (Starts at y=301.3, h=72.3, on right side)
-    const stampBoxX = 418.9;
-    const stampBoxY = 301.3;
-    const stampBoxW = 133.9;
-    const stampBoxH = 72.3;
-    doc.setFillColor(255, 255, 255);
+    // 6. Dates Row (Arrival & Departure - Enclosed in gray border box, moved down)
+    const datesBoxY = 300.0;
+    const datesBoxH = 20.0;
     doc.setDrawColor(212, 212, 212);
-    doc.setLineWidth(0.5);
-    doc.rect(stampBoxX, stampBoxY, stampBoxW, stampBoxH, 'FD');
-    if (stampDataUrl) {
-        doc.addImage(stampDataUrl, 'PNG', stampBoxX + 2, stampBoxY + 1, stampBoxW - 4, stampBoxH - 2);
-    }
+    doc.setFillColor(255, 255, 255);
+    doc.setLineWidth(0.6);
+    doc.rect(innerX, datesBoxY, innerW, datesBoxH, 'FD');
 
-    // Booked And Payable By (On left, below Arrival/Departure - NO OVERLAP!)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
     doc.setTextColor(0, 0, 0);
-    doc.text("Booked And Payable By :", innerX + 6.0, 327.5);
+    doc.text("Arrival :", innerX + 8.0, datesBoxY + 13.0);
 
-    // Booked and Payable By Box (Gray)
-    const payableBoxY = 334.9;
-    const payableBoxW = 357.4;
-    const payableBoxH = 32.5;
+    // Arrival pill (Gray)
+    const arrPillX = innerX + 46.0;
+    const arrPillW = 125.0;
+    const arrPillH = 13.5;
+    const arrPillY = datesBoxY + 3.2;
     doc.setFillColor(220, 220, 220);
-    doc.rect(54.3, payableBoxY, payableBoxW, payableBoxH, 'F');
+    doc.rect(arrPillX, arrPillY, arrPillW, arrPillH, 'F');
+    doc.text(arrivalDate, arrPillX + (arrPillW / 2), arrPillY + 9.5, { align: 'center' });
+
+    // Departure
+    const depLabelX = arrPillX + arrPillW + 24.0;
+    doc.text("Departure :", depLabelX, datesBoxY + 13.0);
+
+    // Departure pill (Gray)
+    const depPillX = depLabelX + 54.0;
+    const depPillW = 125.0;
+    const depPillH = 13.5;
+    const depPillY = datesBoxY + 3.2;
+    doc.setFillColor(220, 220, 220);
+    doc.rect(depPillX, depPillY, depPillW, depPillH, 'F');
+    doc.text(departureDate, depPillX + (depPillW / 2), depPillY + 9.5, { align: 'center' });
+
+    // 7. Booked And Payable By Box (Gray container enclosing title and address)
+    const payableBoxY = 328.0;
+    const payableBoxW = 345.0;
+    const payableBoxH = 48.0;
+    doc.setFillColor(235, 235, 235);
+    doc.setDrawColor(212, 212, 212);
+    doc.setLineWidth(0.6);
+    doc.rect(innerX, payableBoxY, payableBoxW, payableBoxH, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Booked And Payable By :", innerX + 8.0, payableBoxY + 11.5);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.3);
-    doc.text("Agoda Company Pte, Ltd.", 60.0, payableBoxY + 9.5);
-    doc.text("30 Cecil Street, Prudential Tower #19-08,", 60.0, payableBoxY + 19.5);
-    doc.text("Singapore 049712", 60.0, payableBoxY + 28.5);
+    doc.text("Agoda Company Pte, Ltd.", innerX + 8.0, payableBoxY + 23.5);
+    doc.text("30 Cecil Street, Prudential Tower #19-08,", innerX + 8.0, payableBoxY + 34.0);
+    doc.text("Singapore 049712", innerX + 8.0, payableBoxY + 44.0);
+
+    // Stamp & Signature Box (On right side, aligned with Booked And Payable By)
+    const stampBoxX = 405.0;
+    const stampBoxY = 328.0;
+    const stampBoxW = rightEdge - stampBoxX;
+    const stampBoxH = 58.0;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.3);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Authorized Stamp & Signature :", stampBoxX + (stampBoxW / 2), stampBoxY - 4.0, { align: 'center' });
+
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(212, 212, 212);
+    doc.setLineWidth(0.6);
+    doc.rect(stampBoxX, stampBoxY, stampBoxW, stampBoxH, 'FD');
+    if (stampDataUrl) {
+        doc.addImage(stampDataUrl, 'PNG', stampBoxX + 3, stampBoxY + 2, stampBoxW - 6, stampBoxH - 4);
+    }
 
     // 8. Remarks (On Left, below Booked and Payable By)
+    const remarksY = 394.0;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.3);
-    doc.text("Remarks :", innerX, 392.0);
-    doc.text(remarksSpecial, innerX, 402.0);
-    doc.text("All special requests are subject to availability upon arrival", innerX, 412.0);
+    doc.text("Remarks :", innerX, remarksY);
+    doc.text(remarksSpecial, innerX, remarksY + 10.0);
+    doc.text("All special requests are subject to availability upon arrival", innerX, remarksY + 20.0);
 
     // 9. Call our Customer Service Center 24/7 (Pushed down on the right side)
+    const callY = 448.0;
     doc.setFont('helvetica', 'bold');
-    doc.text("Call our Customer Service Center 24/7 :", rightEdge, 453.5, { align: 'right' });
+    doc.text("Call our Customer Service Center 24/7 :", rightEdge, callY, { align: 'right' });
     doc.setFont('helvetica', 'normal');
-    doc.text("Customer Support : +60 3 2053 1869, +1 866 656 8207", rightEdge, 463.5, { align: 'right' });
-    doc.text("(Long distance charge may apply)", rightEdge, 473.5, { align: 'right' });
+    doc.text("Customer Support : +60 3 2053 1869, +1 866 656 8207", rightEdge, callY + 10.0, { align: 'right' });
+    doc.text("(Long distance charge may apply)", rightEdge, callY + 20.0, { align: 'right' });
 
     // 10. Notes Box (At bottom, black border)
-    const notesY = 485.0;
+    const notesY = 482.0;
     const notesH = 92.0;
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.6);
