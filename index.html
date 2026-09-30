@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="styles.css?v=25">
     <link rel="stylesheet" href="landing.css">
     <link rel="stylesheet" href="sell.css">
-    <link rel="stylesheet" href="apple-ui.css?v=8">
+    <link rel="stylesheet" href="apple-ui.css?v=9">
     <link rel="stylesheet" href="pnr-detail.css?v=1">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,6 +57,7 @@
                 <a class="nav-btn" href="#/services" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></a>
             </nav>
             <nav class="sidebar-nav sidebar-nav-footer">
+                <button type="button" class="nav-btn" id="sidebarRefreshBtn" title="Refresh Application"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i><span>Refresh App</span></button>
                 <a class="nav-btn" href="#/settings" data-view="settings" id="sidebarSettingsBtn"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Settings</span></a>
                 <button class="nav-btn" id="sidebarSignoutBtn"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
             </nav>
@@ -79,7 +80,10 @@
                         <div class="global-search-suggestions" id="globalSearchSuggestions" hidden></div>
                     </div>
                 </div>
-                <div class="header-right">
+                <div class="header-right" style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="header-refresh-btn" id="headerRefreshBtn" aria-label="Refresh app" title="Refresh Application">
+                        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                    </button>
                     <div class="header-today-date" id="headerTodayDate">
                         <i class="fa-regular fa-calendar" aria-hidden="true"></i>
                         <span id="headerTodayDateText"></span>
@@ -1412,7 +1416,15 @@
                             </div>
                         </div>
 
-                        <button id="reset-settings-btn" class="btn btn-secondary btn-full" type="button"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset Settings</button>
+                        <div class="settings-section">
+                            <div class="settings-section-title"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Web App Refresh &amp; Sync</div>
+                            <p class="settings-help">For iPhone PWA standalone home screen view. Tap to reload fresh data from the server.</p>
+                            <button id="settingsRefreshAppBtn" class="btn btn-primary btn-full" type="button" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                <i class="fa-solid fa-arrows-rotate"></i> Refresh App Now
+                            </button>
+                        </div>
+
+                        <button id="reset-settings-btn" class="btn btn-secondary btn-full" type="button" style="margin-top:0.75rem;"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset Settings</button>
                     </div>
                 </div>
             </section>
@@ -1495,6 +1507,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=29" type="module"></script>
+    <script src="main.js?v=30" type="module"></script>
 </body>
 </html>

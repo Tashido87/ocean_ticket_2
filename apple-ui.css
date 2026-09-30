@@ -323,11 +323,16 @@ body.material-theme .header-today-date i {
 }
 
 body.material-theme .sidebar-toggle,
+body.material-theme .header-refresh-btn,
 body.material-theme .icon-btn {
     color: var(--apple-blue);
     border: 0;
     border-radius: 9px;
     background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     box-shadow: none;
     transition: background-color 150ms var(--apple-ease), transform 100ms ease-out;
 }
