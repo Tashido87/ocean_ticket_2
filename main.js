@@ -16,7 +16,7 @@ import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBoo
 import {  } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
 import { buildClientList, loadFeaturedClients } from './clients.js';
-import { initGlobalSearch, initSearchView } from './search.js';
+import { initGlobalSearch, initSearchView } from './search.js?v=26';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=24';

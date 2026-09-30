@@ -1613,7 +1613,8 @@ function computePassportExpiryStatus(expiryStr) {
 }
 
 function overviewCard(c) {
-    const phone = c.phone || '';
+    const phone = String(c.phone || '');
+    const accountLink = c.account_link || '';
     let intlPhone = phone.replace(/[^0-9]/g, '');
     if (intlPhone.startsWith('09')) {
         intlPhone = '959' + intlPhone.slice(2);
