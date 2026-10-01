@@ -23,7 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=29';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=30';
 import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=13';
 
 // UI Modules
@@ -3192,7 +3192,38 @@ function initializeAirAsiaGenerator() {
         const selectedAirline = e.target.value;
         const bagCheckedEl = document.getElementById('aa_bag_checked');
         const currentFlights = collectFlights();
-        if (selectedAirline === 'EVA Air') {
+        if (selectedAirline === 'Scoot') {
+            if (bagCheckedEl) {
+                bagCheckedEl.value = 'Checked: 30 kg   |   Carry-on: 7 kg';
+            }
+            const checkinEl = document.getElementById('aa_checkin_notice');
+            if (checkinEl && !checkinEl.value) {
+                checkinEl.value = '(SIN) 1 Nov 2026, 7:00 AM';
+            }
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|eva/i.test(f.airlineName)) {
+                    f.airlineName = 'Scoot';
+                }
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|BR)/i.test(f.flightNo)) {
+                    f.flightNo = 'TR 001';
+                }
+                if (!f.duration) f.duration = '2h 30min, Non-Stop';
+                if (!f.aircraft) f.aircraft = 'Airbus A320neo';
+                if (!f.flightClass || f.flightClass === 'Economy') f.flightClass = 'Economy (Fly)';
+                if (!f.depAirport || f.depAirport.includes('Kuala Lumpur') || f.depAirport.includes('Taipei')) {
+                    f.depAirport = 'Singapore - Changi (SIN)';
+                    f.depTerminal = 'Terminal 1';
+                }
+                if (!f.arrAirport || f.arrAirport.includes('London')) {
+                    f.arrAirport = 'Bangkok - Don Mueang (DMK)';
+                    f.arrTerminal = 'Terminal 1';
+                }
+                if (!f.route || f.route.includes('KUL') || f.route.includes('TPE')) {
+                    f.route = 'SIN - DMK';
+                }
+            });
+            renderFlightRows(currentFlights);
+        } else if (selectedAirline === 'EVA Air') {
             if (bagCheckedEl) {
                 bagCheckedEl.value = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
             }
@@ -3201,10 +3232,10 @@ function initializeAirAsiaGenerator() {
                 checkinEl.value = '(TPE) 1 Nov 2026, 6:25 AM';
             }
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|vietjet|thai|singapore/i.test(f.airlineName)) {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot/i.test(f.airlineName)) {
                     f.airlineName = 'EVA Air';
                 }
-                if (!f.flightNo || /^(AK|VJ|TG|SQ)/i.test(f.flightNo)) {
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR)/i.test(f.flightNo)) {
                     f.flightNo = 'BR 001';
                 }
                 if (!f.duration) f.duration = '3h 40min, Non-Stop';
@@ -3232,10 +3263,10 @@ function initializeAirAsiaGenerator() {
                 checkinEl.value = '(SIN) 1 Nov 2026, 6:00 AM';
             }
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|vietjet|thai/i.test(f.airlineName)) {
+                if (!f.airlineName || /airasia|vietjet|thai|scoot/i.test(f.airlineName)) {
                     f.airlineName = 'Singapore Airlines';
                 }
-                if (!f.flightNo || /^(AK|VJ|TG)/i.test(f.flightNo)) {
+                if (!f.flightNo || /^(AK|VJ|TG|TR)/i.test(f.flightNo)) {
                     f.flightNo = 'SQ 001';
                 }
                 if (!f.duration) f.duration = '13h 30min, Non-Stop';
@@ -3263,10 +3294,10 @@ function initializeAirAsiaGenerator() {
                 checkinEl.value = '(BKK) 29 Sep 2026, 9:45 PM';
             }
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|vietjet|singapore/i.test(f.airlineName)) {
+                if (!f.airlineName || /airasia|vietjet|singapore|scoot/i.test(f.airlineName)) {
                     f.airlineName = 'Thai Airways International';
                 }
-                if (!f.flightNo || /^(AK|VJ|SQ)/i.test(f.flightNo)) {
+                if (!f.flightNo || /^(AK|VJ|SQ|TR)/i.test(f.flightNo)) {
                     f.flightNo = 'TG 910';
                 }
                 if (!f.duration) f.duration = '12h 30min, Non-Stop';
@@ -3287,14 +3318,14 @@ function initializeAirAsiaGenerator() {
             renderFlightRows(currentFlights);
         } else if (selectedAirline === 'VietJet Air') {
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|thai|singapore/i.test(f.airlineName)) f.airlineName = 'VietJet Air';
-                if (!f.flightNo || /^(AK|TG|SQ)/i.test(f.flightNo)) f.flightNo = 'VJ';
+                if (!f.airlineName || /airasia|thai|singapore|scoot/i.test(f.airlineName)) f.airlineName = 'VietJet Air';
+                if (!f.flightNo || /^(AK|TG|SQ|TR)/i.test(f.flightNo)) f.flightNo = 'VJ';
             });
             renderFlightRows(currentFlights);
         } else if (selectedAirline === 'AirAsia') {
             currentFlights.forEach(f => {
-                if (!f.airlineName || /vietjet|thai|singapore/i.test(f.airlineName)) f.airlineName = 'AirAsia Berhad';
-                if (!f.flightNo || /^(VJ|TG|SQ)/i.test(f.flightNo)) f.flightNo = 'AK';
+                if (!f.airlineName || /vietjet|thai|singapore|scoot/i.test(f.airlineName)) f.airlineName = 'AirAsia Berhad';
+                if (!f.flightNo || /^(VJ|TG|SQ|TR)/i.test(f.flightNo)) f.flightNo = 'AK';
             });
             renderFlightRows(currentFlights);
         }
@@ -3309,7 +3340,10 @@ function initializeAirAsiaGenerator() {
 
         let defaultAirlineName = 'AirAsia Berhad';
         let defaultFlightNo = 'AK';
-        if (selectedA === 'EVA Air') {
+        if (selectedA === 'Scoot') {
+            defaultAirlineName = 'Scoot';
+            defaultFlightNo = 'TR 001';
+        } else if (selectedA === 'EVA Air') {
             defaultAirlineName = 'EVA Air';
             defaultFlightNo = 'BR 001';
         } else if (selectedA === 'Singapore Airlines') {
@@ -3324,19 +3358,21 @@ function initializeAirAsiaGenerator() {
         }
 
         const safeAirlineName = (primaryFlight.airlineName && (
-            (selectedA === 'EVA Air' && !/airasia|vietjet|thai|singapore/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'Singapore Airlines' && !/airasia|vietjet|thai|eva/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'Thai Airways' && !/airasia|vietjet|singapore|eva/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'VietJet Air' && !/airasia|thai|singapore|eva/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'AirAsia' && !/vietjet|thai|singapore|eva/i.test(primaryFlight.airlineName))
+            (selectedA === 'Scoot' && !/airasia|vietjet|thai|singapore|eva/i.test(primaryFlight.airlineName)) ||
+            (selectedA === 'EVA Air' && !/airasia|vietjet|thai|singapore|scoot/i.test(primaryFlight.airlineName)) ||
+            (selectedA === 'Singapore Airlines' && !/airasia|vietjet|thai|eva|scoot/i.test(primaryFlight.airlineName)) ||
+            (selectedA === 'Thai Airways' && !/airasia|vietjet|singapore|eva|scoot/i.test(primaryFlight.airlineName)) ||
+            (selectedA === 'VietJet Air' && !/airasia|thai|singapore|eva|scoot/i.test(primaryFlight.airlineName)) ||
+            (selectedA === 'AirAsia' && !/vietjet|thai|singapore|eva|scoot/i.test(primaryFlight.airlineName))
         )) ? primaryFlight.airlineName : defaultAirlineName;
 
         const safeFlightNo = (primaryFlight.flightNo && (
-            (selectedA === 'EVA Air' && !/^(AK|VJ|TG|SQ)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'Singapore Airlines' && !/^(AK|VJ|TG|BR)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'Thai Airways' && !/^(AK|VJ|SQ|BR)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'VietJet Air' && !/^(AK|TG|SQ|BR)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'AirAsia' && !/^(VJ|TG|SQ|BR)/i.test(primaryFlight.flightNo))
+            (selectedA === 'Scoot' && !/^(AK|VJ|TG|SQ|BR)/i.test(primaryFlight.flightNo)) ||
+            (selectedA === 'EVA Air' && !/^(AK|VJ|TG|SQ|TR)/i.test(primaryFlight.flightNo)) ||
+            (selectedA === 'Singapore Airlines' && !/^(AK|VJ|TG|BR|TR)/i.test(primaryFlight.flightNo)) ||
+            (selectedA === 'Thai Airways' && !/^(AK|VJ|SQ|BR|TR)/i.test(primaryFlight.flightNo)) ||
+            (selectedA === 'VietJet Air' && !/^(AK|TG|SQ|BR|TR)/i.test(primaryFlight.flightNo)) ||
+            (selectedA === 'AirAsia' && !/^(VJ|TG|SQ|BR|TR)/i.test(primaryFlight.flightNo))
         )) ? primaryFlight.flightNo : defaultFlightNo;
 
         const formPnr = (document.getElementById('aa_pnr')?.value || '').trim().toUpperCase();
