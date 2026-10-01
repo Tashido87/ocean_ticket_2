@@ -369,17 +369,17 @@ export function renderAgodaHotelHtml(data = {}) {
                     </div>
 
                     <!-- Room Type -->
-                    <div style="display:flex; align-items:center; justify-content:space-between;">
-                        <span style="color:#000000;">Room Type :</span>
-                        <div style="width:165px; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000000;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:6px;">
+                        <span style="color:#000000; padding-top:3px; white-space:nowrap;">Room Type :</span>
+                        <div style="width:165px; min-height:18px; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:bold; font-size:8.2px; line-height:1.2; color:#000000; padding:3px 6px; box-sizing:border-box; word-break:break-word;">
                             ${roomType}
                         </div>
                     </div>
 
                     <!-- Promotion -->
-                    <div style="display:flex; align-items:center; justify-content:space-between;">
-                        <span style="color:#000000;">Promotion :</span>
-                        <div style="width:165px; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; height:18px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:7.4px; color:#000000; padding:0 3px; white-space:nowrap;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:6px;">
+                        <span style="color:#000000; padding-top:3px; white-space:nowrap;">Promotion :</span>
+                        <div style="width:165px; min-height:18px; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:bold; font-size:7.4px; line-height:1.2; color:#000000; padding:3px 5px; box-sizing:border-box; word-break:break-word;">
                             ${promotion}
                         </div>
                     </div>
