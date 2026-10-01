@@ -23,7 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=22';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=23';
 import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=13';
 
 // UI Modules
@@ -3267,10 +3267,23 @@ function initializeAirAsiaGenerator() {
             (selectedA === 'AirAsia' && !/^(VJ|TG)/i.test(primaryFlight.flightNo))
         )) ? primaryFlight.flightNo : defaultFlightNo;
 
+        const formPnr = (document.getElementById('aa_pnr')?.value || '').trim().toUpperCase();
+        const sectorPnrs = [];
+        flights.forEach(f => {
+            if (f.pnr) {
+                f.pnr.split(/[\/\s]+/).forEach(p => {
+                    const cleanP = p.trim().toUpperCase();
+                    if (cleanP && !sectorPnrs.includes(cleanP)) sectorPnrs.push(cleanP);
+                });
+            }
+        });
+        const effectivePnr = (sectorPnrs.length > 1) ? sectorPnrs.join(' / ') : formPnr;
+
         return {
             airline: selectedA,
             bookingNo: document.getElementById('aa_booking_no')?.value || '',
-            pnr: (document.getElementById('aa_pnr')?.value || '').trim().toUpperCase(),
+            pnr: effectivePnr,
+            pnrs: sectorPnrs,
             eTicketNo: document.getElementById('aa_eticket_no')?.value || '',
             flightClass: document.getElementById('aa_class')?.value || (selectedA === 'Thai Airways' ? 'Economy (T)' : 'Economy'),
             issuedDate: document.getElementById('aa_issued_date')?.value || '',

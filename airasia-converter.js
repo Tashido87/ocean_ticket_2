@@ -964,6 +964,46 @@ export function getFormattedCheckinTime(data) {
 }
 
 /**
+ * Extract and resolve all booking references (PNRs) from sectors and form data.
+ * Returns array of unique PNR strings e.g. ['HIGGNX', 'X9K2P']
+ */
+export function resolveAllPnrs(data) {
+    if (!data) return [];
+    const list = [];
+    // 1. From individual sector flights
+    if (data.flights && data.flights.length > 0) {
+        data.flights.forEach(f => {
+            if (f.pnr) {
+                f.pnr.split(/[\/\s]+/).forEach(p => {
+                    const c = p.trim().toUpperCase();
+                    if (c && !list.includes(c)) list.push(c);
+                });
+            }
+        });
+    }
+    // 2. From data.pnrs array
+    if (data.pnrs && Array.isArray(data.pnrs)) {
+        data.pnrs.forEach(p => {
+            const c = (p || '').trim().toUpperCase();
+            if (c && !list.includes(c)) list.push(c);
+        });
+    }
+    // 3. From data.pnr string
+    if (data.pnr) {
+        data.pnr.split(/[\/\s]+/).forEach(p => {
+            const c = p.trim().toUpperCase();
+            if (c && !list.includes(c)) list.push(c);
+        });
+    }
+    // 4. From data.bookingNo if formatted like PNR
+    if (list.length === 0 && data.bookingNo) {
+        const c = data.bookingNo.trim().toUpperCase();
+        if (c.length >= 5 && c.length <= 8) list.push(c);
+    }
+    return list;
+}
+
+/**
  * Generate native vector jsPDF document for Thai Airways matching official template
  * Layout: Header → Booking Strip → Flight Details → Passenger Details → Baggage → Notes → Footer
  */
@@ -991,7 +1031,8 @@ export async function generateThaiAirwaysPdfDoc(data) {
     const WHT = [255, 255, 255];   // #FFFFFF
     const BLK = [17, 17, 17];      // #111111
 
-    const pnr = (data.pnr || data.bookingNo || '').trim().toUpperCase();
+    const allPnrs = resolveAllPnrs(data);
+    const pnr = allPnrs.length > 0 ? allPnrs.join(' / ') : ((data.pnr || data.bookingNo || 'TG9821').trim().toUpperCase());
     const issuedDate = data.issuedDate || formatTicketDate(new Date());
     const paxList = (data.passengers && data.passengers.length > 0)
         ? data.passengers
@@ -1242,19 +1283,18 @@ export async function generateThaiAirwaysPdfDoc(data) {
 
         curY += upperBoxH;
 
-        // Lower Cream/Gold Info Table (47 pt height)
-        const lowerBoxH = 47.0;
+        // Lower Cream/Gold Info Table (1 row, 23.5 pt height - Class & Booking ref row removed per user request)
+        const lowerBoxH = 23.5;
         doc.setFillColor(...AT);
         doc.rect(marginL, curY, textW, lowerBoxH, 'F');
         doc.setDrawColor(...A);
         doc.setLineWidth(0.5);
         doc.rect(marginL, curY, textW, lowerBoxH, 'S');
 
-        // Divider lines (exact from ref: 121.9, 297.6, 377.0)
-        doc.line(marginL, curY + 23.5, rightEdge, curY + 23.5);
+        // Vertical divider lines: 121.9, 297.6, 377.0
         [121.9, 297.6, 377.0].forEach(x => doc.line(x, curY, x, curY + lowerBoxH));
 
-        // Info Row 1
+        // Info Row: Duration & Aircraft
         doc.setTextColor(...BLK);
         doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
@@ -1267,21 +1307,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.setFont("helvetica", "normal");
         doc.text(f.aircraft || "Boeing 777-300ER", 377.0 + 6, curY + 15.5, { maxWidth: 160 });
 
-        // Info Row 2
-        doc.setFont("helvetica", "bold");
-        doc.text("Class", marginL + 6, curY + 39);
-        doc.setFont("helvetica", "normal");
-        doc.text(f.flightClass || data.flightClass || "Economy (T)", 121.9 + 6, curY + 39, { maxWidth: 160 });
-
-        doc.setFont("helvetica", "bold");
-        doc.text(sectorPnr ? "Booking Ref" : "Route", 297.6 + 6, curY + 39);
-        doc.setFont("helvetica", sectorPnr ? "bold" : "normal");
-        const depCode = lookupAirportCode(f.depAirport) || 'DEP';
-        const arrCode = lookupAirportCode(f.arrAirport) || 'ARR';
-        const refStr = sectorPnr ? `${sectorPnr} (${depCode} - ${arrCode})` : sRoute;
-        doc.text(refStr, 377.0 + 6, curY + 39, { maxWidth: 155 });
-
-        curY += lowerBoxH + 16;
+        curY += lowerBoxH + 14;
     });
 
     // 4. PASSENGER DETAILS
@@ -1573,9 +1599,12 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.setFont("helvetica", "bold");
     const midRow1Y = bookBoxY + (row1H / 2) + 3.5;
     doc.text("Airline Booking Reference", col3X + 6, midRow1Y);
-    const pnrVal = data.pnr || "";
-    if (doc.getTextWidth(pnrVal) > (contentWidth - (col4X - marginX) - 12)) {
-        doc.setFontSize(8.0);
+    const allPnrs = resolveAllPnrs(data);
+    const pnrVal = allPnrs.length > 0 ? allPnrs.join(' / ') : (data.pnr || "");
+    if (doc.getTextWidth(pnrVal) > (contentWidth - (col4X - marginX) - 12) || pnrVal.length > 12) {
+        doc.setFontSize(7.5);
+    } else {
+        doc.setFontSize(8.5);
     }
     doc.text(pnrVal, col4X + 6, midRow1Y);
     doc.setFontSize(9.5);
@@ -1922,8 +1951,8 @@ export async function downloadAirAsiaPdf(data) {
  * Generate preview HTML markup for Thai Airways matching official template
  */
 export function renderThaiAirwaysTicketHtml(data) {
-    const logoSrc = cachedThaiLogoDataUrl || 'thai-airways-logo.png?v=2';
-    const pnr = (data.pnr || data.bookingNo || '').trim().toUpperCase();
+    const allPnrs = resolveAllPnrs(data);
+    const pnr = allPnrs.length > 0 ? allPnrs.join(' / ') : ((data.pnr || data.bookingNo || '').trim().toUpperCase());
     const issuedDate = data.issuedDate || formatTicketDate(new Date());
 
     const paxList = (data.passengers && data.passengers.length > 0)
@@ -2049,12 +2078,6 @@ export function renderThaiAirwaysTicketHtml(data) {
                             <td style="padding:6px 10px; border:1px solid #D9A300; width:16%; font-weight:700; color:#111;">Aircraft</td>
                             <td style="padding:6px 10px; border:1px solid #D9A300; width:34%; color:#111;">${f.aircraft || 'Boeing 777-300ER'}</td>
                         </tr>
-                        <tr>
-                            <td style="padding:6px 10px; border:1px solid #D9A300; font-weight:700; color:#111;">Class</td>
-                            <td style="padding:6px 10px; border:1px solid #D9A300; color:#111;">${f.flightClass || data.flightClass || 'Economy (T)'}</td>
-                            <td style="padding:6px 10px; border:1px solid #D9A300; font-weight:700; color:#111;">${fPnr ? 'Booking Ref' : 'Route'}</td>
-                            <td style="padding:6px 10px; border:1px solid #D9A300; color:#111;">${fPnr ? `<strong style="color:#3D1E6D; font-size:12px;">${fPnr}</strong> &nbsp;<span style="color:#555;">(${sRoute})</span>` : sRoute}</td>
-                        </tr>
                     </table>
                 </div>
                 `;
@@ -2149,6 +2172,8 @@ export function renderAirAsiaTicketHtml(data) {
         }];
 
     const sectorCheckins = getSectorCheckinList(data).slice(0, 2);
+    const allPnrs = resolveAllPnrs(data);
+    const displayPnr = allPnrs.length > 0 ? allPnrs.join(' / ') : (data.pnr || '');
 
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#333333; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:40px 48px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.35; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
@@ -2186,7 +2211,7 @@ export function renderAirAsiaTicketHtml(data) {
                         `).join('')}
                     </td>
                     <td style="padding:7px 10px; border:1px solid #CCCCCC; width:28%; vertical-align:middle;"><strong>Airline Booking Reference</strong></td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:22%; font-weight:700; vertical-align:middle;">${data.pnr || ''}</td>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:22%; font-weight:700; vertical-align:middle;">${displayPnr}</td>
                 </tr>
                 <tr>
                     <td style="padding:7px 10px; border:1px solid #CCCCCC;"><strong>E-Ticket No.</strong></td>
