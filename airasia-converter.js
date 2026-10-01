@@ -1127,19 +1127,26 @@ export async function generateThaiAirwaysPdfDoc(data) {
     // Strip Row 2
     if (isMultiSector) {
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7.8);
+        doc.setFontSize(7.6);
         doc.setTextColor(...DK);
-        doc.text(sectorCheckins[0].label, marginL + 5, stripY + 34.5, { maxWidth: 72 });
-        doc.text(sectorCheckins[1].label, marginL + 5, stripY + 48.5, { maxWidth: 72 });
+        doc.text(sectorCheckins[0].label, marginL + 5, stripY + 33.5, { maxWidth: 72 });
+        doc.text(sectorCheckins[1].label, marginL + 5, stripY + 48.0, { maxWidth: 72 });
 
         sectorCheckins.forEach((sc, i) => {
             const by = (i === 0) ? (stripY + 25.0) : (stripY + 39.5);
-            const baselineY = (i === 0) ? (stripY + 34.0) : (stripY + 48.5);
+            const baselineY = (i === 0) ? (stripY + 33.5) : (stripY + 48.0);
+            
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(7.5);
-            const tw = doc.getTextWidth(sc.time);
-            const bgW = Math.min(Math.max(tw + 8, 55), 103);
-            const bgH = 12.0;
+            let cFontSize = 7.2;
+            doc.setFontSize(cFontSize);
+            let tw = doc.getTextWidth(sc.time);
+            while (tw > 98 && cFontSize > 6.0) {
+                cFontSize -= 0.3;
+                doc.setFontSize(cFontSize);
+                tw = doc.getTextWidth(sc.time);
+            }
+            const bgW = Math.min(tw + 8, 106);
+            const bgH = 11.5;
 
             doc.setFillColor(240, 232, 255); // Soft purple tint #F0E8FF
             doc.setDrawColor(213, 203, 232); // #D5CBE8
@@ -1147,29 +1154,36 @@ export async function generateThaiAirwaysPdfDoc(data) {
             doc.roundedRect(127.6 + 4, by, bgW, bgH, 2, 2, 'FD');
 
             doc.setTextColor(...P);
-            doc.text(sc.time, 127.6 + 8, baselineY, { maxWidth: bgW - 8 });
+            doc.text(sc.time, 127.6 + 8, baselineY);
         });
     } else {
         const sc = sectorCheckins[0];
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8.5);
         doc.setTextColor(...DK);
-        doc.text(sc.label, marginL + 5, stripY + 39, { maxWidth: 70 });
+        doc.text(sc.label, marginL + 5, stripY + 42.0, { maxWidth: 72 });
 
         doc.setFont("helvetica", "bold");
-        const tw = doc.getTextWidth(sc.time);
-        const bgW = Math.min(Math.max(tw + 8, 55), 103);
-        const bgH = 13.5;
-        const bgY = stripY + 28.5;
+        let cFontSize = 8.0;
+        doc.setFontSize(cFontSize);
+        let tw = doc.getTextWidth(sc.time);
+        while (tw > 98 && cFontSize > 6.5) {
+            cFontSize -= 0.3;
+            doc.setFontSize(cFontSize);
+            tw = doc.getTextWidth(sc.time);
+        }
+        const bgW = Math.min(tw + 8, 106);
+        const bgH = 13.0;
+        const by = stripY + 33.0;
+        const baselineY = stripY + 42.0;
 
         doc.setFillColor(240, 232, 255); // Soft purple tint #F0E8FF
         doc.setDrawColor(213, 203, 232); // #D5CBE8
         doc.setLineWidth(0.5);
-        doc.roundedRect(127.6 + 4, bgY, bgW, bgH, 2, 2, 'FD');
+        doc.roundedRect(127.6 + 4, by, bgW, bgH, 2, 2, 'FD');
 
         doc.setTextColor(...P);
-        doc.setFontSize(8.0);
-        doc.text(sc.time, 127.6 + 8, stripY + 38, { maxWidth: bgW - 8 });
+        doc.text(sc.time, 127.6 + 8, baselineY);
     }
 
     doc.setFontSize(8.5);
@@ -1518,7 +1532,7 @@ export async function generateAirAsiaPdfDoc(data) {
     const sectorCheckins = getSectorCheckinList(data).slice(0, 2);
     const isMultiSector = sectorCheckins.length > 1;
 
-    const row1H = isMultiSector ? 32 : 20.5;
+    const row1H = isMultiSector ? 35 : 20.5;
     const row2H = 20.5;
     const bookBoxHeight = row1H + row2H;
 
@@ -1542,20 +1556,27 @@ export async function generateAirAsiaPdfDoc(data) {
     const badgeBorder = isVietJet ? [254, 202, 202] : [255, 205, 210];
 
     if (isMultiSector) {
-        doc.setFontSize(8.5);
+        doc.setFontSize(8.2);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...darkColor);
-        doc.text(sectorCheckins[0].label, marginX + 6, bookBoxY + 12.5);
-        doc.text(sectorCheckins[1].label, marginX + 6, bookBoxY + 25.5);
+        doc.text(sectorCheckins[0].label, marginX + 6, bookBoxY + 12.0);
+        doc.text(sectorCheckins[1].label, marginX + 6, bookBoxY + 26.5);
 
         sectorCheckins.forEach((sc, i) => {
-            const by = (i === 0) ? (bookBoxY + 3.0) : (bookBoxY + 16.5);
-            const baselineY = (i === 0) ? (bookBoxY + 12.5) : (bookBoxY + 26.0);
+            const by = (i === 0) ? (bookBoxY + 3.0) : (bookBoxY + 17.5);
+            const baselineY = (i === 0) ? (bookBoxY + 11.5) : (bookBoxY + 26.0);
+            
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(7.8);
-            const cTextW = doc.getTextWidth(sc.time);
-            const badgeW = Math.min(cTextW + 8, 120);
-            const badgeH = 12.5;
+            let cFontSize = 7.5;
+            doc.setFontSize(cFontSize);
+            let cTextW = doc.getTextWidth(sc.time);
+            while (cTextW > 112 && cFontSize > 6.2) {
+                cFontSize -= 0.3;
+                doc.setFontSize(cFontSize);
+                cTextW = doc.getTextWidth(sc.time);
+            }
+            const badgeW = Math.min(cTextW + 8, 122);
+            const badgeH = 11.5;
 
             doc.setFillColor(...badgeBg);
             doc.setDrawColor(...badgeBorder);
@@ -1563,25 +1584,27 @@ export async function generateAirAsiaPdfDoc(data) {
             doc.roundedRect(col2X + 5, by, badgeW, badgeH, 2, 2, 'FD');
 
             doc.setTextColor(...redColor);
-            doc.text(sc.time, col2X + 9, baselineY, { maxWidth: badgeW - 8 });
+            doc.text(sc.time, col2X + 9, baselineY);
         });
     } else {
         const sc = sectorCheckins[0];
-        doc.setFontSize(9.5);
+        doc.setFontSize(9.0);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...darkColor);
         doc.text(sc.label, marginX + 6, bookBoxY + 14);
 
         doc.setFont("helvetica", "bold");
-        let checkinFontSize = 8.5;
-        if (doc.getTextWidth(sc.time) > 116) {
-            checkinFontSize = 7.8;
-        }
+        let checkinFontSize = 8.2;
         doc.setFontSize(checkinFontSize);
+        let cTextW = doc.getTextWidth(sc.time);
+        while (cTextW > 116 && checkinFontSize > 6.5) {
+            checkinFontSize -= 0.3;
+            doc.setFontSize(checkinFontSize);
+            cTextW = doc.getTextWidth(sc.time);
+        }
 
-        const cTextW = doc.getTextWidth(sc.time);
-        const badgeW = Math.min(cTextW + 8, 120);
-        const badgeH = 13.5;
+        const badgeW = Math.min(cTextW + 8, 122);
+        const badgeH = 13.0;
         const badgeX = col2X + 5;
         const badgeY = bookBoxY + 3.5;
 
@@ -1591,7 +1614,7 @@ export async function generateAirAsiaPdfDoc(data) {
         doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
 
         doc.setTextColor(...redColor);
-        doc.text(sc.time, badgeX + 4, bookBoxY + 13.5, { maxWidth: badgeW - 8 });
+        doc.text(sc.time, badgeX + 4, bookBoxY + 13.0);
     }
 
     doc.setFontSize(9.5);
@@ -1621,7 +1644,7 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.setFont("helvetica", "normal");
     doc.text(data.flightClass || "Economy", col4X + 6, row2Baseline);
 
-    cursorY += bookBoxHeight + (isMultiSector ? 12 : 20);
+    cursorY += bookBoxHeight + (isMultiSector ? 9 : 20);
 
     // 3. PASSENGER
     drawSectionTitle("Passenger", cursorY);
@@ -1994,30 +2017,30 @@ export function renderThaiAirwaysTicketHtml(data) {
         <!-- 2. BOOKING STRIP -->
         <table style="width:100%; border-collapse:collapse; background:#F6F3FB; border:1px solid #D5CBE8; font-size:11px; margin-bottom:14px;">
             <tr>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; width:14%; font-weight:700; color:#333;">Booking Ref</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; width:21%; font-weight:700; font-size:13px; color:#111;">${pnr}</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; width:13%; font-weight:700; color:#333;">Issued Date</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; width:21%; color:#333;">${issuedDate}</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; width:13%; font-weight:700; color:#333;">Passengers</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; width:18%; color:#333;">${paxSummary}</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; width:14%; font-weight:700; color:#333;">Booking Ref</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; width:27%; font-weight:700; font-size:13px; color:#111;">${pnr}</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; width:13%; font-weight:700; color:#333;">Issued Date</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; width:17%; color:#333;">${issuedDate}</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; width:14%; font-weight:700; color:#333;">Passengers</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; width:15%; color:#333;">${paxSummary}</td>
             </tr>
             <tr>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#3D1E6D; vertical-align:middle;">
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; font-weight:700; color:#3D1E6D; vertical-align:middle; white-space:nowrap;">
                     ${sectorCheckins.map((sc, i) => `
-                        <div style="${i > 0 ? 'margin-top:5px;' : ''}">${sc.label}</div>
+                        <div style="${i > 0 ? 'margin-top:6px;' : ''}; font-size:10.5px; white-space:nowrap;">${sc.label}</div>
                     `).join('')}
                 </td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; word-break:break-word; max-width:130px; vertical-align:middle;">
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; vertical-align:middle; white-space:nowrap;">
                     ${sectorCheckins.map((sc, i) => `
-                        <div style="${i > 0 ? 'margin-top:4px;' : ''}">
-                            <span style="display:inline-block; background:#F0E8FF; color:#3D1E6D; border:1px solid #D5CBE8; font-weight:700; font-size:10.5px; padding:1.5px 6px; border-radius:3px; white-space:nowrap;">${sc.time}</span>
+                        <div style="${i > 0 ? 'margin-top:5px;' : ''}; white-space:nowrap;">
+                            <span style="display:inline-block; background:#F0E8FF; color:#3D1E6D; border:1px solid #D5CBE8; font-weight:700; font-size:10px; padding:2px 7px; border-radius:3px; white-space:nowrap;">${sc.time}</span>
                         </div>
                     `).join('')}
                 </td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#333; vertical-align:middle;">Status</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#111; vertical-align:middle;">Confirmed</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#333; vertical-align:middle;">Alliance</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; color:#333; line-height:1.2; vertical-align:middle;">Star<br>Alliance</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; font-weight:700; color:#333; vertical-align:middle;">Status</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; font-weight:700; color:#111; vertical-align:middle;">Confirmed</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; font-weight:700; color:#333; vertical-align:middle;">Alliance</td>
+                <td style="padding:6px 8px; border:1px solid #D5CBE8; color:#333; line-height:1.2; vertical-align:middle;">Star<br>Alliance</td>
             </tr>
         </table>
 
@@ -2198,20 +2221,20 @@ export function renderAirAsiaTicketHtml(data) {
             <div style="font-size:15px; font-weight:700; color:#E31E24; margin-bottom:8px;">Booking Information</div>
             <table style="width:100%; border-collapse:collapse; background:#F5F5F5; border:1px solid #CCCCCC; font-size:12px;">
                 <tr>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%; vertical-align:middle;">
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:24%; vertical-align:middle; white-space:nowrap;">
                         ${sectorCheckins.map((sc, i) => `
-                            <div style="${i > 0 ? 'margin-top:6px;' : ''} font-weight:700; font-size:12px; color:#333;">${sc.label}</div>
+                            <div style="${i > 0 ? 'margin-top:6px;' : ''}; font-weight:700; font-size:11.5px; color:#333; white-space:nowrap;">${sc.label}</div>
                         `).join('')}
                     </td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%; vertical-align:middle;">
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:28%; vertical-align:middle; white-space:nowrap;">
                         ${sectorCheckins.map((sc, i) => `
-                            <div style="${i > 0 ? 'margin-top:5px;' : ''}">
-                                <span style="display:inline-block; background:#FFEBEE; color:#D32F2F; border:1px solid #FFCDD2; font-weight:700; font-size:11px; padding:2px 8px; border-radius:3px; white-space:nowrap;">${sc.time}</span>
+                            <div style="${i > 0 ? 'margin-top:5px;' : ''}; white-space:nowrap;">
+                                <span style="display:inline-block; background:#FFEBEE; color:#D32F2F; border:1px solid #FFCDD2; font-weight:700; font-size:10.5px; padding:2px 7px; border-radius:3px; white-space:nowrap;">${sc.time}</span>
                             </div>
                         `).join('')}
                     </td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:28%; vertical-align:middle;"><strong>Airline Booking Reference</strong></td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:22%; font-weight:700; vertical-align:middle;">${displayPnr}</td>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:27%; vertical-align:middle;"><strong>Airline Booking Reference</strong></td>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:21%; font-weight:700; vertical-align:middle;">${displayPnr}</td>
                 </tr>
                 <tr>
                     <td style="padding:7px 10px; border:1px solid #CCCCCC;"><strong>E-Ticket No.</strong></td>
