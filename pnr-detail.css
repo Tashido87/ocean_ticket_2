@@ -213,4 +213,80 @@ body.dark-theme .pnr-phonetic-chip.is-digit .chip-char {
     color: #f87171;
 }
 
+/* Clickable Social Media Link Button in PNR Details */
+.pnr-social-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2.5px 8.5px;
+    border-radius: 9999px;
+    background: var(--platform-bg, rgba(0, 132, 255, 0.12));
+    color: var(--platform-color, #0084FF);
+    border: 1px solid var(--platform-color, #0084FF);
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 1.25;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+
+.pnr-social-link-btn:hover {
+    background: var(--platform-color, #0084FF);
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
+}
+
+.pnr-social-link-btn:active {
+    transform: translateY(0);
+}
+
+.pnr-social-link-btn i {
+    font-size: 11.5px !important;
+    color: inherit !important;
+    flex-shrink: 0;
+}
+
+.pnr-social-link-btn .pnr-social-link-arrow {
+    font-size: 9.5px !important;
+    opacity: 0.8;
+    transition: transform 0.2s ease;
+}
+
+.pnr-social-link-btn:hover .pnr-social-link-arrow {
+    opacity: 1;
+    transform: translate(1px, -1px);
+}
+
+.pnr-social-platform-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    background: var(--platform-bg, rgba(100, 116, 139, 0.12));
+    color: var(--platform-color, #64748b);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.25;
+    margin-left: 2px;
+}
+
+.pnr-social-platform-pill i {
+    font-size: 11px !important;
+    color: inherit !important;
+}
+
+body.dark-theme .pnr-social-link-btn {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme .pnr-social-link-btn:hover {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+}
+
 

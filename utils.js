@@ -75,10 +75,13 @@ export function formatSafeAccountLink(rawLink, accountType = '') {
         return `https://t.me/${link.slice(1)}`;
     }
 
-    if (/^(facebook\.com|fb\.com|fb\.me|m\.me|t\.me|instagram\.com|tiktok\.com|linkedin\.com|wa\.me)/i.test(link)) {
+    if (/^(facebook\.com|fb\.com|fb\.me|m\.me|t\.me|instagram\.com|tiktok\.com|linkedin\.com|wa\.me|weixin\.qq\.com)/i.test(link)) {
         return `https://${link}`;
     }
 
+    if (type.includes('messenger')) {
+        return `https://m.me/${link.replace(/^https?:\/\/m\.me\//i, '').replace(/^\//, '')}`;
+    }
     if (type.includes('facebook') || type.includes('fb')) {
         return `https://www.facebook.com/${link.replace(/^\//, '')}`;
     }
@@ -88,12 +91,91 @@ export function formatSafeAccountLink(rawLink, accountType = '') {
     if (type.includes('viber')) {
         return `viber://chat?number=%2B${link.replace(/[^\d]/g, '')}`;
     }
+    if (type.includes('wechat') || type.includes('weixin')) {
+        if (/^https?:\/\//i.test(link)) return link;
+        return `weixin://dl/chat?${encodeURIComponent(link)}`;
+    }
 
     if (link.includes('.')) {
         return `https://${link}`;
     }
 
     return `https://www.facebook.com/${encodeURIComponent(link)}`;
+}
+
+/**
+ * Returns icon, brand color, and platform display label for social media types.
+ * @param {string} accountType Social media account type (e.g. Messenger, Viber, WeChat, Telegram, Facebook Page, Phone).
+ * @param {string} [rawLink=''] Raw account link or username.
+ * @returns {{ icon: string, label: string, color: string, badgeBg: string }} Platform metadata.
+ */
+export function getSocialPlatformMeta(accountType = '', rawLink = '') {
+    const t = String(accountType || '').toLowerCase();
+    const l = String(rawLink || '').toLowerCase();
+
+    if (t.includes('messenger') || l.includes('m.me')) {
+        return {
+            icon: 'fa-brands fa-facebook-messenger',
+            label: 'Messenger',
+            color: '#0084FF',
+            badgeBg: 'rgba(0, 132, 255, 0.12)'
+        };
+    }
+    if (t.includes('viber') || l.includes('viber:')) {
+        return {
+            icon: 'fa-brands fa-viber',
+            label: 'Viber',
+            color: '#7360F2',
+            badgeBg: 'rgba(115, 96, 242, 0.12)'
+        };
+    }
+    if (t.includes('telegram') || t.includes('tg') || l.includes('t.me')) {
+        return {
+            icon: 'fa-brands fa-telegram',
+            label: 'Telegram',
+            color: '#229ED9',
+            badgeBg: 'rgba(34, 158, 217, 0.12)'
+        };
+    }
+    if (t.includes('wechat') || t.includes('weixin') || l.includes('weixin')) {
+        return {
+            icon: 'fa-brands fa-weixin',
+            label: 'WeChat',
+            color: '#07C160',
+            badgeBg: 'rgba(7, 193, 96, 0.12)'
+        };
+    }
+    if (t.includes('whatsapp') || l.includes('wa.me')) {
+        return {
+            icon: 'fa-brands fa-whatsapp',
+            label: 'WhatsApp',
+            color: '#25D366',
+            badgeBg: 'rgba(37, 211, 102, 0.12)'
+        };
+    }
+    if (t.includes('facebook') || t.includes('fb') || l.includes('facebook.com') || l.includes('fb.com')) {
+        return {
+            icon: 'fa-brands fa-facebook',
+            label: 'Facebook',
+            color: '#1877F2',
+            badgeBg: 'rgba(24, 119, 242, 0.12)'
+        };
+    }
+    if (t.includes('phone') || t.includes('call') || /^[\d\s\-+()]{7,}$/.test(l)) {
+        return {
+            icon: 'fa-solid fa-phone',
+            label: 'Phone',
+            color: '#10B981',
+            badgeBg: 'rgba(16, 185, 129, 0.12)'
+        };
+    }
+    // Default fallback icon
+    return {
+        icon: 'fa-solid fa-arrow-up-right-from-square',
+        label: accountType || 'Social Link',
+        color: 'var(--brand, #B91C1C)',
+        badgeBg: 'rgba(185, 28, 28, 0.12)'
+    };
 }
 
 /**

@@ -6,7 +6,7 @@
 
 import { state } from './state.js';
 import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation } from './db.js';
-import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink } from './utils.js';
+import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
 import { updateDashboardData } from './main.js';
@@ -640,6 +640,8 @@ export function showDetails(docId) {
     const clientAccType = String(ticket.account_type || outboundLeg.account_type || '').trim();
     const clientAccLink = String(ticket.account_link || outboundLeg.account_link || '').trim();
     const clientKey = String(ticket.client_key || outboundLeg.client_key || '').trim();
+    const clientSocialMeta = (clientAccType || clientAccLink) ? getSocialPlatformMeta(clientAccType, clientAccLink) : null;
+    const safeClientAccLink = clientAccLink ? formatSafeAccountLink(clientAccLink, clientAccType) : '';
 
     let phoneHtml = '<span style="color:#94a3b8; font-weight:500;">Not provided</span>';
     if (clientPhone) {
@@ -1097,9 +1099,14 @@ export function showDetails(docId) {
                     <div class="card-grid-two-cols">
                         <div class="grid-col-item">
                             <span class="grid-label">CLIENT / ACCOUNT</span>
-                            <span class="grid-val-bold">
+                            <span class="grid-val-bold" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                                 ${clientKey ? `<a href="#/client/${encodeURIComponent(clientKey)}" class="clickable-client-link" data-client-key="${escapeHtml(clientKey)}" style="color:var(--apple-blue); font-weight:700; text-decoration:none;">${escapeHtml(clientAccName || 'View Profile')} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i></a>` : escapeHtml(clientAccName || '—')}
-                                ${clientAccType ? `<div style="font-size:0.75rem; color:#64748b; font-weight:500; margin-top:2px;">${escapeHtml(clientAccType)}</div>` : ''}
+                                ${safeClientAccLink && clientSocialMeta ? `
+                                <a href="${escapeHtml(safeClientAccLink)}" target="_blank" rel="noopener noreferrer" class="pnr-social-link-btn" style="--platform-color: ${clientSocialMeta.color}; --platform-bg: ${clientSocialMeta.badgeBg};" title="Open ${escapeHtml(clientSocialMeta.label)}: ${escapeHtml(clientAccLink)}">
+                                    <i class="${clientSocialMeta.icon}"></i>
+                                    <span class="pnr-social-link-label">${escapeHtml(clientSocialMeta.label)}</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square pnr-social-link-arrow"></i>
+                                </a>` : (clientAccType ? `<div style="font-size:0.75rem; color:#64748b; font-weight:500;">${escapeHtml(clientAccType)}</div>` : '')}
                             </span>
                         </div>
                         <div class="grid-col-item">
@@ -1112,8 +1119,9 @@ export function showDetails(docId) {
                     ${clientAccLink ? `
                         <div style="margin-top:0.6rem; padding-top:0.5rem; border-top:1px dashed rgba(226,232,240,0.8); font-size:0.8rem;">
                             <span class="grid-label" style="display:block; margin-bottom:2px;">ACCOUNT LINK</span>
-                            <a href="${escapeHtml(formatSafeAccountLink(clientAccLink, clientAccType))}" target="_blank" rel="noopener" style="color:var(--apple-blue); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
-                                <i class="fa-solid fa-up-right-from-square"></i> ${escapeHtml(clientAccLink)}
+                            <a href="${escapeHtml(safeClientAccLink || formatSafeAccountLink(clientAccLink, clientAccType))}" target="_blank" rel="noopener noreferrer" style="color:${clientSocialMeta?.color || 'var(--apple-blue)'}; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+                                <i class="${clientSocialMeta?.icon || 'fa-solid fa-up-right-from-square'}"></i> ${escapeHtml(clientAccLink)}
+                                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem; opacity:0.7;"></i>
                             </a>
                         </div>
                     ` : ''}

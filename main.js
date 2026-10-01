@@ -8,7 +8,7 @@
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
 import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, batchUpdateTickets } from './db.js';
-import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle } from './utils.js';
+import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta } from './utils.js';
 
 // Feature Modules
 import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets } from './tickets.js';
@@ -1701,9 +1701,69 @@ function showTripPlanDetail(pnr) {
     const issuedDates = [...new Set((passengerRows.length ? passengerRows : allRows)
         .map(ticket => formatDashboardDateLabel(ticket.issued_date, ''))
         .filter(Boolean))];
-    const accountName = allRows
+    let accountName = allRows
         .map(t => String(t.account_name || '').trim())
         .find(name => name && name.toLowerCase() !== 'undefined') || '';
+    let accountType = allRows
+        .map(t => String(t.account_type || '').trim())
+        .find(type => type && type.toLowerCase() !== 'undefined') || '';
+    let accountLink = allRows
+        .map(t => String(t.account_link || '').trim())
+        .find(link => link && link.toLowerCase() !== 'undefined') || '';
+
+    // If missing, look up client by accountName
+    if ((!accountLink || !accountType) && accountName && Array.isArray(state.allClients)) {
+        const clientByAcc = state.allClients.find(c => 
+            String(c.account_name || '').trim().toLowerCase() === accountName.toLowerCase()
+        );
+        if (clientByAcc) {
+            if (!accountLink && clientByAcc.account_link) accountLink = String(clientByAcc.account_link).trim();
+            if (!accountType && clientByAcc.account_type) accountType = String(clientByAcc.account_type).trim();
+        }
+    }
+
+    // If still missing, check bookings for this PNR
+    if ((!accountLink || !accountType || !accountName) && Array.isArray(state.allBookings)) {
+        const matchedBooking = state.allBookings.find(b => 
+            String(b.booking_reference || '').trim().toUpperCase() === String(pnr || '').trim().toUpperCase()
+        );
+        if (matchedBooking) {
+            if (!accountName && matchedBooking.account_name) accountName = String(matchedBooking.account_name).trim();
+            if (!accountType && matchedBooking.account_type) accountType = String(matchedBooking.account_type).trim();
+            if (!accountLink && matchedBooking.account_link) accountLink = String(matchedBooking.account_link).trim();
+        }
+    }
+
+    // If still missing, check passenger names against state.allClients
+    if ((!accountLink || !accountType) && Array.isArray(state.allClients)) {
+        for (const t of allRows) {
+            const rawPaxName = String(t.name || '').replace(/\s*\(fees\)\s*$/i, '').trim().toLowerCase();
+            if (!rawPaxName) continue;
+            const clientByName = state.allClients.find(c => 
+                String(c.name || '').trim().toLowerCase() === rawPaxName &&
+                !String(c.name || '').includes('(Fees)')
+            );
+            if (clientByName) {
+                if (!accountLink && clientByName.account_link) accountLink = String(clientByName.account_link).trim();
+                if (!accountType && clientByName.account_type) accountType = String(clientByName.account_type).trim();
+                if (!accountName && clientByName.account_name) accountName = String(clientByName.account_name).trim();
+                if (accountLink && accountType) break;
+            }
+        }
+    }
+
+    // If no explicit accountLink, check if accountName itself is a link, handle, or phone number
+    if (!accountLink && accountName) {
+        const cleanedDigits = accountName.replace(/[^\d+]/g, '');
+        if (/^(\+?959|09|\d{7,12})$/.test(cleanedDigits) ||
+            accountName.startsWith('@') ||
+            /^(https?:\/\/|[a-z0-9-]+\.[a-z]{2,})/i.test(accountName)) {
+            accountLink = accountName;
+        }
+    }
+
+    const safeAccountLink = accountLink ? formatSafeAccountLink(accountLink, accountType) : '';
+    const socialMeta = (accountType || accountLink) ? getSocialPlatformMeta(accountType, accountLink) : null;
 
     // Group passenger rows by name to avoid duplicating round-trip legs
     const passengerMap = new Map();
@@ -1813,11 +1873,28 @@ function showTripPlanDetail(pnr) {
                         </button>
                     </div>
                     ${renderPhoneticExpansionHtml(pnr, 'tripPnrPhoneticPanel')}
-                    ${accountName ? `
-                    <div class="pnr-account-premium" title="${dashboardEscapeHtml(accountName)}">
+                    ${(accountName || safeAccountLink) ? `
+                    <div class="pnr-account-premium" title="${dashboardEscapeHtml(accountName || accountLink)}">
                         <i class="fa-solid fa-at" aria-hidden="true"></i>
                         <span class="pnr-account-label">Social media account</span>
-                        <strong class="pnr-account-value">${dashboardEscapeHtml(accountName)}</strong>
+                        <strong class="pnr-account-value">${dashboardEscapeHtml(accountName || 'Client')}</strong>
+                        ${safeAccountLink && socialMeta ? `
+                        <a href="${dashboardEscapeHtml(safeAccountLink)}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="pnr-social-link-btn"
+                           title="Open ${dashboardEscapeHtml(socialMeta.label)}: ${dashboardEscapeHtml(accountLink)}"
+                           style="--platform-color: ${socialMeta.color}; --platform-bg: ${socialMeta.badgeBg};"
+                           onclick="event.stopPropagation();"
+                           aria-label="Open ${dashboardEscapeHtml(socialMeta.label)}">
+                            <i class="${socialMeta.icon}" aria-hidden="true"></i>
+                            <span class="pnr-social-link-label">${dashboardEscapeHtml(socialMeta.label)}</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square pnr-social-link-arrow" aria-hidden="true"></i>
+                        </a>` : (socialMeta && accountType ? `
+                        <span class="pnr-social-platform-pill" style="--platform-color: ${socialMeta.color}; --platform-bg: ${socialMeta.badgeBg};">
+                            <i class="${socialMeta.icon}" aria-hidden="true"></i>
+                            <span>${dashboardEscapeHtml(socialMeta.label)}</span>
+                        </span>` : '')}
                     </div>` : ''}
                 </div>
                 <div class="pnr-card-right">
