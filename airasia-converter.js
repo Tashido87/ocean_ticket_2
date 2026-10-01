@@ -975,7 +975,6 @@ export async function generateThaiAirwaysPdfDoc(data) {
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
     const logoDataUrl = await getAirlineLogoDataUrl('Thai Airways');
-    const airplaneDataUrl = await getAirplaneIconDataUrl();
 
     const marginL = 42.5;
     const rightEdge = 552.8;
@@ -1168,42 +1167,31 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.setFillColor(...P);
         doc.rect(marginL, curY, textW, upperBoxH, 'F');
 
-        // Top line inside Purple Box: Origin ✈ Destination & FlightNo | Carrier & Sector Booking Ref
+        // Top line inside Purple Box: Origin ➔ Destination & FlightNo | Carrier & Sector Booking Ref
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.setTextColor(...WHT);
-        doc.text(`${sDepCity} `, marginL + 8, curY + 21);
-        const cityW = doc.getTextWidth(`${sDepCity} `);
-        
-        // Draw real airplane icon (pointing right towards destination)
-        let drewPlane = false;
-        if (airplaneDataUrl) {
-            try {
-                doc.addImage(airplaneDataUrl, 'PNG', marginL + 8 + cityW, curY + 9, 13, 13);
-                drewPlane = true;
-            } catch (e) {
-                console.warn('Plane addImage error', e);
-            }
-        }
-        if (!drewPlane) {
-            // Clean vector right-arrow fallback (never prints undefined box ▭)
-            doc.setDrawColor(...WHT);
-            doc.setFillColor(...WHT);
-            doc.setLineWidth(1.6);
-            doc.line(marginL + 8 + cityW + 1, curY + 16, marginL + 8 + cityW + 10, curY + 16);
-            doc.triangle(
-                marginL + 8 + cityW + 8, curY + 13,
-                marginL + 8 + cityW + 13, curY + 16,
-                marginL + 8 + cityW + 8, curY + 19,
-                'FD'
-            );
-        }
-        
-        const planeW = 16;
+        doc.text(sDepCity, marginL + 8, curY + 21);
+        const cityW = doc.getTextWidth(sDepCity);
+
+        // Draw clean, thick, bold white vector right-arrow (မျှားဖြူထူထူလေး)
+        const ax = marginL + 8 + cityW + 8;
+        const ay = curY + 16.5;
+        doc.setDrawColor(...WHT);
+        doc.setFillColor(...WHT);
+        doc.setLineWidth(2.4);
+        doc.line(ax, ay, ax + 14, ay);
+        doc.triangle(
+            ax + 11, ay - 4.5,
+            ax + 19, ay,
+            ax + 11, ay + 4.5,
+            'FD'
+        );
+
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.setTextColor(...WHT);
-        doc.text(`   ${sArrCity}`, marginL + 8 + cityW + planeW, curY + 21);
+        doc.text(sArrCity, ax + 26, curY + 21);
 
         const sectorPnr = f.pnr || pnr;
 
@@ -2024,7 +2012,16 @@ export function renderThaiAirwaysTicketHtml(data) {
                     <div style="background:#3D1E6D; color:#ffffff; padding:12px 14px;">
                         <!-- Top Line: Origin ✈ Destination & FlightNo | Carrier & Sector Booking Ref -->
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-                            <div style="font-size:16px; font-weight:800; letter-spacing:0.3px;">${fDepCity} &nbsp; ✈ &nbsp; ${fArrCity}</div>
+                            <div style="font-size:16px; font-weight:800; letter-spacing:0.3px; display:inline-flex; align-items:center;">
+                                <span>${fDepCity}</span>
+                                <span style="display:inline-flex; align-items:center; margin:0 9px;">
+                                    <svg width="22" height="15" viewBox="0 0 22 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <line x1="1" y1="7.5" x2="16" y2="7.5" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+                                        <polygon points="14,2.5 21,7.5 14,12.5" fill="#FFFFFF"/>
+                                    </svg>
+                                </span>
+                                <span>${fArrCity}</span>
+                            </div>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <div style="font-size:11px; font-weight:500; opacity:0.95;">${fFlightNo} &nbsp;|&nbsp; Thai Airways International</div>
                                 ${fPnr ? `<div style="background:#D9A300; color:#3D1E6D; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:3px; letter-spacing:0.5px; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.25);">Booking Ref: ${fPnr}</div>` : ''}
