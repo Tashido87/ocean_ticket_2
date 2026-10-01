@@ -24,7 +24,7 @@ import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } from './airasia-converter.js?v=31';
-import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=13';
+import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } from './agoda-hotel-converter.js?v=14';
 
 // UI Modules
 // MODIFIED: Added 'addExistingPassengerForm' to imports
@@ -3705,6 +3705,12 @@ function initializeChinaHotelGenerator() {
     const chinaHotelPanel = document.getElementById('chinaHotelPanel');
     const hotelPanel = document.getElementById('hotelPanel');
 
+    // Agoda PDF Drop Zone & File Input
+    const dropZone = document.getElementById('agodaDropZone');
+    const fileInput = document.getElementById('agodaFileInput');
+    const uploadBtn = document.getElementById('agodaUploadPdfBtn');
+    const modalImportBtn = document.getElementById('agodaModalImportPdfBtn');
+
     // Toggle between Agoda style (default) and Old style voucher
     switchToOldBtn?.addEventListener('click', () => {
         if (chinaHotelPanel) chinaHotelPanel.style.display = 'none';
@@ -3723,6 +3729,66 @@ function initializeChinaHotelGenerator() {
     });
 
     if (!modal) return;
+
+    // Handle uploaded Agoda / Trip.com PDF file
+    async function handleHotelPdfFile(file) {
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            showToast('Please upload a valid PDF file.', 'warning');
+            return;
+        }
+
+        showToast('Extracting Agoda / Trip.com hotel confirmation...', 'info');
+        try {
+            const parsedData = await parseHotelConfirmationPdf(file);
+            populateForm(parsedData);
+
+            // Also update the quick panel inputs on the Services tab
+            if (document.getElementById('service_hotel_destination') && parsedData.destination) {
+                document.getElementById('service_hotel_destination').value = parsedData.destination;
+            }
+            if (document.getElementById('service_hotel_client_name') && parsedData.clientName) {
+                document.getElementById('service_hotel_client_name').value = parsedData.clientName;
+            }
+            if (document.getElementById('service_hotel_arrival') && parsedData.arrivalDate) {
+                document.getElementById('service_hotel_arrival').value = parsedData.arrivalDate;
+            }
+            if (document.getElementById('service_hotel_departure') && parsedData.departureDate) {
+                document.getElementById('service_hotel_departure').value = parsedData.departureDate;
+            }
+
+            modal.classList.add('show');
+            const hotelName = parsedData.propertyName || 'Hotel';
+            showToast(`Voucher extracted successfully: ${hotelName}`, 'success');
+        } catch (err) {
+            console.error('Hotel PDF parsing error:', err);
+            showToast(`PDF parsing failed: ${err.message}`, 'error');
+        }
+    }
+
+    uploadBtn?.addEventListener('click', () => fileInput?.click());
+    modalImportBtn?.addEventListener('click', () => fileInput?.click());
+    dropZone?.addEventListener('click', () => fileInput?.click());
+
+    fileInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) handleHotelPdfFile(file);
+        e.target.value = '';
+    });
+
+    dropZone?.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone?.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    dropZone?.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleHotelPdfFile(file);
+    });
 
     function collectFormData() {
         const dest = document.getElementById('agoda_destination')?.value || 'Bangkok';
@@ -3746,6 +3812,8 @@ function initializeChinaHotelGenerator() {
             propertyAddress: document.getElementById('agoda_property_address')?.value || preset.propertyAddress,
             propertyContact: document.getElementById('agoda_property_contact')?.value || preset.propertyContact,
             cancellationDate: document.getElementById('agoda_cancellation_date')?.value || '',
+            cancellationPolicy: document.getElementById('agoda_cancellation_policy')?.value || '',
+            benefits: document.getElementById('agoda_benefits')?.value || preset.benefits,
             remarksSpecial: document.getElementById('agoda_remarks_special')?.value || 'NonSmoke,LargeBed'
         };
     }
@@ -3802,12 +3870,18 @@ function initializeChinaHotelGenerator() {
             document.getElementById('agoda_property_address').value = data.propertyAddress || preset.propertyAddress;
         }
         if (document.getElementById('agoda_property_contact')) {
-            document.getElementById('agoda_property_contact').value = data.propertyContact || preset.propertyContact;
+            document.getElementById('agoda_property_contact').value = data.propertyContact !== undefined ? data.propertyContact : preset.propertyContact;
         }
         if (document.getElementById('agoda_cancellation_date')) {
             const cancelInput = document.getElementById('agoda_cancellation_date');
             cancelInput.value = data.cancellationDate || (data.arrivalDate ? calculateDefaultCancellationDate(data.arrivalDate) : '');
             cancelInput.dataset.autoFilled = data.cancellationDate ? 'false' : 'true';
+        }
+        if (document.getElementById('agoda_cancellation_policy')) {
+            document.getElementById('agoda_cancellation_policy').value = data.cancellationPolicy || '';
+        }
+        if (document.getElementById('agoda_benefits')) {
+            document.getElementById('agoda_benefits').value = data.benefits || preset.benefits;
         }
         if (document.getElementById('agoda_remarks_special')) {
             document.getElementById('agoda_remarks_special').value = data.remarksSpecial || 'NonSmoke,LargeBed';

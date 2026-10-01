@@ -394,7 +394,7 @@ export function renderAgodaHotelHtml(data = {}) {
 
             <!-- 4. Cancellation Policy Banner -->
             <div style="background:#ebebeb; border:1px solid #d4d4d4; border-radius:3px; padding:5px 8px; margin:7px 0; font-size:9.5px; line-height:1.35; color:#000000;">
-                <strong>Cancellation Policy:</strong> Risk-free booking! You can cancel until ${cancellationDate} and pay nothing! If you fail to arrive or cancel the booking, no refund will be given. If you fail to arrive or cancel the booking, no refund will be given.
+                <strong>Cancellation Policy:</strong> ${data.cancellationPolicy ? data.cancellationPolicy.replace(/^Cancellation Policy\s*:?\s*/i, '') : `Risk-free booking! You can cancel until ${cancellationDate} and pay nothing! If you fail to arrive or cancel the booking, no refund will be given. If you fail to arrive or cancel the booking, no refund will be given.`}
             </div>
 
             <!-- 5. Benefits Included Banner -->
@@ -780,12 +780,15 @@ export async function generateAgodaPdfDoc(data) {
     doc.setFillColor(235, 235, 235);
     doc.rect(innerX, cancelY, innerW, cancelH, 'F');
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.2);
+    doc.setFontSize(6.8);
     doc.setTextColor(0, 0, 0);
-    const cancelMsg1 = `Cancellation Policy: Risk-free booking! You can cancel until ${cancellationDate} and pay nothing! If you fail to arrive or cancel the booking, no refund will be`;
-    const cancelMsg2 = `given. If you fail to arrive or cancel the booking, no refund will be given.`;
-    doc.text(cancelMsg1, innerX + 4.5, cancelY + 10.0);
-    doc.text(cancelMsg2, innerX + 4.5, cancelY + 20.0);
+    const rawCancelText = data.cancellationPolicy 
+        ? `Cancellation Policy: ${data.cancellationPolicy.replace(/^Cancellation Policy\s*:?\s*/i, '')}`
+        : `Cancellation Policy: Risk-free booking! You can cancel until ${cancellationDate} and pay nothing! If you fail to arrive or cancel the booking, no refund will be given. If you fail to arrive or cancel the booking, no refund will be given.`;
+    const cancelLines = doc.splitTextToSize(rawCancelText, innerW - 10);
+    cancelLines.slice(0, 3).forEach((line, idx) => {
+        doc.text(line, innerX + 4.5, cancelY + 8.5 + (idx * 7.5));
+    });
 
     // 5. Benefits Included Banner (Gray)
     const benefitY = 276.1;
@@ -1089,4 +1092,239 @@ export async function shareAgodaBooking(data) {
             }
         }
     }
+}
+
+/**
+ * Extract clean hotel name and address from Agoda / Trip.com confirmation voucher text
+ */
+function extractHotelAndAddress(text) {
+    const hotelSectionMatch = text.match(/(?:Booking\s*Confirmation[\s\S]*?Voucher|Voucher)\s*([\s\S]*?)Number\s*of\s*Rooms/i);
+    if (!hotelSectionMatch) return { propertyName: '', propertyAddress: '' };
+    
+    const rawLines = hotelSectionMatch[1].split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+    if (rawLines.length === 0) return { propertyName: '', propertyAddress: '' };
+
+    let propertyName = '';
+    let addressLines = [];
+
+    if (rawLines[0].includes('(') && !rawLines[0].includes(')') && rawLines.length > 1) {
+        const combined = rawLines[0] + ' ' + rawLines[1];
+        const nameMatch = combined.match(/^([^(]+?\s*\([^)]+\))(.*)$/);
+        if (nameMatch) {
+            propertyName = nameMatch[1].trim();
+        } else {
+            propertyName = rawLines[0] + ' ' + rawLines[1];
+        }
+        addressLines = rawLines.slice(2);
+    } else {
+        const nameMatch = rawLines[0].match(/^([^(]+?\s*\([^)]+\))(.*)$/);
+        if (nameMatch) {
+            propertyName = nameMatch[1].trim();
+        } else {
+            propertyName = rawLines[0];
+        }
+        addressLines = rawLines.slice(1);
+    }
+
+    return {
+        propertyName,
+        propertyAddress: addressLines.join('\n')
+    };
+}
+
+/**
+ * Detect preset destination based on hotel name, address, or country text
+ */
+function detectHotelDestination(text = '', propertyName = '', propertyAddress = '') {
+    const combined = `${text} ${propertyName} ${propertyAddress}`.toLowerCase();
+    if (combined.includes('singapore')) return 'Singapore';
+    if (combined.includes('guangzhou') || combined.includes('china') || combined.includes('beijing') || combined.includes('shanghai') || combined.includes('shenzhen') || combined.includes('chengdu')) {
+        return 'Guangzhou';
+    }
+    if (combined.includes('kuala lumpur') || combined.includes('malaysia') || combined.includes('penang')) {
+        return 'Kuala Lumpur';
+    }
+    return 'Bangkok';
+}
+
+/**
+ * Parse hotel voucher text into structured Agoda confirmation data
+ */
+export function parseHotelConfirmationText(text) {
+    if (!text || typeof text !== 'string') return null;
+
+    const result = {
+        bookingRefNo: '',
+        guestRefNo: '',
+        bookingId: '',
+        clientName: '',
+        countryOfResidence: 'Myanmar',
+        arrivalDate: '',
+        departureDate: '',
+        numRooms: 1,
+        roomType: 'Superior Room',
+        numAdults: 2,
+        numChildren: 0,
+        numExtraBeds: 0,
+        propertyName: '',
+        propertyAddress: '',
+        propertyContact: '',
+        cancellationPolicy: '',
+        cancellationDate: '',
+        benefits: '',
+        remarksSpecial: '',
+        destination: 'Bangkok'
+    };
+
+    // 1. Reference # for Guest / Booking ID
+    const guestRefMatch = text.match(/Reference\s*#\s*for\s*Guest\s*:\s*([A-Za-z0-9_-]+)/i) ||
+                          text.match(/Booking\s*ID\s*:\s*([A-Za-z0-9_-]+)/i) ||
+                          text.match(/Guest\s*Ref(?:\.|erence)?\s*(?:#|No\.?)?\s*:\s*([A-Za-z0-9_-]+)/i);
+    if (guestRefMatch) {
+        result.guestRefNo = guestRefMatch[1].trim();
+        result.bookingId = result.guestRefNo;
+    } else {
+        result.bookingId = generateRandomBookingId();
+    }
+
+    // 2. Booking Reference No
+    const refMatch = text.match(/Booking\s*Reference\s*(?:No\.?|Number)?\s*:\s*([A-Za-z0-9_-]+)/i) ||
+                     text.match(/Reference\s*(?:No\.?|Number)?\s*:\s*([A-Za-z0-9_-]+)/i) ||
+                     text.match(/Booking\s*Ref(?:\.|erence)?\s*:\s*([A-Za-z0-9_-]+)/i);
+    if (refMatch) {
+        result.bookingRefNo = refMatch[1].trim();
+    }
+
+    // 3. Client / Guest Name
+    const clientMatch = text.match(/Client\s*:\s*([^\n\r\t]+)/i) ||
+                        text.match(/Guest\s*Name\s*:\s*([^\n\r\t]+)/i) ||
+                        text.match(/Lead\s*Guest\s*:\s*([^\n\r\t]+)/i);
+    if (clientMatch) {
+        result.clientName = clientMatch[1].trim().replace(/\s+/g, ' ');
+    } else {
+        const guestListMatch = text.match(/Guest\s*List\s*:\s*([^\n\r\t]+)/i);
+        if (guestListMatch) {
+            result.clientName = guestListMatch[1].trim().replace(/\s+/g, ' ');
+        }
+    }
+
+    // 4. Stay Dates: Arrival & Departure
+    const arrivalMatch = text.match(/Arrival\s*:\s*([^\n\r\t]+)/i) ||
+                         text.match(/Check-?in\s*(?:Date)?\s*:\s*([^\n\r\t]+)/i);
+    if (arrivalMatch) {
+        result.arrivalDate = arrivalMatch[1].trim();
+    }
+    const departureMatch = text.match(/Departure\s*:\s*([^\n\r\t]+)/i) ||
+                           text.match(/Check-?out\s*(?:Date)?\s*:\s*([^\n\r\t]+)/i);
+    if (departureMatch) {
+        result.departureDate = departureMatch[1].trim();
+    }
+
+    // 5. Table: Number of Rooms, Room Type, Adults, Children, Extra Beds
+    const tablePattern = /Number\s*of\s*Rooms\s*:\s*\t*Room\s*Type\s*:\s*\t*Number\s*of\s*Adults\s*:\s*Number\s*of\s*Children\s*:\s*Number\s*of\s*Extra\s*Beds\s*:\s*([\r\n]+)\s*(\d+)\s*\t*\s*([^\t\r\n\d][^\t\r\n]*?)\s*\t*\s*(\d+)\s*\t*\s*(\d+)\s*\t*\s*(\d+)/i;
+    const tableMatch = text.match(tablePattern);
+    if (tableMatch) {
+        result.numRooms = parseInt(tableMatch[2], 10) || 1;
+        result.roomType = tableMatch[3].trim();
+        result.numAdults = parseInt(tableMatch[4], 10) || 1;
+        result.numChildren = parseInt(tableMatch[5], 10) || 0;
+        result.numExtraBeds = parseInt(tableMatch[6], 10) || 0;
+    } else {
+        const roomsMatch = text.match(/Number\s*of\s*Rooms\s*:\s*(\d+)/i) || text.match(/Rooms?\s*:\s*(\d+)/i);
+        if (roomsMatch) result.numRooms = parseInt(roomsMatch[1], 10);
+        
+        const typeMatch = text.match(/Room\s*Type\s*:\s*([^\n\r\t]+)/i);
+        if (typeMatch) result.roomType = typeMatch[1].trim();
+        
+        const adultsMatch = text.match(/Number\s*of\s*Adults\s*:\s*(\d+)/i) || text.match(/Adults?\s*:\s*(\d+)/i);
+        if (adultsMatch) result.numAdults = parseInt(adultsMatch[1], 10);
+        
+        const childrenMatch = text.match(/Number\s*of\s*Children\s*:\s*(\d+)/i) || text.match(/Children\s*:\s*(\d+)/i);
+        if (childrenMatch) result.numChildren = parseInt(childrenMatch[1], 10);
+        
+        const extraBedsMatch = text.match(/Number\s*of\s*Extra\s*Beds\s*:\s*(\d+)/i) || text.match(/Extra\s*Beds?\s*:\s*(\d+)/i);
+        if (extraBedsMatch) result.numExtraBeds = parseInt(extraBedsMatch[1], 10);
+    }
+
+    // 6. Remarks / Special Requests
+    const remarksMatch = text.match(/Remarks\s*:\s*([\s\S]*?)(?:Guest\s*List|All\s*special\s*requests|Reference\s*#|Cancellation|Benefits|$)/i);
+    if (remarksMatch) {
+        result.remarksSpecial = remarksMatch[1].trim().replace(/\s+/g, ' ');
+    }
+
+    // 7. Cancellation Policy & Cancellation Date
+    const cancelMatch = text.match(/Cancellation\s*Policy\s*:\s*([\s\S]*?)(?:Benefits\s*Included|--|\n\n|$)/i);
+    if (cancelMatch) {
+        result.cancellationPolicy = cancelMatch[1].trim().replace(/\s+/g, ' ');
+        const freeCancelMatch = result.cancellationPolicy.match(/(?:cancel\s+for\s+free\s+before|until)\s+([A-Za-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}\s+[A-Za-z]+\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4})/i);
+        if (freeCancelMatch) {
+            result.cancellationDate = freeCancelMatch[1].trim();
+        }
+    }
+
+    // 8. Benefits Included
+    const benefitsMatch = text.match(/Benefits\s*Included\s*:?\s*([^\n\r]+)/i);
+    if (benefitsMatch) {
+        result.benefits = benefitsMatch[1].trim();
+    }
+
+    // 9. Hotel Name & Address
+    const hotelData = extractHotelAndAddress(text);
+    if (hotelData.propertyName) {
+        result.propertyName = hotelData.propertyName;
+    }
+    if (hotelData.propertyAddress) {
+        result.propertyAddress = hotelData.propertyAddress;
+    }
+
+    // 10. Phone number (optional)
+    const phoneMatch = text.match(/(?:Tel|Phone|Contact|Telephone)\s*(?:No\.?|Number)?\s*:\s*([+\d\s().-]{7,})/i);
+    if (phoneMatch) {
+        result.propertyContact = phoneMatch[1].trim();
+    }
+
+    // Detect destination
+    result.destination = detectHotelDestination(text, result.propertyName, result.propertyAddress);
+
+    return result;
+}
+
+/**
+ * Extract text and parse Agoda / Trip.com hotel confirmation voucher PDF file
+ */
+export async function parseHotelConfirmationPdf(file) {
+    if (!window.pdfjsLib) {
+        throw new Error('PDF.js library is not loaded. Please check your internet connection.');
+    }
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+
+    let fullText = '';
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        let pageText = '';
+        let lastY = null;
+        for (const item of textContent.items) {
+            if (!item || typeof item.str !== 'string') continue;
+            const currentY = (item.transform && item.transform.length > 5) ? item.transform[5] : null;
+            if (lastY !== null && currentY !== null && Math.abs(currentY - lastY) > 5) {
+                pageText += '\n';
+            } else if (pageText.length > 0 && !pageText.endsWith('\n') && !pageText.endsWith(' ')) {
+                pageText += ' ';
+            }
+            pageText += item.str;
+            if (currentY !== null) lastY = currentY;
+        }
+        fullText += pageText + '\n\n';
+    }
+
+    const parsed = parseHotelConfirmationText(fullText);
+    if (!parsed) {
+        throw new Error('Could not parse hotel confirmation data from the uploaded PDF.');
+    }
+    return parsed;
 }
