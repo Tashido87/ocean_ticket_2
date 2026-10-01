@@ -1161,22 +1161,32 @@ export async function shareAgodaBooking(data) {
  * Extract clean hotel name and address from Agoda / Trip.com confirmation voucher text
  */
 function extractHotelAndAddress(text) {
-    const hotelSectionMatch = text.match(/(?:Booking\s*Confirmation[\s\S]*?Voucher|Voucher)\s*([\s\S]*?)Number\s*of\s*Rooms/i);
-    if (!hotelSectionMatch) return { propertyName: '', propertyAddress: '' };
-    
-    const rawLines = hotelSectionMatch[1].split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+    if (!text || typeof text !== 'string') return { propertyName: '', propertyAddress: '' };
+
+    // Strip out header titles and booking reference number line
+    let cleaned = text.replace(/Booking\s*Confirmation/gi, '')
+                      .replace(/Voucher/gi, '')
+                      .replace(/Booking\s*Reference\s*(?:No\.?|Number)?\s*:\s*[A-Za-z0-9_-]+/gi, '');
+
+    // Stop extraction before any next section labels:
+    // Property Contact Number, Client :, Guest Name :, Lead Guest :, Arrival :, Number of Rooms, Room Type
+    const sectionMatch = cleaned.match(/([\s\S]*?)(?:Property\s*Contact\s*Number|Contact\s*Number\s*:|Tel\s*:|Phone\s*:|Client\s*:|Guest\s*Name\s*:|Lead\s*Guest\s*:|Arrival\s*:|Check-?in\s*:|Number\s*of\s*Rooms|Room\s*Type)/i);
+    const hotelBlock = sectionMatch ? sectionMatch[1] : cleaned;
+
+    const rawLines = hotelBlock.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
     if (rawLines.length === 0) return { propertyName: '', propertyAddress: '' };
 
     let propertyName = '';
     let addressLines = [];
 
+    // Check if line 0 has '(' but not ')' and line 1 has ')'
     if (rawLines[0].includes('(') && !rawLines[0].includes(')') && rawLines.length > 1) {
         const combined = rawLines[0] + ' ' + rawLines[1];
         const nameMatch = combined.match(/^([^(]+?\s*\([^)]+\))(.*)$/);
         if (nameMatch) {
             propertyName = nameMatch[1].trim();
         } else {
-            propertyName = rawLines[0] + ' ' + rawLines[1];
+            propertyName = combined;
         }
         addressLines = rawLines.slice(2);
     } else {
@@ -1188,6 +1198,15 @@ function extractHotelAndAddress(text) {
         }
         addressLines = rawLines.slice(1);
     }
+
+    // Filter out duplicated hotel names from address lines (e.g. 'Khu Nghỉ Ancarine')
+    addressLines = addressLines.filter(line => {
+        if (!line) return false;
+        if (propertyName.toLowerCase().includes(line.toLowerCase()) && !/\d{2,}/.test(line)) {
+            return false;
+        }
+        return true;
+    });
 
     return {
         propertyName,
@@ -1283,7 +1302,7 @@ export function parseHotelConfirmationText(text) {
         result.departureDate = departureMatch[1].trim();
     }
 
-    // 5. Table: Number of Rooms, Room Type, Adults, Children, Extra Beds
+    // 5. Table or separate items: Number of Rooms, Room Type, Adults, Children, Extra Beds
     const tablePattern = /Number\s*of\s*Rooms\s*:\s*\t*Room\s*Type\s*:\s*\t*Number\s*of\s*Adults\s*:\s*Number\s*of\s*Children\s*:\s*Number\s*of\s*Extra\s*Beds\s*:\s*([\r\n]+)\s*(\d+)\s*\t*\s*([^\t\r\n\d][^\t\r\n]*?)\s*\t*\s*(\d+)\s*\t*\s*(\d+)\s*\t*\s*(\d+)/i;
     const tableMatch = text.match(tablePattern);
     if (tableMatch) {
@@ -1296,8 +1315,14 @@ export function parseHotelConfirmationText(text) {
         const roomsMatch = text.match(/Number\s*of\s*Rooms\s*:\s*(\d+)/i) || text.match(/Rooms?\s*:\s*(\d+)/i);
         if (roomsMatch) result.numRooms = parseInt(roomsMatch[1], 10);
         
-        const typeMatch = text.match(/Room\s*Type\s*:\s*([^\n\r\t]+)/i);
-        if (typeMatch) result.roomType = typeMatch[1].trim();
+        // Multi-line Room Type match (between 'Room Type :' and 'Number of Adults')
+        const multilineTypeMatch = text.match(/Room\s*Type\s*:\s*([\s\S]*?)(?:Number\s*of\s*Adults|Adults?\s*:)/i);
+        if (multilineTypeMatch) {
+            result.roomType = multilineTypeMatch[1].trim().replace(/\s+/g, ' ');
+        } else {
+            const singleTypeMatch = text.match(/Room\s*Type\s*:\s*([^\n\r\t]+)/i);
+            if (singleTypeMatch) result.roomType = singleTypeMatch[1].trim();
+        }
         
         const adultsMatch = text.match(/Number\s*of\s*Adults\s*:\s*(\d+)/i) || text.match(/Adults?\s*:\s*(\d+)/i);
         if (adultsMatch) result.numAdults = parseInt(adultsMatch[1], 10);
@@ -1310,7 +1335,7 @@ export function parseHotelConfirmationText(text) {
     }
 
     // 6. Remarks / Special Requests
-    const remarksMatch = text.match(/Remarks\s*:\s*([\s\S]*?)(?:Guest\s*List|All\s*special\s*requests|Reference\s*#|Cancellation|Benefits|$)/i);
+    const remarksMatch = text.match(/Remarks\s*:\s*([\s\S]*?)(?:Guest\s*List|All\s*special\s*requests|Reference\s*#|Payment\s*Method|Cancellation|Benefits|$)/i);
     if (remarksMatch) {
         result.remarksSpecial = remarksMatch[1].trim().replace(/\s+/g, ' ');
     }
@@ -1340,8 +1365,8 @@ export function parseHotelConfirmationText(text) {
         result.propertyAddress = hotelData.propertyAddress;
     }
 
-    // 10. Phone number (optional)
-    const phoneMatch = text.match(/(?:Tel|Phone|Contact|Telephone)\s*(?:No\.?|Number)?\s*:\s*([+\d\s().-]{7,})/i);
+    // 10. Phone number
+    const phoneMatch = text.match(/(?:Property\s*Contact\s*Number|Contact\s*Number|Tel|Phone|Telephone)\s*(?:No\.?|Number)?\s*:\s*([+\d\s().-]{7,})/i);
     if (phoneMatch) {
         result.propertyContact = phoneMatch[1].trim();
     }
