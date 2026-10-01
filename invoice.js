@@ -12,6 +12,8 @@ const INVOICE_THEME = {
     accentRgb: [185, 28, 28],
     accentSoftRgb: [254, 226, 226],
     accentBorderRgb: [252, 165, 165],
+    secondaryHex: '#B91C1C',
+    secondaryRgb: [185, 28, 28],
     textRgb: [60, 60, 60],
     mutedRgb: [107, 114, 128],
     lineRgb: [229, 231, 235]
@@ -36,6 +38,8 @@ const BRANDS = {
             accentRgb: [185, 28, 28],
             accentSoftRgb: [254, 226, 226],
             accentBorderRgb: [252, 165, 165],
+            secondaryHex: '#B91C1C',
+            secondaryRgb: [185, 28, 28],
             textRgb: [60, 60, 60],
             mutedRgb: [107, 114, 128],
             lineRgb: [229, 231, 235]
@@ -55,10 +59,12 @@ const BRANDS = {
         phones: ['09964026208'],
         email: 'magicalandticket@gmail.com',
         theme: {
-            accentHex: '#1CB5AD',
-            accentRgb: [28, 181, 173],
-            accentSoftRgb: [232, 248, 247],
-            accentBorderRgb: [190, 225, 223],
+            accentHex: '#4A357D',
+            accentRgb: [74, 53, 125],
+            accentSoftRgb: [245, 242, 252],
+            accentBorderRgb: [221, 212, 244],
+            secondaryHex: '#F0582C',
+            secondaryRgb: [240, 88, 44],
             textRgb: [46, 47, 56],
             mutedRgb: [107, 114, 128],
             lineRgb: [229, 231, 235]
@@ -197,6 +203,7 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
     const accentSoftHtml = `rgb(${theme.accentSoftRgb.join(',')})`;
     const accentBorderHtml = `rgb(${theme.accentBorderRgb.join(',')})`;
     const lineHtml = `rgb(${theme.lineRgb.join(',')})`;
+    const secondaryHex = theme.secondaryHex || theme.accentHex;
 
     return `
         .invoice-container {
@@ -359,11 +366,11 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
             font-weight: 600;
         }
         .inv-total-row.balance {
-            color: ${theme.accentHex};
+            color: ${secondaryHex};
             font-weight: 700;
         }
         .inv-total-row.balance span:last-child {
-            color: ${theme.accentHex};
+            color: ${secondaryHex};
             font-weight: 700;
         }
         .inv-payment-area {
@@ -403,7 +410,7 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
         .inv-bank-item strong {
             display: block;
             font-weight: 700;
-            color: ${theme.accentHex};
+            color: ${secondaryHex};
         }
     `;
 }
@@ -683,7 +690,7 @@ function renderPaymentSection(doc, startY, theme = INVOICE_THEME) {
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.setTextColor(...theme.accentRgb);
+        doc.setTextColor(...(theme.secondaryRgb || theme.accentRgb));
         doc.text(bank.bank, x, lineY);
 
         doc.setFont('helvetica', 'normal');
@@ -808,7 +815,7 @@ function renderInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
     const totalRows = [
         { label: 'Sub Total', value: formatCurrency(totalAmount), color: theme.mutedRgb },
         { label: 'Total', value: formatCurrency(totalAmount), color: theme.textRgb, bold: true },
-        { label: balanceLabel, value: formatCurrency(totalAmount), color: theme.accentRgb, bold: true }
+        { label: balanceLabel, value: formatCurrency(totalAmount), color: (theme.secondaryRgb || theme.accentRgb), bold: true }
     ];
 
     totalRows.forEach((row, index) => {
