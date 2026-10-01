@@ -309,10 +309,34 @@ export function displayTickets(tickets, page = 1) {
             dateChangeHtml = (ticket.date_change || 0).toLocaleString();
         }
 
+        let pnrCellHtml = '—';
+        if (isGroup) {
+            const groupPnrs = [...new Set((ticket.tickets || [])
+                .map(t => String(t.booking_reference || '').trim())
+                .filter(p => p && p !== 'No PNR' && p !== '—' && p !== 'N/A'))];
+            if (groupPnrs.length) {
+                pnrCellHtml = groupPnrs.map(p => `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(p)}" title="View Booking Details: ${escapeHtml(p)}">${escapeHtml(p)}</a>`).join(', ');
+            }
+        } else if (ticket._isHotel) {
+            const rawRef = String(ticket.booking_reference || ticket.id || '').trim();
+            if (rawRef && rawRef !== '—' && rawRef !== 'N/A') {
+                pnrCellHtml = `<a href="#" class="clickable-hotel-ref" data-hotel-id="${escapeHtml(ticket.id)}" title="View Hotel Details: ${escapeHtml(rawRef)}">${escapeHtml(rawRef)}</a>`;
+            } else {
+                pnrCellHtml = escapeHtml(rawRef || '—');
+            }
+        } else {
+            const rawPnr = String(ticket.booking_reference || '').trim();
+            if (rawPnr && rawPnr !== 'No PNR' && rawPnr !== '—' && rawPnr !== 'N/A') {
+                pnrCellHtml = `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(rawPnr)}" title="View Booking Details: ${escapeHtml(rawPnr)}">${escapeHtml(rawPnr)}</a>`;
+            } else if (rawPnr) {
+                pnrCellHtml = escapeHtml(rawPnr);
+            }
+        }
+
         row.innerHTML = `
             <td>${formatDateToDMMMY(ticket.issued_date || ticket.dateRange || '')}</td>
             <td>${nameCell}</td>
-            <td>${isGroup ? escapeHtml(ticket.tickets[0]?.booking_reference || '') : escapeHtml(ticket.booking_reference || '')}</td>
+            <td>${pnrCellHtml}</td>
             <td class="route-cell">${routeText}</td>
             <td>${airlineText}</td>
             <td class="num-cell">${netAmountHtml}</td>
@@ -2254,15 +2278,21 @@ export function deleteTicketWithConfirm(ticketId) {
 }
 
 export function showGroupDetails(group) {
-    const rows = group.tickets.map(t => `
+    const rows = group.tickets.map(t => {
+        const rawPnr = String(t.booking_reference || '').trim();
+        const pnrHtml = (rawPnr && rawPnr !== 'No PNR' && rawPnr !== '—' && rawPnr !== 'N/A')
+            ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(rawPnr)}" title="View Booking Details: ${escapeHtml(rawPnr)}">${escapeHtml(rawPnr)}</a>`
+            : escapeHtml(rawPnr || '—');
+        return `
         <tr>
             <td>${escapeHtml(t.issued_date || '')}</td>
             <td>${escapeHtml(t.name || '')}</td>
-            <td>${escapeHtml(t.booking_reference || '')}</td>
+            <td>${pnrHtml}</td>
             <td class="num-cell">${(t.net_amount || 0).toLocaleString()}</td>
             <td class="num-cell">${(t.commission || 0).toLocaleString()}</td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 
     const content = `
         <h3>${escapeHtml(group.accountName)} <span class="group-badge">${group.count} clients</span></h3>

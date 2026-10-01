@@ -869,6 +869,41 @@ tbody tr:hover { background-color: var(--surface-soft); }
 }
 
 /* --- RECORDS TABLE --- */
+#resultsTable .clickable-pnr {
+    color: var(--apple-blue, #007aff);
+    font-weight: 700;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-block;
+    padding: 1px 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+#resultsTable .clickable-pnr:hover {
+    color: #0056b3;
+    background: rgba(0, 122, 255, 0.08);
+    text-decoration: underline;
+}
+
+#resultsTable .clickable-hotel-ref {
+    color: #b91c1c;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-block;
+    padding: 1px 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+#resultsTable .clickable-hotel-ref:hover {
+    color: #991b1b;
+    background: rgba(185, 28, 28, 0.08);
+    text-decoration: underline;
+}
+
 #resultsTable .num-cell,
 #resultsTable th.num-header {
     text-align: right;

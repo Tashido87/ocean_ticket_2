@@ -119,6 +119,20 @@ document.addEventListener('click', (e) => {
         return;
     }
 
+    const hotelEl = e.target.closest('.clickable-hotel-ref');
+    if (hotelEl) {
+        e.preventDefault();
+        e.stopPropagation();
+        const hotelId = hotelEl.dataset.hotelId;
+        const res = (state.allHotels || []).find(h => h.id === hotelId);
+        if (res) {
+            import('./tickets.js').then(({ showHotelDetails }) => {
+                showHotelDetails(res);
+            });
+        }
+        return;
+    }
+
     const rowEl = e.target.closest('.travel-schedule-row');
     if (rowEl) {
         e.preventDefault();
@@ -1688,12 +1702,29 @@ function wireDashboardPnrButtons(container) {
     // Buttons removed in favor of global .clickable-pnr listener
 }
 
-function showTripPlanDetail(pnr) {
-    const allRows = (state.allTickets || []).filter(t =>
-        String(t.booking_reference || '').trim().toUpperCase() === pnr.toUpperCase() &&
+export function showTripPlanDetail(pnr) {
+    const searchPnr = String(pnr || '').trim().toUpperCase();
+    if (!searchPnr || searchPnr === 'NO PNR' || searchPnr === '—' || searchPnr === 'N/A') return;
+
+    let allRows = (state.allTickets || []).filter(t =>
+        String(t.booking_reference || '').trim().toUpperCase() === searchPnr &&
         !isCanceledTicket(t)
     );
-    if (!allRows.length) return;
+    if (!allRows.length) {
+        allRows = (state.allTickets || []).filter(t =>
+            String(t.booking_reference || '').trim().toUpperCase() === searchPnr
+        );
+    }
+    if (!allRows.length && Array.isArray(state.filteredTickets)) {
+        allRows = (state.filteredTickets || []).filter(t =>
+            String(t.booking_reference || '').trim().toUpperCase() === searchPnr
+        );
+    }
+    if (!allRows.length) {
+        showView('manage');
+        findTicketForManage(pnr);
+        return;
+    }
 
     const passengerRows = allRows.filter(t => !isFeeEntryRow(t));
     const feeRows = allRows.filter(t => isFeeEntryRow(t));
@@ -1979,6 +2010,8 @@ function showTripPlanDetail(pnr) {
         });
     });
 }
+
+window.showTripPlanDetail = showTripPlanDetail;
 
 function renderDashboardTravelSchedule(groups) {
     const container = document.getElementById('dashboardTravelSchedule');
