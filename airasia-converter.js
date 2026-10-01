@@ -1974,6 +1974,7 @@ export async function downloadAirAsiaPdf(data) {
  * Generate preview HTML markup for Thai Airways matching official template
  */
 export function renderThaiAirwaysTicketHtml(data) {
+    const logoSrc = cachedThaiLogoDataUrl || 'thai-airways-logo.png';
     const allPnrs = resolveAllPnrs(data);
     const pnr = allPnrs.length > 0 ? allPnrs.join(' / ') : ((data.pnr || data.bookingNo || '').trim().toUpperCase());
     const issuedDate = data.issuedDate || formatTicketDate(new Date());

@@ -23,7 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=24';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=25';
 import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=13';
 
 // UI Modules
@@ -3356,8 +3356,12 @@ function initializeAirAsiaGenerator() {
 
     function updatePreview() {
         if (!previewContainer) return;
-        const currentData = collectFormData();
-        previewContainer.innerHTML = renderAirAsiaTicketHtml(currentData);
+        try {
+            const currentData = collectFormData();
+            previewContainer.innerHTML = renderAirAsiaTicketHtml(currentData);
+        } catch (err) {
+            console.error('Preview update error:', err);
+        }
     }
 
     const formInputs = modal.querySelectorAll('.airasia-form-scroll input, .airasia-form-scroll select, .airasia-form-scroll textarea');
