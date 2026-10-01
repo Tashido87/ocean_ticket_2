@@ -1211,7 +1211,7 @@
                         <!-- AGODA HOTEL BOOKING (Default) -->
                         <div class="service-panel" id="chinaHotelPanel">
                             <div class="service-panel-header">
-                                <span class="service-panel-icon" style="background: rgba(225, 37, 27, 0.1); color: #e1251b;"><i class="fa-solid fa-hotel"></i></span>
+                                <span class="service-panel-icon" style="background: rgba(37, 99, 235, 0.12); color: #2563eb;"><i class="fa-solid fa-hotel"></i></span>
                                 <div>
                                     <h2>Agoda Hotel Booking</h2>
                                     <p class="service-panel-desc">Generate official Agoda Booking Confirmation (Bangkok, Guangzhou, etc.) with auto-generated IDs</p>
@@ -1223,8 +1223,8 @@
                                 </div>
                             </div>
 
-                            <div class="airasia-upload-zone" id="agodaDropZone" style="margin-bottom: 1rem; border-color: rgba(225, 37, 27, 0.4);">
-                                <i class="fa-solid fa-file-pdf" style="font-size: 2.4rem; color: #e1251b; margin-bottom: 0.5rem; display:block;"></i>
+                            <div class="airasia-upload-zone" id="agodaDropZone" style="margin-bottom: 1rem; border-color: rgba(37, 99, 235, 0.45); background: rgba(37, 99, 235, 0.03);">
+                                <i class="fa-solid fa-hotel" style="font-size: 2.3rem; color: #2563eb; margin-bottom: 0.5rem; display:block;"></i>
                                 <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; color: var(--apple-text);">Drop Agoda / Trip.com Hotel Confirmation PDF here or click to browse</div>
                                 <div style="font-size: 0.8rem; color: var(--apple-text-secondary);">Auto-extracts Hotel name, Address, Reference #, Guest name, Room type, Rooms, Adults, Children, Dates, Policy & Benefits</div>
                                 <input type="file" id="agodaFileInput" accept=".pdf" style="display: none;">
@@ -1260,7 +1260,7 @@
                             </div>
 
                             <div class="service-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                <button type="button" class="btn-service btn-generate" id="agodaUploadPdfBtn" style="background: #e1251b; border-color: #e1251b; color: #fff;">
+                                <button type="button" class="btn-service btn-generate" id="agodaUploadPdfBtn" style="background: #2563eb; border-color: #2563eb; color: #fff;">
                                     <i class="fa-solid fa-cloud-arrow-up"></i> Choose PDF File
                                 </button>
                                 <button type="button" class="btn-service btn-secondary" id="openChinaHotelBtn" style="font-weight: 600;">
@@ -1720,13 +1720,13 @@
         <div class="modal-content glass-card" style="max-width: 1240px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
             <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--apple-separator); padding-bottom:12px; margin-bottom:14px;">
                 <h2 style="font-size:1.15rem; margin:0; display:flex; align-items:center; gap:8px;">
-                    <i class="fa-solid fa-hotel" style="color:#e1251b;"></i>
+                    <i class="fa-solid fa-hotel" style="color:#2563eb;"></i>
                     <span style="font-weight:700; color:var(--apple-text);">Agoda Hotel Booking</span>
-                    <span style="font-size:12px; background:rgba(225, 37, 27, 0.1); color:#e1251b; padding:2px 8px; border-radius:12px; font-weight:600;">Agoda Confirmation</span>
+                    <span style="font-size:12px; background:rgba(37, 99, 235, 0.12); color:#2563eb; padding:2px 8px; border-radius:12px; font-weight:600;">Hotel Confirmation</span>
                 </h2>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button type="button" class="btn btn-sm btn-secondary" id="agodaModalImportPdfBtn" style="font-size: 11px; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; height: 30px; cursor: pointer; font-weight: 600;">
-                        <i class="fa-solid fa-file-pdf" style="color:#e1251b;"></i> Import PDF
+                        <i class="fa-solid fa-file-pdf" style="color:#2563eb;"></i> Import PDF
                     </button>
                     <button type="button" class="modal-close" id="chinaHotelModalCloseBtn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--apple-text-secondary);">&times;</button>
                 </div>
@@ -1736,12 +1736,12 @@
                 <div class="airasia-modal-layout">
                     <!-- Form Column -->
                     <div class="airasia-form-scroll">
-                        <div style="background: rgba(225, 37, 27, 0.08); border: 1px solid rgba(225, 37, 27, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: var(--apple-text);">
-                            <i class="fa-solid fa-circle-check" style="color:#e1251b;"></i> Edit booking details below. Booking ID & Member ID are auto-generated. Live preview updates automatically.
+                        <div style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: var(--apple-text);">
+                            <i class="fa-solid fa-circle-check" style="color:#2563eb;"></i> Edit booking details below. Booking ID & Member ID are auto-generated. Live preview updates automatically.
                         </div>
 
                         <!-- Destination Preset Section -->
-                        <div class="airasia-form-section-title" style="color:#e1251b; border-color:rgba(225,37,27,0.2);">Destination / Property Preset</div>
+                        <div class="airasia-form-section-title" style="color:#2563eb; border-color:rgba(37, 99, 235, 0.25);">Destination / Property Preset</div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_destination" style="font-weight:700;">Select Destination</label>
@@ -1755,7 +1755,7 @@
                         </div>
 
                         <!-- Booking Details Section -->
-                        <div class="airasia-form-section-title" style="color:#e1251b; border-color:rgba(225,37,27,0.2);">Booking Identifiers</div>
+                        <div class="airasia-form-section-title" style="color:#2563eb; border-color:rgba(37, 99, 235, 0.25);">Booking Identifiers</div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group">
                                 <label for="agoda_booking_id" style="display:flex; justify-content:space-between; align-items:center;">
@@ -1785,7 +1785,7 @@
                         </div>
 
                         <!-- Guest Information -->
-                        <div class="airasia-form-section-title" style="color:#e1251b; border-color:rgba(225,37,27,0.2);">Guest Information</div>
+                        <div class="airasia-form-section-title" style="color:#2563eb; border-color:rgba(37,99,235,0.25);">Guest Information</div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_client_name">Client / Guest Name</label>
@@ -1814,7 +1814,7 @@
                         </div>
 
                         <!-- Room & Stay Details -->
-                        <div class="airasia-form-section-title" style="color:#e1251b; border-color:rgba(225,37,27,0.2);">Room & Stay Details</div>
+                        <div class="airasia-form-section-title" style="color:#2563eb; border-color:rgba(37,99,235,0.25);">Room & Stay Details</div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group">
                                 <label for="agoda_num_extra_beds">Number of Extra Beds (default 0)</label>
@@ -1833,7 +1833,7 @@
                         </div>
 
                         <!-- Dates Section -->
-                        <div class="airasia-form-section-title" style="color:#e1251b; border-color:rgba(225,37,27,0.2);">Stay Dates</div>
+                        <div class="airasia-form-section-title" style="color:#2563eb; border-color:rgba(37,99,235,0.25);">Stay Dates</div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group">
                                 <label for="agoda_arrival_date">Arrival Date</label>
@@ -1846,7 +1846,7 @@
                         </div>
 
                         <!-- Property / Hotel Details -->
-                        <div class="airasia-form-section-title" style="color:#e1251b; border-color:rgba(225,37,27,0.2);">Hotel / Property Information</div>
+                        <div class="airasia-form-section-title" style="color:#2563eb; border-color:rgba(37,99,235,0.25);">Hotel / Property Information</div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_property_name">Property Name</label>
@@ -1867,7 +1867,7 @@
                         </div>
 
                         <!-- Policy & Remarks -->
-                        <div class="airasia-form-section-title" style="color:#e1251b; border-color:rgba(225,37,27,0.2);">Policy & Remarks</div>
+                        <div class="airasia-form-section-title" style="color:#2563eb; border-color:rgba(37,99,235,0.25);">Policy & Remarks</div>
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
                                 <label for="agoda_benefits">Benefits Included (optional)</label>
@@ -1904,7 +1904,7 @@
 
             <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--apple-separator); padding-top:12px; margin-top:14px; flex-wrap:wrap;">
                 <button type="button" class="btn btn-secondary" id="chinaHotelCancelBtn">Cancel</button>
-                <button type="button" class="btn btn-primary" id="chinaHotelDownloadPdfBtn" style="background:#e1251b; border-color:#e1251b; color:#ffffff;">
+                <button type="button" class="btn btn-primary" id="chinaHotelDownloadPdfBtn" style="background:#2563eb; border-color:#2563eb; color:#ffffff;">
                     <i class="fa-solid fa-file-pdf"></i> Download PDF
                 </button>
             </div>
@@ -1913,6 +1913,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=85" type="module"></script>
+    <script src="main.js?v=86" type="module"></script>
 </body>
 </html>
