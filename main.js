@@ -949,7 +949,7 @@ function setupEventListeners() {
         updatePassengerPreview();
     });
 
-    async function runInvoiceGeneration() {
+    async function runInvoiceGeneration(isShare = false) {
         const pnrInput = document.getElementById('invoice_pnr_list').value;
         const pnrList = pnrInput.split(/[\n,]/).map(p => p.trim()).filter(p => p);
         const type = document.getElementById('document_type').value;
@@ -978,12 +978,14 @@ function setupEventListeners() {
             return;
         }
 
-        setButtonLoading(invoiceGenerateBtn, true);
+        const invoiceShareBtn = document.getElementById('invoiceShareBtn');
+        const targetBtn = isShare ? (invoiceShareBtn || invoiceGenerateBtn) : invoiceGenerateBtn;
+        setButtonLoading(targetBtn, true);
 
         const onDone = (ok, msg) => {
-            setButtonLoading(invoiceGenerateBtn, false);
+            setButtonLoading(targetBtn, false);
             showServiceToast('invoiceToast', msg, ok ? 'success' : 'error');
-            if (ok) addRecentActivity('invoice', `${type} — ${pnrList.join(', ')}`, format.toUpperCase());
+            if (ok) addRecentActivity('invoice', `${type} — ${pnrList.join(', ')}`, (isShare ? 'SHARE' : format).toUpperCase());
         };
 
         // Collect adjustments
