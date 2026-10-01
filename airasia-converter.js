@@ -55,6 +55,50 @@ export async function getAirAsiaLogoDataUrl() {
     return getAirlineLogoDataUrl('AirAsia');
 }
 
+let cachedAirplaneDataUrl = null;
+
+/**
+ * Preload and cache white airplane icon asset as data URL
+ */
+export async function getAirplaneIconDataUrl() {
+    if (cachedAirplaneDataUrl) return cachedAirplaneDataUrl;
+    try {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = 'airplane-white.png?v=2';
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width || 48;
+        canvas.height = img.naturalHeight || img.height || 48;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        cachedAirplaneDataUrl = canvas.toDataURL('image/png');
+        return cachedAirplaneDataUrl;
+    } catch (err) {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 48;
+            canvas.height = 48;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.translate(24, 24);
+                ctx.rotate(90 * Math.PI / 180);
+                ctx.font = '32px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('✈', 0, 0);
+                cachedAirplaneDataUrl = canvas.toDataURL('image/png');
+                return cachedAirplaneDataUrl;
+            }
+        } catch (e2) {}
+        return '';
+    }
+}
+
 /**
  * Format date string into "DayName, D MonthName YYYY"
  */
@@ -869,6 +913,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
     const logoDataUrl = await getAirlineLogoDataUrl('Thai Airways');
+    const airplaneDataUrl = await getAirplaneIconDataUrl();
 
     const marginL = 42.5;
     const rightEdge = 552.8;
@@ -1071,15 +1116,33 @@ export async function generateThaiAirwaysPdfDoc(data) {
         const cityW = doc.getTextWidth(`${sDepCity} `);
         
         // Draw real airplane icon (pointing right towards destination)
-        try {
-            doc.addImage(AIRPLANE_WHITE_PNG, 'PNG', marginL + 8 + cityW, curY + 9, 13, 13);
-        } catch (e) {
-            doc.text("→", marginL + 8 + cityW + 1, curY + 21);
+        let drewPlane = false;
+        if (airplaneDataUrl) {
+            try {
+                doc.addImage(airplaneDataUrl, 'PNG', marginL + 8 + cityW, curY + 9, 13, 13);
+                drewPlane = true;
+            } catch (e) {
+                console.warn('Plane addImage error', e);
+            }
+        }
+        if (!drewPlane) {
+            // Clean vector right-arrow fallback (never prints undefined box ▭)
+            doc.setDrawColor(...WHT);
+            doc.setFillColor(...WHT);
+            doc.setLineWidth(1.6);
+            doc.line(marginL + 8 + cityW + 1, curY + 16, marginL + 8 + cityW + 10, curY + 16);
+            doc.triangle(
+                marginL + 8 + cityW + 8, curY + 13,
+                marginL + 8 + cityW + 13, curY + 16,
+                marginL + 8 + cityW + 8, curY + 19,
+                'FD'
+            );
         }
         
-        const planeW = 15;
+        const planeW = 16;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
+        doc.setTextColor(...WHT);
         doc.text(`   ${sArrCity}`, marginL + 8 + cityW + planeW, curY + 21);
 
         const sectorPnr = f.pnr || pnr;
