@@ -1269,12 +1269,25 @@ export function parseHotelConfirmationText(text) {
         result.bookingId = generateRandomBookingId();
     }
 
-    // 2. Booking Reference No
-    const refMatch = text.match(/Booking\s*Reference\s*(?:No\.?|Number)?\s*:\s*([A-Za-z0-9_-]+)/i) ||
-                     text.match(/Reference\s*(?:No\.?|Number)?\s*:\s*([A-Za-z0-9_-]+)/i) ||
-                     text.match(/Booking\s*Ref(?:\.|erence)?\s*:\s*([A-Za-z0-9_-]+)/i);
+    // 1b. Member ID
+    const memIdMatch = text.match(/Member\s*ID\s*:\s*([A-Za-z0-9_-]+)/i);
+    if (memIdMatch) {
+        result.memberId = memIdMatch[1].trim();
+    } else {
+        result.memberId = generateRandomMemberId();
+    }
+
+    // 2. Booking Reference No (Exclude non-reference values or subsequent field names like Client, Member, Guest)
+    const refMatch = text.match(/Booking\s*Reference\s*(?:No\.?|Number)?\s*:\s*([^\n\r]+)/i) ||
+                     text.match(/Reference\s*(?:No\.?|Number)?\s*:\s*([^\n\r]+)/i) ||
+                     text.match(/Booking\s*Ref(?:\.|erence)?\s*:\s*([^\n\r]+)/i);
     if (refMatch) {
-        result.bookingRefNo = refMatch[1].trim();
+        let candidateRef = refMatch[1].trim();
+        // If it includes a colon (e.g. 'Client : SOE HTIKE AUNG') or matches another label keyword, it was empty on this line
+        if (candidateRef.includes(':') || /^(?:Client|Member|Guest|Property|Number|Address)\b/i.test(candidateRef)) {
+            candidateRef = '';
+        }
+        result.bookingRefNo = candidateRef;
     }
 
     // 3. Client / Guest Name
@@ -1291,15 +1304,38 @@ export function parseHotelConfirmationText(text) {
     }
 
     // 4. Stay Dates: Arrival & Departure
-    const arrivalMatch = text.match(/Arrival\s*:\s*([^\n\r\t]+)/i) ||
-                         text.match(/Check-?in\s*(?:Date)?\s*:\s*([^\n\r\t]+)/i);
+    // Handle cases where 'Arrival : May 22, 2026 Departure : May 23, 2026' are on the same line
+    const arrivalMatch = text.match(/Arrival\s*:\s*([^\n\r]+)/i) ||
+                         text.match(/Check-?in\s*(?:Date)?\s*:\s*([^\n\r]+)/i);
     if (arrivalMatch) {
-        result.arrivalDate = arrivalMatch[1].trim();
+        let rawArrival = arrivalMatch[1].trim();
+        if (/Departure\s*:/i.test(rawArrival)) {
+            const parts = rawArrival.split(/Departure\s*:/i);
+            result.arrivalDate = parts[0].trim();
+            if (parts[1] && parts[1].trim()) {
+                result.departureDate = parts[1].trim();
+            }
+        } else {
+            result.arrivalDate = rawArrival;
+        }
     }
-    const departureMatch = text.match(/Departure\s*:\s*([^\n\r\t]+)/i) ||
-                           text.match(/Check-?out\s*(?:Date)?\s*:\s*([^\n\r\t]+)/i);
-    if (departureMatch) {
-        result.departureDate = departureMatch[1].trim();
+
+    if (!result.departureDate) {
+        const departureMatch = text.match(/Departure\s*:\s*([^\n\r]+)/i) ||
+                               text.match(/Check-?out\s*(?:Date)?\s*:\s*([^\n\r]+)/i);
+        if (departureMatch) {
+            result.departureDate = departureMatch[1].trim();
+        }
+    }
+
+    // 4b. Country of Residence
+    const countryMatch = text.match(/Country\s*of\s*Residence\s*:\s*([^\n\r]+)/i);
+    if (countryMatch) {
+        let country = countryMatch[1].trim();
+        if (country.includes('/')) {
+            country = country.split('/')[0].trim();
+        }
+        result.countryOfResidence = country || 'Myanmar';
     }
 
     // 5. Table or separate items: Number of Rooms, Room Type, Adults, Children, Extra Beds
@@ -1334,6 +1370,12 @@ export function parseHotelConfirmationText(text) {
         if (extraBedsMatch) result.numExtraBeds = parseInt(extraBedsMatch[1], 10);
     }
 
+    // 5b. Promotion
+    const promoMatch = text.match(/Promotion\s*:\s*([^\n\r]+)/i);
+    if (promoMatch) {
+        result.promotion = promoMatch[1].trim();
+    }
+
     // 6. Remarks / Special Requests
     const remarksMatch = text.match(/Remarks\s*:\s*([\s\S]*?)(?:Guest\s*List|All\s*special\s*requests|Reference\s*#|Payment\s*Method|Cancellation|Benefits|$)/i);
     if (remarksMatch) {
@@ -1357,12 +1399,22 @@ export function parseHotelConfirmationText(text) {
     }
 
     // 9. Hotel Name & Address
-    const hotelData = extractHotelAndAddress(text);
-    if (hotelData.propertyName) {
-        result.propertyName = hotelData.propertyName;
-    }
-    if (hotelData.propertyAddress) {
-        result.propertyAddress = hotelData.propertyAddress;
+    // First, check if explicit 'Property :' label exists (Agoda confirmation vouchers)
+    const explicitPropertyMatch = text.match(/Property\s*:\s*([^\n\r]+)/i);
+    if (explicitPropertyMatch) {
+        result.propertyName = explicitPropertyMatch[1].trim();
+        const explicitAddrMatch = text.match(/Address\s*:\s*([\s\S]*?)(?:Property\s*Contact\s*Number|Contact\s*Number|Number\s*of\s*Rooms|Room\s*Type|Cancellation)/i);
+        if (explicitAddrMatch) {
+            result.propertyAddress = explicitAddrMatch[1].trim();
+        }
+    } else {
+        const hotelData = extractHotelAndAddress(text);
+        if (hotelData.propertyName) {
+            result.propertyName = hotelData.propertyName;
+        }
+        if (hotelData.propertyAddress) {
+            result.propertyAddress = hotelData.propertyAddress;
+        }
     }
 
     // 10. Phone number
