@@ -228,34 +228,49 @@ export function parseItineraryText(rawText) {
 
     // 1. Booking No & PNR
     let pnr = '';
-    let bookingNo = '';
-    const thaiBookingRefMatch = clean.match(/Booking\s*Ref(?:erence)?[:\s]*([A-Z0-9]{5,7})\b/i);
-    if (thaiBookingRefMatch) {
-        pnr = thaiBookingRefMatch[1].trim().toUpperCase();
-        bookingNo = pnr;
-    }
     const bookingNoMatch = clean.match(/Booking\s*No\.?\s*([0-9A-Z]+)/i);
-    if (bookingNoMatch && !bookingNo) {
-        bookingNo = bookingNoMatch[1].trim();
+    let bookingNo = bookingNoMatch ? bookingNoMatch[1].trim() : '';
+
+    const invalidPnrs = /^(erence|reference|booking|flight|status|adult|cannot|exceed|person|economy|business|premium|first|details|ticket|passenger|notice|confirm|confirmed|baggage)$/i;
+
+    // A. Explicit colon match: "Booking Ref: XXXXXX", "Booking Reference: XXXXXX", "PNR: XXXXXX", "Airline Booking Reference: XXXXXX"
+    const colonMatch = clean.match(/(?:Booking\s*Ref(?:erence)?|PNR|Airline\s*Booking\s*Reference)\s*[:：]\s*([A-Z0-9]{5,7})\b/i);
+    if (colonMatch && !invalidPnrs.test(colonMatch[1].trim())) {
+        pnr = colonMatch[1].trim().toUpperCase();
     }
+
+    // B. Direct newline match for standalone "Booking Ref\nXXXXXX"
+    if (!pnr) {
+        const standaloneLineMatch = clean.match(/^[ \t]*Booking\s*Ref[ \t]*\r?\n[ \t]*([A-Z0-9]{5,7})\b/im);
+        if (standaloneLineMatch && !invalidPnrs.test(standaloneLineMatch[1].trim())) {
+            pnr = standaloneLineMatch[1].trim().toUpperCase();
+        }
+    }
+
+    // C. Trip.com OTA table match: "Economy -- XXXXXX" or "Business -- XXXXXX"
     if (!pnr) {
         const pnrMatches = [...clean.matchAll(/(?:Economy|Business|Premium\s*Economy)\s+(?:--|[0-9A-Z-]+)\s+([A-Z0-9]{5,7})\b/gi)];
         const pnrs = [];
         for (const m of pnrMatches) {
             const val = m[1].trim().toUpperCase();
-            if (!/^(cannot|exceed|person|flight|adult)$/i.test(val) && !pnrs.includes(val)) {
+            if (!invalidPnrs.test(val) && !pnrs.includes(val)) {
                 pnrs.push(val);
             }
         }
-        if (pnrs.length === 0) {
-            const pnrMatch = clean.match(/(?:Airline\s*Booking\s*Reference|PNR\s*[:\s]*)[^\n\r]*?([A-Z0-9]{5,7})\b/i);
-            if (pnrMatch && !/^(cannot|exceed|person|flight|adult)$/i.test(pnrMatch[1])) {
-                pnrs.push(pnrMatch[1].trim().toUpperCase());
-            }
+        if (pnrs.length > 0) {
+            pnr = pnrs.join(' / ');
         }
-        pnr = pnrs.join(' / ');
-        if (!bookingNo && pnr) bookingNo = pnr;
     }
+
+    // D. Fallback line match for 'Airline Booking Reference ... XXXXXX'
+    if (!pnr) {
+        const pnrMatch = clean.match(/(?:Airline\s*Booking\s*Reference|PNR\s*[:\s]*)[^\n\r]*?([A-Z0-9]{5,7})\b/i);
+        if (pnrMatch && !invalidPnrs.test(pnrMatch[1].trim())) {
+            pnr = pnrMatch[1].trim().toUpperCase();
+        }
+    }
+
+    if (!bookingNo && pnr) bookingNo = pnr;
 
     // 2. Class - explicitly check for Cabin class only
     let flightClass = 'Economy';
