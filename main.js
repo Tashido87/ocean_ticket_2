@@ -23,7 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=30';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } from './airasia-converter.js?v=31';
 import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=13';
 
 // UI Modules
@@ -3192,10 +3192,18 @@ function initializeAirAsiaGenerator() {
         const selectedAirline = e.target.value;
         const bagCheckedEl = document.getElementById('aa_bag_checked');
         const currentFlights = collectFlights();
+        const currentBagVal = bagCheckedEl?.value || '';
+        const isStandardLayoutAirline = ['EVA Air', 'Thai Airways', 'Singapore Airlines', 'Scoot'].includes(selectedAirline);
+
+        if (isStandardLayoutAirline && bagCheckedEl) {
+            bagCheckedEl.value = formatCheckedBaggageLine(currentBagVal);
+        } else if (!isStandardLayoutAirline && bagCheckedEl && currentBagVal.startsWith('Checked:')) {
+            const kgMatch = currentBagVal.match(/(\d+)\s*kg/i);
+            const kg = kgMatch ? kgMatch[1] : (selectedAirline === 'VietJet Air' ? '20' : '30');
+            bagCheckedEl.value = `${kg} kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm`;
+        }
+
         if (selectedAirline === 'Scoot') {
-            if (bagCheckedEl) {
-                bagCheckedEl.value = 'Checked: 30 kg   |   Carry-on: 7 kg';
-            }
             const checkinEl = document.getElementById('aa_checkin_notice');
             if (checkinEl && !checkinEl.value) {
                 checkinEl.value = '(SIN) 1 Nov 2026, 7:00 AM';
@@ -3224,9 +3232,6 @@ function initializeAirAsiaGenerator() {
             });
             renderFlightRows(currentFlights);
         } else if (selectedAirline === 'EVA Air') {
-            if (bagCheckedEl) {
-                bagCheckedEl.value = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
-            }
             const checkinEl = document.getElementById('aa_checkin_notice');
             if (checkinEl && !checkinEl.value) {
                 checkinEl.value = '(TPE) 1 Nov 2026, 6:25 AM';
@@ -3255,9 +3260,6 @@ function initializeAirAsiaGenerator() {
             });
             renderFlightRows(currentFlights);
         } else if (selectedAirline === 'Singapore Airlines') {
-            if (bagCheckedEl) {
-                bagCheckedEl.value = 'Checked: 30 kg   |   Carry-on: 7 kg';
-            }
             const checkinEl = document.getElementById('aa_checkin_notice');
             if (checkinEl && !checkinEl.value) {
                 checkinEl.value = '(SIN) 1 Nov 2026, 6:00 AM';
@@ -3286,9 +3288,6 @@ function initializeAirAsiaGenerator() {
             });
             renderFlightRows(currentFlights);
         } else if (selectedAirline === 'Thai Airways') {
-            if (bagCheckedEl) {
-                bagCheckedEl.value = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
-            }
             const checkinEl = document.getElementById('aa_checkin_notice');
             if (checkinEl && !checkinEl.value) {
                 checkinEl.value = '(BKK) 29 Sep 2026, 9:45 PM';
@@ -3455,7 +3454,14 @@ function initializeAirAsiaGenerator() {
             }];
         renderFlightRows(flList);
 
-        if (document.getElementById('aa_bag_checked')) document.getElementById('aa_bag_checked').value = data.checkedBaggage || (data.airline === 'Thai Airways' ? 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg' : '30 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm');
+        const isStandardLayoutAirline = ['EVA Air', 'Thai Airways', 'Singapore Airlines', 'Scoot'].includes(data.airline);
+        let initialCheckedBag = data.checkedBaggage;
+        if (isStandardLayoutAirline) {
+            initialCheckedBag = formatCheckedBaggageLine(initialCheckedBag || 'Checked: 30 kg   |   Carry-on: 7 kg');
+        } else if (!initialCheckedBag) {
+            initialCheckedBag = '30 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm';
+        }
+        if (document.getElementById('aa_bag_checked')) document.getElementById('aa_bag_checked').value = initialCheckedBag;
         if (document.getElementById('aa_bag_carry')) document.getElementById('aa_bag_carry').value = data.carryOnBaggage || '1 piece per person\nMax 56 x 36 x 23 cm per piece';
         if (document.getElementById('aa_bag_personal')) document.getElementById('aa_bag_personal').value = data.personalItem || '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
 

@@ -274,6 +274,25 @@ export function extractCityName(name) {
 }
 
 /**
+ * Format raw baggage string into standardized single-line "Checked: X | Carry-on: 7 kg" format
+ */
+export function formatCheckedBaggageLine(val) {
+    if (!val) return 'Checked: 30 kg   |   Carry-on: 7 kg';
+    val = String(val).trim();
+    if (val.startsWith('Checked:')) return val;
+    const pieceMatch = val.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
+    if (pieceMatch) {
+        return `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`;
+    }
+    const weightMatch = val.match(/(\d+)\s*kg/i);
+    if (weightMatch) {
+        return `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg`;
+    }
+    const firstLine = val.split(/[\r\n]+/)[0].trim();
+    return `Checked: ${firstLine}   |   Carry-on: 7 kg`;
+}
+
+/**
  * Parse text extracted from Trip.com / OTA PDF itinerary
  */
 export function parseItineraryText(rawText) {
@@ -858,13 +877,16 @@ export function parseItineraryText(rawText) {
         if (thaiBagMatch) {
             checkedBaggage = `Checked: ${thaiBagMatch[1].trim()}`;
         } else {
-            const bagWeight = clean.match(/(\d+)\s*kg/i);
-            if (bagWeight && bagWeight[1] === '23') {
+            const pieceMatch = clean.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
+            const bagWeight = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i) || clean.match(/(\d+)\s*kg/i);
+            if (pieceMatch) {
+                checkedBaggage = `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`;
+            } else if (bagWeight && bagWeight[1] === '23') {
                 checkedBaggage = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
             } else if (bagWeight) {
                 checkedBaggage = `Checked: ${bagWeight[1]} kg   |   Carry-on: 7 kg`;
             } else {
-                checkedBaggage = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
+                checkedBaggage = (airline === 'EVA Air' ? 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg' : 'Checked: 30 kg   |   Carry-on: 7 kg');
             }
         }
     } else if (airline === 'Singapore Airlines') {
@@ -1989,7 +2011,8 @@ export async function generateEvaAirPdfDoc(data) {
         doc.text(p.name || "SAMPLE PASSENGER", marginL + 6, rowY + 14.5, { maxWidth: 120 });
 
         doc.setFont("helvetica", "normal");
-        const bagInfo = p.baggage || data.checkedBaggage || "Checked: 30 kg   |   Carry-on: 7 kg";
+        const rawBag = p.baggage || data.checkedBaggage || "Checked: 30 kg   |   Carry-on: 7 kg";
+        const bagInfo = formatCheckedBaggageLine(rawBag);
         doc.text(bagInfo, bagSplit + 6, rowY + 14.5, { maxWidth: 360 });
     });
 
@@ -3938,7 +3961,8 @@ export function renderEvaAirTicketHtml(data) {
         <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:8px;">Baggage Allowance</div>
         <table style="width:100%; border-collapse:collapse; background:#FEF4EC; border:1px solid #F26522; font-size:11px; margin-bottom:22px;">
             ${paxList.map(p => {
-                const bagInfo = p.baggage || data.checkedBaggage || 'Checked: 30 kg   |   Carry-on: 7 kg';
+                const rawBag = p.baggage || data.checkedBaggage || 'Checked: 30 kg   |   Carry-on: 7 kg';
+                const bagInfo = formatCheckedBaggageLine(rawBag);
                 return `
                 <tr>
                     <td style="padding:6px 10px; border:1px solid #F26522; width:28%; font-weight:700; color:#111;">${p.name || 'SAMPLE PASSENGER'}</td>
