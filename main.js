@@ -23,7 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=14';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=15';
 import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=13';
 
 // UI Modules
@@ -3048,6 +3048,10 @@ function initializeAirAsiaGenerator() {
                         <label style="font-size:11px;">Airline / Carrier</label>
                         <input type="text" class="aa_flight_airline" value="${escapeAaHtml(f.airlineName || '')}" placeholder="e.g. Thai Airways International">
                     </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:11px;">Sector Booking Ref (PNR)</label>
+                        <input type="text" class="aa_flight_pnr" value="${escapeAaHtml(f.pnr || '')}" placeholder="e.g. BINUFH" style="text-transform:uppercase; font-weight:700; color:var(--apple-blue);">
+                    </div>
                 </div>
                 <div class="airasia-form-row" style="margin-bottom:8px;">
                     <div class="airasia-form-group">
@@ -3137,6 +3141,7 @@ function initializeAirAsiaGenerator() {
                 route: (card.querySelector('.aa_flight_route')?.value || '').trim(),
                 flightNo: (card.querySelector('.aa_flight_no')?.value || '').trim().toUpperCase(),
                 airlineName: (card.querySelector('.aa_flight_airline')?.value || '').trim(),
+                pnr: (card.querySelector('.aa_flight_pnr')?.value || '').trim().toUpperCase(),
                 duration: (card.querySelector('.aa_flight_duration')?.value || '').trim(),
                 aircraft: (card.querySelector('.aa_flight_aircraft')?.value || '').trim(),
                 flightClass: (card.querySelector('.aa_flight_class')?.value || '').trim(),
@@ -3162,6 +3167,7 @@ function initializeAirAsiaGenerator() {
         currentFlights.push({
             flightNo: defaultFN,
             airlineName: defaultA,
+            pnr: '',
             duration: '12h 30min, Non-Stop',
             aircraft: 'Boeing 777-300ER',
             flightClass: 'Economy (T)',

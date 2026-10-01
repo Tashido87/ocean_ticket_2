@@ -232,44 +232,42 @@ export function parseItineraryText(rawText) {
     let bookingNo = bookingNoMatch ? bookingNoMatch[1].trim() : '';
 
     const invalidPnrs = /^(erence|reference|booking|flight|status|adult|cannot|exceed|person|economy|business|premium|first|details|ticket|passenger|notice|confirm|confirmed|baggage)$/i;
+    const pnrs = [];
 
-    // A. Explicit colon match: "Booking Ref: XXXXXX", "Booking Reference: XXXXXX", "PNR: XXXXXX", "Airline Booking Reference: XXXXXX"
-    const colonMatch = clean.match(/(?:Booking\s*Ref(?:erence)?|PNR|Airline\s*Booking\s*Reference)\s*[:：]\s*([A-Z0-9]{5,7})\b/i);
-    if (colonMatch && !invalidPnrs.test(colonMatch[1].trim())) {
-        pnr = colonMatch[1].trim().toUpperCase();
+    // A. Trip.com OTA table match: "Economy -- XXXXXX" or "Business -- XXXXXX" (Supports multi-sector PNRs)
+    const pnrMatches = [...clean.matchAll(/(?:Economy|Business|Premium\s*Economy)\s+(?:--|[0-9A-Z-]+)\s+([A-Z0-9]{5,7})\b/gi)];
+    for (const m of pnrMatches) {
+        const val = m[1].trim().toUpperCase();
+        if (!invalidPnrs.test(val) && !pnrs.includes(val)) {
+            pnrs.push(val);
+        }
     }
 
-    // B. Direct newline match for standalone "Booking Ref\nXXXXXX"
-    if (!pnr) {
+    // B. Explicit colon match: "Booking Ref: XXXXXX", "Booking Reference: XXXXXX", "PNR: XXXXXX", "Airline Booking Reference: XXXXXX"
+    if (pnrs.length === 0) {
+        const colonMatch = clean.match(/(?:Booking\s*Ref(?:erence)?|PNR|Airline\s*Booking\s*Reference)\s*[:：]\s*([A-Z0-9]{5,7})\b/i);
+        if (colonMatch && !invalidPnrs.test(colonMatch[1].trim())) {
+            pnrs.push(colonMatch[1].trim().toUpperCase());
+        }
+    }
+
+    // C. Direct newline match for standalone "Booking Ref\nXXXXXX"
+    if (pnrs.length === 0) {
         const standaloneLineMatch = clean.match(/^[ \t]*Booking\s*Ref[ \t]*\r?\n[ \t]*([A-Z0-9]{5,7})\b/im);
         if (standaloneLineMatch && !invalidPnrs.test(standaloneLineMatch[1].trim())) {
-            pnr = standaloneLineMatch[1].trim().toUpperCase();
-        }
-    }
-
-    // C. Trip.com OTA table match: "Economy -- XXXXXX" or "Business -- XXXXXX"
-    if (!pnr) {
-        const pnrMatches = [...clean.matchAll(/(?:Economy|Business|Premium\s*Economy)\s+(?:--|[0-9A-Z-]+)\s+([A-Z0-9]{5,7})\b/gi)];
-        const pnrs = [];
-        for (const m of pnrMatches) {
-            const val = m[1].trim().toUpperCase();
-            if (!invalidPnrs.test(val) && !pnrs.includes(val)) {
-                pnrs.push(val);
-            }
-        }
-        if (pnrs.length > 0) {
-            pnr = pnrs.join(' / ');
+            pnrs.push(standaloneLineMatch[1].trim().toUpperCase());
         }
     }
 
     // D. Fallback line match for 'Airline Booking Reference ... XXXXXX'
-    if (!pnr) {
+    if (pnrs.length === 0) {
         const pnrMatch = clean.match(/(?:Airline\s*Booking\s*Reference|PNR\s*[:\s]*)[^\n\r]*?([A-Z0-9]{5,7})\b/i);
         if (pnrMatch && !invalidPnrs.test(pnrMatch[1].trim())) {
-            pnr = pnrMatch[1].trim().toUpperCase();
+            pnrs.push(pnrMatch[1].trim().toUpperCase());
         }
     }
 
+    pnr = pnrs.join(' / ');
     if (!bookingNo && pnr) bookingNo = pnr;
 
     // 2. Class - explicitly check for Cabin class only
@@ -764,10 +762,18 @@ export function parseItineraryText(rawText) {
         checkedBaggage = `${weightVal} kg per person\nEach piece max ${dimStr}${totalStr}`;
     }
 
+    // Assign individual sector PNR to each flight if multiple PNRs exist
+    flights.forEach((f, idx) => {
+        if (!f.pnr) {
+            f.pnr = (pnrs && pnrs[idx]) ? pnrs[idx] : (pnrs && pnrs[0] ? pnrs[0] : pnr);
+        }
+    });
+
     return {
         airline,
         bookingNo,
         pnr,
+        pnrs,
         flightClass,
         eTicketNo,
         issuedDate,
@@ -996,7 +1002,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.setFillColor(...P);
         doc.rect(marginL, curY, textW, upperBoxH, 'F');
 
-        // Top line inside Purple Box: Origin ✈ Destination & FlightNo | Carrier
+        // Top line inside Purple Box: Origin ✈ Destination & FlightNo | Carrier & Sector Booking Ref
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.setTextColor(...WHT);
@@ -1014,9 +1020,32 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.setFontSize(14);
         doc.text(`   ${sArrCity}`, marginL + 8 + cityW + planeW, curY + 21);
 
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text(`${sFlightNo}  |  Thai Airways International`, rightEdge - 8, curY + 18, { align: "right" });
+        const sectorPnr = f.pnr || pnr;
+
+        if (sectorPnr) {
+            const pnrBadgeText = `Booking Ref: ${sectorPnr}`;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8.5);
+            const badgeW = doc.getTextWidth(pnrBadgeText) + 10;
+            const badgeH = 14;
+            const badgeX = rightEdge - 8 - badgeW;
+            const badgeY = curY + 11;
+
+            doc.setFillColor(...A); // Gold
+            doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'F');
+            doc.setTextColor(...P); // Deep Purple
+            doc.text(pnrBadgeText, badgeX + badgeW / 2, badgeY + 10, { align: "center" });
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...WHT);
+            doc.text(`${sFlightNo}  |  Thai Airways International`, badgeX - 8, curY + 21, { align: "right" });
+        } else {
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...WHT);
+            doc.text(`${sFlightNo}  |  Thai Airways International`, rightEdge - 8, curY + 21, { align: "right" });
+        }
 
         // Times (Bold 16pt White)
         doc.setFontSize(16);
@@ -1072,9 +1101,9 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.text(f.flightClass || data.flightClass || "Economy (T)", 121.9 + 6, curY + 39);
 
         doc.setFont("helvetica", "bold");
-        doc.text("Route", 297.6 + 6, curY + 39);
-        doc.setFont("helvetica", "normal");
-        doc.text(sRoute, 377.0 + 6, curY + 39);
+        doc.text(sectorPnr ? "Booking Ref" : "Route", 297.6 + 6, curY + 39);
+        doc.setFont("helvetica", sectorPnr ? "bold" : "normal");
+        doc.text(sectorPnr ? `${sectorPnr} (${sRoute})` : sRoute, 377.0 + 6, curY + 39);
 
         curY += lowerBoxH + 16;
     });
@@ -1431,9 +1460,18 @@ export async function generateAirAsiaPdfDoc(data) {
         doc.setTextColor(...darkColor);
         doc.setFontSize(9.5);
         doc.setFont("helvetica", "bold");
-        doc.text(f.flightNo || "", marginX + 6, currentFlY + 15);
+        doc.text(f.flightNo || "", marginX + 6, currentFlY + 14);
         doc.setFont("helvetica", "normal");
-        doc.text(f.airlineName || "", marginX + 6, currentFlY + 28);
+        doc.setFontSize(8.5);
+        doc.text(f.airlineName || "", marginX + 6, currentFlY + 25);
+
+        const secPnr = f.pnr || data.pnr;
+        if (secPnr) {
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            doc.setTextColor(...redColor);
+            doc.text(`Ref: ${secPnr}`, marginX + 6, currentFlY + 37);
+        }
 
         // Departure text
         doc.setFont("helvetica", "bold");
@@ -1706,16 +1744,20 @@ export function renderThaiAirwaysTicketHtml(data) {
                 const sRoute = f.route || `${lookupAirportCode(f.depAirport) || 'DEP'} - ${lookupAirportCode(f.arrAirport) || 'ARR'}`;
 
                 const fFlightNo = (f.flightNo && !/^(AK|VJ)/i.test(f.flightNo)) ? f.flightNo : 'TG 910';
+                const fPnr = f.pnr || pnr;
 
                 return `
                 <!-- Flight Card -->
                 <div style="border:1px solid #D5CBE8; border-radius:3px; overflow:hidden; margin-bottom:12px;">
                     <!-- Upper Purple Box (Unified Deep Purple Card) -->
                     <div style="background:#3D1E6D; color:#ffffff; padding:12px 14px;">
-                        <!-- Top Line: Origin ✈ Destination & FlightNo | Carrier -->
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                        <!-- Top Line: Origin ✈ Destination & FlightNo | Carrier & Sector Booking Ref -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
                             <div style="font-size:16px; font-weight:800; letter-spacing:0.3px;">${fDepCity} &nbsp; ✈ &nbsp; ${fArrCity}</div>
-                            <div style="font-size:11px; font-weight:500; opacity:0.95;">${fFlightNo} &nbsp;|&nbsp; Thai Airways International</div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <div style="font-size:11px; font-weight:500; opacity:0.95;">${fFlightNo} &nbsp;|&nbsp; Thai Airways International</div>
+                                ${fPnr ? `<div style="background:#D9A300; color:#3D1E6D; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:3px; letter-spacing:0.5px; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.25);">Booking Ref: ${fPnr}</div>` : ''}
+                            </div>
                         </div>
                         <!-- Times / Dates / Airports inside Purple Card -->
                         <div style="display:flex; justify-content:space-between;">
@@ -1742,8 +1784,8 @@ export function renderThaiAirwaysTicketHtml(data) {
                         <tr>
                             <td style="padding:6px 10px; border:1px solid #D9A300; font-weight:700; color:#111;">Class</td>
                             <td style="padding:6px 10px; border:1px solid #D9A300; color:#111;">${f.flightClass || data.flightClass || 'Economy (T)'}</td>
-                            <td style="padding:6px 10px; border:1px solid #D9A300; font-weight:700; color:#111;">Route</td>
-                            <td style="padding:6px 10px; border:1px solid #D9A300; color:#111;">${sRoute}</td>
+                            <td style="padding:6px 10px; border:1px solid #D9A300; font-weight:700; color:#111;">${fPnr ? 'Booking Ref' : 'Route'}</td>
+                            <td style="padding:6px 10px; border:1px solid #D9A300; color:#111;">${fPnr ? `<strong style="color:#3D1E6D; font-size:12px;">${fPnr}</strong> &nbsp;<span style="color:#555;">(${sRoute})</span>` : sRoute}</td>
                         </tr>
                     </table>
                 </div>
@@ -1913,6 +1955,7 @@ export function renderAirAsiaTicketHtml(data) {
                         <td style="padding:10px; border:1px solid #CCCCCC; vertical-align:top;">
                             <div style="font-weight:700; font-size:13px; color:#111111;">${f.flightNo || ''}</div>
                             <div style="color:#555555; margin-top:2px;">${f.airlineName || ''}</div>
+                            ${(f.pnr || data.pnr) ? `<div style="display:inline-block; margin-top:5px; background:#FFEBEB; color:#E31E24; padding:2px 7px; border-radius:3px; font-weight:800; font-size:11px; border:1px solid #FFC1C1; letter-spacing:0.3px;">Booking Ref: ${f.pnr || data.pnr}</div>` : ''}
                         </td>
                         <td style="padding:10px; border:1px solid #CCCCCC; vertical-align:top;">
                             <div><strong>${f.depTime || ''}</strong>, ${f.depDateFormatted || ''}</div>
