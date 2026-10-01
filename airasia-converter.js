@@ -858,10 +858,9 @@ export async function extractTextFromPdf(file) {
  * Generate native vector jsPDF document for Thai Airways matching official template
  * Layout: Header → Booking Strip → Flight Details → Passenger Details → Baggage → Notes → Footer
  */
-/**
- * Generate native vector jsPDF document for Thai Airways matching official template
- * Uses exact vector coordinates from official reference PDF on A4 (595.28 x 841.89 pt)
- */
+// Embedded 48x48 crisp white right-pointing airplane icon (facing destination)
+const AIRPLANE_WHITE_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAbElEQVR4nO3VuxGAMAyD4YhjKxiHIiOxrSjoOAqby6Pg/2qdI6dxKQAAAACAORQN2q49izxJOkO56EDb/l4nT1K4W4hvR9Oh7+/UzGctPcuMwAKzscBsLDDbmszvA+7Zlgn/5xIDAAAAABq7AKFlHkgPZB8oAAAAAElFTkSuQmCC';
+
 export async function generateThaiAirwaysPdfDoc(data) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
@@ -906,6 +905,28 @@ export async function generateThaiAirwaysPdfDoc(data) {
 
     let checkinNotice = (data.checkinNotice || '').trim();
     const firstDepCode = lookupAirportCode(firstFlight.depAirport) || 'BKK';
+
+    // Auto-calculate check-in notice if not provided
+    if (!checkinNotice) {
+        if (firstFlight.depTime && firstFlight.depDateFormatted) {
+            try {
+                const d = new Date(`${firstFlight.depDateFormatted} ${firstFlight.depTime}`);
+                if (!isNaN(d.getTime())) {
+                    d.setHours(d.getHours() - 3);
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const hours = d.getHours();
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const h12 = hours % 12 || 12;
+                    checkinNotice = `(${firstDepCode}) ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${h12}:${minutes} ${ampm}`;
+                }
+            } catch (e) {}
+        }
+        if (!checkinNotice) {
+            checkinNotice = `(${firstDepCode}) 3 hours before departure`;
+        }
+    }
+
     let checkinLbl = `Check-in (${firstDepCode})`;
     let checkinVal = '';
 
@@ -972,15 +993,16 @@ export async function generateThaiAirwaysPdfDoc(data) {
     sCols.forEach(x => doc.line(x, stripY, x, stripY + stripH));
 
     // Strip Row 1
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...DK);
     doc.text("Booking Ref", marginL + 5, stripY + 15.5);
-    doc.setFontSize(12);
+    const pnrFontSize = pnr.length > 10 ? 8.0 : (pnr.length > 7 ? 8.5 : 9.5);
+    doc.setFontSize(pnrFontSize);
     doc.setTextColor(...BLK);
-    doc.text(pnr, 127.6 + 5, stripY + 16, { maxWidth: 103 });
+    doc.text(pnr, 127.6 + 5, stripY + 15.5, { maxWidth: 103 });
 
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...DK);
     doc.text("Issued Date", 240.9 + 5, stripY + 15.5);
@@ -997,6 +1019,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
     doc.text(checkinLbl, marginL + 5, stripY + 39, { maxWidth: 70 });
     doc.setFont("helvetica", "normal");
     const checkinLines = doc.splitTextToSize(checkinVal, 103);
+    doc.setFontSize(8.5);
     if (checkinLines.length > 1) {
         doc.text(checkinLines.slice(0, 2), 127.6 + 5, stripY + 34);
     } else {
@@ -1013,8 +1036,9 @@ export async function generateThaiAirwaysPdfDoc(data) {
     doc.setFont("helvetica", "bold");
     doc.text("Alliance", 439.4 + 5, stripY + 39);
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
     doc.text("Star", 501.7 + 5, stripY + 33);
-    doc.text("Alliance", 501.7 + 5, stripY + 45);
+    doc.text("Alliance", 501.7 + 5, stripY + 44);
 
     let curY = stripY + stripH + 16; // ~212 pt
 
@@ -1040,16 +1064,17 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.setTextColor(...WHT);
-        doc.text(`${sDepCity}   `, marginL + 8, curY + 21);
-        const cityW = doc.getTextWidth(`${sDepCity}   `);
+        doc.text(`${sDepCity} `, marginL + 8, curY + 21);
+        const cityW = doc.getTextWidth(`${sDepCity} `);
+        
+        // Draw real airplane icon (pointing right towards destination)
         try {
-            doc.setFont("ZapfDingbats");
-            doc.text("v", marginL + 8 + cityW, curY + 21);
+            doc.addImage(AIRPLANE_WHITE_PNG, 'PNG', marginL + 8 + cityW, curY + 9, 13, 13);
         } catch (e) {
-            doc.setFont("helvetica", "bold");
-            doc.text("✈", marginL + 8 + cityW, curY + 21);
+            doc.text("→", marginL + 8 + cityW + 1, curY + 21);
         }
-        const planeW = 12;
+        
+        const planeW = 15;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.text(`   ${sArrCity}`, marginL + 8 + cityW + planeW, curY + 21);
@@ -1117,27 +1142,30 @@ export async function generateThaiAirwaysPdfDoc(data) {
 
         // Info Row 1
         doc.setTextColor(...BLK);
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
         doc.text("Duration", marginL + 6, curY + 15.5);
         doc.setFont("helvetica", "normal");
-        doc.text(f.duration || "12h 30min, Non-Stop", 121.9 + 6, curY + 15.5);
+        doc.text(f.duration || "12h 30min, Non-Stop", 121.9 + 6, curY + 15.5, { maxWidth: 160 });
 
         doc.setFont("helvetica", "bold");
         doc.text("Aircraft", 297.6 + 6, curY + 15.5);
         doc.setFont("helvetica", "normal");
-        doc.text(f.aircraft || "Boeing 777-300ER", 377.0 + 6, curY + 15.5);
+        doc.text(f.aircraft || "Boeing 777-300ER", 377.0 + 6, curY + 15.5, { maxWidth: 160 });
 
         // Info Row 2
         doc.setFont("helvetica", "bold");
         doc.text("Class", marginL + 6, curY + 39);
         doc.setFont("helvetica", "normal");
-        doc.text(f.flightClass || data.flightClass || "Economy (T)", 121.9 + 6, curY + 39);
+        doc.text(f.flightClass || data.flightClass || "Economy (T)", 121.9 + 6, curY + 39, { maxWidth: 160 });
 
         doc.setFont("helvetica", "bold");
         doc.text(sectorPnr ? "Booking Ref" : "Route", 297.6 + 6, curY + 39);
         doc.setFont("helvetica", sectorPnr ? "bold" : "normal");
-        doc.text(sectorPnr ? `${sectorPnr} (${sRoute})` : sRoute, 377.0 + 6, curY + 39);
+        const depCode = lookupAirportCode(f.depAirport) || 'DEP';
+        const arrCode = lookupAirportCode(f.arrAirport) || 'ARR';
+        const refStr = sectorPnr ? `${sectorPnr} (${depCode} - ${arrCode})` : sRoute;
+        doc.text(refStr, 377.0 + 6, curY + 39, { maxWidth: 155 });
 
         curY += lowerBoxH + 16;
     });
@@ -1152,7 +1180,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
     const paxHeaderH = 23.0;
     doc.setFillColor(...P);
     doc.rect(marginL, curY, textW, paxHeaderH, 'F');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...WHT);
 
@@ -1174,15 +1202,15 @@ export async function generateThaiAirwaysPdfDoc(data) {
 
         [189.9, 337.3, 445.0].forEach(x => doc.line(x, curY, x, curY + paxRowH));
 
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...BLK);
-        doc.text(p.name || "", marginL + 6, curY + 15.5);
+        doc.text(p.name || "", marginL + 6, curY + 15.5, { maxWidth: 130 });
 
         doc.setFont("helvetica", "normal");
-        doc.text(p.eticket || p.eTicketNo || data.eTicketNo || "", 189.9 + 6, curY + 15.5);
-        doc.text(p.passport || "", 337.3 + 6, curY + 15.5);
-        doc.text(p.expiry || "", 445.0 + 6, curY + 15.5);
+        doc.text(p.eticket || p.eTicketNo || data.eTicketNo || "", 189.9 + 6, curY + 15.5, { maxWidth: 135 });
+        doc.text(p.passport || "", 337.3 + 6, curY + 15.5, { maxWidth: 95 });
+        doc.text(p.expiry || "", 445.0 + 6, curY + 15.5, { maxWidth: 90 });
 
         curY += paxRowH;
     });
@@ -1212,14 +1240,14 @@ export async function generateThaiAirwaysPdfDoc(data) {
         if (idx > 0) {
             doc.line(marginL, rowY, rightEdge, rowY);
         }
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...BLK);
-        doc.text(p.name || "", marginL + 6, rowY + 15.5);
+        doc.text(p.name || "", marginL + 6, rowY + 15.5, { maxWidth: 120 });
 
         doc.setFont("helvetica", "normal");
         const bagInfo = p.baggage || data.checkedBaggage || "Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg";
-        doc.text(bagInfo, 178.6 + 6, rowY + 15.5);
+        doc.text(bagInfo, 178.6 + 6, rowY + 15.5, { maxWidth: 350 });
     });
 
     curY += totalBagH + 16;
@@ -1501,11 +1529,26 @@ export async function generateAirAsiaPdfDoc(data) {
 
         const secPnr = f.pnr || data.pnr;
         if (secPnr) {
+            const badgeText = `Booking Ref: ${secPnr}`;
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(8);
+            doc.setFontSize(7.5);
+            const badgeW = doc.getTextWidth(badgeText) + 8;
+            const badgeH = 12;
+            const badgeX = marginX + 6;
+            const badgeY = currentFlY + 29;
+
+            doc.setFillColor(255, 235, 235); // #FFEBEB
+            doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'F');
+            doc.setDrawColor(255, 193, 193); // #FFC1C1
+            doc.setLineWidth(0.5);
+            doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'S');
+
             doc.setTextColor(...redColor);
-            doc.text(`Ref: ${secPnr}`, marginX + 6, currentFlY + 37);
+            doc.text(badgeText, badgeX + 4, badgeY + 8.5);
         }
+
+        // CRUCIAL FIX: Reset text color back to darkColor so departure/arrival/route/class are never red!
+        doc.setTextColor(...darkColor);
 
         // Departure text
         doc.setFont("helvetica", "bold");
@@ -1540,6 +1583,7 @@ export async function generateAirAsiaPdfDoc(data) {
         doc.rect(marginX, currentFlY, contentWidth, flRouteRowHeight, 'S');
         doc.line(flCol2, currentFlY, flCol2, currentFlY + flRouteRowHeight);
 
+        doc.setTextColor(...darkColor);
         doc.setFont("helvetica", "bold");
         doc.text("Route", marginX + 6, currentFlY + 15);
         doc.setFont("helvetica", "normal");
@@ -1556,6 +1600,7 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.rect(marginX, currentFlY, contentWidth, flClassRowHeight, 'S');
     doc.line(flCol2, currentFlY, flCol2, currentFlY + flClassRowHeight);
 
+    doc.setTextColor(...darkColor);
     doc.setFont("helvetica", "bold");
     doc.text("Class", marginX + 6, currentFlY + 15);
     doc.setFont("helvetica", "normal");
@@ -1727,6 +1772,27 @@ export function renderThaiAirwaysTicketHtml(data) {
 
     let checkinNotice = (data.checkinNotice || '').trim();
     const firstDepCode = lookupAirportCode(firstFlight.depAirport) || 'BKK';
+
+    if (!checkinNotice) {
+        if (firstFlight.depTime && firstFlight.depDateFormatted) {
+            try {
+                const d = new Date(`${firstFlight.depDateFormatted} ${firstFlight.depTime}`);
+                if (!isNaN(d.getTime())) {
+                    d.setHours(d.getHours() - 3);
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const hours = d.getHours();
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    const h12 = hours % 12 || 12;
+                    checkinNotice = `(${firstDepCode}) ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${h12}:${minutes} ${ampm}`;
+                }
+            } catch (e) {}
+        }
+        if (!checkinNotice) {
+            checkinNotice = `(${firstDepCode}) 3 hours before departure`;
+        }
+    }
+
     let checkinLbl = `Check-in (${firstDepCode})`;
     let checkinVal = '';
 
