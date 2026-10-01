@@ -23,7 +23,7 @@ import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from '.
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
 import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=12';
+import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket } from './airasia-converter.js?v=13';
 import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS } from './agoda-hotel-converter.js?v=13';
 
 // UI Modules
@@ -3185,10 +3185,50 @@ function initializeAirAsiaGenerator() {
     document.getElementById('aa_airline_select')?.addEventListener('change', (e) => {
         const selectedAirline = e.target.value;
         const bagCheckedEl = document.getElementById('aa_bag_checked');
+        const currentFlights = collectFlights();
         if (selectedAirline === 'Thai Airways') {
-            if (bagCheckedEl && (!bagCheckedEl.value || bagCheckedEl.value.includes('119 x 119'))) {
+            if (bagCheckedEl) {
                 bagCheckedEl.value = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
             }
+            const checkinEl = document.getElementById('aa_checkin_notice');
+            if (checkinEl && !checkinEl.value) {
+                checkinEl.value = '(BKK) 29 Sep 2026, 9:45 PM';
+            }
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /airasia|vietjet/i.test(f.airlineName)) {
+                    f.airlineName = 'Thai Airways International';
+                }
+                if (!f.flightNo || /^(AK|VJ)/i.test(f.flightNo)) {
+                    f.flightNo = 'TG 910';
+                }
+                if (!f.duration) f.duration = '12h 30min, Non-Stop';
+                if (!f.aircraft) f.aircraft = 'Boeing 777-300ER';
+                if (!f.flightClass || f.flightClass === 'Economy') f.flightClass = 'Economy (T)';
+                if (!f.depAirport || f.depAirport.includes('Kuala Lumpur')) {
+                    f.depAirport = 'Bangkok - Suvarnabhumi Intl (BKK)';
+                    f.depTerminal = '';
+                }
+                if (!f.arrAirport) {
+                    f.arrAirport = 'London - Heathrow (LHR)';
+                    f.arrTerminal = 'Terminal 2';
+                }
+                if (!f.route || f.route.includes('KUL')) {
+                    f.route = 'BKK - LHR';
+                }
+            });
+            renderFlightRows(currentFlights);
+        } else if (selectedAirline === 'VietJet Air') {
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /airasia|thai/i.test(f.airlineName)) f.airlineName = 'VietJet Air';
+                if (!f.flightNo || /^(AK|TG)/i.test(f.flightNo)) f.flightNo = 'VJ';
+            });
+            renderFlightRows(currentFlights);
+        } else if (selectedAirline === 'AirAsia') {
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /vietjet|thai/i.test(f.airlineName)) f.airlineName = 'AirAsia Berhad';
+                if (!f.flightNo || /^(VJ|TG)/i.test(f.flightNo)) f.flightNo = 'AK';
+            });
+            renderFlightRows(currentFlights);
         }
         updatePreview();
     });
@@ -3196,21 +3236,45 @@ function initializeAirAsiaGenerator() {
     function collectFormData() {
         const passengers = collectPassengers();
         const flights = collectFlights();
+        const selectedA = document.getElementById('aa_airline_select')?.value || 'AirAsia';
         const primaryFlight = flights[0] || {};
+
+        let defaultAirlineName = 'AirAsia Berhad';
+        let defaultFlightNo = 'AK';
+        if (selectedA === 'Thai Airways') {
+            defaultAirlineName = 'Thai Airways International';
+            defaultFlightNo = 'TG 910';
+        } else if (selectedA === 'VietJet Air') {
+            defaultAirlineName = 'VietJet Air';
+            defaultFlightNo = 'VJ';
+        }
+
+        const safeAirlineName = (primaryFlight.airlineName && (
+            (selectedA === 'Thai Airways' && !/airasia|vietjet/i.test(primaryFlight.airlineName)) ||
+            (selectedA === 'VietJet Air' && !/airasia|thai/i.test(primaryFlight.airlineName)) ||
+            (selectedA === 'AirAsia' && !/vietjet|thai/i.test(primaryFlight.airlineName))
+        )) ? primaryFlight.airlineName : defaultAirlineName;
+
+        const safeFlightNo = (primaryFlight.flightNo && (
+            (selectedA === 'Thai Airways' && !/^(AK|VJ)/i.test(primaryFlight.flightNo)) ||
+            (selectedA === 'VietJet Air' && !/^(AK|TG)/i.test(primaryFlight.flightNo)) ||
+            (selectedA === 'AirAsia' && !/^(VJ|TG)/i.test(primaryFlight.flightNo))
+        )) ? primaryFlight.flightNo : defaultFlightNo;
+
         return {
-            airline: document.getElementById('aa_airline_select')?.value || 'AirAsia',
+            airline: selectedA,
             bookingNo: document.getElementById('aa_booking_no')?.value || '',
             pnr: (document.getElementById('aa_pnr')?.value || '').trim().toUpperCase(),
             eTicketNo: document.getElementById('aa_eticket_no')?.value || '',
-            flightClass: document.getElementById('aa_class')?.value || 'Economy',
+            flightClass: document.getElementById('aa_class')?.value || (selectedA === 'Thai Airways' ? 'Economy (T)' : 'Economy'),
             issuedDate: document.getElementById('aa_issued_date')?.value || '',
             checkinNotice: document.getElementById('aa_checkin_notice')?.value || '',
             passengers: passengers,
             passengerName: passengers[0]?.name || '',
             passengerType: passengers[0]?.type || 'Adult',
             flights: flights,
-            flightNo: primaryFlight.flightNo || '',
-            airlineName: primaryFlight.airlineName || 'AirAsia Berhad',
+            flightNo: safeFlightNo,
+            airlineName: safeAirlineName,
             duration: primaryFlight.duration || '12h 30min, Non-Stop',
             aircraft: primaryFlight.aircraft || 'Boeing 777-300ER',
             depTime: primaryFlight.depTime || '',
