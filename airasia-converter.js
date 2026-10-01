@@ -138,6 +138,9 @@ const AIRPORT_CODE_MAP = {
     'haneda': 'HND',
     'osaka': 'KIX',
     'kansai': 'KIX',
+    'nagoya': 'NGO',
+    'chubu': 'NGO',
+    'centrair': 'NGO',
     'taipei': 'TPE',
     'hong kong': 'HKG',
     'macau': 'MFM',
@@ -579,7 +582,7 @@ export function parseItineraryText(rawText) {
 
     // If flights is still empty, parse using standard sector method
     if (flights.length === 0) {
-        const flBlockMatch = clean.match(/Flight\s*Information([\s\S]*?)(?=Important\s*Information|Baggage\s*Allowance|Baggage\s*Details|Baggage|$)/i);
+        const flBlockMatch = clean.match(/Flight\s*Information([\s\S]*?)(?=Important\s*Information|Baggage\s*Allowance|Baggage\s*Details|$)/i);
         const flText = flBlockMatch ? flBlockMatch[1] : clean;
 
         const depMatches = [...flText.matchAll(/\bDeparture\b/gi)];
