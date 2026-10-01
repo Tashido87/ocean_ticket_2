@@ -236,6 +236,14 @@ export function renderAgodaHotelHtml(data = {}) {
 
     const remarksSpecial = data.remarksSpecial || 'NonSmoke,LargeBed';
 
+    const isMultiLineRoom = (roomType || '').length > 20;
+    const roomBoxMinHeight = isMultiLineRoom ? '28px' : '18px';
+    const roomFontSize = (roomType || '').length > 35 ? '7.2px' : (isMultiLineRoom ? '7.8px' : '8.2px');
+
+    const isMultiLinePromo = (promotion || '').length > 30;
+    const promoBoxMinHeight = isMultiLinePromo ? '24px' : '18px';
+    const promoFontSize = (promotion || '').length > 45 ? '6.6px' : (isMultiLinePromo ? '7.0px' : '7.4px');
+
     return `
     <div class="agoda-booking-wrapper" id="agodaBookingDocument" style="background:#ffffff; color:#000000; font-family:'Liberation Sans', Arial, Helvetica, sans-serif; width:100%; max-width:708px; margin:0 auto; box-sizing:border-box; line-height:1.25; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
         
@@ -369,18 +377,22 @@ export function renderAgodaHotelHtml(data = {}) {
                     </div>
 
                     <!-- Room Type -->
-                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:6px;">
-                        <span style="color:#000000; padding-top:3px; white-space:nowrap;">Room Type :</span>
-                        <div style="width:165px; min-height:18px; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:bold; font-size:8.2px; line-height:1.2; color:#000000; padding:3px 6px; box-sizing:border-box; word-break:break-word;">
-                            ${roomType}
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; min-height:${roomBoxMinHeight};">
+                        <span style="color:#000000; white-space:nowrap;">Room Type :</span>
+                        <div style="width:165px; min-height:${roomBoxMinHeight}; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; display:flex; align-items:center; justify-content:center; padding:3px 6px; box-sizing:border-box;">
+                            <div style="width:100%; text-align:center; font-weight:bold; font-size:${roomFontSize}; line-height:1.2; color:#000000; word-break:break-word;">
+                                ${roomType}
+                            </div>
                         </div>
                     </div>
 
                     <!-- Promotion -->
-                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:6px;">
-                        <span style="color:#000000; padding-top:3px; white-space:nowrap;">Promotion :</span>
-                        <div style="width:165px; min-height:18px; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:bold; font-size:7.4px; line-height:1.2; color:#000000; padding:3px 5px; box-sizing:border-box; word-break:break-word;">
-                            ${promotion}
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; min-height:${promoBoxMinHeight};">
+                        <span style="color:#000000; white-space:nowrap;">Promotion :</span>
+                        <div style="width:165px; min-height:${promoBoxMinHeight}; background:#dcdcdc; border:1.5px solid #ffffff; border-radius:2px; display:flex; align-items:center; justify-content:center; padding:3px 5px; box-sizing:border-box;">
+                            <div style="width:100%; text-align:center; font-weight:bold; font-size:${promoFontSize}; line-height:1.2; color:#000000; word-break:break-word;">
+                                ${promotion}
+                            </div>
                         </div>
                     </div>
 
@@ -762,17 +774,57 @@ export async function generateAgodaPdfDoc(data) {
     doc.text("Number of Children :", rLabelX, 159.2);
     drawWhiteRightBox(151.7, 14.6, numChildren);
 
-    doc.setFont('helvetica', 'normal');
-    doc.text("Room Type :", rLabelX, 176.5);
-    drawWhiteRightBox(169.1, 14.6, roomType);
+    const roomLines = doc.splitTextToSize(roomType, rBoxW - 8.0);
+    const isMultiRoom = roomLines.length > 1;
+    const roomBoxH = isMultiRoom ? 20.0 : 14.6;
+    const roomBoxY = 169.1;
 
     doc.setFont('helvetica', 'normal');
-    doc.text("Promotion :", rLabelX, 194.5);
-    drawWhiteRightBox(186.5, 15.7, promotion, true);
+    doc.text("Room Type :", rLabelX, isMultiRoom ? 179.0 : 176.5);
+
+    doc.setFillColor(220, 220, 220);
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(1.2);
+    doc.rect(rBoxX, roomBoxY, rBoxW, roomBoxH, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(isMultiRoom ? 6.8 : 7.3);
+    doc.setTextColor(0, 0, 0);
+    if (isMultiRoom) {
+        roomLines.forEach((l, idx) => {
+            doc.text(l, rBoxX + (rBoxW / 2), roomBoxY + 8.5 + (idx * 7.5), { align: 'center' });
+        });
+    } else {
+        doc.text(roomType, rBoxX + (rBoxW / 2), roomBoxY + (roomBoxH / 2) + 2.5, { align: 'center' });
+    }
+
+    const promoOffset = isMultiRoom ? (roomBoxH - 14.6) : 0;
+    const promoBoxY = 186.5 + promoOffset;
+    const promoLines = doc.splitTextToSize(promotion, rBoxW - 8.0);
+    const isMultiPromo = promoLines.length > 1;
+    const promoBoxH = isMultiPromo ? 20.0 : 15.7;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.3);
+    doc.text("Promotion :", rLabelX, promoBoxY + 8.0);
+
+    doc.setFillColor(220, 220, 220);
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(1.2);
+    doc.rect(rBoxX, promoBoxY, rBoxW, promoBoxH, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(isMultiPromo ? 6.4 : 6.7);
+    doc.setTextColor(0, 0, 0);
+    if (isMultiPromo) {
+        promoLines.forEach((l, idx) => {
+            doc.text(l, rBoxX + (rBoxW / 2), promoBoxY + 8.0 + (idx * 7.5), { align: 'center' });
+        });
+    } else {
+        doc.text(promotion, rBoxX + (rBoxW / 2), promoBoxY + (promoBoxH / 2) + 2.5, { align: 'center' });
+    }
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.8);
-    doc.text("For Full Promotion details and conditions see confirmation email", rLabelX, 213.5);
+    doc.text("For Full Promotion details and conditions see confirmation email", rLabelX, promoBoxY + promoBoxH + 9.5);
 
     // 4. Cancellation Policy Banner (Gray)
     const cancelY = 247.5;
