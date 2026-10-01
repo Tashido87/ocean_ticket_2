@@ -902,22 +902,32 @@ export async function extractTextFromPdf(file) {
 
 
 /**
- * Format or auto-calculate check-in time (3 hours before departure).
- * Returns clean, elegant string like "(DMK) 1 Oct 2026, 4:00 PM" or "1 Oct 2026, 4:00 PM"
+ * Format or auto-calculate check-in time list for all flight sectors (3 hours before departure of each sector).
+ * Returns array: [{ code: 'RGN', label: 'Check-in (RGN)', time: '1 Oct 2026, 4:00 PM' }, ...]
  */
-export function getFormattedCheckinTime(data) {
-    if (!data) return '3 hours before departure';
-    let checkin = (data.checkinNotice || '').trim();
+export function getSectorCheckinList(data) {
+    if (!data) return [{ code: 'DEP', label: 'Check-in', time: '3 hours before departure' }];
     const flights = (data.flights && data.flights.length > 0) ? data.flights : [data];
-    const firstFlight = flights[0] || {};
-    const depAirport = firstFlight.depAirport || data.depAirport || '';
-    const depCode = lookupAirportCode(depAirport) || '';
+    const results = [];
 
-    // If checkinNotice is empty or only a generic relative note, try auto-computing from depDate & depTime
-    if (!checkin || /before departure/i.test(checkin)) {
-        if (firstFlight.depTime && firstFlight.depDateFormatted) {
+    flights.forEach((f, idx) => {
+        const depAirport = f.depAirport || (idx === 0 ? data.depAirport : '') || '';
+        const depCode = lookupAirportCode(depAirport) || (idx === 0 ? 'DEP' : `SEC${idx + 1}`);
+        let timeStr = '';
+
+        // If sector 0 and user provided explicit checkinNotice that contains a formatted date/time
+        if (idx === 0 && data.checkinNotice && !/before departure/i.test(data.checkinNotice)) {
+            timeStr = data.checkinNotice
+                .replace(/^check[- ]?in[\s:]*/i, '')
+                .replace(/\([^)]+\)/g, '')
+                .replace(/^[\s:\-]+/, '')
+                .trim();
+        }
+
+        // Auto-compute 3 hours before departure if timeStr is not set
+        if (!timeStr && f.depTime && f.depDateFormatted) {
             try {
-                const d = new Date(`${firstFlight.depDateFormatted} ${firstFlight.depTime}`);
+                const d = new Date(`${f.depDateFormatted} ${f.depTime}`);
                 if (!isNaN(d.getTime())) {
                     d.setHours(d.getHours() - 3);
                     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -925,19 +935,32 @@ export function getFormattedCheckinTime(data) {
                     const minutes = String(d.getMinutes()).padStart(2, '0');
                     const ampm = hours >= 12 ? 'PM' : 'AM';
                     const h12 = hours % 12 || 12;
-                    const codePrefix = depCode ? `(${depCode}) ` : '';
-                    checkin = `${codePrefix}${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${h12}:${minutes} ${ampm}`;
+                    timeStr = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${h12}:${minutes} ${ampm}`;
                 }
             } catch (e) {}
         }
-    }
 
-    if (!checkin) {
-        checkin = depCode ? `(${depCode}) 3 hours before departure` : '3 hours before departure';
-    } else {
-        checkin = checkin.replace(/^check[- ]?in[\s:]*/i, '').trim();
-    }
-    return checkin;
+        if (!timeStr) {
+            timeStr = '3 hours before departure';
+        }
+
+        results.push({
+            code: depCode,
+            label: `Check-in (${depCode})`,
+            time: timeStr
+        });
+    });
+
+    return results;
+}
+
+/**
+ * Format or auto-calculate check-in time (3 hours before departure).
+ * Returns clean, elegant string like "(DMK) 1 Oct 2026, 4:00 PM" or "1 Oct 2026, 4:00 PM"
+ */
+export function getFormattedCheckinTime(data) {
+    const list = getSectorCheckinList(data);
+    return list[0] ? `${list[0].label}: ${list[0].time}` : '3 hours before departure';
 }
 
 /**
@@ -990,27 +1013,8 @@ export async function generateThaiAirwaysPdfDoc(data) {
     const depCity = extractCityName(firstFlight.depAirport) || 'Bangkok';
     const arrCity = extractCityName(firstFlight.arrAirport) || 'London';
 
-    const firstDepCode = lookupAirportCode(firstFlight.depAirport) || 'BKK';
-    const checkinNotice = getFormattedCheckinTime(data);
-
-    let checkinLbl = `Check-in (${firstDepCode})`;
-    let checkinVal = '';
-
-    if (checkinNotice) {
-        const parenMatch = checkinNotice.match(/\(([A-Za-z0-9\s]+)\)/);
-        const codeInParen = parenMatch ? parenMatch[1].trim() : firstDepCode;
-        const resolvedCode = lookupAirportCode(codeInParen) || codeInParen;
-        checkinLbl = `Check-in (${resolvedCode})`;
-
-        checkinVal = checkinNotice
-            .replace(/^check[- ]?in/i, '')
-            .replace(/\([^)]+\)/g, '')
-            .replace(/^[\s:\-]+/, '')
-            .trim();
-    }
-    if (!checkinVal) {
-        checkinVal = '3 hours before departure';
-    }
+    const sectorCheckins = getSectorCheckinList(data).slice(0, 2);
+    const isMultiSector = sectorCheckins.length > 1;
 
     // 1. HEADER
     // Logo: width ~150, height ~44 (aspect ratio 3.4:1)
@@ -1081,30 +1085,51 @@ export async function generateThaiAirwaysPdfDoc(data) {
     doc.text(paxSummary, 501.7 + 5, stripY + 15.5, { maxWidth: 40 });
 
     // Strip Row 2
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...DK);
-    doc.text(checkinLbl, marginL + 5, stripY + 39, { maxWidth: 70 });
+    if (isMultiSector) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.8);
+        doc.setTextColor(...DK);
+        doc.text(sectorCheckins[0].label, marginL + 5, stripY + 34.5, { maxWidth: 72 });
+        doc.text(sectorCheckins[1].label, marginL + 5, stripY + 48.5, { maxWidth: 72 });
 
-    // Prominent Check-in badge in Thai Airways PDF
-    doc.setFont("helvetica", "bold");
-    const checkinLines = doc.splitTextToSize(checkinVal, 96);
-    const tw = doc.getTextWidth(checkinLines[0] || checkinVal);
-    const bgW = Math.min(Math.max(tw + 8, 55), 103);
-    const bgH = checkinLines.length > 1 ? 21 : 13.5;
-    const bgY = checkinLines.length > 1 ? stripY + 26.5 : stripY + 28.5;
+        sectorCheckins.forEach((sc, i) => {
+            const by = (i === 0) ? (stripY + 25.0) : (stripY + 39.5);
+            const baselineY = (i === 0) ? (stripY + 34.0) : (stripY + 48.5);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(7.5);
+            const tw = doc.getTextWidth(sc.time);
+            const bgW = Math.min(Math.max(tw + 8, 55), 103);
+            const bgH = 12.0;
 
-    doc.setFillColor(240, 232, 255); // Soft purple tint #F0E8FF
-    doc.setDrawColor(213, 203, 232); // #D5CBE8
-    doc.setLineWidth(0.5);
-    doc.roundedRect(127.6 + 4, bgY, bgW, bgH, 2, 2, 'FD');
+            doc.setFillColor(240, 232, 255); // Soft purple tint #F0E8FF
+            doc.setDrawColor(213, 203, 232); // #D5CBE8
+            doc.setLineWidth(0.5);
+            doc.roundedRect(127.6 + 4, by, bgW, bgH, 2, 2, 'FD');
 
-    doc.setTextColor(...P);
-    doc.setFontSize(8.0);
-    if (checkinLines.length > 1) {
-        doc.text(checkinLines.slice(0, 2), 127.6 + 8, stripY + 34.5);
+            doc.setTextColor(...P);
+            doc.text(sc.time, 127.6 + 8, baselineY, { maxWidth: bgW - 8 });
+        });
     } else {
-        doc.text(checkinLines[0] || '', 127.6 + 8, stripY + 38);
+        const sc = sectorCheckins[0];
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.5);
+        doc.setTextColor(...DK);
+        doc.text(sc.label, marginL + 5, stripY + 39, { maxWidth: 70 });
+
+        doc.setFont("helvetica", "bold");
+        const tw = doc.getTextWidth(sc.time);
+        const bgW = Math.min(Math.max(tw + 8, 55), 103);
+        const bgH = 13.5;
+        const bgY = stripY + 28.5;
+
+        doc.setFillColor(240, 232, 255); // Soft purple tint #F0E8FF
+        doc.setDrawColor(213, 203, 232); // #D5CBE8
+        doc.setLineWidth(0.5);
+        doc.roundedRect(127.6 + 4, bgY, bgW, bgH, 2, 2, 'FD');
+
+        doc.setTextColor(...P);
+        doc.setFontSize(8.0);
+        doc.text(sc.time, 127.6 + 8, stripY + 38, { maxWidth: bgW - 8 });
     }
 
     doc.setFontSize(8.5);
@@ -1476,15 +1501,21 @@ export async function generateAirAsiaPdfDoc(data) {
     drawSectionTitle("Booking Information", cursorY);
     cursorY += 8;
 
+    const sectorCheckins = getSectorCheckinList(data).slice(0, 2);
+    const isMultiSector = sectorCheckins.length > 1;
+
+    const row1H = isMultiSector ? 32 : 20.5;
+    const row2H = 20.5;
+    const bookBoxHeight = row1H + row2H;
+
     const bookBoxY = cursorY;
-    const bookBoxHeight = 41;
     doc.setFillColor(...greyBg);
     doc.rect(marginX, bookBoxY, contentWidth, bookBoxHeight, 'F');
     doc.setDrawColor(...borderGrey);
     doc.setLineWidth(0.5);
     doc.rect(marginX, bookBoxY, contentWidth, bookBoxHeight, 'S');
 
-    doc.line(marginX, bookBoxY + 20.5, marginX + contentWidth, bookBoxY + 20.5);
+    doc.line(marginX, bookBoxY + row1H, marginX + contentWidth, bookBoxY + row1H);
 
     const col2X = marginX + 125;
     const col3X = marginX + 255;
@@ -1493,60 +1524,87 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.line(col3X, bookBoxY, col3X, bookBoxY + bookBoxHeight);
     doc.line(col4X, bookBoxY, col4X, bookBoxY + bookBoxHeight);
 
-    const checkinVal = getFormattedCheckinTime(data);
-
-    doc.setFontSize(9.5);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...darkColor);
-    doc.text("Check-in Time", marginX + 6, bookBoxY + 14);
-
-    // Prominent Check-in Time badge for AirAsia / VietJet
-    doc.setFont("helvetica", "bold");
-    let checkinFontSize = 8.5;
-    if (doc.getTextWidth(checkinVal) > 116) {
-        checkinFontSize = 7.8;
-    }
-    doc.setFontSize(checkinFontSize);
-
-    const cTextW = doc.getTextWidth(checkinVal);
-    const badgeW = Math.min(cTextW + 8, 120);
-    const badgeH = 13.5;
-    const badgeX = col2X + 5;
-    const badgeY = bookBoxY + 3.5;
-
     const badgeBg = isVietJet ? [254, 242, 242] : [255, 235, 238]; // soft red tint
     const badgeBorder = isVietJet ? [254, 202, 202] : [255, 205, 210];
-    doc.setFillColor(...badgeBg);
-    doc.setDrawColor(...badgeBorder);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
 
-    doc.setTextColor(...redColor);
-    doc.text(checkinVal, badgeX + 4, bookBoxY + 13.5, { maxWidth: badgeW - 8 });
-    doc.setTextColor(...darkColor);
+    if (isMultiSector) {
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...darkColor);
+        doc.text(sectorCheckins[0].label, marginX + 6, bookBoxY + 12.5);
+        doc.text(sectorCheckins[1].label, marginX + 6, bookBoxY + 25.5);
+
+        sectorCheckins.forEach((sc, i) => {
+            const by = (i === 0) ? (bookBoxY + 3.0) : (bookBoxY + 16.5);
+            const baselineY = (i === 0) ? (bookBoxY + 12.5) : (bookBoxY + 26.0);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(7.8);
+            const cTextW = doc.getTextWidth(sc.time);
+            const badgeW = Math.min(cTextW + 8, 120);
+            const badgeH = 12.5;
+
+            doc.setFillColor(...badgeBg);
+            doc.setDrawColor(...badgeBorder);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(col2X + 5, by, badgeW, badgeH, 2, 2, 'FD');
+
+            doc.setTextColor(...redColor);
+            doc.text(sc.time, col2X + 9, baselineY, { maxWidth: badgeW - 8 });
+        });
+    } else {
+        const sc = sectorCheckins[0];
+        doc.setFontSize(9.5);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...darkColor);
+        doc.text(sc.label, marginX + 6, bookBoxY + 14);
+
+        doc.setFont("helvetica", "bold");
+        let checkinFontSize = 8.5;
+        if (doc.getTextWidth(sc.time) > 116) {
+            checkinFontSize = 7.8;
+        }
+        doc.setFontSize(checkinFontSize);
+
+        const cTextW = doc.getTextWidth(sc.time);
+        const badgeW = Math.min(cTextW + 8, 120);
+        const badgeH = 13.5;
+        const badgeX = col2X + 5;
+        const badgeY = bookBoxY + 3.5;
+
+        doc.setFillColor(...badgeBg);
+        doc.setDrawColor(...badgeBorder);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
+
+        doc.setTextColor(...redColor);
+        doc.text(sc.time, badgeX + 4, bookBoxY + 13.5, { maxWidth: badgeW - 8 });
+    }
+
     doc.setFontSize(9.5);
-
+    doc.setTextColor(...darkColor);
     doc.setFont("helvetica", "bold");
-    doc.text("Airline Booking Reference", col3X + 6, bookBoxY + 14);
-    doc.setFont("helvetica", "bold");
+    const midRow1Y = bookBoxY + (row1H / 2) + 3.5;
+    doc.text("Airline Booking Reference", col3X + 6, midRow1Y);
     const pnrVal = data.pnr || "";
     if (doc.getTextWidth(pnrVal) > (contentWidth - (col4X - marginX) - 12)) {
         doc.setFontSize(8.0);
     }
-    doc.text(pnrVal, col4X + 6, bookBoxY + 14);
+    doc.text(pnrVal, col4X + 6, midRow1Y);
     doc.setFontSize(9.5);
 
+    // Row 2
+    const row2Baseline = bookBoxY + row1H + 14;
     doc.setFont("helvetica", "bold");
-    doc.text("E-Ticket No.", marginX + 6, bookBoxY + 34.5);
+    doc.text("E-Ticket No.", marginX + 6, row2Baseline);
     doc.setFont("helvetica", "normal");
-    doc.text(data.eTicketNo || "To be advised at check-in", col2X + 6, bookBoxY + 34.5);
+    doc.text(data.eTicketNo || "To be advised at check-in", col2X + 6, row2Baseline);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Class", col3X + 6, bookBoxY + 34.5);
+    doc.text("Class", col3X + 6, row2Baseline);
     doc.setFont("helvetica", "normal");
-    doc.text(data.flightClass || "Economy", col4X + 6, bookBoxY + 34.5);
+    doc.text(data.flightClass || "Economy", col4X + 6, row2Baseline);
 
-    cursorY += bookBoxHeight + 20;
+    cursorY += bookBoxHeight + (isMultiSector ? 12 : 20);
 
     // 3. PASSENGER
     drawSectionTitle("Passenger", cursorY);
@@ -1897,27 +1955,7 @@ export function renderThaiAirwaysTicketHtml(data) {
     const arrCity = extractCityName(firstFlight.arrAirport) || 'London';
     const paxSummary = paxList.length === 1 ? `1 ${paxList[0].type || 'Adult'}` : `${paxList.length} Adults`;
 
-    const firstDepCode = lookupAirportCode(firstFlight.depAirport) || 'BKK';
-    const checkinNotice = getFormattedCheckinTime(data);
-
-    let checkinLbl = `Check-in (${firstDepCode})`;
-    let checkinVal = '';
-
-    if (checkinNotice) {
-        const parenMatch = checkinNotice.match(/\(([A-Za-z0-9\s]+)\)/);
-        const codeInParen = parenMatch ? parenMatch[1].trim() : firstDepCode;
-        const resolvedCode = lookupAirportCode(codeInParen) || codeInParen;
-        checkinLbl = `Check-in (${resolvedCode})`;
-
-        checkinVal = checkinNotice
-            .replace(/^check[- ]?in/i, '')
-            .replace(/\([^)]+\)/g, '')
-            .replace(/^[\s:\-]+/, '')
-            .trim();
-    }
-    if (!checkinVal) {
-        checkinVal = '3 hours before departure';
-    }
+    const sectorCheckins = getSectorCheckinList(data).slice(0, 2);
 
     const depDateShort = firstFlight.depDateFormatted ? firstFlight.depDateFormatted.replace(/^[A-Za-z]+day,\s*/, '').toUpperCase() : '';
 
@@ -1947,14 +1985,22 @@ export function renderThaiAirwaysTicketHtml(data) {
                 <td style="padding:6px 6px; border:1px solid #D5CBE8; width:18%; color:#333;">${paxSummary}</td>
             </tr>
             <tr>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#3D1E6D;">${checkinLbl}</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; word-break:break-word; max-width:130px;">
-                    <span style="display:inline-block; background:#F0E8FF; color:#3D1E6D; border:1px solid #D5CBE8; font-weight:700; font-size:11px; padding:2px 7px; border-radius:3px;">${checkinVal}</span>
+                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#3D1E6D; vertical-align:middle;">
+                    ${sectorCheckins.map((sc, i) => `
+                        <div style="${i > 0 ? 'margin-top:5px;' : ''}">${sc.label}</div>
+                    `).join('')}
                 </td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#333;">Status</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#111;">Confirmed</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#333;">Alliance</td>
-                <td style="padding:6px 6px; border:1px solid #D5CBE8; color:#333; line-height:1.2;">Star<br>Alliance</td>
+                <td style="padding:6px 6px; border:1px solid #D5CBE8; word-break:break-word; max-width:130px; vertical-align:middle;">
+                    ${sectorCheckins.map((sc, i) => `
+                        <div style="${i > 0 ? 'margin-top:4px;' : ''}">
+                            <span style="display:inline-block; background:#F0E8FF; color:#3D1E6D; border:1px solid #D5CBE8; font-weight:700; font-size:10.5px; padding:1.5px 6px; border-radius:3px; white-space:nowrap;">${sc.time}</span>
+                        </div>
+                    `).join('')}
+                </td>
+                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#333; vertical-align:middle;">Status</td>
+                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#111; vertical-align:middle;">Confirmed</td>
+                <td style="padding:6px 6px; border:1px solid #D5CBE8; font-weight:700; color:#333; vertical-align:middle;">Alliance</td>
+                <td style="padding:6px 6px; border:1px solid #D5CBE8; color:#333; line-height:1.2; vertical-align:middle;">Star<br>Alliance</td>
             </tr>
         </table>
 
@@ -2105,7 +2151,7 @@ export function renderAirAsiaTicketHtml(data) {
             route: data.route || ''
         }];
 
-    const checkinVal = getFormattedCheckinTime(data);
+    const sectorCheckins = getSectorCheckinList(data).slice(0, 2);
 
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#333333; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:40px 48px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.35; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
@@ -2130,12 +2176,20 @@ export function renderAirAsiaTicketHtml(data) {
             <div style="font-size:15px; font-weight:700; color:#E31E24; margin-bottom:8px;">Booking Information</div>
             <table style="width:100%; border-collapse:collapse; background:#F5F5F5; border:1px solid #CCCCCC; font-size:12px;">
                 <tr>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%;"><strong>Check-in Time</strong></td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%;">
-                        <span style="display:inline-block; background:#FFEBEE; color:#D32F2F; border:1px solid #FFCDD2; font-weight:700; font-size:11px; padding:2px 8px; border-radius:3px;">${checkinVal}</span>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%; vertical-align:middle;">
+                        ${sectorCheckins.map((sc, i) => `
+                            <div style="${i > 0 ? 'margin-top:6px;' : ''} font-weight:700; font-size:12px; color:#333;">${sc.label}</div>
+                        `).join('')}
                     </td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:28%;"><strong>Airline Booking Reference</strong></td>
-                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:22%; font-weight:700;">${data.pnr || ''}</td>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:25%; vertical-align:middle;">
+                        ${sectorCheckins.map((sc, i) => `
+                            <div style="${i > 0 ? 'margin-top:5px;' : ''}">
+                                <span style="display:inline-block; background:#FFEBEE; color:#D32F2F; border:1px solid #FFCDD2; font-weight:700; font-size:11px; padding:2px 8px; border-radius:3px; white-space:nowrap;">${sc.time}</span>
+                            </div>
+                        `).join('')}
+                    </td>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:28%; vertical-align:middle;"><strong>Airline Booking Reference</strong></td>
+                    <td style="padding:7px 10px; border:1px solid #CCCCCC; width:22%; font-weight:700; vertical-align:middle;">${data.pnr || ''}</td>
                 </tr>
                 <tr>
                     <td style="padding:7px 10px; border:1px solid #CCCCCC;"><strong>E-Ticket No.</strong></td>
