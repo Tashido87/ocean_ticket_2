@@ -1229,24 +1229,24 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.text(sDepCity, marginL + 8, curY + 21);
         const cityW = doc.getTextWidth(sDepCity);
 
-        // Draw clean, thick, bold white vector right-arrow (မျှားဖြူထူထူလေး)
-        const ax = marginL + 8 + cityW + 8;
+        // Draw clean, elegant white vector right-arrow matching preview proportions
+        const ax = marginL + 8 + cityW + 6;
         const ay = curY + 16.5;
         doc.setDrawColor(...WHT);
         doc.setFillColor(...WHT);
-        doc.setLineWidth(2.4);
-        doc.line(ax, ay, ax + 14, ay);
+        doc.setLineWidth(1.4);
+        doc.line(ax, ay, ax + 9, ay);
         doc.triangle(
-            ax + 11, ay - 4.5,
-            ax + 19, ay,
-            ax + 11, ay + 4.5,
+            ax + 7.5, ay - 2.5,
+            ax + 12.5, ay,
+            ax + 7.5, ay + 2.5,
             'FD'
         );
 
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.setTextColor(...WHT);
-        doc.text(sArrCity, ax + 26, curY + 21);
+        doc.text(sArrCity, ax + 18, curY + 21);
 
         const sectorPnr = f.pnr || pnr;
 
