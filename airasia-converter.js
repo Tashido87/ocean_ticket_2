@@ -1202,12 +1202,12 @@ export async function generateThaiAirwaysPdfDoc(data) {
             const bgW = Math.min(tw + 8, 106);
             const bgH = 11.5;
 
-            doc.setFillColor(236, 226, 252); // Richer lavender tint #ECE2FC
-            doc.setDrawColor(154, 118, 208); // Crisp purple border #9A76D0
+            doc.setFillColor(255, 245, 102); // Highlight Pen Yellow #FFF566
+            doc.setDrawColor(230, 200, 0);   // Golden Yellow Border #E6C800
             doc.setLineWidth(0.7);
             doc.roundedRect(127.6 + 4, by, bgW, bgH, 2, 2, 'FD');
 
-            doc.setTextColor(...P);
+            doc.setTextColor(...BLK);
             doc.text(sc.time, 127.6 + 8, baselineY);
         });
     } else {
@@ -1231,12 +1231,12 @@ export async function generateThaiAirwaysPdfDoc(data) {
         const by = stripY + 33.0;
         const baselineY = stripY + 42.0;
 
-        doc.setFillColor(236, 226, 252); // Richer lavender tint #ECE2FC
-        doc.setDrawColor(154, 118, 208); // Crisp purple border #9A76D0
+        doc.setFillColor(255, 245, 102); // Highlight Pen Yellow #FFF566
+        doc.setDrawColor(230, 200, 0);   // Golden Yellow Border #E6C800
         doc.setLineWidth(0.7);
         doc.roundedRect(127.6 + 4, by, bgW, bgH, 2, 2, 'FD');
 
-        doc.setTextColor(...P);
+        doc.setTextColor(...BLK);
         doc.text(sc.time, 127.6 + 8, baselineY);
     }
 
@@ -1256,14 +1256,14 @@ export async function generateThaiAirwaysPdfDoc(data) {
     doc.text("Star", 501.7 + 5, stripY + 33);
     doc.text("Alliance", 501.7 + 5, stripY + 44);
 
-    let curY = stripY + stripH + 16; // ~212 pt
+    let curY = stripY + stripH + 20; // ~216 pt
 
     // 3. FLIGHT DETAILS
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...P);
     doc.text("Flight Details", marginL, curY);
-    curY += 8; // ~220 pt
+    curY += 8; // ~224 pt
 
     flights.forEach((f) => {
         const sDepCity = extractCityName(f.depAirport) || 'Bangkok';
@@ -1375,7 +1375,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.setFont("helvetica", "normal");
         doc.text(f.aircraft || "Boeing 777-300ER", 377.0 + 6, curY + 15.5, { maxWidth: 160 });
 
-        curY += lowerBoxH + 14;
+        curY += lowerBoxH + 20;
     });
 
     // 4. PASSENGER DETAILS
@@ -1423,7 +1423,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
         curY += paxRowH;
     });
 
-    curY += 16;
+    curY += 20;
 
     // 5. BAGGAGE & EXTRA SERVICES
     doc.setFont("helvetica", "bold");
@@ -1458,7 +1458,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
         doc.text(bagInfo, 178.6 + 6, rowY + 15.5, { maxWidth: 350 });
     });
 
-    curY += totalBagH + 16;
+    curY += totalBagH + 20;
 
     // 6. NOTES
     doc.setFont("helvetica", "bold");
@@ -1532,8 +1532,8 @@ export async function generateEvaAirPdfDoc(data) {
     const LT = [238, 247, 240];    // #EEF7F0 Light Green Tint
     const LO = [254, 244, 236];    // #FEF4EC Light Orange
     const BGG = [188, 216, 194];   // #BCD8C2 Border Gray-Green
-    const CIBG = [221, 243, 228];  // Highlighted Check-in Badge background (#DDF3E4)
-    const CIBD = [88, 182, 117];   // Highlighted Check-in Badge border (#58B675)
+    const CIBG = [255, 245, 102];  // Highlight Pen Yellow (#FFF566)
+    const CIBD = [230, 200, 0];    // Golden Yellow Border (#E6C800)
     const DK = [51, 51, 51];       // #333333 Dark Text
     const MUT = [119, 119, 119];   // #777777 Gray
     const WHT = [255, 255, 255];   // #FFFFFF White
@@ -1698,7 +1698,7 @@ export async function generateEvaAirPdfDoc(data) {
             doc.setLineWidth(0.7);
             doc.roundedRect(c1 + 4, by, bgW, bgH, 2, 2, 'FD');
 
-            doc.setTextColor(...EVAG);
+            doc.setTextColor(...BLK);
             doc.text(sc.time, c1 + 8, baselineY);
         });
     } else {
@@ -1727,7 +1727,7 @@ export async function generateEvaAirPdfDoc(data) {
         doc.setLineWidth(0.7);
         doc.roundedRect(c1 + 4, by, bgW, bgH, 2, 2, 'FD');
 
-        doc.setTextColor(...EVAG);
+        doc.setTextColor(...BLK);
         doc.text(sc.time, c1 + 8, baselineY);
     }
 
@@ -1746,7 +1746,7 @@ export async function generateEvaAirPdfDoc(data) {
     doc.text("Star\nAlliance", c5 + 5, stripY + 43.5);
 
     // 3. FLIGHT DETAILS
-    let curY = stripY + stripH + 16;
+    let curY = stripY + stripH + 20;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...EVAG);
@@ -1888,10 +1888,8 @@ export async function generateEvaAirPdfDoc(data) {
         doc.setFont("helvetica", "normal");
         doc.text(sRoute, v3 + 6, curY + 33.5, { maxWidth: 175 });
 
-        curY += infoTableH + 12;
+        curY += infoTableH + 20;
     });
-
-    curY += 2;
 
     // 4. PASSENGER DETAILS
     doc.setFont("helvetica", "bold");
@@ -1944,7 +1942,7 @@ export async function generateEvaAirPdfDoc(data) {
         curY += paxRowH;
     });
 
-    curY += 14;
+    curY += 20;
 
     // 5. BAGGAGE ALLOWANCE
     doc.setFont("helvetica", "bold");
@@ -1979,7 +1977,7 @@ export async function generateEvaAirPdfDoc(data) {
         doc.text(bagInfo, bagSplit + 6, rowY + 14.5, { maxWidth: 360 });
     });
 
-    curY += totalBagH + 14;
+    curY += totalBagH + 20;
 
     // 6. NOTES
     doc.setFont("helvetica", "bold");
@@ -2055,8 +2053,8 @@ export async function generateSingaporeAirlinesPdfDoc(data) {
     const LT = [242, 245, 250];    // #F2F5FA Light Blue Tint
     const LG = [253, 248, 236];    // #FDF8EC Light Gold
     const BBG = [185, 198, 221];   // #B9C6DD Blue-gray border
-    const CIBG = [224, 237, 253];  // Highlighted Check-in Badge background (#E0EDFD)
-    const CIBD = [110, 157, 216];  // Highlighted Check-in Badge border (#6E9DD8)
+    const CIBG = [255, 245, 102];  // Highlight Pen Yellow (#FFF566)
+    const CIBD = [230, 200, 0];    // Golden Yellow Border (#E6C800)
     const DK = [51, 51, 51];       // #333333 Dark Text
     const MUT = [136, 136, 136];   // #888888 Gray
     const WHT = [255, 255, 255];   // #FFFFFF White
@@ -2195,7 +2193,7 @@ export async function generateSingaporeAirlinesPdfDoc(data) {
             doc.setLineWidth(0.7);
             doc.roundedRect(127.6 + 4, by, bgW, bgH, 2, 2, 'FD');
 
-            doc.setTextColor(...SQB);
+            doc.setTextColor(...BLK);
             doc.text(sc.time, 127.6 + 8, baselineY);
         });
     } else {
@@ -2224,7 +2222,7 @@ export async function generateSingaporeAirlinesPdfDoc(data) {
         doc.setLineWidth(0.7);
         doc.roundedRect(127.6 + 4, by, bgW, bgH, 2, 2, 'FD');
 
-        doc.setTextColor(...SQB);
+        doc.setTextColor(...BLK);
         doc.text(sc.time, 127.6 + 8, baselineY);
     }
 
@@ -2241,7 +2239,7 @@ export async function generateSingaporeAirlinesPdfDoc(data) {
     doc.text("Star Alliance", 501.7 + 5, stripY + 42.0, { maxWidth: 45 });
 
     // 3. FLIGHT DETAILS
-    let curY = stripY + stripH + 16;
+    let curY = stripY + stripH + 20;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...SQB);
@@ -2379,7 +2377,7 @@ export async function generateSingaporeAirlinesPdfDoc(data) {
         const sRoute = f.route || `${lookupAirportCode(f.depAirport) || 'SIN'} - ${lookupAirportCode(f.arrAirport) || 'LHR'}`;
         doc.text(sRoute, 377.0 + 6, r2Y + 13.5, { maxWidth: 160 });
 
-        curY += lowerBoxH + 14;
+        curY += lowerBoxH + 20;
     });
 
     // 4. PASSENGER DETAILS
@@ -2430,7 +2428,7 @@ export async function generateSingaporeAirlinesPdfDoc(data) {
         curY += paxRowH;
     });
 
-    curY += 14;
+    curY += 20;
 
     // 5. BAGGAGE ALLOWANCE
     doc.setFont("helvetica", "bold");
@@ -2466,7 +2464,7 @@ export async function generateSingaporeAirlinesPdfDoc(data) {
         doc.text(bagInfo, bagSplit + 6, rowY + 14.5, { maxWidth: 350 });
     });
 
-    curY += totalBagH + 14;
+    curY += totalBagH + 20;
 
     // 6. NOTES
     doc.setFont("helvetica", "bold");
@@ -2616,8 +2614,8 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.line(col3X, bookBoxY, col3X, bookBoxY + bookBoxHeight);
     doc.line(col4X, bookBoxY, col4X, bookBoxY + bookBoxHeight);
 
-    const badgeBg = isVietJet ? [255, 235, 235] : [255, 228, 231]; // richer rose/red tint
-    const badgeBorder = isVietJet ? [248, 140, 140] : [240, 110, 120]; // prominent crisp border
+    const badgeBg = [255, 245, 102];    // Highlight Pen Yellow #FFF566
+    const badgeBorder = [230, 200, 0];  // Golden Yellow Border #E6C800
 
     if (isMultiSector) {
         doc.setFontSize(8.2);
@@ -2647,7 +2645,7 @@ export async function generateAirAsiaPdfDoc(data) {
             doc.setLineWidth(0.7);
             doc.roundedRect(col2X + 5, by, badgeW, badgeH, 2, 2, 'FD');
 
-            doc.setTextColor(...redColor);
+            doc.setTextColor(...darkColor);
             doc.text(sc.time, col2X + 9, baselineY);
         });
     } else {
@@ -2677,7 +2675,7 @@ export async function generateAirAsiaPdfDoc(data) {
         doc.setLineWidth(0.7);
         doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 2, 2, 'FD');
 
-        doc.setTextColor(...redColor);
+        doc.setTextColor(...darkColor);
         doc.text(sc.time, badgeX + 4, bookBoxY + 13.0);
     }
 
@@ -2708,7 +2706,7 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.setFont("helvetica", "normal");
     doc.text(data.flightClass || "Economy", col4X + 6, row2Baseline);
 
-    cursorY += bookBoxHeight + (isMultiSector ? 9 : 20);
+    cursorY += bookBoxHeight + (isMultiSector ? 18 : 22);
 
     // 3. PASSENGER
     drawSectionTitle("Passenger", cursorY);
@@ -2755,7 +2753,7 @@ export async function generateAirAsiaPdfDoc(data) {
         paxRowY += paxRowHeight;
     });
 
-    cursorY = paxRowY + 20;
+    cursorY = paxRowY + 22;
 
     // 4. FLIGHT INFORMATION
     drawSectionTitle("Flight Information", cursorY);
@@ -2895,7 +2893,7 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.setFont("helvetica", "normal");
     doc.text(data.flightClass || "Economy", flCol2 + 6, currentFlY + 15);
 
-    cursorY = currentFlY + flClassRowHeight + (flightsList.length > 1 ? 14 : 20);
+    cursorY = currentFlY + flClassRowHeight + (flightsList.length > 1 ? 18 : 22);
 
     // 5. BAGGAGE ALLOWANCE
     drawSectionTitle("Baggage Allowance", cursorY);
@@ -2940,7 +2938,7 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.text(personalLines[0] || "", bagColSplit + 6, bagBoxY + 85);
     if (personalLines[1]) doc.text(personalLines[1], bagColSplit + 6, bagBoxY + 98);
 
-    cursorY += bagBoxHeight + 11;
+    cursorY += bagBoxHeight + 14;
 
     // Footnote
     doc.setFontSize(8.5);
@@ -2948,7 +2946,7 @@ export async function generateAirAsiaPdfDoc(data) {
     doc.setTextColor(...mutedColor);
     doc.text("* Total weight of personal item and carry-on baggage must not exceed 7 kg.", marginX, cursorY);
 
-    cursorY += 18;
+    cursorY += 20;
 
     // 6. IMPORTANT INFORMATION
     drawSectionTitle("Important Information", cursorY);
@@ -3082,7 +3080,7 @@ export function renderThaiAirwaysTicketHtml(data) {
         <div style="height:3px; background:#D9A300; margin-bottom:12px;"></div>
 
         <!-- 2. BOOKING STRIP -->
-        <table style="width:100%; border-collapse:collapse; background:#F6F3FB; border:1px solid #D5CBE8; font-size:11px; margin-bottom:14px;">
+        <table style="width:100%; border-collapse:collapse; background:#F6F3FB; border:1px solid #D5CBE8; font-size:11px; margin-bottom:22px;">
             <tr>
                 <td style="padding:6px 8px; border:1px solid #D5CBE8; width:14%; font-weight:700; color:#333;">Booking Ref</td>
                 <td style="padding:6px 8px; border:1px solid #D5CBE8; width:27%; font-weight:700; font-size:13px; color:#111;">${pnr}</td>
@@ -3100,7 +3098,7 @@ export function renderThaiAirwaysTicketHtml(data) {
                 <td style="padding:6px 8px; border:1px solid #D5CBE8; vertical-align:middle; white-space:nowrap;">
                     ${sectorCheckins.map((sc, i) => `
                         <div style="${i > 0 ? 'margin-top:5px;' : ''}; white-space:nowrap;">
-                            <span style="display:inline-block; background:#EDE4FC; color:#3D1E6D; border:1.5px solid #9A76D0; font-weight:800; font-size:10.5px; padding:3px 8px; border-radius:4px; white-space:nowrap; box-shadow:0 1px 3px rgba(61,30,109,0.12);">${sc.time}</span>
+                            <span style="display:inline-block; background:#FFF566; color:#111111; border:1.5px solid #E6C800; font-weight:800; font-size:10.5px; padding:3px 8px; border-radius:4px; white-space:nowrap; box-shadow:0 1px 3px rgba(230,200,0,0.25);">${sc.time}</span>
                         </div>
                     `).join('')}
                 </td>
@@ -3112,8 +3110,8 @@ export function renderThaiAirwaysTicketHtml(data) {
         </table>
 
         <!-- 3. FLIGHT DETAILS -->
-        <div style="font-size:14px; font-weight:800; color:#3D1E6D; margin-bottom:6px;">Flight Details</div>
-        <div style="margin-bottom:14px;">
+        <div style="font-size:14px; font-weight:800; color:#3D1E6D; margin-bottom:8px;">Flight Details</div>
+        <div style="margin-bottom:22px;">
             ${flights.map(f => {
                 const fDepCity = extractCityName(f.depAirport) || 'Departure';
                 const fArrCity = extractCityName(f.arrAirport) || 'Arrival';
@@ -3175,8 +3173,8 @@ export function renderThaiAirwaysTicketHtml(data) {
         </div>
 
         <!-- 4. PASSENGER DETAILS -->
-        <div style="font-size:14px; font-weight:800; color:#3D1E6D; margin-bottom:6px;">Passenger Details</div>
-        <table style="width:100%; border-collapse:collapse; border:1px solid #D5CBE8; font-size:11px; margin-bottom:14px;">
+        <div style="font-size:14px; font-weight:800; color:#3D1E6D; margin-bottom:8px;">Passenger Details</div>
+        <table style="width:100%; border-collapse:collapse; border:1px solid #D5CBE8; font-size:11px; margin-bottom:22px;">
             <thead>
                 <tr style="background:#3D1E6D; color:#fff;">
                     <th style="padding:7px 8px; text-align:left; border:1px solid #D5CBE8; width:30%; font-weight:700;">Name</th>
@@ -3198,8 +3196,8 @@ export function renderThaiAirwaysTicketHtml(data) {
         </table>
 
         <!-- 5. BAGGAGE & EXTRA SERVICES -->
-        <div style="font-size:14px; font-weight:800; color:#3D1E6D; margin-bottom:6px;">Baggage &amp; Extra Services</div>
-        <table style="width:100%; border-collapse:collapse; background:#FDF6E3; border:1px solid #D9A300; font-size:11px; margin-bottom:14px;">
+        <div style="font-size:14px; font-weight:800; color:#3D1E6D; margin-bottom:8px;">Baggage &amp; Extra Services</div>
+        <table style="width:100%; border-collapse:collapse; background:#FDF6E3; border:1px solid #D9A300; font-size:11px; margin-bottom:22px;">
             ${paxList.map(p => `
                 <tr>
                     <td style="padding:7px 8px; border:1px solid #D9A300; width:30%; font-weight:700; color:#111;">${p.name || ''}</td>
@@ -3209,8 +3207,8 @@ export function renderThaiAirwaysTicketHtml(data) {
         </table>
 
         <!-- 6. NOTES -->
-        <div style="font-size:14px; font-weight:800; color:#3D1E6D; margin-bottom:6px;">Notes</div>
-        <ul style="margin:0 0 14px 0; padding-left:16px; font-size:9px; color:#333; line-height:1.55;">
+        <div style="font-size:14px; font-weight:800; color:#3D1E6D; margin-bottom:8px;">Notes</div>
+        <ul style="margin:0 0 22px 0; padding-left:16px; font-size:9px; color:#333; line-height:1.55;">
             <li style="margin-bottom:3px;">Passengers must present the valid ID used to purchase the ticket at check-in; boarding pass or this itinerary may also be required.</li>
             <li style="margin-bottom:3px;">Tickets must be used in the sequence set out in the itinerary, otherwise the airline reserves the right to refuse carriage.</li>
             <li style="margin-bottom:3px;">Extra services (preferred seat / additional baggage, etc.): to change seats, flights or travel dates, please contact THAI Worldwide Office or THAI Contact Center (+66-2-3561111).</li>
@@ -3276,7 +3274,7 @@ export function renderEvaAirTicketHtml(data) {
         <div style="height:3.5px; background:#F26522; margin-bottom:14px;"></div>
 
         <!-- 2. BOOKING STRIP -->
-        <table style="width:100%; border-collapse:collapse; background:#EEF7F0; border:1px solid #BCD8C2; font-size:11px; margin-bottom:14px;">
+        <table style="width:100%; border-collapse:collapse; background:#EEF7F0; border:1px solid #BCD8C2; font-size:11px; margin-bottom:22px;">
             <tr>
                 <td style="padding:6px 8px; border:1px solid #BCD8C2; width:14%; font-weight:700; color:#333;">Booking Ref</td>
                 <td style="padding:6px 8px; border:1px solid #BCD8C2; width:27%; font-weight:700; font-size:12px; color:#111;">${pnr}</td>
@@ -3294,7 +3292,7 @@ export function renderEvaAirTicketHtml(data) {
                 <td style="padding:6px 8px; border:1px solid #BCD8C2; vertical-align:middle; white-space:nowrap;">
                     ${sectorCheckins.map((sc, i) => `
                         <div style="${i > 0 ? 'margin-top:5px;' : ''}; white-space:nowrap;">
-                            <span style="display:inline-block; background:#DDF3E4; color:#007A3D; border:1.5px solid #58B675; font-weight:800; font-size:10.5px; padding:3px 8px; border-radius:4px; white-space:nowrap; box-shadow:0 1px 3px rgba(0,122,61,0.12);">${sc.time}</span>
+                            <span style="display:inline-block; background:#FFF566; color:#111111; border:1.5px solid #E6C800; font-weight:800; font-size:10.5px; padding:3px 8px; border-radius:4px; white-space:nowrap; box-shadow:0 1px 3px rgba(230,200,0,0.25);">${sc.time}</span>
                         </div>
                     `).join('')}
                 </td>
@@ -3306,8 +3304,8 @@ export function renderEvaAirTicketHtml(data) {
         </table>
 
         <!-- 3. FLIGHT DETAILS -->
-        <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:6px;">Flight Details</div>
-        <div style="margin-bottom:14px;">
+        <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:8px;">Flight Details</div>
+        <div style="margin-bottom:22px;">
             ${flights.map(f => {
                 const fDepCity = extractCityName(f.depAirport) || 'Taipei';
                 const fArrCity = extractCityName(f.arrAirport) || 'Bangkok';
@@ -3374,8 +3372,8 @@ export function renderEvaAirTicketHtml(data) {
         </div>
 
         <!-- 4. PASSENGER DETAILS -->
-        <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:6px;">Passenger Details</div>
-        <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:14px; border:1px solid #BCD8C2;">
+        <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:8px;">Passenger Details</div>
+        <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:22px; border:1px solid #BCD8C2;">
             <thead>
                 <tr style="background:#007A3D; color:#ffffff;">
                     <th style="padding:6px 8px; text-align:left; border:1px solid #BCD8C2; width:28%; font-weight:700;">Name</th>
@@ -3397,8 +3395,8 @@ export function renderEvaAirTicketHtml(data) {
         </table>
 
         <!-- 5. BAGGAGE ALLOWANCE -->
-        <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:6px;">Baggage Allowance</div>
-        <table style="width:100%; border-collapse:collapse; background:#FEF4EC; border:1px solid #F26522; font-size:11px; margin-bottom:14px;">
+        <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:8px;">Baggage Allowance</div>
+        <table style="width:100%; border-collapse:collapse; background:#FEF4EC; border:1px solid #F26522; font-size:11px; margin-bottom:22px;">
             ${paxList.map(p => {
                 const bagInfo = p.baggage || data.checkedBaggage || 'Checked: 30 kg   |   Carry-on: 7 kg';
                 return `
@@ -3411,8 +3409,8 @@ export function renderEvaAirTicketHtml(data) {
         </table>
 
         <!-- 6. NOTES -->
-        <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:6px;">Notes</div>
-        <ul style="margin:0 0 14px 0; padding-left:18px; font-size:10px; color:#444; line-height:1.45;">
+        <div style="font-size:14px; font-weight:800; color:#007A3D; margin-bottom:8px;">Notes</div>
+        <ul style="margin:0 0 22px 0; padding-left:18px; font-size:10px; color:#444; line-height:1.45;">
             ${isSample ? `<li style="margin-bottom:3px; font-weight:600; color:#444;">This is a SAMPLE template for layout demonstration only — not a valid ticket or booking confirmation.</li>` : ''}
             <li style="margin-bottom:3px;">Passengers must present the valid ID used to purchase the ticket at check-in; boarding pass or itinerary may also be required.</li>
             <li style="margin-bottom:3px;">Tickets must be used in the sequence set out in the itinerary, otherwise the airline reserves the right to refuse carriage.</li>
@@ -3475,7 +3473,7 @@ export function renderSingaporeAirlinesTicketHtml(data) {
         <div style="height:3px; background:#E8A90C; margin-bottom:12px;"></div>
 
         <!-- 2. BOOKING STRIP -->
-        <table style="width:100%; border-collapse:collapse; background:#F2F5FA; border:1px solid #B9C6DD; font-size:11px; margin-bottom:14px;">
+        <table style="width:100%; border-collapse:collapse; background:#F2F5FA; border:1px solid #B9C6DD; font-size:11px; margin-bottom:22px;">
             <tr>
                 <td style="padding:6px 8px; border:1px solid #B9C6DD; width:14%; font-weight:700; color:#333;">Booking Ref</td>
                 <td style="padding:6px 8px; border:1px solid #B9C6DD; width:27%; font-weight:700; font-size:12px; color:#111;">${pnr}</td>
@@ -3493,7 +3491,7 @@ export function renderSingaporeAirlinesTicketHtml(data) {
                 <td style="padding:6px 8px; border:1px solid #B9C6DD; vertical-align:middle; white-space:nowrap;">
                     ${sectorCheckins.map((sc, i) => `
                         <div style="${i > 0 ? 'margin-top:5px;' : ''}; white-space:nowrap;">
-                            <span style="display:inline-block; background:#E0EDFD; color:#1B3A6B; border:1.5px solid #6E9DD8; font-weight:800; font-size:10.5px; padding:3px 8px; border-radius:4px; white-space:nowrap; box-shadow:0 1px 3px rgba(27,58,107,0.12);">${sc.time}</span>
+                            <span style="display:inline-block; background:#FFF566; color:#111111; border:1.5px solid #E6C800; font-weight:800; font-size:10.5px; padding:3px 8px; border-radius:4px; white-space:nowrap; box-shadow:0 1px 3px rgba(230,200,0,0.25);">${sc.time}</span>
                         </div>
                     `).join('')}
                 </td>
@@ -3505,8 +3503,8 @@ export function renderSingaporeAirlinesTicketHtml(data) {
         </table>
 
         <!-- 3. FLIGHT DETAILS -->
-        <div style="font-size:14px; font-weight:800; color:#1B3A6B; margin-bottom:6px;">Flight Details</div>
-        <div style="margin-bottom:14px;">
+        <div style="font-size:14px; font-weight:800; color:#1B3A6B; margin-bottom:8px;">Flight Details</div>
+        <div style="margin-bottom:22px;">
             ${flights.map(f => {
                 const fDepCity = extractCityName(f.depAirport) || 'Singapore';
                 const fArrCity = extractCityName(f.arrAirport) || 'London';
@@ -3572,8 +3570,8 @@ export function renderSingaporeAirlinesTicketHtml(data) {
         </div>
 
         <!-- 4. PASSENGER DETAILS -->
-        <div style="font-size:14px; font-weight:800; color:#1B3A6B; margin-bottom:6px;">Passenger Details</div>
-        <table style="width:100%; border-collapse:collapse; border:1px solid #B9C6DD; font-size:11px; margin-bottom:14px;">
+        <div style="font-size:14px; font-weight:800; color:#1B3A6B; margin-bottom:8px;">Passenger Details</div>
+        <table style="width:100%; border-collapse:collapse; border:1px solid #B9C6DD; font-size:11px; margin-bottom:22px;">
             <thead>
                 <tr style="background:#1B3A6B; color:#fff;">
                     <th style="padding:7px 8px; text-align:left; border:1px solid #B9C6DD; width:32%; font-weight:700;">Name</th>
@@ -3595,8 +3593,8 @@ export function renderSingaporeAirlinesTicketHtml(data) {
         </table>
 
         <!-- 5. BAGGAGE ALLOWANCE -->
-        <div style="font-size:14px; font-weight:800; color:#1B3A6B; margin-bottom:6px;">Baggage Allowance</div>
-        <table style="width:100%; border-collapse:collapse; background:#FDF8EC; border:1px solid #E8A90C; font-size:11px; margin-bottom:14px;">
+        <div style="font-size:14px; font-weight:800; color:#1B3A6B; margin-bottom:8px;">Baggage Allowance</div>
+        <table style="width:100%; border-collapse:collapse; background:#FDF8EC; border:1px solid #E8A90C; font-size:11px; margin-bottom:22px;">
             ${paxList.map(p => `
                 <tr>
                     <td style="padding:7px 8px; border:1px solid #E8A90C; width:30%; font-weight:700; color:#111;">${p.name || 'SAMPLE PASSENGER'}</td>
@@ -3606,8 +3604,8 @@ export function renderSingaporeAirlinesTicketHtml(data) {
         </table>
 
         <!-- 6. NOTES -->
-        <div style="font-size:14px; font-weight:800; color:#1B3A6B; margin-bottom:6px;">Notes</div>
-        <ul style="margin:0 0 14px 0; padding-left:16px; font-size:9px; color:#333; line-height:1.55;">
+        <div style="font-size:14px; font-weight:800; color:#1B3A6B; margin-bottom:8px;">Notes</div>
+        <ul style="margin:0 0 22px 0; padding-left:16px; font-size:9px; color:#333; line-height:1.55;">
             <li style="margin-bottom:3px;">Passengers must present the valid ID used to purchase the ticket at check-in; boarding pass or itinerary may also be required.</li>
             <li style="margin-bottom:3px;">Tickets must be used in the sequence set out in the itinerary, otherwise the airline reserves the right to refuse carriage.</li>
             <li style="margin-bottom:3px;">Please arrive at the airport at least 3 hours before departure to allow enough time for check-in.</li>
@@ -3687,7 +3685,7 @@ export function renderAirAsiaTicketHtml(data) {
         <div style="height:4.5px; background:#E31E24; margin-bottom:20px;"></div>
 
         <!-- Booking Information Section -->
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:24px;">
             <div style="font-size:15px; font-weight:700; color:#E31E24; margin-bottom:8px;">Booking Information</div>
             <table style="width:100%; border-collapse:collapse; background:#F5F5F5; border:1px solid #CCCCCC; font-size:12px;">
                 <tr>
@@ -3699,7 +3697,7 @@ export function renderAirAsiaTicketHtml(data) {
                     <td style="padding:7px 10px; border:1px solid #CCCCCC; width:28%; vertical-align:middle; white-space:nowrap;">
                         ${sectorCheckins.map((sc, i) => `
                             <div style="${i > 0 ? 'margin-top:5px;' : ''}; white-space:nowrap;">
-                                <span style="display:inline-block; background:${isVietJet ? '#FFF0F0' : '#FFE5E8'}; color:${isVietJet ? '#D32F2F' : '#C62828'}; border:1.5px solid ${isVietJet ? '#F88A8A' : '#FF7080'}; font-weight:800; font-size:11px; padding:3px 8px; border-radius:4px; white-space:nowrap; box-shadow:0 1px 3px rgba(227,30,36,0.12);">${sc.time}</span>
+                                <span style="display:inline-block; background:#FFF566; color:#111111; border:1.5px solid #E6C800; font-weight:800; font-size:11px; padding:3px 8px; border-radius:4px; white-space:nowrap; box-shadow:0 1px 3px rgba(230,200,0,0.25);">${sc.time}</span>
                             </div>
                         `).join('')}
                     </td>
@@ -3716,7 +3714,7 @@ export function renderAirAsiaTicketHtml(data) {
         </div>
 
         <!-- Passenger Section -->
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:24px;">
             <div style="font-size:15px; font-weight:700; color:#E31E24; margin-bottom:8px;">Passenger</div>
             <table style="width:100%; border-collapse:collapse; background:#F5F5F5; border:1px solid #CCCCCC; font-size:12px;">
                 <thead>
@@ -3737,7 +3735,7 @@ export function renderAirAsiaTicketHtml(data) {
         </div>
 
         <!-- Flight Information Section -->
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:24px;">
             <div style="font-size:15px; font-weight:700; color:#E31E24; margin-bottom:8px;">Flight Information</div>
             <table style="width:100%; border-collapse:collapse; background:#F5F5F5; border:1px solid #CCCCCC; font-size:12px;">
                 <thead>
@@ -3780,7 +3778,7 @@ export function renderAirAsiaTicketHtml(data) {
         </div>
 
         <!-- Baggage Allowance Section -->
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:24px;">
             <div style="font-size:15px; font-weight:700; color:#E31E24; margin-bottom:8px;">Baggage Allowance</div>
             <table style="width:100%; border-collapse:collapse; background:#FDECEC; border:1px solid #E0AAAA; font-size:12px;">
                 <tr>
@@ -3811,7 +3809,7 @@ export function renderAirAsiaTicketHtml(data) {
         </div>
 
         <!-- Important Information Section -->
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:24px;">
             <div style="font-size:15px; font-weight:700; color:#E31E24; margin-bottom:8px;">Important Information</div>
             <ul style="margin:0; padding-left:18px; font-size:11.5px; color:#333333; line-height:1.5;">
                 <li style="margin-bottom:4px;">Please arrive at the airport at least <strong>3 hours</strong> before departure to allow enough time for check-in.</li>
