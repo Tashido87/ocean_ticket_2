@@ -59,30 +59,43 @@ const BRANDS = {
         key: 'magical_land',
         selectorLabel: 'Magical Land',
         displayName: 'Magical Land',
-        legalName: 'MAGICAL LAND COMPANY LIMITED',
-        logoUrl: './magical-land-logo.svg',
+        legalName: 'MAGICAL LAND',
+        subName: 'T R A V E L   &   T O U R',
+        logoUrl: './magical-land-logo.png',
         documentCode: 'ML',
         addressLines: [
-            'Room No. 1202, A-32, Myanma Gonyi Housing, Upper Pansodan St, Mingalar Taungnyunt Township, Yangon'
+            'Room No. 1202, A-32, Myanma Gonyi Housing, Upper',
+            'Pansodan St,',
+            'Mingalar Taungnyunt Township, Yangon'
         ],
         phones: ['09964026208'],
         email: 'magicalandticket@gmail.com',
-        tagline: 'MAGICAL LAND TRAVEL & TOUR',
+        tagline: 'Magical Land Travel & Tour',
+        thankYouNote: 'Thank you for flying with us.',
         theme: {
-            accentHex: '#4A357D',
-            accentRgb: [74, 53, 125],
-            accentSoftRgb: [245, 242, 252],
-            accentBorderRgb: [221, 212, 244],
-            secondaryHex: '#F0582C',
-            secondaryRgb: [240, 88, 44],
-            charcoalHex: '#232323',
-            charcoalRgb: [35, 35, 35],
-            lightTintHex: '#F7F8F9',
-            lightTintRgb: [247, 248, 249],
-            mutedHex: '#5F6B78',
-            mutedRgb: [95, 107, 120],
-            lineHex: '#E2E6EA',
-            lineRgb: [226, 230, 234]
+            deepPurpleHex: '#3A2C5C',
+            deepPurpleRgb: [58, 44, 92],
+            logoPurpleHex: '#4E3B78',
+            logoPurpleRgb: [78, 59, 120],
+            sunsetOrangeHex: '#FA7632',
+            sunsetOrangeRgb: [250, 118, 50],
+            inkHex: '#26232E',
+            inkRgb: [38, 35, 46],
+            mutedHex: '#8A8496',
+            mutedRgb: [138, 132, 150],
+            hairlineHex: '#E9E5F1',
+            hairlineRgb: [233, 229, 241],
+            // Compatibility mappings
+            accentHex: '#3A2C5C',
+            accentRgb: [58, 44, 92],
+            secondaryHex: '#FA7632',
+            secondaryRgb: [250, 118, 50],
+            charcoalHex: '#26232E',
+            charcoalRgb: [38, 35, 46],
+            lightTintHex: '#FFFFFF',
+            lightTintRgb: [255, 255, 255],
+            lineHex: '#E9E5F1',
+            lineRgb: [233, 229, 241]
         }
     }
 };
@@ -169,11 +182,13 @@ function resolveDocumentDate(dateStr) {
     return isNaN(fallback.getTime()) ? new Date() : fallback;
 }
 
-function formatDisplayDate(dateLike) {
+function formatDisplayDate(dateLike, isFullMonth = false) {
     const date = dateLike instanceof Date ? dateLike : resolveDocumentDate(dateLike);
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fullMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const day = String(date.getDate()).padStart(2, '0');
-    return `${day} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    const month = isFullMonth ? fullMonths[date.getMonth()] : shortMonths[date.getMonth()];
+    return `${day} ${month} ${date.getFullYear()}`;
 }
 
 function buildDocumentId(type, pnrs, brand, groupIndex = 0, groupCount = 1) {
@@ -494,6 +509,209 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
             font-size: 10px;
             color: ${mutedGray};
         }
+
+        /* Magical Land Brand Style */
+        .invoice-container.brand-magical_land {
+            padding: 46px 54px 40px;
+            color: #26232E;
+        }
+        .brand-magical_land .ml-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 14px;
+            border-bottom: 0.5px solid #E9E5F1;
+            margin-bottom: 24px;
+        }
+        .brand-magical_land .ml-header-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .brand-magical_land .ml-logo {
+            width: 105px;
+            height: 105px;
+            object-fit: contain;
+        }
+        .brand-magical_land .ml-brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #3A2C5C;
+            margin: 0 0 2px;
+        }
+        .brand-magical_land .ml-brand-sub {
+            font-size: 9px;
+            letter-spacing: 0.22em;
+            color: #8A8496;
+            margin: 0 0 8px;
+        }
+        .brand-magical_land .ml-brand-addr {
+            font-size: 9px;
+            color: #8A8496;
+            line-height: 1.45;
+            margin: 0;
+        }
+        .brand-magical_land .ml-header-right {
+            text-align: right;
+        }
+        .brand-magical_land .ml-doc-type {
+            font-size: 36px;
+            font-weight: 400;
+            color: #3A2C5C;
+            margin: 0 0 4px;
+        }
+        .brand-magical_land .ml-doc-id {
+            font-size: 11px;
+            font-weight: 700;
+            color: #3A2C5C;
+            margin: 0 0 3px;
+        }
+        .brand-magical_land .ml-doc-meta {
+            font-size: 9.5px;
+            color: #8A8496;
+            line-height: 1.45;
+            margin: 0;
+        }
+        .brand-magical_land .ml-billed-row {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .brand-magical_land .ml-billed-bar {
+            width: 3px;
+            background: #FA7632;
+            border-radius: 1px;
+        }
+        .brand-magical_land .ml-billed-label {
+            font-size: 8.5px;
+            font-weight: 700;
+            color: #8A8496;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+        .brand-magical_land .ml-billed-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #26232E;
+        }
+        .brand-magical_land .ml-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .brand-magical_land .ml-table th {
+            padding: 8px 0;
+            font-size: 9px;
+            font-weight: 700;
+            color: #8A8496;
+            border-bottom: 1px solid #4E3B78;
+        }
+        .brand-magical_land .ml-table td {
+            padding: 12px 0;
+            font-size: 10.5px;
+            color: #26232E;
+            border-bottom: none;
+        }
+        .brand-magical_land .ml-table tr:last-child td {
+            border-bottom: 0.5px solid #E9E5F1;
+        }
+        .brand-magical_land .ml-table th.col-desc, .brand-magical_land .ml-table td.col-desc { text-align: left; }
+        .brand-magical_land .ml-table th.col-qty, .brand-magical_land .ml-table td.col-qty { text-align: center; }
+        .brand-magical_land .ml-table th.col-rate, .brand-magical_land .ml-table td.col-rate { text-align: right; }
+        .brand-magical_land .ml-table th.col-amt, .brand-magical_land .ml-table td.col-amt { text-align: right; }
+        .brand-magical_land .ml-totals-section {
+            width: 300px;
+            margin-left: auto;
+            margin-top: 8px;
+            margin-bottom: 30px;
+        }
+        .brand-magical_land .ml-total-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #8A8496;
+            padding: 4px 0;
+        }
+        .brand-magical_land .ml-total-val {
+            color: #26232E;
+        }
+        .brand-magical_land .ml-balance-rule {
+            height: 1px;
+            background: #4E3B78;
+            margin: 10px 0;
+            border: none;
+        }
+        .brand-magical_land .ml-balance-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            color: #3A2C5C;
+        }
+        .brand-magical_land .ml-balance-label {
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .brand-magical_land .ml-balance-val {
+            font-size: 17px;
+            font-weight: 700;
+        }
+        .brand-magical_land .ml-thank-you {
+            text-align: center;
+            font-style: italic;
+            font-size: 11.5px;
+            color: #8A8496;
+            margin-bottom: 28px;
+        }
+        .brand-magical_land .ml-payment-section {
+            margin-bottom: auto;
+        }
+        .brand-magical_land .ml-pay-title {
+            font-size: 9px;
+            font-weight: 700;
+            color: #8A8496;
+            letter-spacing: 0.06em;
+            margin-bottom: 6px;
+        }
+        .brand-magical_land .ml-pay-account {
+            font-size: 11px;
+            color: #26232E;
+            margin-bottom: 16px;
+        }
+        .brand-magical_land .ml-pay-cols {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .brand-magical_land .ml-col-title {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #3A2C5C;
+            padding-bottom: 4px;
+            border-bottom: 0.5px solid #FA7632;
+            margin-bottom: 8px;
+        }
+        .brand-magical_land .ml-col-item {
+            margin-bottom: 8px;
+        }
+        .brand-magical_land .ml-item-label {
+            font-size: 9px;
+            color: #8A8496;
+            line-height: 1.3;
+        }
+        .brand-magical_land .ml-item-acc {
+            font-size: 11px;
+            font-weight: 700;
+            color: #26232E;
+        }
+        .brand-magical_land .ml-footer {
+            margin-top: auto;
+            text-align: center;
+            padding-top: 20px;
+            border-top: 0.5px solid #E9E5F1;
+            font-size: 8.8px;
+            color: #8A8496;
+        }
     `;
 }
 
@@ -623,7 +841,7 @@ function buildInvoiceDocumentData(group, type, brand, dateStr, groupIndex, group
         lineItems,
         totalAmount,
         logoSrc: logoSrc || brand.logoUrl,
-        formattedDate: formatDisplayDate(documentDate),
+        formattedDate: formatDisplayDate(documentDate, brand.key === 'magical_land'),
         documentId: buildDocumentId(type, group.pnrs, brand, groupIndex, groupCount),
         documentStatusLabel: type === 'Invoice' ? 'Terms' : 'Status',
         documentStatusValue: type === 'Invoice' ? 'Due on Receipt' : receiptLabels.status,
@@ -645,7 +863,7 @@ function waitForImages(root) {
     );
 }
 
-function buildInvoiceHtml(data) {
+function buildOceanHtml(data) {
     const { brand, type, group, lineItems, totalAmount, logoSrc, formattedDate, documentId, documentStatusLabel, documentStatusValue, balanceLabel } = data;
 
     const tableRows = lineItems.map((item) => `
@@ -746,6 +964,114 @@ function buildInvoiceHtml(data) {
     `;
 }
 
+function buildMagicalLandHtml(data) {
+    const { brand, type, group, lineItems, totalAmount, logoSrc, formattedDate, documentId, documentStatusValue, balanceLabel } = data;
+
+    const tableRows = lineItems.map((item) => `
+        <tr>
+            <td class="col-desc">${escapeHtml(item.description)}</td>
+            <td class="col-qty">${formatQuantity(item.qty)}</td>
+            <td class="col-rate">${formatMoney(item.rate)}</td>
+            <td class="col-amt">${formatCurrency(item.amount)}</td>
+        </tr>
+    `).join('');
+
+    const bankColsHtml = BANK_CARDS.map((card) => `
+        <div class="ml-pay-col">
+            <div class="ml-col-title">${escapeHtml(card.bank)}</div>
+            <div class="ml-col-items">
+                ${card.items.map((item) => `
+                    <div class="ml-col-item">
+                        <div class="ml-item-label">${escapeHtml(item.label)}</div>
+                        <div class="ml-item-acc">${escapeHtml(item.account)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+
+    const balanceTitle = balanceLabel || (type === 'Invoice' ? 'Balance due' : 'Total Paid');
+    const phonesStr = (brand.phones || []).join(' · ');
+
+    return `
+        <div class="invoice-container brand-magical_land">
+            <div class="inv-main">
+                <div class="ml-header">
+                    <div class="ml-header-left">
+                        <img class="ml-logo" src="${logoSrc}" alt="${escapeHtml(brand.displayName)} logo" />
+                        <div>
+                            <h1 class="ml-brand-name">${escapeHtml(brand.legalName || 'MAGICAL LAND')}</h1>
+                            <div class="ml-brand-sub">${escapeHtml(brand.subName || 'T R A V E L   &   T O U R')}</div>
+                            <div class="ml-brand-addr">
+                                ${(brand.addressLines || []).map(escapeHtml).join('<br>')}
+                                <br>${escapeHtml(phonesStr)} · ${escapeHtml(brand.email)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ml-header-right">
+                        <div class="ml-doc-type">${escapeHtml(type)}</div>
+                        <div class="ml-doc-id">${escapeHtml(documentId)}</div>
+                        <div class="ml-doc-meta">${escapeHtml(formattedDate)}</div>
+                        <div class="ml-doc-meta">${escapeHtml(documentStatusValue)}</div>
+                        <div class="ml-doc-meta">PNR ${escapeHtml(group.pnrs.join(', '))}</div>
+                    </div>
+                </div>
+
+                <div class="ml-billed-row">
+                    <div class="ml-billed-bar"></div>
+                    <div>
+                        <div class="ml-billed-label">BILLED TO</div>
+                        <div class="ml-billed-name">${escapeHtml(group.clientName)}</div>
+                    </div>
+                </div>
+
+                <table class="ml-table">
+                    <thead>
+                        <tr>
+                            <th class="col-desc">DESCRIPTION</th>
+                            <th class="col-qty">QTY</th>
+                            <th class="col-rate">RATE</th>
+                            <th class="col-amt">AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+
+                <div class="ml-totals-section">
+                    <div class="ml-total-line"><span>Subtotal</span><span class="ml-total-val">${formatCurrency(totalAmount)}</span></div>
+                    <div class="ml-total-line"><span>Total</span><span class="ml-total-val">${formatCurrency(totalAmount)}</span></div>
+                    <div class="ml-balance-rule"></div>
+                    <div class="ml-balance-line">
+                        <span class="ml-balance-label">${escapeHtml(balanceTitle)}</span>
+                        <span class="ml-balance-val">${formatCurrency(totalAmount)}</span>
+                    </div>
+                </div>
+
+                <div class="ml-thank-you">${escapeHtml(brand.thankYouNote || 'Thank you for flying with us.')}</div>
+
+                <div class="ml-payment-section">
+                    <div class="ml-pay-title">PAYMENT</div>
+                    <div class="ml-pay-account">Account name · <strong>${escapeHtml(ACCOUNT_OWNER_NAME.toUpperCase())}</strong></div>
+                    <div class="ml-pay-cols">
+                        ${bankColsHtml}
+                    </div>
+                </div>
+
+                <div class="ml-footer">
+                    ${escapeHtml(brand.tagline || 'Magical Land Travel & Tour')} · ${escapeHtml(brand.email)} · ${escapeHtml(phonesStr)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function buildInvoiceHtml(data) {
+    if (data.brand && data.brand.key === 'magical_land') {
+        return buildMagicalLandHtml(data);
+    }
+    return buildOceanHtml(data);
+}
+
 function renderPaymentSection(doc, startY, theme = INVOICE_THEME, brand = BRANDS.ocean) {
     const primaryRed = theme.accentRgb || [170, 15, 17];
     const charcoal = theme.charcoalRgb || [35, 35, 35];
@@ -836,7 +1162,7 @@ function renderPaymentSection(doc, startY, theme = INVOICE_THEME, brand = BRANDS
     doc.text(footerText, 105, footerY + 7.2, { align: 'center' });
 }
 
-function renderInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
+function renderOceanInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
     const { brand, type, group, lineItems, totalAmount, formattedDate, documentId, documentStatusLabel, documentStatusValue, balanceLabel } = data;
     const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -1000,6 +1326,251 @@ function renderInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
     } else {
         renderPaymentSection(doc, thankY, theme, brand);
     }
+}
+
+function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
+    const { type, group, lineItems, totalAmount, formattedDate, documentId, documentStatusValue, balanceLabel } = data;
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Brand tokens
+    const deepPurple = theme.deepPurpleRgb || [58, 44, 92];     // #3A2C5C
+    const logoPurple = theme.logoPurpleRgb || [78, 59, 120];    // #4E3B78
+    const sunsetOrange = theme.sunsetOrangeRgb || [250, 118, 50]; // #FA7632
+    const ink = theme.inkRgb || [38, 35, 46];            // #26232E
+    const mutedGray = theme.mutedRgb || [138, 132, 150];   // #8A8496
+    const hairline = theme.hairlineRgb || [233, 229, 241];    // #E9E5F1
+
+    // 1. HEADER
+    // Logo LEFT: 30mm x 30mm
+    if (logoAsset && logoAsset.dataUrl) {
+        doc.addImage(logoAsset.dataUrl, 'PNG', 15, 14, 30, 30);
+    } else {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(...deepPurple);
+        doc.text(brand.displayName, 15, 25);
+    }
+
+    // Company info next to logo (x = 49)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(...deepPurple);
+    doc.text(brand.legalName || 'MAGICAL LAND', 49, 21.5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...mutedGray);
+    doc.text(brand.subName || 'T R A V E L   &   T O U R', 49, 26.5);
+
+    doc.setFontSize(8.2);
+    const addrLines = brand.addressLines || [
+        'Room No. 1202, A-32, Myanma Gonyi Housing, Upper',
+        'Pansodan St,',
+        'Mingalar Taungnyunt Township, Yangon'
+    ];
+    const phonesStr = (brand.phones || []).join(' · ');
+    const contactLine = `${phonesStr} · ${brand.email || ''}`;
+    const companyLinesText = [...addrLines, contactLine].join('\n');
+    doc.text(companyLinesText, 49, 31.5);
+
+    // Right-aligned header
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(34);
+    doc.setTextColor(...deepPurple);
+    doc.text(type, 195, 24.5, { align: 'right' });
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...deepPurple);
+    doc.text(documentId, 195, 30.5, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.8);
+    doc.setTextColor(...mutedGray);
+    doc.text(formattedDate, 195, 35.5, { align: 'right' });
+    doc.text(documentStatusValue, 195, 39.8, { align: 'right' });
+    doc.text(`PNR ${group.pnrs.join(', ')}`, 195, 44.0, { align: 'right' });
+
+    // Full-width 0.5pt hairline below header
+    doc.setDrawColor(...hairline);
+    doc.setLineWidth(0.18);
+    doc.line(15, 48.5, 195, 48.5);
+
+    // 2. BILLED TO
+    // Orange accent bar (0.8mm wide)
+    doc.setFillColor(...sunsetOrange);
+    doc.rect(15, 57.5, 0.8, 11, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...mutedGray);
+    doc.text('BILLED TO', 18, 60.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...ink);
+    const splitClientName = doc.splitTextToSize(group.clientName, 100);
+    doc.text(splitClientName, 18, 67);
+    const billedBottom = 67 + ((splitClientName.length - 1) * 5);
+
+    // 3. ITEMS TABLE
+    const head = [['DESCRIPTION', 'QTY', 'RATE', 'AMOUNT']];
+    const body = lineItems.map((item) => [
+        item.description,
+        formatQuantity(item.qty),
+        formatMoney(item.rate),
+        formatCurrency(item.amount)
+    ]);
+
+    const tableStartY = Math.max(75, billedBottom + 8);
+
+    doc.autoTable({
+        startY: tableStartY,
+        head: head,
+        body: body,
+        theme: 'plain',
+        headStyles: {
+            fillColor: [255, 255, 255],
+            textColor: mutedGray,
+            fontStyle: 'bold',
+            fontSize: 8,
+            cellPadding: { top: 3, bottom: 3, left: 0, right: 0 },
+            lineWidth: { bottom: 0.21 },
+            lineColor: logoPurple
+        },
+        styles: {
+            fontSize: 9.3,
+            textColor: ink,
+            cellPadding: { top: 3.8, bottom: 3.8, left: 0, right: 0 },
+            lineWidth: 0
+        },
+        columnStyles: {
+            0: { halign: 'left', cellWidth: 94 },
+            1: { halign: 'center', cellWidth: 16 },
+            2: { halign: 'right', cellWidth: 35 },
+            3: { halign: 'right', cellWidth: 35 }
+        },
+        margin: { left: 15, right: 15 }
+    });
+
+    const finalY = doc.lastAutoTable.finalY;
+
+    // Hairline under last table row
+    doc.setDrawColor(...hairline);
+    doc.setLineWidth(0.18);
+    doc.line(15, finalY + 1, 195, finalY + 1);
+
+    // 4. TOTALS
+    const totalsLabelX = 142;
+    const totalsValX = 195;
+    let curY = finalY + 10;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...mutedGray);
+    doc.text('Subtotal', totalsLabelX, curY);
+    doc.setTextColor(...ink);
+    doc.text(formatCurrency(totalAmount), totalsValX, curY, { align: 'right' });
+
+    curY += 6;
+    doc.setTextColor(...mutedGray);
+    doc.text('Total', totalsLabelX, curY);
+    doc.setTextColor(...ink);
+    doc.text(formatCurrency(totalAmount), totalsValX, curY, { align: 'right' });
+
+    curY += 7;
+    // 0.6pt purple rule above Balance due
+    doc.setDrawColor(...logoPurple);
+    doc.setLineWidth(0.21);
+    doc.line(75, curY, 195, curY);
+
+    curY += 6.5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...deepPurple);
+    const balanceTitle = balanceLabel || (type === 'Invoice' ? 'Balance due' : 'Total Paid');
+    doc.text(balanceTitle, 75, curY);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.setTextColor(...deepPurple);
+    doc.text(formatCurrency(totalAmount), 195, curY, { align: 'right' });
+
+    // 5. THANK-YOU
+    const thankY = curY + 16;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    doc.setTextColor(...mutedGray);
+    doc.text(brand.thankYouNote || 'Thank you for flying with us.', 105, thankY, { align: 'center' });
+
+    // 6. PAYMENT
+    const payY = thankY + 14;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...mutedGray);
+    doc.text('PAYMENT', 15, payY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...ink);
+    doc.text('Account name · ', 15, payY + 5.5);
+    const acLabelW = doc.getTextWidth('Account name · ');
+    doc.setFont('helvetica', 'bold');
+    doc.text(ACCOUNT_OWNER_NAME.toUpperCase(), 15 + acLabelW, payY + 5.5);
+
+    const colW = 57;
+    const colGap = 4.5;
+    const colsY = payY + 14;
+
+    BANK_CARDS.forEach((card, idx) => {
+        const cx = 15 + idx * (colW + colGap);
+        
+        // Bank name
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...deepPurple);
+        doc.text(card.bank, cx, colsY);
+        
+        // 0.5pt orange underline
+        doc.setDrawColor(...sunsetOrange);
+        doc.setLineWidth(0.18);
+        doc.line(cx, colsY + 1.8, cx + colW - 3, colsY + 1.8);
+        
+        let iy = colsY + 7;
+        card.items.forEach((item) => {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...mutedGray);
+            doc.text(item.label, cx, iy);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9.5);
+            doc.setTextColor(...ink);
+            doc.text(item.account, cx, iy + 4.2);
+            
+            iy += 9;
+        });
+    });
+
+    // 7. FOOTER
+    const footerY = 278;
+    doc.setDrawColor(...hairline);
+    doc.setLineWidth(0.18);
+    doc.line(15, footerY, 195, footerY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.8);
+    doc.setTextColor(...mutedGray);
+    const footerContact = `${brand.tagline || 'Magical Land Travel & Tour'} · ${brand.email || ''} · ${(brand.phones || []).join(' · ')}`;
+    doc.text(footerContact, 105, footerY + 5.5, { align: 'center' });
+}
+
+function renderInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
+    if (data.brand && data.brand.key === 'magical_land') {
+        renderMagicalLandPage(doc, data, logoAsset, theme, data.brand);
+        return;
+    }
+    renderOceanInvoicePage(doc, data, logoAsset, theme);
 }
 
 function normalizeClientName(name) {
