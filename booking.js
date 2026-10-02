@@ -514,7 +514,7 @@ export function renderBookingPage(page) {
                 ${clientSubHtml}
             </td>
             <td>${routeHtml}</td>
-            <td>${group.pnr ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(group.pnr)}">${escapeHtml(group.pnr)}</a>` : 'N/A'}</td>
+            <td>${group.pnr ? `<a href="#" class="booking-pnr-link clickable-pnr" data-doc-ids="${docIdsStr}" title="View Booking Request Details">${escapeHtml(group.pnr)}</a>` : `<a href="#" class="booking-pnr-link" data-doc-ids="${docIdsStr}" title="View Booking Request Details" style="color: var(--text-muted); font-style: italic; text-decoration: underline; cursor: pointer;">View</a>`}</td>
             <td>${statusBadge(group.status)}</td>
             <td>${priorityBadge(group.priority)}</td>
             <td>
@@ -523,7 +523,6 @@ export function renderBookingPage(page) {
                     <button class="booking-action-btn success" title="Mark as Issued" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-check"></i> Complete</button>
                     <button class="booking-action-btn" title="Modify Deadline" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-clock-rotate-left"></i> Deadline</button>
                     <button class="booking-action-btn danger" title="Cancel Booking" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-ban"></i></button>
-                    <button class="booking-action-btn" title="View Details"><i class="fa-solid fa-eye"></i></button>
                 </div>
             </td>
         `;
@@ -531,7 +530,14 @@ export function renderBookingPage(page) {
         row.querySelector('[title="Mark as Issued"]').addEventListener('click', () => handleGetTicket(docIdsStr));
         row.querySelector('[title="Modify Deadline"]').addEventListener('click', () => openExtendDeadlineModal(docIdsStr));
         row.querySelector('[title="Cancel Booking"]').addEventListener('click', () => handleCancelBooking(docIdsStr));
-        row.querySelector('[title="View Details"]').addEventListener('click', () => showBookingDetails(docIdsStr));
+        const pnrLink = row.querySelector('.booking-pnr-link');
+        if (pnrLink) {
+            pnrLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showBookingDetails(docIdsStr);
+            });
+        }
     });
 
     setupBookingPagination(state.filteredBookings);
@@ -821,7 +827,7 @@ async function copyBookingDetailsToClipboard(text) {
  * Shows a detailed modal view for a booking group.
  * @param {string} docIdsStr A comma-separated string of Firestore document IDs.
  */
-function showBookingDetails(docIdsStr) {
+export function showBookingDetails(docIdsStr) {
     const docIds = docIdsStr.split(',');
     const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
 

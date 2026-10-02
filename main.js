@@ -110,6 +110,7 @@ function removeLocalDashboardTask(id) {
 document.addEventListener('click', (e) => {
     const pnrEl = e.target.closest('.clickable-pnr');
     if (pnrEl) {
+        if (pnrEl.classList.contains('booking-pnr-link')) return;
         e.preventDefault();
         e.stopPropagation();
         const pnr = pnrEl.dataset.pnr;
