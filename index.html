@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="sell.css">
     <link rel="stylesheet" href="apple-ui.css?v=11">
     <link rel="stylesheet" href="pnr-detail.css?v=2">
+    <link rel="stylesheet" href="dashboard-redesign.css?v=1">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,36 +117,23 @@
                 
                 <div class="dashboard-content-wrapper" id="dashboard-content" style="display: none;">
 
-                    <section class="dashboard-hero glass-card">
-                        <div class="dashboard-hero-copy">
-                            <span class="dashboard-eyebrow">Ocean Travel Operations</span>
-                            <h1>Ocean Travel Dashboard</h1>
-                            <p>Ticket sales, bookings, payments, owner payable, and travel reminders in one calm workspace.</p>
-                            <div class="dashboard-period-controls" aria-label="Dashboard period">
-                                <button type="button" class="dashboard-period-btn active" data-dashboard-period="month">This Month</button>
-                                <button type="button" class="dashboard-period-btn" data-dashboard-period="today">Today</button>
-                                <button type="button" class="dashboard-period-btn" data-dashboard-period="last-month">Last Month</button>
-                                <button type="button" class="dashboard-period-btn" data-dashboard-period="custom">Custom</button>
-                                <span class="dashboard-custom-range" id="dashboardCustomRange" hidden>
-                                    <input type="date" id="dashboardCustomStart" aria-label="Dashboard start date">
-                                    <input type="date" id="dashboardCustomEnd" aria-label="Dashboard end date">
-                                </span>
-                            </div>
+                    <header class="dashboard-header-toolbar dashboard-hero">
+                        <div class="dashboard-header-titles">
+                            <span class="dashboard-header-eyebrow">Ocean Travel Operations</span>
+                            <h1 class="dashboard-header-title">Dashboard Overview</h1>
+                            <p class="dashboard-header-subtitle">Real-time ticketing metrics, revenue overview, and operational tracking</p>
                         </div>
-                        <div class="app-illustration panel-illustration dashboard-hero-illustration" aria-hidden="true">
-                            <svg viewBox="0 0 260 190" role="img" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M 20,150 C 60,150 100,120 140,80 C 170,50 200,40 240,40" fill="none" stroke="rgba(185, 28, 28, 0.4)" stroke-width="3" stroke-dasharray="6,6" />
-                                <path d="M -10,180 A 220,220 0 0,0 230,190" fill="none" stroke="rgba(185, 28, 28, 0.15)" stroke-width="4" />
-                                <path d="M -10,140 A 240,240 0 0,0 210,190" fill="none" stroke="rgba(185, 28, 28, 0.08)" stroke-width="2" />
-                                <path class="illus-soft" d="M 40,110 A 15,15 0 0,1 65,100 A 20,20 0 0,1 100,105 A 15,15 0 0,1 115,120 L 30,120 Z" fill="rgba(185, 28, 28, 0.05)" />
-                                <path class="illus-soft" d="M 150,150 A 12,12 0 0,1 170,142 A 16,16 0 0,1 198,146 A 12,12 0 0,1 210,158 L 140,158 Z" fill="rgba(185, 28, 28, 0.05)" />
-                                <g transform="translate(160, 65) rotate(-35) scale(0.9)">
-                                    <path d="M -40,-4 L -15,-4 L -5,-35 L 5,-35 L 0,-4 L 30,-4 L 35,-15 L 40,-15 L 36,0 L 40,15 L 35,15 L 30,4 L 0,4 L 5,35 L -5,35 L -15,4 L -40,4 Z" fill="#B91C1C" stroke="rgba(185, 28, 28, 0.3)" stroke-width="2" stroke-linejoin="round" />
-                                    <path d="M -30,0 L 30,0" stroke="#ffffff" stroke-width="1.5" />
-                                </g>
-                            </svg>
+                        <div class="dashboard-period-segmented dashboard-period-controls" aria-label="Dashboard period">
+                            <button type="button" class="dashboard-period-btn active" data-dashboard-period="month">This Month</button>
+                            <button type="button" class="dashboard-period-btn" data-dashboard-period="today">Today</button>
+                            <button type="button" class="dashboard-period-btn" data-dashboard-period="last-month">Last Month</button>
+                            <button type="button" class="dashboard-period-btn" data-dashboard-period="custom">Custom</button>
+                            <span class="dashboard-custom-range-inputs dashboard-custom-range" id="dashboardCustomRange" hidden>
+                                <input type="date" id="dashboardCustomStart" aria-label="Dashboard start date">
+                                <input type="date" id="dashboardCustomEnd" aria-label="Dashboard end date">
+                            </span>
                         </div>
-                    </section>
+                    </header>
 
                     <div class="dashboard-kpis">
                         <div id="monthly-revenue-box" class="info-card glass-card">
@@ -237,10 +225,10 @@
                         <div id="travel-schedule-box" class="glass-card dashboard-panel travel-schedule-panel">
                             <div class="panel-header">
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <i class="fa-solid fa-calendar-day"></i>
+                                    <i class="fa-solid fa-calendar-day" aria-hidden="true"></i>
                                     <h3>Upcoming Travel Schedule</h3>
-                                    <span class="panel-hint hint-neutral">Next 7 days</span>
                                 </div>
+                                <span class="panel-hint hint-neutral">Next 7 days</span>
                             </div>
                             <div id="dashboardTravelSchedule" class="travel-schedule-list panel-list"></div>
                         </div>
@@ -255,19 +243,18 @@
 
                         <div id="tasks-reminders-box" class="glass-card dashboard-panel tasks-reminders-panel">
                             <div class="panel-header">
-                                <h3><i class="fa-solid fa-list-check" aria-hidden="true"></i> Tasks & Reminders</h3>
+                                <h3><i class="fa-solid fa-list-check" aria-hidden="true"></i> Tasks &amp; Reminders</h3>
                                 <span class="panel-hint hint-neutral" id="dashboardTasksHint">0 open</span>
                             </div>
                             <div id="dashboardTasksReminders" class="dashboard-task-list panel-list"></div>
                         </div>
 
-                        <!-- RESTORED ANALYTICS CHARTS -->
                         <div id="payment-status-box" class="glass-card dashboard-panel chart-panel">
                             <div class="panel-header">
                                 <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Payment Status</h3>
                                 <span class="panel-hint hint-neutral">Paid vs Pending</span>
                             </div>
-                            <div class="booking-revenue-chart-container" style="height:260px; min-height:260px;">
+                            <div class="booking-revenue-chart-container">
                                 <canvas id="paymentStatusChart"></canvas>
                             </div>
                         </div>
@@ -277,7 +264,7 @@
                                 <h3><i class="fa-solid fa-plane-departure" aria-hidden="true"></i> Airline Distribution</h3>
                                 <span class="panel-hint hint-neutral">Tickets by Airline</span>
                             </div>
-                            <div class="booking-revenue-chart-container" style="height:260px; min-height:260px;">
+                            <div class="booking-revenue-chart-container">
                                 <canvas id="airlineChart"></canvas>
                             </div>
                         </div>
@@ -287,7 +274,7 @@
                                 <h3><i class="fa-solid fa-route" aria-hidden="true"></i> Top Routes</h3>
                                 <span class="panel-hint hint-neutral">Profit by Route</span>
                             </div>
-                            <div class="booking-revenue-chart-container" style="height:260px; min-height:260px;">
+                            <div class="booking-revenue-chart-container">
                                 <canvas id="routePerformanceChart"></canvas>
                             </div>
                         </div>
@@ -297,7 +284,7 @@
                                 <h3><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> Owner Payable Trend</h3>
                                 <span class="panel-hint hint-neutral">Due vs Paid</span>
                             </div>
-                            <div class="booking-revenue-chart-container" style="height:260px; min-height:260px;">
+                            <div class="booking-revenue-chart-container">
                                 <canvas id="ownerPayableChart"></canvas>
                             </div>
                         </div>
