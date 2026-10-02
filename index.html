@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="pnr-detail.css?v=2">
     <!-- dashboard-redesign.css (Antigravity attempt) disabled for now — file kept intact, re-enable by uncommenting -->
     <!-- <link rel="stylesheet" href="dashboard-redesign.css?v=1"> -->
-    <link rel="stylesheet" href="redesign.css?v=2">
+    <link rel="stylesheet" href="redesign.css?v=3">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -251,7 +251,7 @@
                         </div>
                     </div>
 
-                    <div class="dashboard-panels-row">
+                    <div class="dashboard-primary-row">
                         <div id="booking-revenue-overview-box" class="dashboard-panel chart-panel booking-revenue-panel">
                             <div class="panel-header">
                                 <h3><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Revenue &amp; Profit Overview</h3>
@@ -276,7 +276,9 @@
                             </div>
                             <div id="dashboardTravelSchedule" class="travel-schedule-list panel-list"></div>
                         </div>
+                    </div>
 
+                    <div class="dashboard-operations-row">
                         <div id="dashboard-unpaid-box" class="dashboard-panel dashboard-unpaid-panel">
                             <div class="panel-header">
                                 <h3><i class="fa-solid fa-receipt" aria-hidden="true"></i> Unpaid Tickets</h3>
@@ -292,7 +294,9 @@
                             </div>
                             <div id="dashboardTasksReminders" class="dashboard-task-list panel-list"></div>
                         </div>
+                    </div>
 
+                    <div class="dashboard-insights-row">
                         <div id="payment-status-box" class="glass-card dashboard-panel chart-panel">
                             <div class="panel-header">
                                 <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Payment Status</h3>
@@ -1944,6 +1948,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=94" type="module"></script>
+    <script src="main.js?v=95" type="module"></script>
 </body>
 </html>

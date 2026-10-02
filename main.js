@@ -2602,14 +2602,14 @@ function renderOwnerSettlementSnapshot(ticketsInPeriod, range) {
 function dashboardChartPalette() {
     const computed = getComputedStyle(document.body);
     return {
-        text: (computed.getPropertyValue('--chart-text') || '').trim() || '#24242b',
-        grid: (computed.getPropertyValue('--chart-grid') || '').trim() || 'rgba(36,36,43,0.10)',
-        coral: (computed.getPropertyValue('--coral') || '').trim() || '#ff6f5e',
-        mint: (computed.getPropertyValue('--mint-strong') || '').trim() || '#9fca6b',
-        butter: (computed.getPropertyValue('--butter') || '').trim() || '#ffe4a8',
-        lavender: (computed.getPropertyValue('--lavender-strong') || '').trim() || '#9b7bea',
-        ink: (computed.getPropertyValue('--ink') || '').trim() || '#24242b',
-        surface: (computed.getPropertyValue('--surface') || '').trim() || '#ffffff'
+        text: (computed.getPropertyValue('--text-muted') || '').trim() || '#789097',
+        grid: (computed.getPropertyValue('--border-soft') || '').trim() || '#E9F0F0',
+        coral: (computed.getPropertyValue('--coral') || '').trim() || '#F07864',
+        mint: (computed.getPropertyValue('--mint') || '').trim() || '#2FAE7B',
+        butter: (computed.getPropertyValue('--amber') || '').trim() || '#E9A33A',
+        lavender: (computed.getPropertyValue('--violet') || '').trim() || '#8A78D6',
+        ink: (computed.getPropertyValue('--text-strong') || '').trim() || '#17333B',
+        surface: (computed.getPropertyValue('--surface') || '').trim() || '#FFFFFF'
     };
 }
 
@@ -2649,7 +2649,7 @@ export function updatePaymentStatusChart() {
             labels: finalLabels,
             datasets: [{
                 data: finalData,
-                backgroundColor: ['#0B4F56', '#F59E0B', '#E75B37', '#0284C7'].slice(0, finalLabels.length),
+                backgroundColor: ['#0C6670', '#E9A33A', '#F07864', '#55AFCB'].slice(0, finalLabels.length),
                 borderColor: '#FFFFFF',
                 borderWidth: 2
             }]
@@ -2661,7 +2661,7 @@ export function updatePaymentStatusChart() {
                 ctx.save();
                 ctx.font = '700 18px Inter, sans-serif';
                 ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#0F172A';
+                ctx.fillStyle = '#17333B';
                 const text = String(totalCount);
                 const textX = Math.round((chart.chartArea.left + chart.chartArea.right) / 2);
                 const textY = Math.round((chart.chartArea.top + chart.chartArea.bottom) / 2);
@@ -2829,7 +2829,7 @@ export function updateAirlineChart() {
 
     const finalLabels = labels.length ? labels : ['MAI', 'Thai Airways', 'AirAsia'];
     const finalData = labels.length ? data : [74, 38, 31];
-    const colors = ['#0B4F56', '#F59E0B', '#E75B37', '#0284C7', '#8B5CF6', '#10B981'];
+    const colors = ['#0C6670', '#E9A33A', '#F07864', '#55AFCB', '#8A78D6', '#2FAE7B'];
 
     state.charts.airlineChart = new Chart(ctx, {
         type: 'doughnut',
@@ -2849,7 +2849,7 @@ export function updateAirlineChart() {
                 ctx.save();
                 ctx.font = '700 18px Inter, sans-serif';
                 ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#0F172A';
+                ctx.fillStyle = '#17333B';
                 const text = String(totalAirlineCount);
                 const textX = Math.round((chart.chartArea.left + chart.chartArea.right) / 2);
                 const textY = Math.round((chart.chartArea.top + chart.chartArea.bottom) / 2);
@@ -2972,9 +2972,9 @@ export function updateComparisonChart() {
     const computed = getComputedStyle(document.body);
     const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#64748B';
     const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || '#EAEFF3';
-    const revenueBase = '#0B4F56';
-    const profitBase = '#E75B37';
-    const cancelBase = '#DC2626';
+    const revenueBase = '#0C6670';
+    const profitBase = '#F07864';
+    const cancelBase = '#E65353';
 
     const withAlpha = (color, alpha) => {
         const c = String(color).trim();
@@ -2997,13 +2997,9 @@ export function updateComparisonChart() {
     };
 
     const ctx = canvas.getContext('2d');
-    const revenueFill = ctx.createLinearGradient(0, 0, 0, 300);
-    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.12));
+    const revenueFill = ctx.createLinearGradient(0, 0, 0, 260);
+    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.10));
     revenueFill.addColorStop(1, withAlpha(revenueBase, 0.00));
-
-    const profitFill = ctx.createLinearGradient(0, 0, 0, 300);
-    profitFill.addColorStop(0, withAlpha(profitBase, 0.12));
-    profitFill.addColorStop(1, withAlpha(profitBase, 0.00));
 
     const hasCancellations = buckets.some(b => b.cancellations > 0);
     const datasets = [{
@@ -3011,9 +3007,9 @@ export function updateComparisonChart() {
         data: buckets.map(bucket => bucket.revenue),
         borderColor: revenueBase,
         backgroundColor: revenueFill,
-        borderWidth: 2.5,
+        borderWidth: 2.2,
         pointRadius: 0,
-        pointHoverRadius: 6,
+        pointHoverRadius: 5,
         pointHoverBackgroundColor: '#ffffff',
         pointHoverBorderColor: revenueBase,
         pointHoverBorderWidth: 2,
@@ -3025,15 +3021,15 @@ export function updateComparisonChart() {
         data: buckets.map(bucket => bucket.profit),
         type: 'line',
         borderColor: profitBase,
-        backgroundColor: profitFill,
-        borderWidth: 2.5,
+        backgroundColor: 'transparent',
+        borderWidth: 1.8,
         pointRadius: 0,
-        pointHoverRadius: 6,
+        pointHoverRadius: 5,
         pointHoverBackgroundColor: '#ffffff',
         pointHoverBorderColor: profitBase,
         pointHoverBorderWidth: 2,
         tension: 0.35,
-        fill: true,
+        fill: false,
         yAxisID: 'y1'
     }];
     if (hasCancellations) {
