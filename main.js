@@ -3130,6 +3130,7 @@ export function updateComparisonChart() {
                 }
             }
         }
+    };
     state.charts.comparisonChart = new Chart(ctx, chartConfig);
 }
 
