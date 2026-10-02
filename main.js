@@ -527,18 +527,6 @@ function setupEventListeners() {
         }
     });
 
-    document.getElementById('dashboardNewSaleBtn')?.addEventListener('click', () => {
-        showView('sell');
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-            e.preventDefault();
-            const input = document.getElementById('globalSearchInput');
-            if (input) input.focus();
-        }
-    });
-
     const handleAppRefresh = async () => {
         const icons = document.querySelectorAll('#sidebarRefreshBtn i, #settingsRefreshAppBtn i');
         icons.forEach(i => i.classList.add('fa-spin'));
@@ -1450,10 +1438,10 @@ function getTrendBadgeHtml(current, previous, inverse = false) {
     const pct = (((current - previous) / previous) * 100).toFixed(1);
     const absPct = Math.abs(pct) + '%';
     const improved = inverse ? current < previous : current > previous;
-    if (current === previous) return `<span class="trend-badge neutral">0% vs prev. period</span>`;
+    if (current === previous) return `<span class="trend-badge neutral">0%</span>`;
     return improved
-        ? `<span class="trend-badge positive"><i class="fa-solid fa-arrow-up"></i> ${absPct} vs prev. period</span>`
-        : `<span class="trend-badge negative"><i class="fa-solid fa-arrow-down"></i> ${absPct} vs prev. period</span>`;
+        ? `<span class="trend-badge positive"><i class="fa-solid fa-arrow-up"></i> ${absPct}</span>`
+        : `<span class="trend-badge negative"><i class="fa-solid fa-arrow-down"></i> ${absPct}</span>`;
 }
 
 function getActiveBookings() {
@@ -1537,7 +1525,6 @@ function getUpcomingTripGroups(days = 14) {
                 date: travelDate,
                 route: dashboardRouteLabel(ticket),
                 airline: ticket.airline || 'Airline',
-                flightNumber: ticket.flight_number || ticket.flight || '',
                 lead: ticket.name || 'Passenger',
                 passengers: 0,
                 paidPassengers: 0,
@@ -1678,31 +1665,23 @@ export function updateDashboardData() {
     setHtml('revenue-trend-wrapper', getTrendBadgeHtml(curSales, prevSales));
 
     setText('total-tickets-value', curTickets);
-    const ticketsPct = prevTickets ? (((curTickets - prevTickets) / prevTickets) * 100).toFixed(1) : '8.1';
-    setHtml('tickets-trend-wrapper', curTickets >= prevTickets 
-        ? `<span class="trend-badge positive"><i class="fa-solid fa-arrow-up"></i> ${Math.abs(ticketsPct)}% vs prev. period</span>`
-        : `<span class="trend-badge negative"><i class="fa-solid fa-arrow-down"></i> ${Math.abs(ticketsPct)}% vs prev. period</span>`);
+    setHtml('tickets-trend-wrapper', curTickets > prevTickets 
+        ? `<span class="trend-badge positive"><i class="fa-solid fa-arrow-trend-up"></i> +${curTickets - prevTickets}</span>`
+        : `<span class="trend-badge neutral">steady</span>`);
 
     setText('total-profit-value', formatDashboardAmount(curProfit));
     setHtml('profit-trend-wrapper', getTrendBadgeHtml(curProfit, prevProfit));
 
     setText('owner-payable-value', formatDashboardAmount(curRemainingDue));
-    setHtml('owner-payable-trend-wrapper', curRemainingDue <= 0
-        ? `<span class="trend-badge positive"><i class="fa-solid fa-arrow-down"></i> settled</span>`
-        : `<span class="trend-badge positive"><i class="fa-solid fa-arrow-down"></i> ${formatDashboardAmount(curRemainingDue)} settled</span>`);
+    setHtml('owner-payable-trend-wrapper', curRemainingDue > 0
+        ? `<span class="trend-badge negative"><i class="fa-solid fa-circle-exclamation"></i> outstanding</span>`
+        : `<span class="trend-badge positive"><i class="fa-solid fa-check"></i> settled</span>`);
         
     setText('self-profit-value', formatDashboardAmount(curSelfProfit));
     setHtml('self-profit-trend-wrapper', getTrendBadgeHtml(curSelfProfit, prevSelfProfit));
 
-    const now = new Date();
-    const currentMonthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    setText('bookingRevenuePeriodHint', range.label || currentMonthLabel);
+    setText('bookingRevenuePeriodHint', range.label || 'This Month');
     setText('dashboardUnpaidHint', `${formatDashboardAmount(curUnpaid)} MMK`);
-
-    const bookingBadgeEl = document.getElementById('sidebarBookingBadge');
-    if (bookingBadgeEl) {
-        bookingBadgeEl.textContent = activeBookings.length > 0 ? activeBookings.length : '3';
-    }
 
     renderDashboardTravelSchedule(upcomingTrips);
     renderDashboardUnpaidTickets(unpaidGroups);
@@ -2043,42 +2022,39 @@ function renderDashboardTravelSchedule(groups) {
     if (!groups.length) {
         container.innerHTML = `
             <div class="dashboard-empty-panel">
-                <i class="fa-regular fa-calendar-xmark" style="font-size:2rem; color:#94A3B8; margin-bottom:8px;"></i>
-                <strong style="color:#1E293B; font-size:13px;">No upcoming travel</strong>
-                <span style="color:#64748B; font-size:12px;">No ticket travel dates are scheduled in the next 7 days.</span>
+                <span class="mini-travel-illustration" aria-hidden="true"></span>
+                <strong>No upcoming travel</strong>
+                <span>No ticket travel dates are scheduled in the next 7 days.</span>
             </div>
         `;
         return;
     }
 
+    // Render every upcoming trip; the panel itself is height-locked so only
+    // ~5 rows are visible and the rest are reached via internal vertical scroll.
     container.innerHTML = groups.map(group => {
         const date = formatDashboardShortDate(group.date);
-        const airlineCode = String(group.airline || 'MAI').toUpperCase();
-        const flightDetails = group.flightNumber 
-            ? `${airlineCode} · ${group.flightNumber} · PNR ${group.pnr}` 
-            : `${airlineCode} · PNR ${group.pnr}`;
+        const progress = group.passengers ? Math.round((group.paidPassengers / group.passengers) * 100) : 0;
+        const hasUnpaid = group.unpaidAmount > 0;
         return `
             <div class="travel-schedule-row" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}" style="cursor:pointer">
                 <div class="travel-date-chip">
-                    <strong class="date-day">${dashboardEscapeHtml(date.day)}</strong>
-                    <span class="date-month">${dashboardEscapeHtml(date.month.toUpperCase())}</span>
+                    <strong>${dashboardEscapeHtml(date.day)}</strong>
+                    <span>${dashboardEscapeHtml(date.month)}</span>
                 </div>
                 <div class="travel-schedule-main">
-                    <strong class="passenger-name">${dashboardEscapeHtml(group.lead.toUpperCase())}${group.passengers > 1 ? ` +${group.passengers - 1}` : ''}</strong>
-                    <span class="travel-route">${dashboardEscapeHtml(group.route)}</span>
-                    <span class="travel-flight-meta">${dashboardEscapeHtml(flightDetails)}</span>
+                    <strong>${dashboardEscapeHtml(group.lead)}${group.passengers > 1 ? ` +${group.passengers - 1}` : ''}</strong>
+                    <span>${dashboardEscapeHtml(group.route)}</span>
+                    <small><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></small>
                 </div>
-                <span class="airline-badge-pill">${dashboardEscapeHtml(airlineCode)}</span>
+                <div class="travel-progress">
+                    <small>${renderAirlineName(group.airline, { size: 'xs' })}</small>
+                </div>
+                <button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button>
             </div>
         `;
     }).join('');
-
-    container.querySelectorAll('.travel-schedule-row').forEach(row => {
-        row.addEventListener('click', () => {
-            const pnr = row.getAttribute('data-dashboard-pnr');
-            if (pnr) showTripPlanDetail(pnr);
-        });
-    });
+    wireDashboardPnrButtons(container);
 }
 
 function renderDashboardUnpaidTickets(groups) {
@@ -2092,95 +2068,52 @@ function renderDashboardUnpaidTickets(groups) {
     const dueToday = groups.filter(group => group.dueDate?.getTime?.() && daysBetween(today, group.dueDate) === 0);
     const dueThisWeek = groups.filter(group => group.dueDate?.getTime?.() && group.dueDate >= today && group.dueDate <= weekEnd);
 
-    const hintEl = document.getElementById('dashboardUnpaidHint');
-    if (hintEl) hintEl.textContent = `${formatDashboardAmount(totalAmount)} MMK`;
-
     if (!groups.length) {
         container.innerHTML = `
             <div class="dashboard-empty-panel">
-                <i class="fa-regular fa-circle-check" style="font-size:2rem; color:#10B981; margin-bottom:8px;"></i>
-                <strong style="color:#1E293B; font-size:13px;">No unpaid tickets</strong>
-                <span style="color:#64748B; font-size:12px;">All tickets are marked paid.</span>
+                <span class="mini-wallet-illustration" aria-hidden="true"></span>
+                <strong>No unpaid tickets</strong>
+                <span>All tickets are marked paid.</span>
             </div>
         `;
         return;
     }
 
     const rows = groups.map(group => {
-        let statusBadge = '<span class="unpaid-status-pill due-week">Due this week</span>';
-        if (!group.dueDate || isNaN(group.dueDate.getTime())) {
-            statusBadge = '<span class="unpaid-status-pill due-week">Pending</span>';
-        } else if (group.dueDate < today) {
-            statusBadge = '<span class="unpaid-status-pill overdue">Overdue</span>';
-        } else if (daysBetween(today, group.dueDate) === 0) {
-            statusBadge = '<span class="unpaid-status-pill due-today">Due today</span>';
-        } else if (group.dueDate <= weekEnd) {
-            statusBadge = '<span class="unpaid-status-pill due-week">Due this week</span>';
-        }
-
         return `
             <tr>
-                <td><strong>${dashboardEscapeHtml(group.pnr)}</strong></td>
-                <td><a href="#" class="unpaid-client-link clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.client)}</a></td>
+                <td><strong><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></strong></td>
+                <td>${dashboardEscapeHtml(group.client)}</td>
                 <td>${dashboardEscapeHtml(group.route)}</td>
-                <td>${statusBadge}</td>
-                <td class="num" style="font-weight:700; color:#1E293B;">${formatDashboardAmount(group.amount)} MMK</td>
-                <td style="text-align:right;">
-                    <button type="button" class="dashboard-row-action-icon" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}" title="View details">
-                        <i class="fa-regular fa-eye"></i>
-                    </button>
-                </td>
+                <td class="num">${formatDashboardAmount(group.amount)} MMK</td>
+                <td><button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}"><i class="fa-solid fa-eye"></i></button></td>
             </tr>
         `;
     }).join('');
 
     container.innerHTML = `
         <div class="unpaid-summary-grid">
-            <div class="unpaid-stat-card total-unpaid">
-                <span>TOTAL UNPAID</span>
-                <strong>${formatDashboardAmount(totalAmount)}</strong>
-                <small>MMK</small>
-            </div>
-            <div class="unpaid-stat-card">
-                <span>OVERDUE</span>
-                <strong>${overdue.length}</strong>
-                <small>PNR</small>
-            </div>
-            <div class="unpaid-stat-card">
-                <span>DUE TODAY</span>
-                <strong>${dueToday.length}</strong>
-                <small>PNR</small>
-            </div>
-            <div class="unpaid-stat-card">
-                <span>DUE THIS WEEK</span>
-                <strong>${dueThisWeek.length}</strong>
-                <small>PNR</small>
-            </div>
+            <div><span>Total Unpaid</span><strong>${formatDashboardAmount(totalAmount)}</strong><small>MMK</small></div>
+            <div><span>Overdue</span><strong>${overdue.length}</strong><small>PNR</small></div>
+            <div><span>Due Today</span><strong>${dueToday.length}</strong><small>PNR</small></div>
+            <div><span>Due This Week</span><strong>${dueThisWeek.length}</strong><small>PNR</small></div>
         </div>
         <div class="dashboard-table-wrap">
             <table class="dashboard-mini-table">
                 <thead>
                     <tr>
                         <th>PNR</th>
-                        <th>CLIENT</th>
-                        <th>ROUTE</th>
-                        <th>STATUS</th>
-                        <th>AMOUNT DUE</th>
-                        <th></th>
+                        <th>Client</th>
+                        <th>Route</th>
+                        <th>Amount Due</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>
     `;
-
-    container.querySelectorAll('.dashboard-row-action-icon').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const pnr = btn.getAttribute('data-dashboard-pnr');
-            if (pnr) showTripPlanDetail(pnr);
-        });
-    });
+    wireDashboardPnrButtons(container);
 }
 
 function getBookingDeadlineReminderRows(activeBookings) {
@@ -2387,22 +2320,6 @@ function wireDashboardTaskInteractions(container) {
     });
 }
 
-function formatBookingCountdown(deadline) {
-    if (!deadline || !(deadline instanceof Date) || isNaN(deadline.getTime())) {
-        return { time: '--', sub: 'to auto-cancel' };
-    }
-    const diffMs = deadline.getTime() - Date.now();
-    if (diffMs <= 0) return { time: 'Expired', sub: 'overdue' };
-    const totalSecs = Math.floor(diffMs / 1000);
-    const hours = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-    return {
-        time: `${hours}h ${mins}m ${secs}s`,
-        sub: 'to auto-cancel'
-    };
-}
-
 function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups, financialPendingCount, upcomingTrips }) {
     const container = document.getElementById('dashboardTasksReminders');
     const hint = document.getElementById('dashboardTasksHint');
@@ -2414,85 +2331,55 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
         .filter(task => task.source === 'manual' && task.title)
         .sort((a, b) => Number(a.done) - Number(b.done) || getManualTaskSortValue(a) - getManualTaskSortValue(b) || taskTimestampValue(b.createdAt) - taskTimestampValue(a.createdAt));
     const openManualCount = manualTasks.filter(task => !task.done).length;
-    const totalOpen = openManualCount + bookingReminders.length;
-    if (hint) hint.textContent = `${totalOpen} open`;
+    const urgentBookingCount = bookingReminders.filter(item => ['danger', 'warning'].includes(item.tone)).length;
+    if (hint) hint.textContent = `${openManualCount + urgentBookingCount} open`;
 
     const bookingHtml = bookingReminders.length
-        ? bookingReminders.slice(0, 3).map(item => {
-            const countdown = formatBookingCountdown(item.deadline);
-            return `
-                <div class="booking-deadline-card" data-booking-reminder="${dashboardEscapeHtml(item.pnr)}">
-                    <div class="deadline-icon-badge">
-                        <i class="fa-regular fa-bell"></i>
-                    </div>
-                    <div class="deadline-main">
-                        <strong class="deadline-title">${dashboardEscapeHtml(item.pnr)} · ${dashboardEscapeHtml(item.lead)}${item.pax > 1 ? ` +${item.pax - 1}` : ''}</strong>
-                        <span class="deadline-sub">${dashboardEscapeHtml(item.route)} · ${dashboardEscapeHtml(formatTaskDueLabel(item.deadline.toISOString().slice(0, 10), item.deadline.toTimeString().slice(0, 5)))}</span>
-                    </div>
-                    <div class="deadline-countdown">
-                        <strong class="countdown-time">${countdown.time}</strong>
-                        <span class="countdown-sub">${countdown.sub}</span>
-                    </div>
-                </div>
-            `;
-        }).join('')
-        : `<div class="empty-tasks-text">No active booking deadlines.</div>`;
+        ? bookingReminders.slice(0, 5).map(item => `
+            <button type="button" class="dashboard-auto-task ${item.tone}" data-booking-reminder="${dashboardEscapeHtml(item.pnr)}">
+                <span class="task-auto-icon"><i class="fa-solid fa-bell"></i></span>
+                <span class="task-auto-body">
+                    <strong>${dashboardEscapeHtml(item.pnr)} · ${dashboardEscapeHtml(item.lead)}${item.pax > 1 ? ` +${item.pax - 1}` : ''}</strong>
+                    <small>${dashboardEscapeHtml(item.route)} · ${dashboardEscapeHtml(formatTaskDueLabel(item.deadline.toISOString().slice(0, 10), item.deadline.toTimeString().slice(0, 5)))}</small>
+                </span>
+                <span class="dashboard-status ${item.tone === 'danger' ? 'danger' : item.tone === 'warning' ? 'warning' : 'neutral'}">${dashboardEscapeHtml(item.label)}</span>
+            </button>
+        `).join('')
+        : `<div class="task-empty-line">No active booking deadlines.</div>`;
 
     const manualHtml = manualTasks.length
-        ? manualTasks.slice(0, 5).map(task => {
+        ? manualTasks.slice(0, 8).map(task => {
             const tone = manualTaskTone(task);
             const dueLabel = formatTaskDueLabel(task.dueDate, task.dueTime);
             return `
-                <div class="dashboard-task-item manual ${tone} ${task.done ? 'is-done' : ''}" style="display:flex; align-items:center; gap:8px; padding:6px 0;">
+                <div class="dashboard-task-item manual ${tone} ${task.done ? 'is-done' : ''}">
                     <input type="checkbox" data-task-toggle="${dashboardEscapeHtml(task.id)}" ${task.done ? 'checked' : ''} aria-label="Mark ${dashboardEscapeHtml(task.title)} done">
-                    <span class="task-manual-body" style="flex:1;">
-                        <strong style="font-size:12.5px; color:#1E293B;">${dashboardEscapeHtml(task.title)}</strong>
-                        <small style="font-size:11px; color:#64748B; display:block;">${dashboardEscapeHtml(dueLabel)} · ${dashboardEscapeHtml(task.priority)}</small>
+                    <span class="task-manual-body">
+                        <strong>${dashboardEscapeHtml(task.title)}</strong>
+                        <small>${dashboardEscapeHtml(dueLabel)} · ${dashboardEscapeHtml(task.priority)}${task.localOnly ? ' · local' : ''}</small>
                     </span>
-                    <button type="button" class="task-delete-btn" data-task-delete="${dashboardEscapeHtml(task.id)}" style="background:none; border:none; color:#94A3B8; cursor:pointer;" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                    <button type="button" class="task-delete-btn" data-task-delete="${dashboardEscapeHtml(task.id)}" aria-label="Delete ${dashboardEscapeHtml(task.title)}"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             `;
         }).join('')
-        : `<div class="empty-tasks-text">No manual tasks yet — add one below.</div>`;
+        : `<div class="task-empty-line">No manual tasks yet.</div>`;
 
     container.innerHTML = `
-        <div class="task-section-head">
-            <span>BOOKING DEADLINES</span>
-            <span class="task-count-circle">${bookingReminders.length}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+            <h3 style="margin:0; font-size:1.1rem;"><i class="fa-solid fa-list-check"></i> Tasks & Reminders</h3>
+            <button type="button" class="btn btn-primary btn-sm" id="openTaskModalBtn" style="border-radius:50%; width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center;" title="Add Task">
+                <i class="fa-solid fa-plus"></i>
+            </button>
         </div>
-        <div style="display:flex; flex-direction:column; gap:8px;">${bookingHtml}</div>
-
-        <div class="task-section-head" style="margin-top:10px;">
-            <span>MY TASKS</span>
-            <span class="task-count-circle neutral">${openManualCount}</span>
+        <div class="task-mini-section">
+            <div class="task-mini-title"><span>Booking deadlines</span><small>${bookingReminders.length}</small></div>
+            <div class="task-mini-list">${bookingHtml}</div>
         </div>
-        <div style="display:flex; flex-direction:column; gap:4px;">${manualHtml}</div>
-
-        <form class="task-quick-add-form" id="dashboardQuickTaskForm">
-            <input type="text" id="dashboardQuickTaskInput" placeholder="Add a task, e.g. Call KBZ Pay agent..." autocomplete="off">
-            <button type="submit" class="btn-task-add">Add</button>
-        </form>
+        <div class="task-mini-section">
+            <div class="task-mini-title"><span>My tasks</span><small>${openManualCount} open</small></div>
+            <div class="task-mini-list">${manualHtml}</div>
+        </div>
     `;
-
-    container.querySelectorAll('[data-booking-reminder]').forEach(card => {
-        card.addEventListener('click', () => {
-            openBookingFromReminder(card.dataset.bookingReminder);
-        });
-    });
-
-    const quickForm = document.getElementById('dashboardQuickTaskForm');
-    if (quickForm) {
-        quickForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const input = document.getElementById('dashboardQuickTaskInput');
-            const title = input?.value?.trim();
-            if (!title) return;
-            input.value = '';
-            await saveManualDashboardTask({ title, priority: 'normal' });
-            updateDashboardData();
-        });
-    }
-
     wireDashboardTaskInteractions(container);
 }
 
@@ -2602,14 +2489,14 @@ function renderOwnerSettlementSnapshot(ticketsInPeriod, range) {
 function dashboardChartPalette() {
     const computed = getComputedStyle(document.body);
     return {
-        text: (computed.getPropertyValue('--text-muted') || '').trim() || '#789097',
-        grid: (computed.getPropertyValue('--border-soft') || '').trim() || '#E9F0F0',
-        coral: (computed.getPropertyValue('--coral') || '').trim() || '#F07864',
-        mint: (computed.getPropertyValue('--mint') || '').trim() || '#2FAE7B',
-        butter: (computed.getPropertyValue('--amber') || '').trim() || '#E9A33A',
-        lavender: (computed.getPropertyValue('--violet') || '').trim() || '#8A78D6',
-        ink: (computed.getPropertyValue('--text-strong') || '').trim() || '#17333B',
-        surface: (computed.getPropertyValue('--surface') || '').trim() || '#FFFFFF'
+        text: (computed.getPropertyValue('--chart-text') || '').trim() || '#24242b',
+        grid: (computed.getPropertyValue('--chart-grid') || '').trim() || 'rgba(36,36,43,0.10)',
+        coral: (computed.getPropertyValue('--coral') || '').trim() || '#ff6f5e',
+        mint: (computed.getPropertyValue('--mint-strong') || '').trim() || '#9fca6b',
+        butter: (computed.getPropertyValue('--butter') || '').trim() || '#ffe4a8',
+        lavender: (computed.getPropertyValue('--lavender-strong') || '').trim() || '#9b7bea',
+        ink: (computed.getPropertyValue('--ink') || '').trim() || '#24242b',
+        surface: (computed.getPropertyValue('--surface') || '').trim() || '#ffffff'
     };
 }
 
@@ -2620,8 +2507,8 @@ export function updatePaymentStatusChart() {
     const rows = activeTicketRowsInRange(range);
     const buckets = {
         Paid: 0,
-        Partial: 0,
         Unpaid: 0,
+        Partial: 0,
         Pending: 0
     };
 
@@ -2635,62 +2522,31 @@ export function updatePaymentStatusChart() {
         else buckets.Unpaid += amount;
     });
 
-    const labels = Object.keys(buckets).filter(k => buckets[k] > 0);
-    const data = labels.map(k => buckets[k]);
-    const hasData = data.length > 0;
-    const finalLabels = hasData ? labels : ['Paid', 'Partial'];
-    const finalData = hasData ? data : [148, 21];
-    const totalCount = rows.length || 186;
+    const labels = Object.keys(buckets);
+    let data = Object.values(buckets);
+    const hasData = data.some(v => v > 0);
+    if (!hasData) data = [1, 0, 0, 0];
 
     if (state.charts.paymentStatusChart) state.charts.paymentStatusChart.destroy();
+    const p = dashboardChartPalette();
     state.charts.paymentStatusChart = new Chart(canvas.getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: finalLabels,
+            labels,
             datasets: [{
-                data: finalData,
-                backgroundColor: ['#0C6670', '#E9A33A', '#F07864', '#55AFCB'].slice(0, finalLabels.length),
-                borderColor: '#FFFFFF',
-                borderWidth: 2
+                data,
+                backgroundColor: hasData ? [p.mint, p.coral, p.butter, p.lavender] : ['#f1eee9', '#f1eee9', '#f1eee9', '#f1eee9'],
+                borderColor: p.surface,
+                borderWidth: 3
             }]
         },
-        plugins: [{
-            id: 'paymentCenterText',
-            beforeDraw(chart) {
-                const { ctx } = chart;
-                ctx.save();
-                ctx.font = '700 18px Inter, sans-serif';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#17333B';
-                const text = String(totalCount);
-                const textX = Math.round((chart.chartArea.left + chart.chartArea.right) / 2);
-                const textY = Math.round((chart.chartArea.top + chart.chartArea.bottom) / 2);
-                ctx.textAlign = 'center';
-                ctx.fillText(text, textX, textY);
-                ctx.restore();
-            }
-        }],
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '72%',
+            cutout: '68%',
             plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        color: '#475569',
-                        boxWidth: 8,
-                        boxHeight: 8,
-                        usePointStyle: true,
-                        font: { size: 11, weight: '600', family: 'Inter' },
-                        padding: 12
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ` ${ctx.label}: ${formatDashboardAmount(ctx.raw)} MMK`
-                    }
-                }
+                legend: { position: 'bottom', labels: { color: p.text, boxWidth: 10, font: { size: 11, weight: '700' } } },
+                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatDashboardAmount(hasData ? ctx.raw : 0)} MMK` } }
             }
         }
     });
@@ -2812,12 +2668,12 @@ export function updateAirlineChart() {
         airlineCounts[airline] = (airlineCounts[airline] || 0) + 1;
     });
 
+    // Sort by passenger ticket counts descending
     const sortedAirlines = Object.entries(airlineCounts)
         .sort((a, b) => b[1] - a[1]);
 
     const labels = sortedAirlines.map(entry => entry[0]);
     const data = sortedAirlines.map(entry => entry[1]);
-    const totalAirlineCount = data.reduce((a, b) => a + b, 0) || 186;
 
     const canvas = document.getElementById('airlineChart');
     if (!canvas) return;
@@ -2827,49 +2683,44 @@ export function updateAirlineChart() {
         state.charts.airlineChart.destroy();
     }
 
-    const finalLabels = labels.length ? labels : ['MAI', 'Thai Airways', 'AirAsia'];
-    const finalData = labels.length ? data : [74, 38, 31];
-    const colors = ['#0C6670', '#E9A33A', '#F07864', '#55AFCB', '#8A78D6', '#2FAE7B'];
+    if (labels.length === 0) {
+        labels.push("No Data");
+        data.push(1);
+    }
+
+    const palette = dashboardChartPalette();
+    const textColor = palette.text;
+
+    const colors = [
+        palette.coral,
+        palette.mint,
+        palette.butter,
+        palette.lavender,
+        '#ffd9aa',
+        '#f8c9cb',
+        '#9fca6b'
+    ];
 
     state.charts.airlineChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: finalLabels,
+            labels: labels,
             datasets: [{
-                data: finalData,
-                backgroundColor: colors.slice(0, finalLabels.length),
+                data: data,
+                backgroundColor: labels[0] === "No Data" ? ['#e2e8f0'] : colors.slice(0, labels.length),
                 borderWidth: 2,
-                borderColor: '#FFFFFF'
+                borderColor: palette.surface
             }]
         },
-        plugins: [{
-            id: 'airlineCenterText',
-            beforeDraw(chart) {
-                const { ctx } = chart;
-                ctx.save();
-                ctx.font = '700 18px Inter, sans-serif';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#17333B';
-                const text = String(totalAirlineCount);
-                const textX = Math.round((chart.chartArea.left + chart.chartArea.right) / 2);
-                const textY = Math.round((chart.chartArea.top + chart.chartArea.bottom) / 2);
-                ctx.textAlign = 'center';
-                ctx.fillText(text, textX, textY);
-                ctx.restore();
-            }
-        }],
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '72%',
             plugins: {
                 legend: {
-                    position: 'right',
+                    position: 'bottom',
                     labels: {
-                        color: '#475569',
-                        boxWidth: 8,
-                        boxHeight: 8,
-                        usePointStyle: true,
+                        color: textColor,
+                        boxWidth: 10,
                         padding: 10,
                         font: {
                             size: 11,
@@ -2881,6 +2732,7 @@ export function updateAirlineChart() {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
+                            if (context.label === "No Data") return " No tickets sold this month";
                             const val = context.raw;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = ((val / total) * 100).toFixed(1);
@@ -2888,7 +2740,8 @@ export function updateAirlineChart() {
                         }
                     }
                 }
-            }
+            },
+            cutout: '72%'
         }
     });
 }
@@ -2917,7 +2770,7 @@ export function updateComparisonChart() {
         while (cursor <= range.end) {
             buckets.push({
                 key: bucketKey(cursor),
-                label: String(cursor.getDate()).padStart(2, '0'),
+                label: `${String(cursor.getDate()).padStart(2, '0')} ${monthNames[cursor.getMonth()]}`,
                 revenue: 0,
                 profit: 0,
                 cancellations: 0
@@ -2970,11 +2823,11 @@ export function updateComparisonChart() {
     }
 
     const computed = getComputedStyle(document.body);
-    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#64748B';
-    const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || '#EAEFF3';
-    const revenueBase = '#0C6670';
-    const profitBase = '#F07864';
-    const cancelBase = '#E65353';
+    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#24242b';
+    const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || 'rgba(36,36,43,0.10)';
+    const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#22b8b2';
+    const profitBase = (computed.getPropertyValue('--chart-tickets') || '').trim() || '#4d8df7';
+    const cancelBase = (computed.getPropertyValue('--coral') || '').trim() || '#ff6f5e';
 
     const withAlpha = (color, alpha) => {
         const c = String(color).trim();
@@ -2997,9 +2850,13 @@ export function updateComparisonChart() {
     };
 
     const ctx = canvas.getContext('2d');
-    const revenueFill = ctx.createLinearGradient(0, 0, 0, 260);
-    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.10));
-    revenueFill.addColorStop(1, withAlpha(revenueBase, 0.00));
+    const revenueFill = ctx.createLinearGradient(0, 0, 0, 300);
+    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.35));
+    revenueFill.addColorStop(1, withAlpha(revenueBase, 0.01));
+
+    const profitFill = ctx.createLinearGradient(0, 0, 0, 300);
+    profitFill.addColorStop(0, withAlpha(profitBase, 0.35));
+    profitFill.addColorStop(1, withAlpha(profitBase, 0.01));
 
     const hasCancellations = buckets.some(b => b.cancellations > 0);
     const datasets = [{
@@ -3007,13 +2864,13 @@ export function updateComparisonChart() {
         data: buckets.map(bucket => bucket.revenue),
         borderColor: revenueBase,
         backgroundColor: revenueFill,
-        borderWidth: 2.2,
+        borderWidth: 3,
         pointRadius: 0,
-        pointHoverRadius: 5,
+        pointHoverRadius: 6,
         pointHoverBackgroundColor: '#ffffff',
         pointHoverBorderColor: revenueBase,
         pointHoverBorderWidth: 2,
-        tension: 0.35,
+        tension: 0.45,
         fill: true,
         yAxisID: 'y'
     }, {
@@ -3021,15 +2878,15 @@ export function updateComparisonChart() {
         data: buckets.map(bucket => bucket.profit),
         type: 'line',
         borderColor: profitBase,
-        backgroundColor: 'transparent',
-        borderWidth: 1.8,
+        backgroundColor: profitFill,
+        borderWidth: 3,
         pointRadius: 0,
-        pointHoverRadius: 5,
+        pointHoverRadius: 6,
         pointHoverBackgroundColor: '#ffffff',
         pointHoverBorderColor: profitBase,
         pointHoverBorderWidth: 2,
-        tension: 0.35,
-        fill: false,
+        tension: 0.45,
+        fill: true,
         yAxisID: 'y1'
     }];
     if (hasCancellations) {
@@ -3043,7 +2900,7 @@ export function updateComparisonChart() {
             pointRadius: 0,
             pointHoverRadius: 4,
             yAxisID: 'y1',
-            tension: 0.35
+            tension: 0.3
         });
     }
 
@@ -3066,11 +2923,11 @@ export function updateComparisonChart() {
             scales: {
                 x: {
                     ticks: {
-                        color: withAlpha(textColor, 0.8),
+                        color: withAlpha(textColor, 0.6),
                         autoSkip: true,
                         maxRotation: 0,
-                        maxTicksLimit: 15,
-                        font: { size: 11, family: "'Inter', sans-serif", weight: '500' }
+                        maxTicksLimit: 8,
+                        font: { size: 12, family: "'Inter', sans-serif", weight: '500' }
                     },
                     grid: { display: false }
                 },
@@ -3081,8 +2938,8 @@ export function updateComparisonChart() {
                     title: { display: false },
                     border: { display: false },
                     ticks: {
-                        color: withAlpha(textColor, 0.8),
-                        maxTicksLimit: 5,
+                        color: withAlpha(textColor, 0.6),
+                        maxTicksLimit: 6,
                         callback: value => {
                             if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
                             if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
@@ -3095,17 +2952,35 @@ export function updateComparisonChart() {
                 },
                 y1: {
                     type: 'linear',
-                    display: false,
+                    display: true,
                     position: 'right',
                     title: { display: false },
                     border: { display: false },
                     grid: { display: false },
+                    ticks: {
+                        color: withAlpha(textColor, 0.6),
+                        maxTicksLimit: 5,
+                        callback: value => {
+                            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                            if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+                            return Number(value).toLocaleString();
+                        },
+                        font: { size: 11, family: "'Inter', sans-serif" }
+                    },
                     beginAtZero: true
                 }
             },
             plugins: {
                 legend: {
-                    display: false
+                    align: 'end',
+                    labels: {
+                        color: textColor,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 8,
+                        padding: 20,
+                        font: { size: 12, family: "'Inter', sans-serif", weight: '600' }
+                    }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(255, 255, 255, 0.98)',
@@ -3127,6 +3002,7 @@ export function updateComparisonChart() {
             }
         }
     };
+
     state.charts.comparisonChart = new Chart(ctx, chartConfig);
 }
 
