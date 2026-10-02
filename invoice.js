@@ -432,10 +432,13 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
             font-style: italic;
             font-size: 12.5px;
             color: ${mutedGray};
-            margin-bottom: 20px;
+            margin-top: auto;
+            margin-bottom: auto;
+            padding: 24px 0;
         }
         .inv-payment-section {
-            margin-bottom: auto;
+            margin-top: auto;
+            margin-bottom: 24px;
         }
         .inv-payment-title {
             font-size: 12px;
@@ -661,10 +664,13 @@ function getInvoiceCSS(theme = INVOICE_THEME) {
             font-style: italic;
             font-size: 11.5px;
             color: #8A8496;
-            margin-bottom: 28px;
+            margin-top: auto;
+            margin-bottom: auto;
+            padding: 24px 0;
         }
         .brand-magical_land .ml-payment-section {
-            margin-bottom: auto;
+            margin-top: auto;
+            margin-bottom: 24px;
         }
         .brand-magical_land .ml-pay-title {
             font-size: 9px;
@@ -1072,7 +1078,7 @@ function buildInvoiceHtml(data) {
     return buildOceanHtml(data);
 }
 
-function renderPaymentSection(doc, startY, theme = INVOICE_THEME, brand = BRANDS.ocean) {
+function renderPaymentSection(doc, payY, theme = INVOICE_THEME, brand = BRANDS.ocean, customThankY = null) {
     const primaryRed = theme.accentRgb || [170, 15, 17];
     const charcoal = theme.charcoalRgb || [35, 35, 35];
     const mutedGray = theme.mutedRgb || [95, 107, 120];
@@ -1080,13 +1086,13 @@ function renderPaymentSection(doc, startY, theme = INVOICE_THEME, brand = BRANDS
     const lightTint = theme.lightTintRgb || [247, 248, 249];
 
     // 5. THANK-YOU
+    const thankY = customThankY !== null ? customThankY : Math.max(payY - 14, 150);
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(10);
     doc.setTextColor(...mutedGray);
-    doc.text(`Thank you for choosing ${brand.displayName || 'Ocean Travel'}.`, 105, startY, { align: 'center' });
+    doc.text(`Thank you for choosing ${brand.displayName || 'Ocean Travel'}.`, 105, thankY, { align: 'center' });
 
-    // 6. PAYMENT METHODS
-    const payY = startY + 9;
+    // 6. PAYMENT METHODS (anchored at bottom)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(...charcoal);
@@ -1095,12 +1101,12 @@ function renderPaymentSection(doc, startY, theme = INVOICE_THEME, brand = BRANDS
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
     doc.setTextColor(...primaryRed);
-    doc.text(`Account Name: ${ACCOUNT_OWNER_NAME.toUpperCase()}`, 15, payY + 5.5);
+    doc.text(`Account Name: ${ACCOUNT_OWNER_NAME.toUpperCase()}`, 15, payY + 5.8);
 
     const cardW = 57;
     const cardGap = 4.5;
-    const cardsY = payY + 9.5;
-    const cardH = 37.5;
+    const cardsY = payY + 10;
+    const cardH = 38.5;
 
     BANK_CARDS.forEach((card, idx) => {
         const cx = 15 + idx * (cardW + cardGap);
@@ -1113,21 +1119,21 @@ function renderPaymentSection(doc, startY, theme = INVOICE_THEME, brand = BRANDS
         
         // Charcoal header
         doc.setFillColor(...charcoal);
-        doc.roundedRect(cx, cardsY, cardW, 6.5, 2, 2, 'F');
-        doc.rect(cx, cardsY + 3.5, cardW, 3, 'F'); // square bottom corners
+        doc.roundedRect(cx, cardsY, cardW, 6.8, 2, 2, 'F');
+        doc.rect(cx, cardsY + 3.8, cardW, 3, 'F'); // square bottom corners
         
         // 1mm red underline
         doc.setFillColor(...primaryRed);
-        doc.rect(cx, cardsY + 6.5, cardW, 1.0, 'F');
+        doc.rect(cx, cardsY + 6.8, cardW, 1.0, 'F');
         
         // Header title
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9.5);
         doc.setTextColor(255, 255, 255);
-        doc.text(card.bank, cx + 5, cardsY + 4.8);
+        doc.text(card.bank, cx + 5, cardsY + 5.0);
         
         // Rows
-        let iy = cardsY + 11.5;
+        let iy = cardsY + 12;
         card.items.forEach((item) => {
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.8);
@@ -1139,7 +1145,7 @@ function renderPaymentSection(doc, startY, theme = INVOICE_THEME, brand = BRANDS
             doc.setTextColor(...charcoal);
             doc.text(item.account, cx + 5, iy + 4.0);
             
-            iy += 8.2;
+            iy += 8.4;
         });
     });
 
@@ -1176,68 +1182,69 @@ function renderOceanInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
     if (logoAsset && logoAsset.dataUrl) {
         const logoW = 54;
         const logoH = logoAsset.height ? logoW * (logoAsset.height / logoAsset.width) : 21;
-        doc.addImage(logoAsset.dataUrl, 'PNG', 15, 14, logoW, logoH);
+        doc.addImage(logoAsset.dataUrl, 'PNG', 15, 15, logoW, logoH);
     } else {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(16);
         doc.setTextColor(...primaryRed);
-        doc.text(brand.displayName || 'OCEAN TRAVEL', 15, 22);
+        doc.text(brand.displayName || 'OCEAN TRAVEL', 15, 23);
     }
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(30);
     doc.setTextColor(...charcoal);
-    doc.text(type.toUpperCase(), 195, 22, { align: 'right' });
+    doc.text(type.toUpperCase(), 195, 23, { align: 'right' });
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10.5);
+    doc.setFontSize(10);
     doc.setTextColor(...mutedGray);
-    doc.text(documentId, 195, 28, { align: 'right' });
-    doc.text(`${formattedDate} · Due on Receipt`, 195, 33.5, { align: 'right' });
+    doc.text(documentId, 195, 29, { align: 'right' });
+    doc.text(`${formattedDate} · Due on Receipt`, 195, 34.5, { align: 'right' });
 
     doc.setFontSize(8.3);
     const addr = (brand.addressLines || []).join(', ');
     const phones = (brand.phones || []).join(' · ');
-    doc.text(addr, 15, 40);
-    doc.text(`${phones} · ${brand.email || ''}`, 15, 44.5);
+    doc.text(addr, 15, 42.5);
+    doc.text(`${phones} · ${brand.email || ''}`, 15, 47);
 
     // Full width red rule 0.7mm thick
     doc.setDrawColor(...primaryRed);
     doc.setLineWidth(0.7);
-    doc.line(15, 48, 195, 48);
+    doc.line(15, 51, 195, 51);
 
     // 2. BILLING ROW
+    const billTopY = 59;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(...primaryRed);
-    doc.text('BILLED TO', 15, 54.5);
+    doc.text('BILLED TO', 15, billTopY);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14.5);
+    doc.setFontSize(15);
     doc.setTextColor(...charcoal);
     const splitClientName = doc.splitTextToSize(group.clientName, 100);
-    doc.text(splitClientName, 15, 60.5);
+    doc.text(splitClientName, 15, billTopY + 7);
 
-    const clientBottom = 60.5 + ((splitClientName.length - 1) * 5);
+    const clientBottom = billTopY + 7 + ((splitClientName.length - 1) * 5.5);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(9.5);
     doc.setTextColor(...charcoal);
-    doc.text(`PNR: ${group.pnrs.join(', ')}`, 15, clientBottom + 5.5);
+    doc.text(`PNR: ${group.pnrs.join(', ')}`, 15, clientBottom + 6.5);
 
     // Right details
     const rightLabelX = 142;
     doc.setFontSize(9);
     doc.setTextColor(...mutedGray);
-    doc.text(`${type} Date`, rightLabelX, 54.5);
-    doc.text('Terms', rightLabelX, 60.5);
-    doc.text(`${type} #`, rightLabelX, 66);
+    doc.text(`${type} Date`, rightLabelX, billTopY);
+    doc.text('Terms', rightLabelX, billTopY + 6.5);
+    doc.text(`${type} #`, rightLabelX, billTopY + 13);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(...charcoal);
-    doc.text(formattedDate, 195, 54.5, { align: 'right' });
-    doc.text('Due on Receipt', 195, 60.5, { align: 'right' });
-    doc.text(documentId, 195, 66, { align: 'right' });
+    doc.text(formattedDate, 195, billTopY, { align: 'right' });
+    doc.text('Due on Receipt', 195, billTopY + 6.5, { align: 'right' });
+    doc.text(documentId, 195, billTopY + 13, { align: 'right' });
 
     // 3. ITEMS TABLE
     const head = [['DESCRIPTION', 'QTY', 'RATE (MMK)', 'AMOUNT (MMK)']];
@@ -1248,7 +1255,7 @@ function renderOceanInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
         formatMoney(item.amount)
     ]);
 
-    const tableStartY = Math.max(72, clientBottom + 12);
+    const tableStartY = Math.max(81, clientBottom + 13);
 
     doc.autoTable({
         startY: tableStartY,
@@ -1260,14 +1267,14 @@ function renderOceanInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
             textColor: mutedGray,
             fontStyle: 'bold',
             fontSize: 8.5,
-            cellPadding: { top: 2.8, bottom: 2.8, left: 2, right: 2 },
+            cellPadding: { top: 3.5, bottom: 3.5, left: 3, right: 3 },
             lineWidth: { bottom: 0.2 },
             lineColor: hairline
         },
         styles: {
             fontSize: 9.3,
             textColor: charcoal,
-            cellPadding: { top: 3.2, bottom: 3.2, left: 2, right: 2 },
+            cellPadding: { top: 4.2, bottom: 4.2, left: 3, right: 3 },
             lineWidth: { bottom: 0.15 },
             lineColor: hairline
         },
@@ -1288,7 +1295,7 @@ function renderOceanInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
     // 4. TOTALS
     const totalsLabelX = 145;
     const totalsValX = 195;
-    let curY = finalY + 6.5;
+    let curY = finalY + 8;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
@@ -1297,34 +1304,41 @@ function renderOceanInvoicePage(doc, data, logoAsset, theme = INVOICE_THEME) {
     doc.setTextColor(...charcoal);
     doc.text(formatCurrency(totalAmount), totalsValX, curY, { align: 'right' });
 
-    curY += 5.5;
+    curY += 6.5;
     doc.setTextColor(...mutedGray);
     doc.text('Total', totalsLabelX, curY);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...charcoal);
     doc.text(formatCurrency(totalAmount), totalsValX, curY, { align: 'right' });
 
-    curY += 4.5;
-    // BALANCE DUE pill
-    const pillX = 100;
-    const pillW = 95;
-    const pillH = 10;
+    curY += 5.5;
+    // BALANCE DUE / AMOUNT RECEIVED pill
+    const pillX = 98;
+    const pillW = 97;
+    const pillH = 11;
     doc.setFillColor(...primaryRed);
-    doc.roundedRect(pillX, curY, pillW, pillH, 2.2, 2.2, 'F');
+    doc.roundedRect(pillX, curY, pillW, pillH, 2.5, 2.5, 'F');
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
     doc.setTextColor(255, 255, 255);
-    const balancePillText = (balanceLabel || 'BALANCE DUE').toUpperCase();
-    doc.text(balancePillText, pillX + 6, curY + 6.6);
-    doc.text(formatCurrency(totalAmount), pillX + pillW - 6, curY + 6.6, { align: 'right' });
+    const balancePillText = (balanceLabel || (type === 'Invoice' ? 'BALANCE DUE' : 'AMOUNT RECEIVED')).toUpperCase();
+    doc.text(balancePillText, pillX + 6, curY + 7.2);
+    doc.text(formatCurrency(totalAmount), pillX + pillW - 6, curY + 7.2, { align: 'right' });
 
-    const thankY = curY + pillH + 11;
-    if (thankY + 75 > pageHeight) {
+    const pillBottom = curY + pillH;
+
+    // Anchor Payment Methods at bottom
+    const payTargetY = 210;
+    const minPayY = pillBottom + 26;
+    const payY = Math.max(minPayY, payTargetY);
+
+    if (payY + 50 > pageHeight) {
         doc.addPage();
-        renderPaymentSection(doc, 25, theme, brand);
+        renderPaymentSection(doc, 30, theme, brand);
     } else {
-        renderPaymentSection(doc, thankY, theme, brand);
+        const thankY = pillBottom + (payY - pillBottom) * 0.44;
+        renderPaymentSection(doc, payY, theme, brand, thankY);
     }
 }
 
@@ -1397,21 +1411,22 @@ function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
     doc.line(15, 48.5, 195, 48.5);
 
     // 2. BILLED TO
+    const billTopY = 57.5;
     // Orange accent bar (0.8mm wide)
     doc.setFillColor(...sunsetOrange);
-    doc.rect(15, 57.5, 0.8, 11, 'F');
+    doc.rect(15, billTopY, 0.8, 11, 'F');
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(...mutedGray);
-    doc.text('BILLED TO', 18, 60.5);
+    doc.text('BILLED TO', 18, billTopY + 3);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(...ink);
     const splitClientName = doc.splitTextToSize(group.clientName, 100);
-    doc.text(splitClientName, 18, 67);
-    const billedBottom = 67 + ((splitClientName.length - 1) * 5);
+    doc.text(splitClientName, 18, billTopY + 9.5);
+    const billedBottom = billTopY + 9.5 + ((splitClientName.length - 1) * 5);
 
     // 3. ITEMS TABLE
     const head = [['DESCRIPTION', 'QTY', 'RATE', 'AMOUNT']];
@@ -1422,7 +1437,7 @@ function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
         formatCurrency(item.amount)
     ]);
 
-    const tableStartY = Math.max(75, billedBottom + 8);
+    const tableStartY = Math.max(79, billedBottom + 10);
 
     doc.autoTable({
         startY: tableStartY,
@@ -1434,14 +1449,14 @@ function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
             textColor: mutedGray,
             fontStyle: 'bold',
             fontSize: 8,
-            cellPadding: { top: 3, bottom: 3, left: 0, right: 0 },
+            cellPadding: { top: 3.5, bottom: 3.5, left: 0, right: 0 },
             lineWidth: { bottom: 0.21 },
             lineColor: logoPurple
         },
         styles: {
             fontSize: 9.3,
             textColor: ink,
-            cellPadding: { top: 3.8, bottom: 3.8, left: 0, right: 0 },
+            cellPadding: { top: 4.2, bottom: 4.2, left: 0, right: 0 },
             lineWidth: 0
         },
         columnStyles: {
@@ -1463,7 +1478,7 @@ function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
     // 4. TOTALS
     const totalsLabelX = 142;
     const totalsValX = 195;
-    let curY = finalY + 10;
+    let curY = finalY + 8;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
@@ -1472,7 +1487,7 @@ function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
     doc.setTextColor(...ink);
     doc.text(formatCurrency(totalAmount), totalsValX, curY, { align: 'right' });
 
-    curY += 6;
+    curY += 6.5;
     doc.setTextColor(...mutedGray);
     doc.text('Total', totalsLabelX, curY);
     doc.setTextColor(...ink);
@@ -1496,15 +1511,21 @@ function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
     doc.setTextColor(...deepPurple);
     doc.text(formatCurrency(totalAmount), 195, curY, { align: 'right' });
 
-    // 5. THANK-YOU
-    const thankY = curY + 16;
+    const totalsBottom = curY;
+
+    // Anchor Payment Methods at bottom
+    const payTargetY = 210;
+    const minPayY = totalsBottom + 26;
+    const payY = Math.max(minPayY, payTargetY);
+
+    // 5. THANK-YOU (spaced evenly between totals and payment)
+    const thankY = totalsBottom + (payY - totalsBottom) * 0.44;
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(10);
     doc.setTextColor(...mutedGray);
     doc.text(brand.thankYouNote || 'Thank you for flying with us.', 105, thankY, { align: 'center' });
 
-    // 6. PAYMENT
-    const payY = thankY + 14;
+    // 6. PAYMENT (at bottom)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(...mutedGray);
@@ -1520,7 +1541,7 @@ function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
 
     const colW = 57;
     const colGap = 4.5;
-    const colsY = payY + 14;
+    const colsY = payY + 13;
 
     BANK_CARDS.forEach((card, idx) => {
         const cx = 15 + idx * (colW + colGap);
@@ -1537,7 +1558,7 @@ function renderMagicalLandPage(doc, data, logoAsset, theme, brand) {
         doc.line(cx, colsY + 1.8, cx + colW - 3, colsY + 1.8);
         
         let iy = colsY + 7;
-        card.items.forEach((item) => {
+        card.items.forEach(item => {
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(...mutedGray);
