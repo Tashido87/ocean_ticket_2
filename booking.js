@@ -174,7 +174,10 @@ function groupBookings(bookings) {
         if (!acc[key].passengers.some(p => p.name === passengerName)) {
             acc[key].passengers.push({
                 name: passengerName,
-                id_no: booking.id_no,
+                id_no: booking.id_no || '',
+                passport_no: booking.passport_no || '',
+                nrc_no: booking.nrc_no || '',
+                frequent_flyer: booking.frequent_flyer || booking.frequent_flyer_no || booking.member_id || '',
                 docId: booking.id
             });
         }
@@ -727,6 +730,93 @@ function openExtendDeadlineModal(docIdsStr) {
     });
 }
 
+function getPassengerPassport(passenger) {
+    if (!passenger) return '';
+    if (passenger.passport_no) return String(passenger.passport_no).trim();
+    const cleanName = String(passenger.name || '').replace(/^(MR|MS|MRS|MISS)\s+/i, '').trim().toUpperCase();
+    if (Array.isArray(state.allClients)) {
+        const client = state.allClients.find(c => {
+            const cName = String(c.name || '').replace(/^(MR|MS|MRS|MISS)\s+/i, '').trim().toUpperCase();
+            return cName === cleanName || String(c.name || '').trim().toUpperCase() === String(passenger.name || '').trim().toUpperCase();
+        });
+        if (client && client.passport_no) return String(client.passport_no).trim();
+    }
+    if (passenger.id_no) {
+        return String(passenger.id_no).trim();
+    }
+    return '';
+}
+
+function getPassengerFrequentFlyer(passenger) {
+    if (!passenger) return '';
+    if (passenger.frequent_flyer) return String(passenger.frequent_flyer).trim();
+    if (passenger.frequent_flyer_no) return String(passenger.frequent_flyer_no).trim();
+    const cleanName = String(passenger.name || '').replace(/^(MR|MS|MRS|MISS)\s+/i, '').trim().toUpperCase();
+    if (Array.isArray(state.allClients)) {
+        const client = state.allClients.find(c => {
+            const cName = String(c.name || '').replace(/^(MR|MS|MRS|MISS)\s+/i, '').trim().toUpperCase();
+            return cName === cleanName || String(c.name || '').trim().toUpperCase() === String(passenger.name || '').trim().toUpperCase();
+        });
+        if (client) {
+            if (client.frequent_flyer_no) {
+                return client.member_airline ? `${client.member_airline}: ${client.frequent_flyer_no}` : client.frequent_flyer_no;
+            }
+            if (Array.isArray(client.frequent_flyer_ids) && client.frequent_flyer_ids.length > 0) {
+                const ff = client.frequent_flyer_ids[0];
+                return ff.airline ? `${ff.airline}: ${ff.id}` : (ff.id || '');
+            }
+            if (client.member_id) {
+                return client.member_airline ? `${client.member_airline}: ${client.member_id}` : client.member_id;
+            }
+        }
+    }
+    return '';
+}
+
+function getBookingRouteDisplay(bookingGroup) {
+    if (bookingGroup.legs && bookingGroup.legs.length > 1) {
+        return bookingGroup.legs.map(l => `${compactPlace(l.departure)} → ${compactPlace(l.destination)}`).join(' / ');
+    }
+    return `${compactPlace(bookingGroup.departure) || 'N/A'} → ${compactPlace(bookingGroup.destination) || 'N/A'}`;
+}
+
+function getBookingTravelDateDisplay(bookingGroup) {
+    const depDate = formatDateToDMMMY(bookingGroup.departing_on) || bookingGroup.departing_on || 'N/A';
+    const returnLeg = bookingGroup.legs ? bookingGroup.legs.find((l, idx) => l.leg === 'return' || idx > 0) : null;
+    const retDate = returnLeg ? (formatDateToDMMMY(returnLeg.departing_on) || returnLeg.departing_on) : (bookingGroup.returning_on ? formatDateToDMMMY(bookingGroup.returning_on) : null);
+    if (retDate && retDate !== depDate) {
+        return `${depDate} (Departure) / ${retDate} (Arrival)`;
+    }
+    return depDate;
+}
+
+function getBookingDeadlineDisplay(bookingGroup) {
+    if (bookingGroup.enddate && bookingGroup.endtime) {
+        return `${formatDateToDMMMY(bookingGroup.enddate)} ${bookingGroup.endtime}`;
+    }
+    if (bookingGroup.enddate) {
+        return formatDateToDMMMY(bookingGroup.enddate);
+    }
+    return 'N/A';
+}
+
+async function copyBookingDetailsToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand('copy');
+    textArea.remove();
+}
+
 /**
  * Shows a detailed modal view for a booking group.
  * @param {string} docIdsStr A comma-separated string of Firestore document IDs.
@@ -736,44 +826,57 @@ function showBookingDetails(docIdsStr) {
     const bookingGroup = state.filteredBookings.find(g => g.docIds.includes(docIds[0]));
 
     if (bookingGroup) {
-        const isActive = bookingGroup.status === 'active';
-        const passengerListHtml = bookingGroup.passengers.map(p => `<li><strong>${escapeHtml(p.name)}</strong> (ID: ${escapeHtml(p.id_no || 'N/A')})</li>`).join('');
+        const passengerListHtml = bookingGroup.passengers.map((p, idx) => {
+            const passport = getPassengerPassport(p);
+            const ff = getPassengerFrequentFlyer(p);
+            const numPrefix = bookingGroup.passengers.length > 1 ? `<span style="color: var(--text-muted); font-size: 0.9em; margin-right: 4px;">${idx + 1}.</span> ` : '';
+            return `
+                <li style="margin-bottom: 0.5rem; line-height: 1.5;">
+                    <div>${numPrefix}<strong>${escapeHtml(p.name)}</strong>${passport ? ` <span style="color: var(--text-secondary);">(${escapeHtml(passport)})</span>` : ''}</div>
+                    ${ff ? `<div style="font-size: 0.88rem; color: var(--text-muted); margin-left: ${bookingGroup.passengers.length > 1 ? '1.25rem' : '0.5rem'};"><i class="fa-solid fa-star" style="font-size: 0.75rem; color: #f59e0b; margin-right: 4px;"></i>Frequent flyer: ${escapeHtml(ff)}</div>` : ''}
+                </li>
+            `;
+        }).join('');
+
+        const routeText = getBookingRouteDisplay(bookingGroup);
+        const travelDateText = getBookingTravelDateDisplay(bookingGroup);
+        const deadlineText = getBookingDeadlineDisplay(bookingGroup);
+
         const content = `
             <h3>Booking Request Details</h3>
-            ${bookingGroup.pnr ? `
-                <div style="margin-bottom: 0.75rem;">
-                    <div class="pnr-value-row">
-                        <span><strong>PNR Code:</strong> <span style="font-family: monospace; font-weight: 700; font-size: 1.1rem; color: var(--primary, #DC2626);">${escapeHtml(bookingGroup.pnr)}</span></span>
+            <div style="margin-bottom: 0.75rem;">
+                <div class="pnr-value-row">
+                    <span><strong>PNR Code:</strong> <span style="font-family: monospace; font-weight: 700; font-size: 1.15rem; color: var(--primary, #DC2626);">${escapeHtml(bookingGroup.pnr || 'N/A')}</span></span>
+                    ${bookingGroup.pnr ? `
                         <button type="button" class="pnr-phonetic-btn" id="bookingPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
                             <i class="fa-solid fa-spell-check"></i>
                         </button>
-                    </div>
-                    ${renderPhoneticExpansionHtml(bookingGroup.pnr, 'bookingPnrPhoneticPanel')}
+                    ` : ''}
                 </div>
-            ` : ''}
-            <p><strong>Status:</strong> ${BOOKING_STATUS_LABELS[bookingGroup.status] || 'Active'}</p>
-            <p><strong>Priority:</strong> ${bookingGroup.priority || 'Normal'}</p>
-            <div class="details-section">
-                <div class="details-section-title">Passenger(s)</div>
-                <ul style="list-style: none; padding-left: 0;">${passengerListHtml}</ul>
-                <p><strong>Total Passengers:</strong> ${bookingGroup.passengers.length || 'N/A'}</p>
+                ${bookingGroup.pnr ? renderPhoneticExpansionHtml(bookingGroup.pnr, 'bookingPnrPhoneticPanel') : ''}
             </div>
-             <hr style="border-color: rgba(255,255,255,0.2); margin: 1rem 0;">
-            <p><strong>Phone:</strong> ${makeClickable(bookingGroup.phone)}</p>
+
+            <div class="details-section" style="margin: 0.85rem 0;">
+                <div class="details-section-title" style="font-weight: 700; margin-bottom: 0.4rem; color: var(--text-primary);">Passenger (s)</div>
+                <ul style="list-style: none; padding-left: 0; margin-bottom: 0;">${passengerListHtml}</ul>
+            </div>
+
+            <hr style="border-color: rgba(255,255,255,0.2); margin: 0.85rem 0;">
+
+            <p><strong>Route:</strong> ${escapeHtml(routeText)}</p>
+            <p><strong>Travel Date:</strong> ${escapeHtml(travelDateText)}</p>
+            <p><strong>Booking Deadline:</strong> ${escapeHtml(deadlineText)}</p>
+
+            <hr style="border-color: rgba(255,255,255,0.2); margin: 0.85rem 0;">
+
             <p><strong>Account Name:</strong> ${escapeHtml(bookingGroup.account_name || 'N/A')}</p>
             <p><strong>Account Type:</strong> ${escapeHtml(bookingGroup.account_type || 'N/A')}</p>
-            <p><strong>Account Link:</strong> ${makeClickable(bookingGroup.account_link) || 'N/A'}</a></p>
-            <hr style="border-color: rgba(255,255,255,0.2); margin: 1rem 0;">
-            <p><strong>Route:</strong> ${escapeHtml(bookingGroup.departure || 'N/A')} → ${escapeHtml(bookingGroup.destination || 'N/A')}</p>
-            <p><strong>Travel Date:</strong> ${formatDateToDMMMY(bookingGroup.departing_on) || 'N/A'}</p>
-            <p><strong>Booking Deadline:</strong> ${bookingGroup.enddate && bookingGroup.endtime ? `${formatDateToDMMMY(bookingGroup.enddate)} ${bookingGroup.endtime}` : 'N/A'}</p>
-            <p><strong>Deadline Status:</strong> ${bookingGroup.deadlineMeta?.label || 'N/A'}</p>
-            <p><strong>Notes:</strong> ${escapeHtml(bookingGroup.notes || 'N/A')}</p>
-            <div class="form-actions" style="margin-top: 1.5rem;">
-                ${isActive ? `<button class="btn btn-primary" id="modalConvertSellBtn" style="background-color: #0f4c75; border-color: #0f4c75; margin-right: 0.5rem;"><i class="fa-solid fa-ticket"></i> Convert to Sell Ticket</button>` : ''}
-                ${isActive ? `<button class="btn btn-primary" id="modalIssueBtn" style="background-color: var(--teal-dark); border-color: var(--teal-dark); margin-right: 0.5rem;"><i class="fa-solid fa-check"></i> Mark as Issued</button>` : ''}
-                ${isActive ? `<button class="btn btn-secondary" id="modalExtendBtn" style="margin-right: 0.5rem;"><i class="fa-solid fa-clock-rotate-left"></i> Modify Deadline</button>` : ''}
-                <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
+            <p><strong>Account Link:</strong> ${makeClickable(bookingGroup.account_link) || 'N/A'}</p>
+            <p><strong>Phone:</strong> ${makeClickable(bookingGroup.phone) || 'N/A'}</p>
+
+            <div class="form-actions" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-primary" id="modalCopyBookingBtn"><i class="fa-solid fa-copy"></i> Copy</button>
+                <button type="button" class="btn btn-secondary" id="modalCloseBtn">Close</button>
             </div>
         `;
         openModal(content);
@@ -781,25 +884,43 @@ function showBookingDetails(docIdsStr) {
             wirePhoneticToggle('bookingPnrPhoneticToggle', 'bookingPnrPhoneticPanel');
         }
         document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
-        const convertBtn = document.getElementById('modalConvertSellBtn');
-        if (convertBtn) {
-            convertBtn.addEventListener('click', () => {
-                closeModal();
-                convertBookingToSellTicket(bookingGroup);
-            });
-        }
-        const issueBtn = document.getElementById('modalIssueBtn');
-        if (issueBtn) {
-            issueBtn.addEventListener('click', () => {
-                closeModal();
-                handleGetTicket(docIdsStr);
-            });
-        }
-        const extendBtn = document.getElementById('modalExtendBtn');
-        if (extendBtn) {
-            extendBtn.addEventListener('click', () => {
-                closeModal();
-                openExtendDeadlineModal(docIdsStr);
+
+        const copyBtn = document.getElementById('modalCopyBookingBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async () => {
+                const pnrText = bookingGroup.pnr || 'N/A';
+                const passengerCopyText = bookingGroup.passengers.map((p, idx) => {
+                    const passport = getPassengerPassport(p);
+                    const ff = getPassengerFrequentFlyer(p);
+                    const numPrefix = bookingGroup.passengers.length > 1 ? `${idx + 1}. ` : '';
+                    let line = `${numPrefix}${p.name}${passport ? ` (${passport})` : ''}`;
+                    if (ff) {
+                        line += `\n${bookingGroup.passengers.length > 1 ? '   ' : ''}Frequent flyer: ${ff}`;
+                    }
+                    return line;
+                }).join('\n');
+
+                const textToCopy = `PNR Code: ${pnrText}
+
+Passenger (s)
+${passengerCopyText}
+
+Route: ${routeText}
+Travel Date: ${travelDateText}
+Booking Deadline: ${deadlineText}`;
+
+                try {
+                    await copyBookingDetailsToClipboard(textToCopy);
+                    showToast('Booking details copied to clipboard!', 'success');
+                    copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        const btn = document.getElementById('modalCopyBookingBtn');
+                        if (btn) btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy';
+                    }, 1500);
+                } catch (err) {
+                    console.error('Failed to copy: ', err);
+                    showToast('Failed to copy text.', 'error');
+                }
             });
         }
     }
@@ -978,6 +1099,8 @@ export async function handleNewBookingSubmit(e) {
                     groupId: outboundGroupId,
                     name: `${passenger.gender} ${passenger.name}`,
                     id_no: passenger.nrc_no || passenger.passport_no || '',
+                    passport_no: passenger.passport_no || '',
+                    nrc_no: passenger.nrc_no || '',
                     phone: sharedData.phone,
                     account_name: sharedData.account_name,
                     account_type: sharedData.account_type,
@@ -1005,6 +1128,8 @@ export async function handleNewBookingSubmit(e) {
                         groupId: returnGroupId,
                         name: `${passenger.gender} ${passenger.name}`,
                         id_no: passenger.nrc_no || passenger.passport_no || '',
+                        passport_no: passenger.passport_no || '',
+                        nrc_no: passenger.nrc_no || '',
                         phone: sharedData.phone,
                         account_name: sharedData.account_name,
                         account_type: sharedData.account_type,
