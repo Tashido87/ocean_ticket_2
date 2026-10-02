@@ -1,0 +1,414 @@
+/* ============================================================
+   Ocean Travel — Dashboard Redesign Layer v1 (2026-10-02)
+   Calm, professional, modern restyle applied ON TOP of the
+   existing stylesheets. Nothing here edits original rules;
+   it only overrides them (this file loads AFTER styles.css).
+   To revert: remove the <link> to redesign.css in index.html.
+   Backup of originals: _backup_20261002_redesign/
+   ============================================================ */
+
+:root {
+  --sidebar-bg: #FFFFFF;
+  --teal: #0E7490;
+  --teal-soft: #DFF2F7;
+  --sky: #0EA5E9;
+  --sky-soft: #E0F2FE;
+  --coral: #F97316;
+  --coral-soft: #FFEDD5;
+  --violet: #8B5CF6;
+  --violet-soft: #EDE9FE;
+}
+
+body.material-theme.dark-theme,
+body.dark-theme {
+  --sidebar-bg: #1E293B;
+  --teal-soft: rgba(14, 116, 144, 0.22);
+  --sky-soft: rgba(14, 165, 233, 0.18);
+  --coral-soft: rgba(249, 115, 22, 0.20);
+  --violet-soft: rgba(139, 92, 246, 0.20);
+}
+
+::selection { background: var(--brand-soft); }
+
+/* ---------------- layout density ---------------- */
+body .main-content { padding: 20px 24px 36px; }
+body #home-view .dashboard-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------------- sidebar : light ---------------- */
+body aside.sidebar {
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+}
+body .sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px 12px;
+}
+body .brand-logo { height: 38px; width: auto; }
+body .sidebar-brand-text {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+body .sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+}
+body .sidebar .nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+body .sidebar .nav-btn i {
+  width: 18px;
+  text-align: center;
+  font-size: 14.5px;
+  color: var(--text-faint);
+}
+body .sidebar .nav-btn:hover { background: var(--surface-2); color: var(--text); }
+body .sidebar .nav-btn:hover i { color: var(--text-muted); }
+body .sidebar .nav-btn.active { background: var(--brand-soft); color: var(--brand); }
+body .sidebar .nav-btn.active i { color: var(--brand); }
+body .sidebar-nav-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+/* ---------------- topbar ---------------- */
+body .header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+}
+body .global-search-box { max-width: 380px; }
+body #globalSearchInput {
+  height: 38px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+body .header-today-date {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 7px 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ---------------- hero (compact, calm) ---------------- */
+body .dashboard-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(115deg, #0F2743 0%, #14385C 55%, #155E63 100%);
+  box-shadow: var(--shadow-md);
+}
+body .dashboard-hero::after {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: -70px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 70%);
+  pointer-events: none;
+}
+body .dashboard-header-eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+body .dashboard-header-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #FFFFFF;
+  margin: 6px 0 4px;
+}
+body .dashboard-header-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0;
+}
+body .dashboard-period-segmented {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  flex-shrink: 0;
+}
+body .dashboard-period-btn {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+body .dashboard-period-btn:hover { color: #FFFFFF; }
+body .dashboard-period-btn.active { background: #FFFFFF; color: #0F2743; }
+body .dashboard-custom-range-inputs input {
+  font-size: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  padding: 6px 8px;
+}
+
+/* ---------------- KPI cards ---------------- */
+body .dashboard-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+body .info-card.glass-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 16px 18px;
+  transition: transform var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease);
+}
+body .info-card.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+body .info-card .stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+body .info-card .stat-head h3 {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+body .info-card .stat-head .icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+body #monthly-revenue-box .stat-head .icon { background: var(--brand-soft); color: var(--brand); }
+body #total-tickets-box .stat-head .icon { background: var(--coral-soft); color: var(--coral-dark, #EA580C); }
+body #total-profit-box .stat-head .icon { background: var(--success-soft); color: var(--success); }
+body #owner-payable-box .stat-head .icon { background: var(--violet-soft); color: var(--lavender-strong, #8B5CF6); }
+body #self-purchased-box .stat-head .icon { background: var(--sky-soft); color: var(--sky); }
+body .info-card .main-value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+body .info-card .currency-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 5px;
+}
+body .info-card .stat-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+body .info-card .trend-wrapper { font-size: 11.5px; font-weight: 700; }
+body .info-card .sub-value { color: var(--text-faint); }
+
+/* ---------------- panels ---------------- */
+body .dashboard-panel.glass-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: hidden;
+}
+body .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 18px 12px;
+}
+body .panel-header h3,
+body #travel-schedule-box .panel-header > div {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+body .panel-header h3 i,
+body #travel-schedule-box .panel-header > div > i {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+body #booking-revenue-overview-box .panel-header h3 i { background: var(--brand-soft); color: var(--brand); }
+body #travel-schedule-box .panel-header > div > i { background: var(--sky-soft); color: var(--sky); }
+body #dashboard-unpaid-box .panel-header h3 i { background: var(--warning-soft); color: var(--warning); }
+body #tasks-reminders-box .panel-header h3 i { background: var(--coral-soft); color: var(--coral-dark, #EA580C); }
+body #payment-status-box .panel-header h3 i { background: var(--success-soft); color: var(--success); }
+body #airline-share-box .panel-header h3 i { background: var(--violet-soft); color: var(--lavender-strong, #8B5CF6); }
+body #route-performance-box .panel-header h3 i { background: var(--teal-soft); color: var(--teal); }
+body #owner-payable-chart-box .panel-header h3 i { background: var(--warning-soft); color: var(--warning); }
+body .panel-hint {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+body #dashboardUnpaidHint {
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+body .dashboard-panel .panel-list,
+body .dashboard-panel .dashboard-unpaid-content,
+body .dashboard-panel .booking-revenue-chart-container {
+  padding: 4px 18px 18px;
+}
+body .booking-revenue-chart-container { position: relative; height: 240px; }
+body #payment-status-box .booking-revenue-chart-container,
+body #airline-share-box .booking-revenue-chart-container { height: 220px; }
+body .booking-revenue-chart-container canvas { max-width: 100%; }
+
+/* ---------------- unpaid tickets table (JS-rendered) ---------------- */
+body #dashboardUnpaidTickets { font-size: 13px; }
+body #dashboardUnpaidTickets table { width: 100%; border-collapse: collapse; }
+body #dashboardUnpaidTickets th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+body #dashboardUnpaidTickets td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+body #dashboardUnpaidTickets tr:last-child td { border-bottom: none; }
+body #dashboardUnpaidTickets tbody tr { transition: background var(--duration-fast) var(--ease); }
+body #dashboardUnpaidTickets tbody tr:hover { background: var(--surface-soft); }
+body #dashboardUnpaidTickets td:last-child,
+body #dashboardUnpaidTickets th:last-child { text-align: right; }
+
+/* ---------------- travel schedule list (JS-rendered) ---------------- */
+body #dashboardTravelSchedule { display: flex; flex-direction: column; }
+body #dashboardTravelSchedule > * {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+body #dashboardTravelSchedule > *:last-child { border-bottom: none; }
+
+/* ---------------- tasks & reminders (JS-rendered) ---------------- */
+body #dashboardTasksReminders { display: flex; flex-direction: column; gap: 10px; }
+body #dashboardTasksReminders > * { font-size: 12.5px; }
+
+/* ---------------- generic pills / badges / buttons ---------------- */
+body .pill, body .badge, body .status-pill, body .hint-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+body .btn {
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 9px 16px;
+}
+body .btn-primary { background: var(--brand); border-color: var(--brand); }
+body .btn-primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+body input:focus, body select:focus, body textarea:focus { box-shadow: var(--focus-ring); outline: none; }
+body button:focus-visible, body a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* tabular numerals for money */
+body .main-value, body [id$="-value"], body td { font-variant-numeric: tabular-nums; }
+
+/* ---------------- responsive ---------------- */
+@media (max-width: 1280px) {
+  body .dashboard-kpis { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 820px) {
+  body .main-content { padding: 14px 14px 28px; }
+  body .dashboard-kpis { grid-template-columns: repeat(2, 1fr); }
+  body .dashboard-hero { flex-direction: column; align-items: flex-start; padding: 18px 20px; }
+  body .dashboard-header-title { font-size: 19px; }
+  body .booking-revenue-chart-container { height: 200px; }
+}
