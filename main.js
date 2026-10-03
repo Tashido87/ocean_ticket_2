@@ -2658,6 +2658,8 @@ export function updateOwnerPayableChart() {
  * Renders the Airline Distribution Doughnut Chart based on current month's ticket sales.
  */
 export function updateAirlineChart() {
+    const canvas = document.getElementById('airlineChart');
+    if (!canvas || typeof Chart === 'undefined') return;
     const range = getDashboardDateRange();
     const ticketsInPeriod = activeTicketRowsInRange(range);
 
@@ -2676,8 +2678,6 @@ export function updateAirlineChart() {
     const labels = sortedAirlines.map(entry => entry[0]);
     const data = sortedAirlines.map(entry => entry[1]);
 
-    const canvas = document.getElementById('airlineChart');
-    if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
     if (state.charts.airlineChart) {

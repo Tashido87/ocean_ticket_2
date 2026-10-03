@@ -11,12 +11,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Ocean Travel">
-    <link rel="stylesheet" href="styles.css?v=26">
+    <link rel="stylesheet" href="styles.css?v=27">
     <link rel="stylesheet" href="landing.css">
     <link rel="stylesheet" href="sell.css">
-    <link rel="stylesheet" href="apple-ui.css?v=11">
+    <link rel="stylesheet" href="apple-ui.css?v=12">
     <link rel="stylesheet" href="pnr-detail.css?v=2">
-    <link rel="stylesheet" href="dashboard.css?v=1">
+    <link rel="stylesheet" href="dashboard.css?v=2">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -249,50 +249,6 @@
                             <div id="dashboardTasksReminders" class="dashboard-task-list panel-list"></div>
                         </div>
                     </div>
-
-                    <!-- Row 3: 4 Analytics Charts in balanced grid -->
-                    <div class="dashboard-grid-row dashboard-grid-row-4col">
-                        <div id="payment-status-box" class="dashboard-panel chart-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Payment Status</h3>
-                                <span class="panel-hint hint-neutral">Paid vs Pending</span>
-                            </div>
-                            <div class="booking-revenue-chart-container">
-                                <canvas id="paymentStatusChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div id="airline-share-box" class="dashboard-panel chart-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-plane-departure" aria-hidden="true"></i> Airlines</h3>
-                                <span class="panel-hint hint-neutral">Distribution</span>
-                            </div>
-                            <div class="booking-revenue-chart-container">
-                                <canvas id="airlineChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div id="route-performance-box" class="dashboard-panel chart-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-route" aria-hidden="true"></i> Top Routes</h3>
-                                <span class="panel-hint hint-neutral">By Profit</span>
-                            </div>
-                            <div class="booking-revenue-chart-container">
-                                <canvas id="routePerformanceChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div id="owner-payable-chart-box" class="dashboard-panel chart-panel">
-                            <div class="panel-header">
-                                <h3><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> Owner Payable</h3>
-                                <span class="panel-hint hint-neutral">Due vs Paid</span>
-                            </div>
-                            <div class="booking-revenue-chart-container">
-                                <canvas id="ownerPayableChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </section>
 

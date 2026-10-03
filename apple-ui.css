@@ -129,9 +129,9 @@ body.material-theme .main-container {
 }
 
 body.material-theme .sidebar {
-    width: 264px;
-    min-width: 264px;
-    padding: 16px 12px 14px;
+    width: 196px;
+    min-width: 196px;
+    padding: 12px 10px 14px;
     background: var(--apple-sidebar);
     border-right: 1px solid rgba(255, 255, 255, 0.45);
     box-shadow: 1px 0 0 var(--apple-separator);
@@ -147,14 +147,14 @@ body.material-theme.dark-theme .sidebar {
 body.material-theme .sidebar-brand {
     position: relative;
     justify-content: center;
-    padding: 16px 20px 24px;
-    margin: 0 0 8px;
+    padding: 10px 12px 12px;
+    margin: 0 0 6px;
     border: 0;
 }
 
 body.material-theme .sidebar-brand .brand-logo {
     width: 100%;
-    max-height: 220px;
+    max-height: 48px;
     object-fit: contain;
     object-position: center;
 }
@@ -166,30 +166,30 @@ body.material-theme.dark-theme .sidebar-brand .brand-logo {
 body.material-theme .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 body.material-theme .sidebar-nav-footer {
     margin-top: auto;
-    padding-top: 14px;
+    padding-top: 10px;
     border-top: 1px solid var(--apple-separator);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 body.material-theme .sidebar-nav .nav-btn,
 body.material-theme .nav-btn {
-    min-height: 44px;
-    padding: 8px 14px;
-    border-radius: 12px;
+    min-height: 35px;
+    padding: 6px 10px;
+    border-radius: 9px;
     color: var(--apple-label);
-    font-size: 0.92rem;
+    font-size: 0.84rem;
     font-weight: 550;
     letter-spacing: -0.01em;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 9px;
     text-decoration: none;
     border: 1px solid transparent;
     transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -198,12 +198,12 @@ body.material-theme .nav-btn {
 }
 
 body.material-theme .sidebar-nav .nav-btn i {
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
     background: rgba(0, 0, 0, 0.04);
     color: var(--apple-secondary-label);
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -271,7 +271,7 @@ body.material-theme.dark-theme .sidebar-nav .nav-btn.active i {
 }
 
 body.material-theme .app-body {
-    margin-left: 264px;
+    margin-left: 196px;
     min-width: 0;
     transition: margin-left 340ms var(--apple-appear);
 }
