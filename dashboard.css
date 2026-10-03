@@ -7,7 +7,7 @@
   --dash-bg: #F4F7F8;
   --dash-surface: #FFFFFF;
   --dash-surface-subtle: #F8FAFB;
-  --dash-border: #DCE5E8;
+  --dash-border: #E2E8F0;
   --dash-border-soft: #EDF3F5;
 
   --dash-text: #17333B;
@@ -30,10 +30,10 @@
   --dash-violet: #6E56CE;
   --dash-violet-soft: #F1EEFB;
 
-  --dash-radius: 10px;
-  --dash-radius-sm: 6px;
-  --dash-shadow: 0 1px 3px rgba(23, 51, 59, 0.04), 0 3px 10px rgba(23, 51, 59, 0.03);
-  --dash-shadow-hover: 0 6px 18px rgba(23, 51, 59, 0.08);
+  --dash-radius: 12px;
+  --dash-radius-sm: 8px;
+  --dash-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 3px 10px rgba(15, 23, 42, 0.04);
+  --dash-shadow-hover: 0 6px 18px rgba(15, 23, 42, 0.08);
 
   font-family: 'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--dash-text);
