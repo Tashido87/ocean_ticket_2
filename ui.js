@@ -1585,6 +1585,92 @@ export function setupPnrDuplicateChecker() {
     pnrInput.dataset.pnrDupBound = 'true';
 }
 
+export function updateSellReviewSummary() {
+    const routePreview = document.getElementById('route-preview-text')?.textContent || '';
+    const departure = document.getElementById('departure')?.value || '';
+    const destination = document.getElementById('destination')?.value || '';
+    const airline = document.getElementById('airline')?.value === 'CUSTOM'
+        ? (document.getElementById('custom_airline')?.value || 'Custom Airline')
+        : (document.getElementById('airline')?.value || '');
+    const travelDate = document.getElementById('departing_on')?.value || '';
+    const pnr = (document.getElementById('booking_reference')?.value || '').toUpperCase();
+    const isRound = !!document.getElementById('trip_type_round')?.checked;
+    const retDate = document.getElementById('return_date')?.value || '';
+
+    let routeText = (departure && destination) ? `${departure} → ${destination}` : (routePreview || '—');
+    if (isRound && retDate) {
+        routeText += ` (Round-Trip, Return: ${retDate})`;
+    }
+
+    const reviewRoute = document.getElementById('reviewRoute');
+    if (reviewRoute) reviewRoute.textContent = routeText;
+    const reviewAirline = document.getElementById('reviewAirline');
+    if (reviewAirline) reviewAirline.textContent = airline || '—';
+    const reviewTravelDate = document.getElementById('reviewTravelDate');
+    if (reviewTravelDate) reviewTravelDate.textContent = travelDate || '—';
+    const reviewPnr = document.getElementById('reviewPnr');
+    if (reviewPnr) reviewPnr.textContent = pnr || '—';
+
+    const clientName = (document.getElementById('account_name')?.value || '').trim();
+    const clientPhone = (document.getElementById('phone')?.value || '').trim();
+    const accountType = document.getElementById('account_type')?.value || '';
+    const accountLink = (document.getElementById('account_link')?.value || '').trim();
+
+    const reviewClientName = document.getElementById('reviewClientName');
+    if (reviewClientName) reviewClientName.textContent = clientName || '—';
+    const reviewClientPhone = document.getElementById('reviewClientPhone');
+    if (reviewClientPhone) reviewClientPhone.textContent = clientPhone || '—';
+    const reviewAccountType = document.getElementById('reviewAccountType');
+    if (reviewAccountType) reviewAccountType.textContent = accountType || '—';
+    const reviewAccountLink = document.getElementById('reviewAccountLink');
+    if (reviewAccountLink) reviewAccountLink.textContent = accountLink || '—';
+
+    // Populate passengers list
+    const paxListEl = document.getElementById('reviewPassengersList');
+    if (paxListEl) {
+        const cards = Array.from(document.querySelectorAll('#passenger-forms-container .passenger-form'));
+        if (cards.length === 0) {
+            paxListEl.innerHTML = '<div class="review-empty-state">No passenger details added yet</div>';
+        } else {
+            let html = '';
+            cards.forEach((card, idx) => {
+                const name = (card.querySelector('.passenger-name')?.value || `Passenger ${idx + 1}`).trim().toUpperCase();
+                const gender = card.querySelector('.passenger-gender:checked')?.value || 'MR';
+                const passport = (card.querySelector('.passenger-passport-no')?.value || '').trim().toUpperCase();
+                const net = parseFloat(card.querySelector('.passenger-net-amount')?.value) || 0;
+                const extra = parseFloat(card.querySelector('.passenger-extra-fare')?.value) || 0;
+                const subAgent = parseFloat(card.querySelector('.passenger-sub-agent-fare')?.value) || 0;
+                const commission = parseFloat(card.querySelector('.passenger-commission')?.value) || 0;
+
+                let totalPaxNet = net + extra + subAgent;
+                let returnInfo = '';
+                if (isRound) {
+                    const retNet = parseFloat(card.querySelector('.passenger-return-net-amount')?.value) || 0;
+                    const retExtra = parseFloat(card.querySelector('.passenger-return-extra-fare')?.value) || 0;
+                    const retSubAgent = parseFloat(card.querySelector('.passenger-return-sub-agent-fare')?.value) || 0;
+                    totalPaxNet += retNet + retExtra + retSubAgent;
+                    returnInfo = ` • Return: ${(retNet + retExtra + retSubAgent).toLocaleString()} MMK`;
+                }
+
+                html += `
+                    <div class="review-pax-item">
+                        <div class="review-pax-meta">
+                            <span class="review-pax-badge">${idx + 1}</span>
+                            <span class="review-pax-name">${gender}. ${name}</span>
+                            ${passport ? `<span class="review-pax-doc">${passport}</span>` : ''}
+                        </div>
+                        <div class="review-pax-pricing">
+                            <div class="review-pax-total">${totalPaxNet.toLocaleString()} MMK</div>
+                            <div class="review-pax-sub">Outbound: ${(net + extra + subAgent).toLocaleString()} MMK (Comm: ${commission.toLocaleString()} MMK)${returnInfo}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            paxListEl.innerHTML = html;
+        }
+    }
+}
+
 export function setupMobileSellStepper() {
     const stepper = document.getElementById('mobileSellStepper');
     const form = document.getElementById('sellForm');
@@ -1595,23 +1681,34 @@ export function setupMobileSellStepper() {
     const applyStep = (stepId) => {
         if (!sections.includes(stepId)) return;
 
-        stepper.querySelectorAll('.mobile-step-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.step === stepId);
+        stepper.querySelectorAll('.sell-step-btn, .mobile-step-btn').forEach(btn => {
+            const isActive = btn.dataset.step === stepId;
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
 
         sections.forEach(sId => {
             const sec = document.getElementById(sId);
             if (sec) {
-                sec.classList.toggle('active-mobile-step', sId === stepId);
+                const isActive = sId === stepId;
+                sec.classList.toggle('active-step', isActive);
+                sec.classList.toggle('active-mobile-step', isActive);
             }
         });
 
-        if (window.innerWidth <= 768) {
-            stepper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (stepId === 'section-payment') {
+            updateSellReviewSummary();
+        }
+
+        const sellView = document.getElementById('sell-view');
+        if (sellView) {
+            sellView.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     };
 
-    stepper.querySelectorAll('.mobile-step-btn').forEach(btn => {
+    window.applySellStep = applyStep;
+
+    stepper.querySelectorAll('.sell-step-btn, .mobile-step-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             applyStep(btn.dataset.step);
         });
@@ -1619,20 +1716,20 @@ export function setupMobileSellStepper() {
 
     const addActionButtons = (secId, prevId, nextId) => {
         const sec = document.getElementById(secId);
-        if (!sec || sec.querySelector('.mobile-step-actions')) return;
+        if (!sec || sec.querySelector('.sell-step-actions')) return;
         const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'mobile-step-actions';
+        actionsDiv.className = 'sell-step-actions mobile-step-actions';
 
         let innerHtml = '';
         if (prevId) {
             const prevLabel = prevId === 'section-booking' ? 'Flight' : prevId === 'section-client' ? 'Client' : 'Passengers';
-            innerHtml += `<button type="button" class="btn btn-secondary btn-sm" data-goto="${prevId}"><i class="fa-solid fa-arrow-left"></i> ${prevLabel}</button>`;
+            innerHtml += `<button type="button" class="btn btn-secondary" data-goto="${prevId}"><i class="fa-solid fa-arrow-left"></i> Back to ${prevLabel}</button>`;
         } else {
             innerHtml += `<div></div>`;
         }
         if (nextId) {
             const nextLabel = nextId === 'section-client' ? 'Next: Client Details' : nextId === 'section-passengers' ? 'Next: Passengers' : 'Next: Payment & Review';
-            innerHtml += `<button type="button" class="btn btn-primary btn-sm" data-goto="${nextId}">${nextLabel} <i class="fa-solid fa-arrow-right"></i></button>`;
+            innerHtml += `<button type="button" class="btn btn-primary" data-goto="${nextId}">${nextLabel} <i class="fa-solid fa-arrow-right"></i></button>`;
         }
         actionsDiv.innerHTML = innerHtml;
         sec.appendChild(actionsDiv);
@@ -3464,7 +3561,12 @@ export function updateSummaryBar() {
     if (paxCountEl) paxCountEl.textContent = `${cards.length}${round ? ` × 2` : ''}`;
     if (totalEl) totalEl.textContent = `${totalNet.toLocaleString()} MMK`;
     if (commissionEl) commissionEl.textContent = `${totalCommission.toLocaleString()} MMK`;
-    if (bar) bar.classList.toggle('is-visible', cards.length > 0);
+    if (bar) bar.classList.add('is-visible');
+
+    const paymentSection = document.getElementById('section-payment');
+    if (paymentSection && (paymentSection.classList.contains('active-step') || paymentSection.classList.contains('active-mobile-step'))) {
+        updateSellReviewSummary();
+    }
 }
 
 /**

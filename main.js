@@ -659,6 +659,7 @@ function setupEventListeners() {
     document.getElementById('cancelSellBtn').addEventListener('click', () => {
         document.getElementById('sellForm').reset();
         resetPassengerForms();
+        window.applySellStep?.('section-booking');
         showView('home');
     });
     document.getElementById('sellForm').addEventListener('submit', handleSellTicket);

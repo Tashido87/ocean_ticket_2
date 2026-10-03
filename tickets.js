@@ -1347,39 +1347,88 @@ export async function handleSellTicket(e) {
         returnSharedData
     } = collectFormData(form);
 
-    if (passengerData.length === 0) {
-        showToast('At least one passenger is required.', 'error');
+    // 1. Validate Flight Context (Step 1)
+    if (!sharedData.issued_date) {
+        window.applySellStep?.('section-booking');
+        showToast('Issued Date is required.', 'error');
+        document.getElementById('issued_date')?.focus();
         return;
     }
     if (!sharedData.booking_reference) {
+        window.applySellStep?.('section-booking');
         showToast('PNR Code is required.', 'error');
+        document.getElementById('booking_reference')?.focus();
         return;
     }
-    if (!sharedData.departure || !sharedData.destination) {
-        showToast('Departure and destination are required.', 'error');
+    if (!sharedData.departing_on) {
+        window.applySellStep?.('section-booking');
+        showToast('Travel Date is required.', 'error');
+        document.getElementById('departing_on')?.focus();
         return;
     }
     if (!sharedData.airline) {
+        window.applySellStep?.('section-booking');
         showToast('Airline is required.', 'error');
+        document.getElementById('airline')?.focus();
+        return;
+    }
+    if (!sharedData.departure || !sharedData.destination) {
+        window.applySellStep?.('section-booking');
+        showToast('Departure and destination are required.', 'error');
         return;
     }
 
     // Round-trip specific validations
     if (sharedData.is_round_trip) {
         if (!returnSharedData?.departing_on) {
+            window.applySellStep?.('section-booking');
             showToast('Return date is required for round-trip tickets.', 'error');
+            document.getElementById('return_date')?.focus();
             return;
         }
         if (!returnSharedData?.departure || !returnSharedData?.destination) {
+            window.applySellStep?.('section-booking');
             showToast('Return departure and destination are required.', 'error');
             return;
         }
         if (!returnSharedData?.airline) {
+            window.applySellStep?.('section-booking');
             showToast('Return airline is required.', 'error');
             return;
         }
+    }
+
+    // 2. Validate Client Details (Step 2)
+    if (!sharedData.phone) {
+        window.applySellStep?.('section-client');
+        showToast('Contact Phone is required.', 'error');
+        document.getElementById('phone')?.focus();
+        return;
+    }
+    if (!sharedData.account_name) {
+        window.applySellStep?.('section-client');
+        showToast('Social Media Account Name is required.', 'error');
+        document.getElementById('account_name')?.focus();
+        return;
+    }
+    if (!sharedData.account_type) {
+        window.applySellStep?.('section-client');
+        showToast('Account Type is required.', 'error');
+        document.getElementById('account_type')?.focus();
+        return;
+    }
+
+    // 3. Validate Passengers (Step 3)
+    if (passengerData.length === 0) {
+        window.applySellStep?.('section-passengers');
+        showToast('At least one passenger is required.', 'error');
+        return;
+    }
+
+    if (sharedData.is_round_trip) {
         const missingReturnPrice = passengerData.findIndex(p => !p.return_net_amount);
         if (missingReturnPrice !== -1) {
+            window.applySellStep?.('section-passengers');
             showToast(`Return Net Amount is required for Passenger ${missingReturnPrice + 1}.`, 'error');
             return;
         }
@@ -1389,6 +1438,7 @@ export async function handleSellTicket(e) {
         .map((p, idx) => getPassengerValidationError(p, idx, sharedData.is_international))
         .find(Boolean);
     if (validationError) {
+        window.applySellStep?.('section-passengers');
         showToast(validationError, 'error');
         return;
     }
@@ -1534,6 +1584,7 @@ async function confirmAndSaveTicket(form, sharedData, passengerData, returnShare
         resetPassengerForms();
         populateFlightLocations();
         updateToggleLabels();
+        window.applySellStep?.('section-booking');
 
         // Data and UI will update automatically via real-time listeners
         showView('home');
