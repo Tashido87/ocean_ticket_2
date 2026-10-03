@@ -1694,84 +1694,104 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     box-shadow: inset 0 0 0 1px rgba(60, 60, 60, 0.12);
 }
 
-/* ---------- Sticky summary bar — VERTICAL right sidebar ---------- */
+/* ---------- Sticky summary bar — Fixed Bottom Bar (Desktop & Mobile) ---------- */
 .sticky-summary-bar {
-    position: fixed;
-    top: calc(84px + 1.15rem);
-    right: 1.25rem;
-    bottom: 1.25rem;
-    left: auto;
-    width: 320px;
-    max-width: calc(100vw - 2rem);
-    padding: 1.25rem;
-    border-radius: var(--liquid-radius);
-    border: var(--liquid-border);
-    background: var(--surface);
-    box-shadow: var(--liquid-shadow);
-    overflow-y: auto;
-    z-index: 50;
-    display: none;
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 196px !important;
+    right: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    padding: 0.75rem 1.5rem !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: none !important;
+    border-top: 1px solid #E2E8F0 !important;
+    border-radius: 0 !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
+    z-index: 1000 !important;
+    display: block !important;
+    overflow: visible !important;
+    transition: left 0.3s ease !important;
 }
 
-.sticky-summary-bar.is-visible {
-    display: block;
-    animation: slideInRight 0.35s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+body.sidebar-collapsed .sticky-summary-bar,
+body.material-theme.sidebar-collapsed .sticky-summary-bar {
+    left: 0 !important;
 }
 
-@keyframes slideInRight {
-    from { transform: translateX(20px); opacity: 0; }
-    to   { transform: translateX(0); opacity: 1; }
-}
-
-/* Optional summary heading (CSS-injected for trip.com feel) */
 .sticky-summary-bar::before {
-    content: 'Order Summary';
-    display: block;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin-bottom: 0.85rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid rgba(38, 37, 30, 0.08);
+    display: none !important;
+    content: none !important;
 }
 
 .sticky-summary-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1.25rem;
-    max-width: none;
-    margin: 0;
-    flex-wrap: nowrap;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1.5rem !important;
+    max-width: 1400px !important;
+    margin: 0 auto !important;
+    flex-wrap: nowrap !important;
 }
 
-/* Stats column */
+/* Stats row */
 .sticky-summary-bar .summary-stats {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    flex: 0 0 auto;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 1.5rem !important;
+    flex: 0 0 auto !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
-/* Section divider between groups */
-.sticky-summary-bar .summary-stats,
-.sticky-summary-bar .summary-payment-controls {
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--sell-border, rgba(38, 37, 30, 0.08));
+.sticky-summary-bar .summary-stat {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    padding: 0 !important;
 }
 
-/* Payment controls column */
+.sticky-summary-bar .summary-stat .stat-label {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    color: #64748B !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+}
+
+.sticky-summary-bar .summary-stat .stat-value {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    color: #0F172A !important;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+.sticky-summary-bar .summary-stat .stat-value.is-positive {
+    color: #0D6E77 !important;
+}
+
+/* Payment controls row */
 .sticky-summary-bar .summary-payment-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
-    flex-wrap: nowrap;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    border: none !important;
+    flex-wrap: nowrap !important;
 }
 
 .sticky-summary-bar .summary-payment-controls .paid-toggle {
-    align-self: flex-start;
+    align-self: center !important;
+    margin: 0 !important;
 }
 
 /* ========== Beautiful Paid Toggle Switch ========== */
@@ -1878,134 +1898,83 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .sticky-summary-bar .summary-payment-controls .form-group {
-    width: 100%;
-    min-width: 0 !important;
+    margin: 0 !important;
+    width: auto !important;
+    flex: 0 1 auto !important;
 }
 
 .sticky-summary-bar .summary-payment-controls .form-group input,
 .sticky-summary-bar .summary-payment-controls .form-group select {
-    width: 100%;
+    height: 38px !important;
+    font-size: 0.85rem !important;
+    padding: 0.4rem 0.75rem !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 8px !important;
 }
 
-/* When Mobile Banking is active, the bank-select wraps to next line */
-.sticky-summary-bar .payment-method-row {
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.sticky-summary-bar .payment-method-row > select {
-    width: 100%;
-    min-width: 0;
-}
-
-.sticky-summary-bar .bank-select.show {
-    width: 100%;
-    max-width: none;
-    flex: 0 0 auto;
-}
-
-/* Action buttons stacked, Submit on top, Cancel below */
+/* Action buttons row */
 .sticky-summary-bar .summary-actions {
-    flex-direction: column-reverse;
-    gap: 0.5rem;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    flex: 0 0 auto !important;
 }
 
 .sticky-summary-bar .summary-actions .btn {
-    width: 100%;
-    justify-content: center;
-    padding: 0.55rem 1rem;
-    font-size: 0.9rem;
+    height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 1.25rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
 }
 
-.sticky-summary-bar .summary-actions .btn-primary {
-    padding: 0.55rem 1rem;
-    font-size: 0.9rem;
+/* Form container spacing (no right sidebar gap) */
+#sell-view .sell-sections,
+#sellForm {
+    padding-right: 0 !important;
+    padding-bottom: 96px !important;
 }
 
-/* Make room for the right sidebar in the form area */
-#sell-view .sell-sections {
-    padding-bottom: 2rem;
-    padding-right: calc(320px + 2.5rem);
-}
-
-/* Stats inside the sidebar */
-.sticky-summary-bar .summary-stat {
-    padding: 0.5rem 0;
-}
-
-.sticky-summary-bar .summary-stat .stat-label {
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-}
-
-.sticky-summary-bar .summary-stat .stat-value {
-    font-size: 1.05rem;
-}
-
-/* Mobile / narrow viewports — fall back to horizontal bottom bar */
-@media (max-width: 1024px) {
+@media (max-width: 900px) {
     .sticky-summary-bar {
-        position: fixed;
-        top: auto;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        max-width: none;
-        height: auto;
-        border-radius: 0;
-        border: none;
-        border-top: 1px solid var(--sell-border, rgba(38, 37, 30, 0.10));
-        padding: 0.85rem 1.5rem;
-        overflow: visible;
+        left: 0 !important;
+        padding: 0.6rem 0.85rem !important;
     }
-
-    .sticky-summary-bar.is-visible {
-        animation: slideUp 0.3s ease;
-    }
-
-    .sticky-summary-bar::before {
-        display: none;
-    }
-
     .sticky-summary-inner {
-        flex-direction: row;
-        align-items: center;
-        gap: 1.25rem;
-        flex-wrap: wrap;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.6rem !important;
     }
-
     .sticky-summary-bar .summary-stats {
-        flex-direction: row;
-        gap: 1.25rem;
-        padding: 0;
-        border: none;
-        flex: 1;
+        width: 100% !important;
+        justify-content: space-between !important;
+        gap: 0.75rem !important;
     }
-
     .sticky-summary-bar .summary-payment-controls {
-        flex-direction: row;
-        gap: 0.75rem;
-        padding: 0;
-        border: none;
-        flex-wrap: wrap;
+        width: 100% !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
     }
-
     .sticky-summary-bar .summary-payment-controls .form-group {
-        width: auto;
+        flex: 1 !important;
+        min-width: 120px !important;
     }
-
     .sticky-summary-bar .summary-actions {
-        flex-direction: row;
+        width: 100% !important;
+        display: flex !important;
+        gap: 0.5rem !important;
     }
-
     .sticky-summary-bar .summary-actions .btn {
-        width: auto;
+        flex: 1 !important;
     }
-
-    #sell-view .sell-sections {
-        padding-right: 0;
-        padding-bottom: 140px;
+    #sell-view .sell-sections,
+    #sellForm {
+        padding-bottom: 140px !important;
     }
 }
 
@@ -2223,8 +2192,8 @@ body.material-theme.dark-theme #sell-view .sticky-summary-bar {
 
 body.dark-theme #sell-view .sticky-summary-bar::before,
 body.material-theme.dark-theme #sell-view .sticky-summary-bar::before {
-    color: rgba(255, 255, 255, 0.55);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    display: none !important;
+    content: none !important;
 }
 
 body.dark-theme #sell-view .sticky-summary-bar .summary-stats,
