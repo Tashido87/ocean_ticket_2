@@ -639,6 +639,30 @@ function setupEventListeners() {
         });
     }
 
+    // Records Export Dropdown
+    const exportDropdown = document.getElementById('recordsExportDropdown');
+    const exportDropdownBtn = document.getElementById('recordsExportDropdownBtn');
+    const exportDropdownMenu = document.getElementById('recordsExportDropdownMenu');
+    if (exportDropdown && exportDropdownBtn) {
+        exportDropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = exportDropdown.classList.toggle('is-open');
+            exportDropdownBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+        document.addEventListener('click', (e) => {
+            if (!exportDropdown.contains(e.target)) {
+                exportDropdown.classList.remove('is-open');
+                exportDropdownBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+        exportDropdownMenu?.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', () => {
+                exportDropdown.classList.remove('is-open');
+                exportDropdownBtn.setAttribute('aria-expanded', 'false');
+            });
+        });
+    }
+
     document.getElementById('exportExcelBtn').addEventListener('click', exportSelectedToExcel);
     document.getElementById('exportPdfBtn').addEventListener('click', () => document.getElementById('exportConfirmModal').classList.add('show'));
     document.getElementById('confirmExportBtn').addEventListener('click', () => exportToPdf(false));

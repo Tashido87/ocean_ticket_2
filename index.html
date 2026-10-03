@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="styles.css?v=29">
     <link rel="stylesheet" href="landing.css">
     <link rel="stylesheet" href="sell.css?v=7">
-    <link rel="stylesheet" href="apple-ui.css?v=17">
+    <link rel="stylesheet" href="apple-ui.css?v=18">
     <link rel="stylesheet" href="pnr-detail.css?v=2">
     <link rel="stylesheet" href="dashboard.css?v=4">
     
@@ -257,62 +257,111 @@
                     <div class="results-section glass-card" id="recordsSection">
                         <div class="results-header">
                             <div class="records-header-left">
-                                <button id="recordsFilterToggle" class="icon-btn icon-btn-table" title="Search Filters" style="margin-right:0.5rem;">
-                                    <i class="fa-solid fa-bars-staggered"></i>
-                                </button>
-                                <h3>Records</h3>
+                                <span class="records-header-icon"><i class="fa-solid fa-table-list"></i></span>
+                                <div>
+                                    <h3>Records</h3>
+                                    <p class="records-subtitle">Manage, search and review all issued ticket bookings</p>
+                                </div>
                                 <div class="records-presets">
                                     <button type="button" class="records-preset-btn active" data-range="this-month">This Month</button>
                                     <button type="button" class="records-preset-btn" data-range="last-month">Last Month</button>
                                     <button type="button" class="records-preset-btn" data-range="all-time">All Time</button>
                                 </div>
-                                <span class="records-filter-badge" id="recordsFilterBadge" style="display: none;"></span>
-                                <button type="button" class="records-quick-clear-btn" id="recordsQuickClearBtn" style="display: none;" title="Clear all active filters">
-                                    <i class="fa-solid fa-xmark"></i> Clear
-                                </button>
                             </div>
-                            <div>
+                            <div class="records-header-actions">
                                 <button id="editModeBtn" class="btn btn-secondary" title="Toggle Spreadsheet Edit Mode">
                                     <i class="fa-solid fa-file-pen"></i>
                                     <span class="desktop-only">Edit Mode</span>
                                 </button>
-                                <button id="exportExcelBtn" class="btn btn-secondary" title="Export Filtered to Excel (CSV)">
-                                    <i class="fa-solid fa-file-excel"></i>
-                                    <span class="desktop-only">Export Excel</span>
+                                <div class="dropdown export-dropdown" id="recordsExportDropdown">
+                                    <button type="button" class="btn btn-primary dropdown-toggle" id="recordsExportDropdownBtn" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                                        <span>Export</span>
+                                        <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+                                    </button>
+                                    <div class="dropdown-menu export-dropdown-menu" id="recordsExportDropdownMenu">
+                                        <button type="button" id="exportExcelBtn" class="dropdown-item">
+                                            <i class="fa-solid fa-file-excel export-icon-excel"></i>
+                                            <div class="dropdown-item-content">
+                                                <span class="dropdown-item-title">Excel (.csv)</span>
+                                                <small class="dropdown-item-desc">Export filtered data</small>
+                                            </div>
+                                        </button>
+                                        <button type="button" id="exportPdfBtn" class="dropdown-item">
+                                            <i class="fa-solid fa-file-pdf export-icon-agent"></i>
+                                            <div class="dropdown-item-content">
+                                                <span class="dropdown-item-title">Agent Report</span>
+                                                <small class="dropdown-item-desc">Client-safe statement PDF</small>
+                                            </div>
+                                        </button>
+                                        <button type="button" id="exportPrivateReportBtn" class="dropdown-item">
+                                            <i class="fa-solid fa-file-shield export-icon-private"></i>
+                                            <div class="dropdown-item-content">
+                                                <span class="dropdown-item-title">Private Report</span>
+                                                <small class="dropdown-item-desc">Owner &amp; profit breakdown PDF</small>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Unified Clean Filter Bar (Single Row) -->
+                        <div class="records-filter-toolbar">
+                            <div class="filter-search-group">
+                                <i class="fa-solid fa-magnifying-glass filter-icon"></i>
+                                <input type="text" id="searchName" placeholder="Search client name..." autocomplete="off">
+                            </div>
+                            <div class="filter-pnr-group">
+                                <i class="fa-solid fa-ticket filter-icon"></i>
+                                <input type="text" id="searchBooking" placeholder="PNR..." autocomplete="off">
+                            </div>
+                            <div class="filter-select-group">
+                                <select id="searchSource" aria-label="Filter by source">
+                                    <option value="all" selected>All Sources</option>
+                                    <option value="owner">Owner</option>
+                                    <option value="self">Self Purchase</option>
+                                </select>
+                            </div>
+                            <div class="filter-select-group">
+                                <select id="searchDeparture" aria-label="Filter by departure">
+                                    <option value="" disabled selected>Departure</option>
+                                </select>
+                            </div>
+                            <div class="filter-select-group">
+                                <select id="searchDestination" aria-label="Filter by destination">
+                                    <option value="" disabled selected>Destination</option>
+                                </select>
+                            </div>
+                            <div class="filter-actions-group">
+                                <button type="button" id="recordsFilterToggle" class="btn btn-secondary filter-toggle-btn" title="More Filters (Date ranges &amp; Groups)">
+                                    <i class="fa-solid fa-sliders"></i>
+                                    <span>Filters</span>
+                                    <span class="records-filter-badge" id="recordsFilterBadge" style="display: none;"></span>
                                 </button>
-                                <button id="exportPdfBtn" class="btn btn-secondary" title="Export Agent Report to PDF">
-                                    <i class="fa-solid fa-file-pdf"></i>
-                                    <span class="desktop-only">Agent Report</span>
-                                </button>
-                                <button id="exportPrivateReportBtn" class="btn btn-primary" title="Export Private Report to PDF">
-                                    <i class="fa-solid fa-file-pdf"></i>
-                                    <span class="desktop-only">Private Report</span>
+                                <button type="button" id="recordsClearBtn" class="btn btn-ghost filter-reset-btn" title="Reset all filters">
+                                    <i class="fa-solid fa-rotate-left"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <div id="recordsFilters" class="records-filters" hidden>
+                        <!-- Advanced Filters Drawer -->
+                        <div id="recordsFilters" class="records-filters records-advanced-filters" hidden>
                             <form id="recordsSearchForm" onsubmit="return false;">
                                 <div class="records-filter-grid">
-                                    <input type="text" id="searchName" placeholder="Client Name" autocomplete="off">
-                                    <input type="text" id="searchBooking" placeholder="PNR / Booking Reference" autocomplete="off">
-                                    <div class="date-range-group">
-                                        <input type="text" id="searchStartDate" placeholder="Start Date" autocomplete="off">
-                                        <input type="text" id="searchEndDate" placeholder="End Date" autocomplete="off">
+                                    <div class="filter-field">
+                                        <label for="searchStartDate">Issued Date Range</label>
+                                        <div class="date-range-group">
+                                            <input type="text" id="searchStartDate" placeholder="Start Date" autocomplete="off">
+                                            <span class="date-sep">to</span>
+                                            <input type="text" id="searchEndDate" placeholder="End Date" autocomplete="off">
+                                        </div>
                                     </div>
-                                    <input type="text" id="searchTravelDate" placeholder="Travel Date (DD/MM/YYYY)" autocomplete="off">
-                                    <select id="searchDeparture">
-                                        <option value="" disabled selected>DEPARTURE</option>
-                                    </select>
-                                    <select id="searchDestination">
-                                        <option value="" disabled selected>DESTINATION</option>
-                                    </select>
-                                    <select id="searchSource">
-                                        <option value="all" selected>All Sources</option>
-                                        <option value="owner">Owner</option>
-                                        <option value="self">Self Purchase</option>
-                                    </select>
-                                    <div class="toggle-switch">
+                                    <div class="filter-field">
+                                        <label for="searchTravelDate">Travel Date</label>
+                                        <input type="text" id="searchTravelDate" placeholder="DD/MM/YYYY" autocomplete="off">
+                                    </div>
+                                    <div class="filter-field toggle-field">
                                         <label for="groupByAccountToggle">Group with Account Name</label>
                                         <label class="switch">
                                             <input type="checkbox" id="groupByAccountToggle" disabled>
@@ -321,8 +370,10 @@
                                     </div>
                                 </div>
                                 <div class="records-filter-actions">
-                                    <button type="button" id="recordsSearchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i> Search</button>
-                                    <button type="button" id="recordsClearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
+                                    <button type="button" id="recordsSearchBtn" class="btn btn-primary btn-sm"><i class="fa-solid fa-search"></i> Apply</button>
+                                    <button type="button" class="records-quick-clear-btn" id="recordsQuickClearBtn" style="display: none;" title="Clear all active filters">
+                                        <i class="fa-solid fa-xmark"></i> Clear Filters
+                                    </button>
                                     <span class="records-today-date" id="recordsTodayDate"></span>
                                 </div>
                             </form>
@@ -1839,6 +1890,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=98" type="module"></script>
+    <script src="main.js?v=99" type="module"></script>
 </body>
 </html>
