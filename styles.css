@@ -9638,12 +9638,12 @@ body.material-theme {
     min-width: 0;
 }
 
-#booking-revenue-overview-box {
+.dashboard-panels-row #booking-revenue-overview-box {
     grid-column: span 7;
     min-height: 374px;
 }
 
-#travel-schedule-box {
+.dashboard-panels-row #travel-schedule-box {
     grid-column: span 5;
     height: 420px;       /* lock the box so it never grows unbounded */
     min-height: 420px;
@@ -9660,12 +9660,12 @@ body.material-theme {
     overflow-x: hidden;
 }
 
-#dashboard-unpaid-box {
+.dashboard-panels-row #dashboard-unpaid-box {
     grid-column: span 7;
     min-height: 336px;
 }
 
-#tasks-reminders-box {
+.dashboard-panels-row #tasks-reminders-box {
     grid-column: span 5;
     min-height: 336px;
 }
@@ -10290,14 +10290,14 @@ a.clickable-pnr:hover {
 }
 
 @media (max-width: 1320px) {
-    #booking-revenue-overview-box,
-    #travel-schedule-box,
-    #dashboard-unpaid-box,
-    #tasks-reminders-box {
+    .dashboard-panels-row #booking-revenue-overview-box,
+    .dashboard-panels-row #travel-schedule-box,
+    .dashboard-panels-row #dashboard-unpaid-box,
+    .dashboard-panels-row #tasks-reminders-box {
         grid-column: span 12;
     }
 
-    #tasks-reminders-box {
+    .dashboard-panels-row #tasks-reminders-box {
         min-height: 280px;
     }
 }

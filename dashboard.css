@@ -319,19 +319,31 @@
    ========================================================================== */
 
 #home-view .dashboard-grid-row {
-  display: grid;
-  gap: 12px;
+  display: grid !important;
+  gap: 12px !important;
+  width: 100% !important;
 }
 
 #home-view .dashboard-grid-row-2col-wide {
-  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr) !important;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) !important;
 }
 
 #home-view .dashboard-grid-row-2col-equal {
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr) !important;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) !important;
 }
 
-@media (max-width: 860px) {
+#home-view .dashboard-grid-row-2col-wide > *,
+#home-view .dashboard-grid-row-2col-equal > *,
+#home-view #booking-revenue-overview-box,
+#home-view #travel-schedule-box,
+#home-view #dashboard-unpaid-box,
+#home-view #tasks-reminders-box {
+  grid-column: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 580px) {
   #home-view .dashboard-grid-row-2col-wide,
   #home-view .dashboard-grid-row-2col-equal {
     grid-template-columns: 1fr !important;
