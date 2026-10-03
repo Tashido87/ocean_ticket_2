@@ -3,7 +3,7 @@
    Scoped strictly to #home-view to preserve all other pages and shell
    ========================================================================== */
 
-#home-view {
+:is(#home-view, #booking-view, #hotel-view, #manage-view) {
   --dash-bg: #F4F7F8;
   --dash-surface: #FFFFFF;
   --dash-surface-subtle: #F8FAFB;

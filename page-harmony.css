@@ -1,0 +1,113 @@
+/* Booking, Hotel and Manage share the current Dashboard design tokens. */
+:is(#booking-view, #hotel-view, #manage-view) {
+    --text-primary: var(--dash-text);
+    --text-secondary: var(--dash-text-muted);
+    --text-muted: var(--dash-text-muted);
+    --primary-accent: var(--dash-teal);
+    --border-color: var(--dash-border);
+    --surface: var(--dash-surface);
+    font-size: 13px;
+    line-height: 1.45;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(input, select, textarea, button) { font-family: inherit !important; }
+:is(#booking-view, #hotel-view, #manage-view) :is(.form-container, .results-section.glass-card, .manage-pnr-dashboard) {
+    background: var(--dash-surface) !important;
+    border: 1px solid var(--dash-border) !important;
+    border-radius: var(--dash-radius) !important;
+    box-shadow: var(--dash-shadow) !important;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(.form-container > h2, .table-header > h3) {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    letter-spacing: -.015em !important;
+    line-height: 1.2 !important;
+    color: var(--dash-text) !important;
+    text-align: left !important;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(h3, h4, .manage-ticket-toolbar) {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--dash-text) !important;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(.section-subtitle, .booking-kpi-hint, .manage-kpi small) {
+    font-size: 12px !important;
+    color: var(--dash-text-muted) !important;
+    line-height: 1.5;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(.form-group > label, th, .booking-kpi-label, .manage-kpi > span, .manage-eyebrow) {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--dash-text-muted) !important;
+    letter-spacing: .03em !important;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea) {
+    font-size: 13px !important;
+    color: var(--dash-text) !important;
+    background: var(--dash-surface) !important;
+    border: 1px solid var(--dash-border) !important;
+    border-radius: var(--dash-radius-sm) !important;
+    min-height: 38px;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(input, select, textarea):focus-visible {
+    outline: 2px solid var(--dash-teal);
+    outline-offset: 2px;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(.btn, .manage-action-btn) {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: var(--dash-radius-sm) !important;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(.btn-primary, .manage-action-btn.primary) {
+    background: var(--dash-teal) !important;
+    color: #fff !important;
+    border-color: var(--dash-teal) !important;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(.btn-primary, .manage-action-btn.primary):hover { background: var(--dash-teal-dark) !important; }
+:is(#booking-view, #hotel-view, #manage-view) .btn-secondary {
+    color: var(--dash-text-muted) !important;
+    background: var(--dash-surface-subtle) !important;
+    border-color: var(--dash-border) !important;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(.booking-kpi-card, .manage-kpi) {
+    background: var(--dash-surface) !important;
+    border: 1px solid var(--dash-border) !important;
+    border-radius: var(--dash-radius) !important;
+    box-shadow: var(--dash-shadow) !important;
+}
+:is(#booking-view, #hotel-view, #manage-view) :is(.booking-kpi-value, .manage-kpi > strong) {
+    font-size: 23px !important;
+    font-weight: 700 !important;
+    color: var(--dash-text) !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.025em;
+}
+:is(#booking-view, #hotel-view, #manage-view) .manage-kpi.positive > strong { color: var(--dash-mint) !important; }
+:is(#booking-view, #hotel-view, #manage-view) .manage-kpi.warning > strong { color: var(--dash-amber) !important; }
+:is(#booking-view, #hotel-view, #manage-view) th { background: var(--dash-surface-subtle) !important; }
+:is(#booking-view, #hotel-view, #manage-view) td {
+    font-size: 12px !important;
+    color: var(--dash-text) !important;
+    border-bottom-color: var(--dash-border-soft) !important;
+    font-variant-numeric: tabular-nums;
+}
+:is(#booking-view, #hotel-view, #manage-view) tbody tr:hover td { background: var(--dash-teal-light) !important; }
+:is(#booking-view, #hotel-view, #manage-view) .section-icon {
+    background: var(--dash-teal-light) !important;
+    color: var(--dash-teal) !important;
+}
+body.dark-theme :is(#booking-view, #hotel-view, #manage-view) {
+    --dash-surface: #1E293B;
+    --dash-surface-subtle: #0F172A;
+    --dash-border: #334155;
+    --dash-border-soft: #334155;
+    --dash-text: #F8FAFC;
+    --dash-text-muted: #94A3B8;
+    --dash-teal-light: #16383E;
+    --dash-mint: #6EE7B7;
+    --dash-amber: #FBBF24;
+}
+@media (max-width: 768px) {
+    :is(#booking-view, #hotel-view, #manage-view) :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { font-size: 16px !important; }
+    :is(#booking-view, #hotel-view, #manage-view) :is(.btn, .manage-action-btn) { min-height: 44px; }
+    :is(#booking-view, #hotel-view, #manage-view) .table-header { flex-wrap: wrap; gap: 12px; }
+}
