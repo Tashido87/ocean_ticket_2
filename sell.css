@@ -1694,33 +1694,31 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     box-shadow: inset 0 0 0 1px rgba(60, 60, 60, 0.12);
 }
 
-/* ---------- Sticky summary bar — Fixed Bottom Bar (Desktop & Mobile) ---------- */
+/* ---------- Summary bar — In-Flow inside Section 4 Payment & Review ---------- */
 .sticky-summary-bar {
-    position: fixed !important;
+    position: static !important;
     top: auto !important;
-    bottom: 0 !important;
-    left: 196px !important;
-    right: 0 !important;
-    width: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
     height: auto !important;
     max-width: none !important;
-    padding: 0.75rem 1.5rem !important;
-    background: rgba(255, 255, 255, 0.96) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
+    padding: 0.5rem 0 0 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: none !important;
-    border-top: 1px solid #E2E8F0 !important;
     border-radius: 0 !important;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
-    z-index: 1000 !important;
+    box-shadow: none !important;
+    z-index: auto !important;
     display: block !important;
     overflow: visible !important;
-    transition: left 0.3s ease !important;
 }
 
 body.sidebar-collapsed .sticky-summary-bar,
 body.material-theme.sidebar-collapsed .sticky-summary-bar {
-    left: 0 !important;
+    left: auto !important;
 }
 
 .sticky-summary-bar::before {
@@ -1734,9 +1732,9 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     align-items: center !important;
     justify-content: space-between !important;
     gap: 1.5rem !important;
-    max-width: 1400px !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
 }
 
 /* Stats row */
@@ -1933,22 +1931,22 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     white-space: nowrap !important;
 }
 
-/* Form container spacing (no right sidebar gap) */
+/* Form container spacing */
 #sell-view .sell-sections,
 #sellForm {
     padding-right: 0 !important;
-    padding-bottom: 96px !important;
+    padding-bottom: 2rem !important;
 }
 
 @media (max-width: 900px) {
     .sticky-summary-bar {
-        left: 0 !important;
-        padding: 0.6rem 0.85rem !important;
+        left: auto !important;
+        padding: 0.5rem 0 0 0 !important;
     }
     .sticky-summary-inner {
         flex-direction: column !important;
         align-items: stretch !important;
-        gap: 0.6rem !important;
+        gap: 0.75rem !important;
     }
     .sticky-summary-bar .summary-stats {
         width: 100% !important;
@@ -1959,6 +1957,7 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
         width: 100% !important;
         justify-content: space-between !important;
         flex-wrap: wrap !important;
+        gap: 0.5rem !important;
     }
     .sticky-summary-bar .summary-payment-controls .form-group {
         flex: 1 !important;
@@ -1974,7 +1973,7 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     }
     #sell-view .sell-sections,
     #sellForm {
-        padding-bottom: 140px !important;
+        padding-bottom: 2rem !important;
     }
 }
 

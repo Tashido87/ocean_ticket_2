@@ -1672,82 +1672,36 @@ export function updateSellReviewSummary() {
 }
 
 export function setupMobileSellStepper() {
+    const sections = ['section-booking', 'section-client', 'section-passengers', 'section-payment'];
+
+    // Ensure all sections are fully visible in the continuous layout
+    sections.forEach(sId => {
+        const sec = document.getElementById(sId);
+        if (sec) {
+            sec.classList.remove('active-step', 'active-mobile-step');
+            sec.style.display = '';
+            sec.querySelectorAll('.sell-step-actions, .mobile-step-actions').forEach(el => el.remove());
+        }
+    });
+
+    // Provide a smooth scroll helper if tickets.js calls applySellStep on validation failure
+    window.applySellStep = (stepId) => {
+        const sec = document.getElementById(stepId);
+        if (sec) {
+            sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
     const stepper = document.getElementById('mobileSellStepper');
     const form = document.getElementById('sellForm');
     if (!stepper || !form || stepper.dataset.stepperBound === 'true') return;
 
-    const sections = ['section-booking', 'section-client', 'section-passengers', 'section-payment'];
-
-    const applyStep = (stepId) => {
-        if (!sections.includes(stepId)) return;
-
-        stepper.querySelectorAll('.sell-step-btn, .mobile-step-btn').forEach(btn => {
-            const isActive = btn.dataset.step === stepId;
-            btn.classList.toggle('active', isActive);
-            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        });
-
-        sections.forEach(sId => {
-            const sec = document.getElementById(sId);
-            if (sec) {
-                const isActive = sId === stepId;
-                sec.classList.toggle('active-step', isActive);
-                sec.classList.toggle('active-mobile-step', isActive);
-            }
-        });
-
-        if (stepId === 'section-payment') {
-            updateSellReviewSummary();
-        }
-
-        const sellView = document.getElementById('sell-view');
-        if (sellView) {
-            sellView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    };
-
-    window.applySellStep = applyStep;
-
     stepper.querySelectorAll('.sell-step-btn, .mobile-step-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            applyStep(btn.dataset.step);
+            window.applySellStep(btn.dataset.step);
         });
     });
 
-    const addActionButtons = (secId, prevId, nextId) => {
-        const sec = document.getElementById(secId);
-        if (!sec || sec.querySelector('.sell-step-actions')) return;
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'sell-step-actions mobile-step-actions';
-
-        let innerHtml = '';
-        if (prevId) {
-            const prevLabel = prevId === 'section-booking' ? 'Flight' : prevId === 'section-client' ? 'Client' : 'Passengers';
-            innerHtml += `<button type="button" class="btn btn-secondary" data-goto="${prevId}"><i class="fa-solid fa-arrow-left"></i> Back to ${prevLabel}</button>`;
-        } else {
-            innerHtml += `<div></div>`;
-        }
-        if (nextId) {
-            const nextLabel = nextId === 'section-client' ? 'Next: Client Details' : nextId === 'section-passengers' ? 'Next: Passengers' : 'Next: Payment & Review';
-            innerHtml += `<button type="button" class="btn btn-primary" data-goto="${nextId}">${nextLabel} <i class="fa-solid fa-arrow-right"></i></button>`;
-        }
-        actionsDiv.innerHTML = innerHtml;
-        sec.appendChild(actionsDiv);
-
-        actionsDiv.querySelectorAll('[data-goto]').forEach(b => {
-            b.addEventListener('click', (e) => {
-                e.preventDefault();
-                applyStep(b.dataset.goto);
-            });
-        });
-    };
-
-    addActionButtons('section-booking', null, 'section-client');
-    addActionButtons('section-client', 'section-booking', 'section-passengers');
-    addActionButtons('section-passengers', 'section-client', 'section-payment');
-    addActionButtons('section-payment', 'section-passengers', null);
-
-    applyStep('section-booking');
     stepper.dataset.stepperBound = 'true';
 }
 

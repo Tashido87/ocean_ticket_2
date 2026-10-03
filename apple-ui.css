@@ -1287,21 +1287,21 @@ body.material-theme .nrc-input select {
     padding: 0 4px;
 }
 
-/* Sticky Summary Bar — Clean Fixed Bottom Bar */
+/* Summary Bar — In-Flow inside Section 4 Payment & Review */
 body.material-theme .sticky-summary-bar {
-    background: rgba(255, 255, 255, 0.96) !important;
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: none !important;
-    border-top: 1px solid #E2E8F0 !important;
-    border-radius: 0 !important;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
+    box-shadow: none !important;
+    padding: 0.5rem 0 0 0 !important;
 }
 
 body.material-theme.dark-theme .sticky-summary-bar {
-    background: rgba(15, 23, 42, 0.96) !important;
-    border-top: 1px solid #334155 !important;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 body.material-theme .sticky-summary-bar::before {
@@ -2474,21 +2474,21 @@ body.material-theme .landing-signin-btn:active {
         font-size: 0.82rem !important;
     }
 
-    /* Sticky summary bar on mobile */
+    /* In-flow summary bar on mobile inside Section 4 */
     body.material-theme .sticky-summary-bar {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
+        position: static !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
         box-sizing: border-box !important;
-        padding: 10px 14px !important;
-        z-index: 1000 !important;
-        background: var(--apple-card) !important;
-        backdrop-filter: blur(20px) !important;
-        border-top: 1px solid var(--apple-separator) !important;
-        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08) !important;
+        padding: 0.5rem 0 0 0 !important;
+        z-index: auto !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        border: none !important;
+        box-shadow: none !important;
         border-radius: 0 !important;
     }
 
@@ -2700,311 +2700,69 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
     color: #ffffff;
 }
 
-/* --- UNIVERSAL SELL STEPPER (DESKTOP & MOBILE) --- */
+/* Universal Sell Stepper, Actions & Review (Hidden in Continuous Layout) */
 .sell-stepper,
-.mobile-sell-stepper {
-    display: flex !important;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 1.25rem;
-    padding: 6px;
-    background: #F1F5F9;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    overflow-x: auto;
-    position: sticky;
-    top: 60px;
-    z-index: 25;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-}
-
-.sell-step-btn,
-.mobile-step-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 9px 12px;
-    border: 1px solid transparent;
-    background: transparent;
-    border-radius: 9px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #64748B;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.sell-step-btn:hover,
-.mobile-step-btn:hover {
-    color: #0F172A;
-    background: rgba(255, 255, 255, 0.7);
-}
-
-.sell-step-btn .step-num,
-.mobile-step-btn .step-num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #E2E8F0;
-    color: #475569;
-    font-size: 0.75rem;
-    font-weight: 700;
-    transition: all 0.2s ease;
-}
-
-.sell-step-btn.active,
-.mobile-step-btn.active {
-    background: #FFFFFF;
-    color: #0D6E77;
-    border-color: #E2E8F0;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.sell-step-btn.active .step-num,
-.mobile-step-btn.active .step-num {
-    background: #0D6E77;
-    color: #FFFFFF;
-}
-
-/* Sell Sections — Only Active Section is visible across Desktop and Mobile */
-#sellForm .sell-section {
+.mobile-sell-stepper,
+.sell-step-actions,
+.mobile-step-actions,
+.sell-review-container {
     display: none !important;
 }
 
-#sellForm .sell-section.active-step,
-#sellForm .sell-section.active-mobile-step {
+/* Sell Sections — All sections continuously visible */
+#sellForm .sell-section {
     display: block !important;
-    animation: fadeInStep 0.2s ease-in-out;
+    margin-bottom: 1.5rem !important;
 }
 
-@keyframes fadeInStep {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Sell Step Actions (Next / Back buttons) */
-.sell-step-actions,
-.mobile-step-actions {
-    display: flex !important;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid #E2E8F0;
-}
-
-.sell-step-actions .btn,
-.mobile-step-actions .btn {
-    min-width: 120px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-/* Section 4 Live Review Container */
-.sell-review-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.sell-review-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.review-card {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    overflow: hidden;
-    transition: border-color 0.2s ease;
-}
-
-.review-card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0.65rem 1rem;
-    background: #FFFFFF;
-    border-bottom: 1px solid #E2E8F0;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #0F172A;
-}
-
-.review-card-header i {
-    color: #0D6E77;
-    font-size: 0.85rem;
-}
-
-.review-card-body {
-    padding: 0.85rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.review-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    font-size: 0.82rem;
-}
-
-.review-label {
-    color: #64748B;
-    font-weight: 500;
-}
-
-.review-val {
-    color: #0F172A;
-    font-weight: 600;
-    text-align: right;
-}
-
-.pnr-code-badge {
-    background: #EBF5F6;
-    color: #0D6E77;
-    padding: 0.2rem 0.6rem;
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-}
-
-.pax-review-card .review-card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.review-pax-item {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.review-pax-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-}
-
-.review-pax-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #EBF5F6;
-    color: #0D6E77;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-.review-pax-name {
-    font-weight: 600;
-    color: #0F172A;
-}
-
-.review-pax-doc {
-    font-size: 0.78rem;
-    color: #64748B;
-    background: #F1F5F9;
-    padding: 0.15rem 0.5rem;
-    border-radius: 4px;
-    font-family: monospace;
-}
-
-.review-pax-pricing {
-    text-align: right;
-}
-
-.review-pax-total {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #0D6E77;
-    font-family: 'JetBrains Mono', monospace;
-}
-
-.review-pax-sub {
-    font-size: 0.75rem;
-    color: #64748B;
-}
-
-.review-empty-state {
-    padding: 1.5rem;
-    text-align: center;
-    color: #94A3B8;
-    font-size: 0.85rem;
-    font-style: italic;
-}
-
-/* Universal Fixed Bottom Sticky Summary Bar (Desktop & Mobile) */
-.sticky-summary-bar {
-    position: fixed !important;
+/* In-Flow Summary Bar inside Section 4 Payment & Review */
+.sticky-summary-bar,
+#sellForm .sticky-summary-bar,
+body.material-theme .sticky-summary-bar {
+    position: static !important;
     top: auto !important;
-    bottom: 0 !important;
-    left: 196px !important;
-    right: 0 !important;
-    width: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
-    max-width: none !important;
-    z-index: 1000 !important;
-    background: rgba(255, 255, 255, 0.96) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
+    z-index: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: none !important;
-    border-top: 1px solid #E2E8F0 !important;
-    border-radius: 0 !important;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
-    padding: 0.75rem 1.5rem !important;
+    box-shadow: none !important;
+    padding: 0.5rem 0 0 0 !important;
     display: block !important;
     overflow: visible !important;
-    transition: left 0.3s ease !important;
 }
 
-.sticky-summary-bar::before {
+.sticky-summary-bar::before,
+body.material-theme .sticky-summary-bar::before {
     display: none !important;
     content: none !important;
 }
 
 body.sidebar-collapsed .sticky-summary-bar,
 body.material-theme.sidebar-collapsed .sticky-summary-bar {
-    left: 0 !important;
+    left: auto !important;
 }
 
-.sticky-summary-inner {
+.sticky-summary-inner,
+#sellForm .sticky-summary-inner {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 1.5rem !important;
-    max-width: 1400px !important;
-    margin: 0 auto !important;
-    flex-wrap: nowrap !important;
+    gap: 1.25rem !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    flex-wrap: wrap !important;
 }
 
-.sticky-summary-bar .summary-stats {
+.sticky-summary-bar .summary-stats,
+#sellForm .sticky-summary-bar .summary-stats {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -3014,7 +2772,8 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     border: none !important;
 }
 
-.sticky-summary-bar .summary-payment-controls {
+.sticky-summary-bar .summary-payment-controls,
+#sellForm .sticky-summary-bar .summary-payment-controls {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -3023,17 +2782,19 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     justify-content: center !important;
     padding: 0 !important;
     border: none !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
 }
 
-.sticky-summary-bar .summary-payment-controls .form-group {
+.sticky-summary-bar .summary-payment-controls .form-group,
+#sellForm .sticky-summary-bar .summary-payment-controls .form-group {
     margin: 0 !important;
     width: auto !important;
     flex: 0 1 auto !important;
     min-width: 0 !important;
 }
 
-.sticky-summary-bar .summary-actions {
+.sticky-summary-bar .summary-actions,
+#sellForm .sticky-summary-bar .summary-actions {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -3042,111 +2803,47 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 }
 
 #sell-view,
-#sellForm {
-    padding-bottom: 96px !important;
+#sellForm,
+#sell-view .sell-sections {
+    padding-bottom: 2rem !important;
     padding-right: 0 !important;
 }
 
-@media (max-width: 1024px) {
-    .sell-review-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
 @media (max-width: 900px) {
-    .sticky-summary-bar {
-        left: 0 !important;
-        padding: 0.6rem 0.85rem !important;
-    }
-    .sticky-summary-inner {
+    .sticky-summary-inner,
+    #sellForm .sticky-summary-inner {
         flex-direction: column !important;
         align-items: stretch !important;
-        gap: 0.6rem !important;
+        gap: 0.75rem !important;
     }
-    .sticky-summary-bar .summary-stats {
+    .sticky-summary-bar .summary-stats,
+    #sellForm .sticky-summary-bar .summary-stats {
         width: 100% !important;
         justify-content: space-between !important;
         gap: 0.75rem !important;
     }
-    .sticky-summary-bar .summary-payment-controls {
+    .sticky-summary-bar .summary-payment-controls,
+    #sellForm .sticky-summary-bar .summary-payment-controls {
         width: 100% !important;
-        display: flex !important;
-        align-items: center !important;
         gap: 0.5rem !important;
-        flex-wrap: wrap !important;
         justify-content: space-between !important;
     }
-    .sticky-summary-bar .summary-payment-controls .form-group {
+    .sticky-summary-bar .summary-payment-controls .form-group,
+    #sellForm .sticky-summary-bar .summary-payment-controls .form-group {
         flex: 1 !important;
         min-width: 120px !important;
     }
-    .sticky-summary-bar .summary-actions {
+    .sticky-summary-bar .summary-actions,
+    #sellForm .sticky-summary-bar .summary-actions {
         width: 100% !important;
-        display: flex !important;
         gap: 0.5rem !important;
     }
-    .sticky-summary-bar .summary-actions .btn {
+    .sticky-summary-bar .summary-actions .btn,
+    #sellForm .sticky-summary-bar .summary-actions .btn {
         flex: 1 !important;
-    }
-    #sell-view,
-    #sellForm {
-        padding-bottom: 140px !important;
     }
 }
 
-/* Dark mode overrides for sell stepper and review */
-body.dark-theme .sell-stepper,
-body.material-theme.dark-theme .sell-stepper {
-    background: #1e293b !important;
-    border-color: #334155 !important;
-}
-body.dark-theme .sell-step-btn,
-body.material-theme.dark-theme .sell-step-btn {
-    color: #94a3b8 !important;
-}
-body.dark-theme .sell-step-btn .step-num,
-body.material-theme.dark-theme .sell-step-btn .step-num {
-    background: #334155 !important;
-    color: #cbd5e1 !important;
-}
-body.dark-theme .sell-step-btn.active,
-body.material-theme.dark-theme .sell-step-btn.active {
-    background: #0f172a !important;
-    color: #2dd4bf !important;
-    border-color: #334155 !important;
-}
-body.dark-theme .sell-step-btn.active .step-num,
-body.material-theme.dark-theme .sell-step-btn.active .step-num {
-    background: #0D6E77 !important;
-    color: #ffffff !important;
-}
-body.dark-theme .review-card,
-body.material-theme.dark-theme .review-card {
-    background: #1e293b !important;
-    border-color: #334155 !important;
-}
-body.dark-theme .review-card-header,
-body.material-theme.dark-theme .review-card-header {
-    background: #0f172a !important;
-    border-color: #334155 !important;
-    color: #f1f5f9 !important;
-}
-body.dark-theme .review-pax-item,
-body.material-theme.dark-theme .review-pax-item {
-    background: #0f172a !important;
-    border-color: #334155 !important;
-}
-body.dark-theme .review-val,
-body.material-theme.dark-theme .review-val,
-body.dark-theme .review-pax-name,
-body.material-theme.dark-theme .review-pax-name {
-    color: #f1f5f9 !important;
-}
-body.dark-theme .sticky-summary-bar,
-body.material-theme.dark-theme .sticky-summary-bar {
-    background: rgba(15, 23, 42, 0.95) !important;
-    border-top-color: #334155 !important;
-}
 
 /* --- QUICK BANK CHIPS --- */
 .quick-bank-chips {
