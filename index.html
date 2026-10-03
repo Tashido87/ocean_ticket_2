@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="styles.css?v=29">
     <link rel="stylesheet" href="landing.css">
     <link rel="stylesheet" href="sell.css?v=7">
-    <link rel="stylesheet" href="apple-ui.css?v=18">
+    <link rel="stylesheet" href="apple-ui.css?v=19">
     <link rel="stylesheet" href="pnr-detail.css?v=2">
     <link rel="stylesheet" href="dashboard.css?v=4">
     
@@ -625,13 +625,11 @@
                                 <label for="hotel_res_payment_method">Payment Method</label>
                                 <select id="hotel_res_payment_method">
                                     <option value="" selected disabled>Select Method</option>
-                                    <option value="Cash">Cash</option>
-                                    <option value="KBZPay">KBZPay</option>
-                                    <option value="CBPay">CBPay</option>
-                                    <option value="WavePay">WavePay</option>
-                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="KBZ Pay">KBZ Pay</option>
                                     <option value="Mobile Banking">Mobile Banking</option>
-                                    <option value="Card">Card</option>
+                                    <option value="Aya Pay">Aya Pay</option>
+                                    <option value="UAB Pay">UAB Pay</option>
+                                    <option value="Cash">Cash</option>
                                 </select>
                             </div>
                             <div class="form-group form-group-wide">
@@ -1188,59 +1186,59 @@
                         <!-- AGODA HOTEL BOOKING (Default) -->
                         <div class="service-panel" id="chinaHotelPanel">
                             <div class="service-panel-header">
-                                <span class="service-panel-icon" style="background: rgba(37, 99, 235, 0.12); color: #2563eb;"><i class="fa-solid fa-hotel"></i></span>
+                                <span class="service-panel-icon"><i class="fa-solid fa-hotel"></i></span>
                                 <div>
                                     <h2>Agoda Hotel Booking</h2>
                                     <p class="service-panel-desc">Generate official Agoda Booking Confirmation (Bangkok, Guangzhou, etc.) with auto-generated IDs</p>
                                 </div>
                                 <div class="header-actions">
-                                    <button type="button" class="btn-service btn-secondary" id="switchToOldHotelBtn" style="font-size: 11px; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; height: 30px; cursor: pointer; white-space: nowrap; font-weight: 600;">
+                                    <button type="button" class="btn-service btn-secondary" id="switchToOldHotelBtn">
                                         <i class="fa-solid fa-repeat"></i> Switch to old style
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="airasia-upload-zone" id="agodaDropZone" style="margin-bottom: 1rem; border-color: rgba(37, 99, 235, 0.45); background: rgba(37, 99, 235, 0.03);">
-                                <i class="fa-solid fa-hotel" style="font-size: 2.3rem; color: #2563eb; margin-bottom: 0.5rem; display:block;"></i>
-                                <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; color: var(--apple-text);">Drop Agoda / Trip.com Hotel Confirmation PDF here or click to browse</div>
-                                <div style="font-size: 0.8rem; color: var(--apple-text-secondary);">Auto-extracts Hotel name, Address, Reference #, Guest name, Room type, Rooms, Adults, Children, Dates, Policy & Benefits</div>
+                            <div class="airasia-upload-zone" id="agodaDropZone">
+                                <i class="fa-solid fa-hotel service-dropzone-icon"></i>
+                                <div class="service-dropzone-title">Drop Agoda / Trip.com Hotel Confirmation PDF here or click to browse</div>
+                                <div class="service-dropzone-desc">Auto-extracts Hotel name, Address, Reference #, Guest name, Room type, Rooms, Adults, Children, Dates, Policy & Benefits</div>
                                 <input type="file" id="agodaFileInput" accept=".pdf" style="display: none;">
                             </div>
 
-                            <div style="background: var(--apple-bg-secondary); border: 1px solid var(--apple-separator); border-radius: 10px; padding: 14px; margin-bottom: 1rem;">
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px;">
-                                    <div class="form-group" style="margin: 0;">
-                                        <label for="service_hotel_destination" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Destination</label>
-                                        <select id="service_hotel_destination" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); font-weight: 600;">
+                            <div class="service-quick-config">
+                                <div class="service-quick-grid">
+                                    <div class="form-group">
+                                        <label for="service_hotel_destination">Destination</label>
+                                        <select id="service_hotel_destination">
                                             <option value="Bangkok">Bangkok (Grande Centre Point Ratchadamri)</option>
                                             <option value="Guangzhou">Guangzhou (Grand Park Guangzhou)</option>
                                             <option value="Kuala Lumpur">Kuala Lumpur (THE FACE Style Hotel)</option>
                                             <option value="Singapore">Singapore (Village Hotel Bugis)</option>
                                         </select>
                                     </div>
-                                    <div class="form-group" style="margin: 0;">
-                                        <label for="service_hotel_client_name" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Client / Guest Name</label>
-                                        <input type="text" id="service_hotel_client_name" placeholder="Tashido" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text); text-transform: uppercase; font-weight: 600;">
+                                    <div class="form-group">
+                                        <label for="service_hotel_client_name">Client / Guest Name</label>
+                                        <input type="text" id="service_hotel_client_name" placeholder="Tashido">
                                     </div>
-                                    <div class="form-group" style="margin: 0;">
-                                        <label for="service_hotel_arrival" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Arrival Date</label>
-                                        <input type="text" id="service_hotel_arrival" placeholder="DD/MM/YYYY" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
+                                    <div class="form-group">
+                                        <label for="service_hotel_arrival">Arrival Date</label>
+                                        <input type="text" id="service_hotel_arrival" placeholder="DD/MM/YYYY" autocomplete="off">
                                     </div>
-                                    <div class="form-group" style="margin: 0;">
-                                        <label for="service_hotel_departure" style="font-size: 0.78rem; font-weight: 600; color: var(--apple-text-secondary); margin-bottom: 4px; display: block;">Departure Date</label>
-                                        <input type="text" id="service_hotel_departure" placeholder="DD/MM/YYYY" autocomplete="off" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--apple-separator); background: var(--apple-input-bg); color: var(--apple-text);">
+                                    <div class="form-group">
+                                        <label for="service_hotel_departure">Departure Date</label>
+                                        <input type="text" id="service_hotel_departure" placeholder="DD/MM/YYYY" autocomplete="off">
                                     </div>
                                 </div>
-                                <div style="font-size: 0.8rem; color: var(--apple-text-secondary); display: flex; align-items: center; gap: 6px;">
-                                    <i class="fa-solid fa-circle-info" style="color: var(--apple-blue);"></i> Auto-generates random 12-digit Booking ID & 10-digit Member ID. Full editor with live preview available.
+                                <div class="service-quick-hint">
+                                    <i class="fa-solid fa-circle-info"></i> Auto-generates random 12-digit Booking ID & 10-digit Member ID. Full editor with live preview available.
                                 </div>
                             </div>
 
-                            <div class="service-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                <button type="button" class="btn-service btn-generate" id="agodaUploadPdfBtn" style="background: #2563eb; border-color: #2563eb; color: #fff;">
+                            <div class="service-actions">
+                                <button type="button" class="btn-service btn-generate" id="agodaUploadPdfBtn">
                                     <i class="fa-solid fa-cloud-arrow-up"></i> Choose PDF File
                                 </button>
-                                <button type="button" class="btn-service btn-secondary" id="openChinaHotelBtn" style="font-weight: 600;">
+                                <button type="button" class="btn-service btn-secondary" id="openChinaHotelBtn">
                                     <i class="fa-solid fa-pen-to-square"></i> Open Hotel Editor
                                 </button>
                                 <button type="button" class="btn-service btn-clear" id="quickChinaHotelBtn">
@@ -1364,7 +1362,7 @@
                         <!-- AIRLINE E-TICKET GENERATOR -->
                         <div class="service-panel" id="airAsiaPanel">
                             <div class="service-panel-header">
-                                <span class="service-panel-icon" style="background: rgba(227, 30, 36, 0.1); color: #E31E24;"><i class="fa-solid fa-plane-departure"></i></span>
+                                <span class="service-panel-icon"><i class="fa-solid fa-plane-departure"></i></span>
                                 <div>
                                     <h2>E-Ticket Generator</h2>
                                     <p class="service-panel-desc">Auto-detects Trip.com / OTA PDF itinerary and converts into official AirAsia, VietJet Air, or Thai Airways E-Ticket</p>
@@ -1372,17 +1370,17 @@
                             </div>
 
                             <div class="airasia-upload-zone" id="airAsiaDropZone">
-                                <i class="fa-solid fa-file-pdf" style="font-size: 2.4rem; color: #E31E24; margin-bottom: 0.5rem; display:block;"></i>
-                                <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; color: var(--apple-text);">Drop Trip.com / OTA / Thai Airways PDF here or click to browse</div>
-                                <div style="font-size: 0.8rem; color: var(--apple-text-secondary);">Auto-detects AirAsia, VietJet Air & Thai Airways (TG), extracts PNR, passengers, schedule & baggage</div>
+                                <i class="fa-solid fa-file-pdf service-dropzone-icon"></i>
+                                <div class="service-dropzone-title">Drop Trip.com / OTA / Thai Airways PDF here or click to browse</div>
+                                <div class="service-dropzone-desc">Auto-detects AirAsia, VietJet Air & Thai Airways (TG), extracts PNR, passengers, schedule & baggage</div>
                                 <input type="file" id="airAsiaFileInput" accept=".pdf" style="display: none;">
                             </div>
 
-                            <div class="service-actions" style="margin-top: 1rem; display: flex; gap: 8px; flex-wrap: wrap;">
-                                <button type="button" class="btn-service btn-generate" id="airAsiaUploadBtn" style="background: #E31E24; border-color: #E31E24; color: #fff;">
+                            <div class="service-actions">
+                                <button type="button" class="btn-service btn-generate" id="airAsiaUploadBtn">
                                     <i class="fa-solid fa-cloud-arrow-up"></i> Choose PDF File
                                 </button>
-                                <button type="button" class="btn-service btn-clear" id="airAsiaManualBtn">
+                                <button type="button" class="btn-service btn-secondary" id="airAsiaManualBtn">
                                     <i class="fa-solid fa-pen-to-square"></i> Manual / Blank Form
                                 </button>
                             </div>
@@ -1890,6 +1888,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=99" type="module"></script>
+    <script src="main.js?v=100" type="module"></script>
 </body>
 </html>

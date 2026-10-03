@@ -370,6 +370,7 @@ function openFeeManageModal(docId) {
                         <option value="KBZ Pay" ${pmBase === 'KBZ Pay' ? 'selected' : ''}>KBZ Pay</option>
                         <option value="Mobile Banking" ${pmBase === 'Mobile Banking' ? 'selected' : ''}>Mobile Banking</option>
                         <option value="Aya Pay" ${pmBase === 'Aya Pay' ? 'selected' : ''}>Aya Pay</option>
+                        <option value="UAB Pay" ${pmBase === 'UAB Pay' ? 'selected' : ''}>UAB Pay</option>
                         <option value="Cash" ${pmBase === 'Cash' ? 'selected' : ''}>Cash</option>
                     </select>
                 </div>
@@ -590,6 +591,7 @@ function openFinancialModal(docId) {
                         <option value="KBZ Pay">KBZ Pay</option>
                         <option value="Mobile Banking">Mobile Banking</option>
                         <option value="Aya Pay">Aya Pay</option>
+                        <option value="UAB Pay">UAB Pay</option>
                         <option value="Cash">Cash</option>
                     </select>
                 </div>
@@ -920,6 +922,7 @@ function openAddFeeModal(docId) {
                         <option value="KBZ Pay">KBZ Pay</option>
                         <option value="Mobile Banking">Mobile Banking</option>
                         <option value="Aya Pay">Aya Pay</option>
+                        <option value="UAB Pay">UAB Pay</option>
                         <option value="Cash">Cash</option>
                     </select>
                 </div>
@@ -1271,6 +1274,7 @@ function openManageModal(docId) {
                         <option value="KBZ Pay" ${pmBase === 'KBZ Pay' ? 'selected' : ''}>KBZ Pay</option>
                         <option value="Mobile Banking" ${pmBase === 'Mobile Banking' ? 'selected' : ''}>Mobile Banking</option>
                         <option value="Aya Pay" ${pmBase === 'Aya Pay' ? 'selected' : ''}>Aya Pay</option>
+                        <option value="UAB Pay" ${pmBase === 'UAB Pay' ? 'selected' : ''}>UAB Pay</option>
                         <option value="Cash" ${pmBase === 'Cash' ? 'selected' : ''}>Cash</option>
                     </select>
                 </div>
@@ -1378,6 +1382,7 @@ function openPartialPaymentModal(docId) {
                         <option value="KBZ Pay">KBZ Pay</option>
                         <option value="Mobile Banking">Mobile Banking</option>
                         <option value="Aya Pay">Aya Pay</option>
+                        <option value="UAB Pay">UAB Pay</option>
                         <option value="Cash">Cash</option>
                     </select>
                 </div>
@@ -1722,7 +1727,7 @@ function openCancelSubModal(docId) {
             <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div class="form-group"><label for="cancellation_fee">Cancellation Fee</label><input type="number" id="cancellation_fee" required></div>
                 <div class="form-group"><label for="refund_amount">Refund Amount</label><input type="number" id="refund_amount" required></div>
-                <div class="form-group"><label for="refund_payment_method">Refund Method</label><select id="refund_payment_method" required><option value="" disabled selected>Select</option><option>KBZ Pay</option><option>Mobile Banking</option><option>Aya Pay</option><option>Cash</option></select></div>
+                <div class="form-group"><label for="refund_payment_method">Refund Method</label><select id="refund_payment_method" required><option value="" disabled selected>Select</option><option>KBZ Pay</option><option>Mobile Banking</option><option>Aya Pay</option><option>UAB Pay</option><option>Cash</option></select></div>
                 <div class="form-group"><label for="refund_transaction_id">Transaction ID</label><input type="text" id="refund_transaction_id"></div>
             </div>
             <button type="submit" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Process Partial Cancellation</button>

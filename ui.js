@@ -4117,8 +4117,8 @@ export function enhanceMobileBankingSelect(paymentSelect, opts = {}) {
  * Safe to call repeatedly.
  */
 export function initializePaymentMethodEnhancements() {
-    // Main Sell Ticket & Settlement forms
-    ['payment_method', 'settlement_payment_method'].forEach(id => {
+    // Main Sell Ticket, Settlement, & Hotel Reservation forms
+    ['payment_method', 'settlement_payment_method', 'hotel_res_payment_method'].forEach(id => {
         const sel = document.getElementById(id);
         if (sel) enhanceMobileBankingSelect(sel);
     });
