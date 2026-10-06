@@ -3830,8 +3830,8 @@ body.material-theme .datepicker-cell.disabled {
 
 .airasia-upload-zone:hover,
 .airasia-upload-zone.dragover,
-#agodaDropZone:hover,
-#agodaDropZone.dragover {
+.service-dropzone:hover,
+.service-dropzone.dragover {
     border-color: #0D6E77 !important;
     background: #EBF5F6 !important;
     transform: translateY(-1px) !important;
@@ -3846,8 +3846,7 @@ body.material-theme .datepicker-cell.disabled {
     transition: transform 0.18s ease !important;
 }
 
-.airasia-upload-zone:hover i,
-#agodaDropZone:hover i {
+.airasia-upload-zone:hover i {
     transform: scale(1.08) !important;
 }
 
@@ -3864,6 +3863,57 @@ body.material-theme .datepicker-cell.disabled {
     font-size: 0.78rem !important;
     color: #64748B !important;
     line-height: 1.35 !important;
+}
+
+/* ==========================================================================
+   AGODA HOTEL BOOKING: OCEAN BLUE THEME (Differentiated from E-Ticket Calm Teal)
+   ========================================================================== */
+#chinaHotelPanel .service-panel-icon {
+    background: rgba(0, 113, 227, 0.12) !important;
+    color: #0071E3 !important;
+}
+
+#chinaHotelPanel #agodaDropZone {
+    border-color: rgba(0, 113, 227, 0.35) !important;
+    background: rgba(0, 113, 227, 0.03) !important;
+}
+
+#chinaHotelPanel #agodaDropZone:hover,
+#chinaHotelPanel #agodaDropZone.dragover {
+    border-color: #0071E3 !important;
+    background: rgba(0, 113, 227, 0.08) !important;
+    transform: translateY(-1px) !important;
+}
+
+#chinaHotelPanel #agodaDropZone i,
+#chinaHotelPanel #agodaDropZone .service-dropzone-icon {
+    color: #0071E3 !important;
+}
+
+#chinaHotelPanel #agodaDropZone:hover i {
+    transform: scale(1.08) !important;
+}
+
+#chinaHotelPanel .service-quick-hint i {
+    color: #0071E3 !important;
+}
+
+#chinaHotelPanel .service-quick-grid input:focus,
+#chinaHotelPanel .service-quick-grid select:focus {
+    border-color: #0071E3 !important;
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.15) !important;
+}
+
+#chinaHotelPanel #agodaUploadPdfBtn,
+#chinaHotelPanel .btn-generate {
+    background: linear-gradient(180deg, #0077ED 0%, #0071E3 100%) !important;
+    box-shadow: 0 2px 6px rgba(0, 113, 227, 0.28) !important;
+}
+
+#chinaHotelPanel #agodaUploadPdfBtn:hover,
+#chinaHotelPanel .btn-generate:hover {
+    background: linear-gradient(180deg, #0071E3 0%, #005BB5 100%) !important;
+    box-shadow: 0 4px 12px rgba(0, 113, 227, 0.38) !important;
 }
 
 /* Quick Config Subpanel */
