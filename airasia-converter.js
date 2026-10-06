@@ -226,27 +226,245 @@ const AIRPORT_CODE_MAP = {
     'phnom penh': 'PNH',
     'siem reap': 'REP',
     'vientiane': 'VTE',
+    // United Kingdom & Ireland
     'london': 'LHR',
     'heathrow': 'LHR',
     'gatwick': 'LGW',
+    'stansted': 'STN',
+    'luton': 'LTN',
+    'london city': 'LCY',
     'manchester': 'MAN',
+    'birmingham': 'BHX',
+    'edinburgh': 'EDI',
+    'glasgow': 'GLA',
+    'dublin': 'DUB',
+    // Europe
     'frankfurt': 'FRA',
     'munich': 'MUC',
+    'berlin': 'BER',
+    'hamburg': 'HAM',
+    'dusseldorf': 'DUS',
     'paris': 'CDG',
     'charles de gaulle': 'CDG',
+    'orly': 'ORY',
+    'nice': 'NCE',
+    'lyon': 'LYS',
     'amsterdam': 'AMS',
+    'schiphol': 'AMS',
+    'brussels': 'BRU',
     'zurich': 'ZRH',
+    'geneva': 'GVA',
+    'vienna': 'VIE',
+    'madrid': 'MAD',
+    'barcelona': 'BCN',
+    'rome': 'FCO',
+    'fiumicino': 'FCO',
+    'milan': 'MXP',
+    'malpensa': 'MXP',
+    'venice': 'VCE',
+    'lisbon': 'LIS',
+    'porto': 'OPO',
+    'athens': 'ATH',
+    'istanbul': 'IST',
+    'sabiha': 'SAW',
+    'copenhagen': 'CPH',
+    'stockholm': 'ARN',
+    'oslo': 'OSL',
+    'helsinki': 'HEL',
+    'warsaw': 'WAW',
+    'prague': 'PRG',
+    'budapest': 'BUD',
+    // North America (US & Canada)
+    'new york': 'JFK',
+    'jfk': 'JFK',
+    'newark': 'EWR',
+    'laguardia': 'LGA',
+    'los angeles': 'LAX',
+    'san francisco': 'SFO',
+    'chicago': 'ORD',
+    'o\'hare': 'ORD',
+    'ohare': 'ORD',
+    'miami': 'MIA',
+    'orlando': 'MCO',
+    'atlanta': 'ATL',
+    'dallas': 'DFW',
+    'fort worth': 'DFW',
+    'houston': 'IAH',
+    'seattle': 'SEA',
+    'tacoma': 'SEA',
+    'boston': 'BOS',
+    'washington': 'IAD',
+    'dulles': 'IAD',
+    'las vegas': 'LAS',
+    'denver': 'DEN',
+    'toronto': 'YYZ',
+    'vancouver': 'YVR',
+    'montreal': 'YUL',
+    'calgary': 'YYC',
+    // Australia & New Zealand
     'sydney': 'SYD',
+    'kingsford smith': 'SYD',
     'melbourne': 'MEL',
+    'tullamarine': 'MEL',
     'brisbane': 'BNE',
     'perth': 'PER',
+    'adelaide': 'ADL',
+    'gold coast': 'OOL',
+    'auckland': 'AKL',
+    'christchurch': 'CHC',
+    'wellington': 'WLG',
+    // Middle East
     'dubai': 'DXB',
     'abu dhabi': 'AUH',
     'doha': 'DOH',
+    'hamad': 'DOH',
+    'riyadh': 'RUH',
+    'jeddah': 'JED',
+    'muscat': 'MCT',
+    'kuwait': 'KWI',
+    'bahrain': 'BAH',
+    'amman': 'AMM',
+    // India & South Asia
     'delhi': 'DEL',
-    'mumbai': 'BOM'
+    'indira gandhi': 'DEL',
+    'mumbai': 'BOM',
+    'chennai': 'MAA',
+    'bangalore': 'BLR',
+    'bengaluru': 'BLR',
+    'hyderabad': 'HYD',
+    'kolkata': 'CCU',
+    'dhaka': 'DAC',
+    'colombo': 'CMB',
+    'kathmandu': 'KTM',
+    'male': 'MLE',
+    'maldives': 'MLE',
+    // Africa & Latin America
+    'cairo': 'CAI',
+    'johannesburg': 'JNB',
+    'cape town': 'CPT',
+    'nairobi': 'NBO',
+    'sao paulo': 'GRU',
+    'guarulhos': 'GRU',
+    'buenos aires': 'EZE',
+    'mexico city': 'MEX',
+    'cancun': 'CUN'
 };
 
+/**
+ * High-precision IANA timezone mapping for major global airports
+ */
+export const AIRPORT_IANA_TIMEZONES = {
+    // Myanmar
+    RGN: 'Asia/Yangon', MDL: 'Asia/Yangon', NYT: 'Asia/Yangon',
+    // Thailand
+    BKK: 'Asia/Bangkok', DMK: 'Asia/Bangkok', CNX: 'Asia/Bangkok', CEI: 'Asia/Bangkok',
+    HKT: 'Asia/Bangkok', KBV: 'Asia/Bangkok', HDY: 'Asia/Bangkok', UTH: 'Asia/Bangkok',
+    // Singapore & Malaysia
+    SIN: 'Asia/Singapore',
+    KUL: 'Asia/Kuala_Lumpur', JHB: 'Asia/Kuala_Lumpur', PEN: 'Asia/Kuala_Lumpur', LGK: 'Asia/Kuala_Lumpur',
+    BKI: 'Asia/Kuala_Lumpur', KCH: 'Asia/Kuala_Lumpur', MYY: 'Asia/Kuala_Lumpur', SBW: 'Asia/Kuala_Lumpur',
+    TWU: 'Asia/Kuala_Lumpur', SDK: 'Asia/Kuala_Lumpur',
+    // Vietnam
+    HAN: 'Asia/Ho_Chi_Minh', SGN: 'Asia/Ho_Chi_Minh', DAD: 'Asia/Ho_Chi_Minh', CXR: 'Asia/Ho_Chi_Minh',
+    PQC: 'Asia/Ho_Chi_Minh', HPH: 'Asia/Ho_Chi_Minh', VCA: 'Asia/Ho_Chi_Minh', HUI: 'Asia/Ho_Chi_Minh',
+    VII: 'Asia/Ho_Chi_Minh', DLI: 'Asia/Ho_Chi_Minh', UIH: 'Asia/Ho_Chi_Minh', BMV: 'Asia/Ho_Chi_Minh',
+    PXU: 'Asia/Ho_Chi_Minh', VDH: 'Asia/Ho_Chi_Minh', VCL: 'Asia/Ho_Chi_Minh', VCS: 'Asia/Ho_Chi_Minh',
+    DIN: 'Asia/Ho_Chi_Minh', VKG: 'Asia/Ho_Chi_Minh', CAH: 'Asia/Ho_Chi_Minh', VDO: 'Asia/Ho_Chi_Minh',
+    // Indonesia, Philippines, Cambodia, Laos
+    CGK: 'Asia/Jakarta', SUB: 'Asia/Jakarta', DPS: 'Asia/Makassar',
+    MNL: 'Asia/Manila', CEB: 'Asia/Manila',
+    PNH: 'Asia/Phnom_Penh', REP: 'Asia/Phnom_Penh', VTE: 'Asia/Vientiane',
+    // Greater China, Taiwan, HK, Macau
+    HKG: 'Asia/Hong_Kong', MFM: 'Asia/Macau',
+    TPE: 'Asia/Taipei', TSA: 'Asia/Taipei', KHH: 'Asia/Taipei',
+    PVG: 'Asia/Shanghai', SHA: 'Asia/Shanghai', CAN: 'Asia/Shanghai', PEK: 'Asia/Shanghai',
+    PKX: 'Asia/Shanghai', SZX: 'Asia/Shanghai', CTU: 'Asia/Shanghai', CKG: 'Asia/Shanghai',
+    KMG: 'Asia/Shanghai', XIY: 'Asia/Shanghai',
+    // Japan & Korea
+    NRT: 'Asia/Tokyo', HND: 'Asia/Tokyo', KIX: 'Asia/Tokyo', NGO: 'Asia/Tokyo',
+    FUK: 'Asia/Tokyo', CTS: 'Asia/Tokyo', OKA: 'Asia/Tokyo',
+    ICN: 'Asia/Seoul', GMP: 'Asia/Seoul', PUS: 'Asia/Seoul', CJU: 'Asia/Seoul',
+    // South Asia
+    DEL: 'Asia/Kolkata', BOM: 'Asia/Kolkata', MAA: 'Asia/Kolkata', BLR: 'Asia/Kolkata',
+    HYD: 'Asia/Kolkata', CCU: 'Asia/Kolkata', DAC: 'Asia/Dhaka', CMB: 'Asia/Colombo',
+    KTM: 'Asia/Kathmandu', MLE: 'Indian/Maldives',
+    // Middle East
+    DXB: 'Asia/Dubai', AUH: 'Asia/Dubai', DOH: 'Asia/Qatar', RUH: 'Asia/Riyadh',
+    JED: 'Asia/Riyadh', MCT: 'Asia/Muscat', KWI: 'Asia/Kuwait', BAH: 'Asia/Bahrain',
+    AMM: 'Asia/Amman',
+    // Europe
+    LHR: 'Europe/London', LGW: 'Europe/London', STN: 'Europe/London', LTN: 'Europe/London',
+    LCY: 'Europe/London', MAN: 'Europe/London', BHX: 'Europe/London', EDI: 'Europe/London',
+    GLA: 'Europe/London', DUB: 'Europe/Dublin',
+    CDG: 'Europe/Paris', ORY: 'Europe/Paris', NCE: 'Europe/Paris', LYS: 'Europe/Paris',
+    FRA: 'Europe/Berlin', MUC: 'Europe/Berlin', BER: 'Europe/Berlin', HAM: 'Europe/Berlin', DUS: 'Europe/Berlin',
+    AMS: 'Europe/Amsterdam', BRU: 'Europe/Brussels', ZRH: 'Europe/Zurich', GVA: 'Europe/Zurich',
+    VIE: 'Europe/Vienna', MAD: 'Europe/Madrid', BCN: 'Europe/Madrid',
+    FCO: 'Europe/Rome', MXP: 'Europe/Rome', VCE: 'Europe/Rome',
+    LIS: 'Europe/Lisbon', OPO: 'Europe/Lisbon', ATH: 'Europe/Athens',
+    IST: 'Europe/Istanbul', SAW: 'Europe/Istanbul',
+    CPH: 'Europe/Copenhagen', ARN: 'Europe/Stockholm', OSL: 'Europe/Oslo', HEL: 'Europe/Helsinki',
+    WAW: 'Europe/Warsaw', PRG: 'Europe/Prague', BUD: 'Europe/Budapest',
+    // North America (US & Canada)
+    JFK: 'America/New_York', EWR: 'America/New_York', LGA: 'America/New_York', BOS: 'America/New_York',
+    IAD: 'America/New_York', MIA: 'America/New_York', MCO: 'America/New_York', ATL: 'America/New_York',
+    ORD: 'America/Chicago', DFW: 'America/Chicago', IAH: 'America/Chicago',
+    DEN: 'America/Denver',
+    LAX: 'America/Los_Angeles', SFO: 'America/Los_Angeles', SEA: 'America/Los_Angeles', LAS: 'America/Los_Angeles',
+    YYZ: 'America/Toronto', YUL: 'America/Toronto', YVR: 'America/Vancouver', YYC: 'America/Edmonton',
+    MEX: 'America/Mexico_City', CUN: 'America/Cancun',
+    // Australia & New Zealand & Pacific
+    SYD: 'Australia/Sydney', MEL: 'Australia/Melbourne', BNE: 'Australia/Brisbane',
+    PER: 'Australia/Perth', ADL: 'Australia/Adelaide', OOL: 'Australia/Brisbane',
+    AKL: 'Pacific/Auckland', CHC: 'Pacific/Auckland', WLG: 'Pacific/Auckland',
+    // Africa & South America
+    CAI: 'Africa/Cairo', JNB: 'Africa/Johannesburg', CPT: 'Africa/Johannesburg', NBO: 'Africa/Nairobi',
+    GRU: 'America/Sao_Paulo', EZE: 'America/Argentina/Buenos_Aires'
+};
+
+/**
+ * Fallback country timezone map when airport code is not in list but country name appears in text
+ */
+export const COUNTRY_TIMEZONES = {
+    'myanmar': 'Asia/Yangon', 'burma': 'Asia/Yangon',
+    'thailand': 'Asia/Bangkok',
+    'singapore': 'Asia/Singapore',
+    'malaysia': 'Asia/Kuala_Lumpur',
+    'vietnam': 'Asia/Ho_Chi_Minh',
+    'indonesia': 'Asia/Jakarta',
+    'philippines': 'Asia/Manila',
+    'cambodia': 'Asia/Phnom_Penh',
+    'laos': 'Asia/Vientiane',
+    'japan': 'Asia/Tokyo',
+    'korea': 'Asia/Seoul', 'south korea': 'Asia/Seoul',
+    'china': 'Asia/Shanghai',
+    'taiwan': 'Asia/Taipei',
+    'hong kong': 'Asia/Hong_Kong',
+    'macau': 'Asia/Macau',
+    'india': 'Asia/Kolkata',
+    'united arab emirates': 'Asia/Dubai', 'uae': 'Asia/Dubai', 'dubai': 'Asia/Dubai',
+    'qatar': 'Asia/Qatar',
+    'saudi arabia': 'Asia/Riyadh',
+    'united kingdom': 'Europe/London', 'uk': 'Europe/London', 'england': 'Europe/London', 'scotland': 'Europe/London',
+    'france': 'Europe/Paris',
+    'germany': 'Europe/Berlin',
+    'italy': 'Europe/Rome',
+    'spain': 'Europe/Madrid',
+    'switzerland': 'Europe/Zurich',
+    'netherlands': 'Europe/Amsterdam',
+    'belgium': 'Europe/Brussels',
+    'austria': 'Europe/Vienna',
+    'turkey': 'Europe/Istanbul',
+    'greece': 'Europe/Athens',
+    'united states': 'America/New_York', 'usa': 'America/New_York',
+    'canada': 'America/Toronto',
+    'australia': 'Australia/Sydney',
+    'new zealand': 'Pacific/Auckland'
+};
+
+/**
+ * Static baseline UTC offsets (in hours) as instant fast-lookup
+ */
 export const AIRPORT_TIMEZONE_OFFSETS = {
     // Myanmar (UTC+6:30)
     RGN: 6.5, MDL: 6.5, NYT: 6.5,
@@ -257,7 +475,7 @@ export const AIRPORT_TIMEZONE_OFFSETS = {
     UIH: 7, BMV: 7, PXU: 7, VDH: 7, VCL: 7, VCS: 7, DIN: 7, VKG: 7, CAH: 7, VDO: 7,
     // Cambodia, Laos, Western Indonesia (UTC+7)
     PNH: 7, REP: 7, VTE: 7, CGK: 7, SUB: 7,
-    // Singapore, Malaysia, Central Indonesia, Philippines, Taiwan, Hong Kong, Macau, China (UTC+8)
+    // Singapore, Malaysia, Central Indonesia, Philippines, Taiwan, Hong Kong, Macau, China, Western Australia (UTC+8)
     SIN: 8,
     KUL: 8, JHB: 8, PEN: 8, LGK: 8, BKI: 8, KCH: 8, MYY: 8, SBW: 8, TWU: 8, SDK: 8,
     DPS: 8, MNL: 8, CEB: 8,
@@ -267,16 +485,81 @@ export const AIRPORT_TIMEZONE_OFFSETS = {
     // Japan, South Korea (UTC+9)
     NRT: 9, HND: 9, KIX: 9, NGO: 9, FUK: 9, CTS: 9, OKA: 9,
     ICN: 9, GMP: 9, PUS: 9, CJU: 9,
-    // India (UTC+5:30)
-    DEL: 5.5, BOM: 5.5, MAA: 5.5, BLR: 5.5,
-    // Middle East (UAE UTC+4, Qatar UTC+3)
-    DXB: 4, AUH: 4, DOH: 3,
-    // UK & Europe (Approx UK UTC+1 summer/0 standard, Europe UTC+2 summer/1 standard)
-    LHR: 1, LGW: 1, MAN: 1,
-    CDG: 2, FRA: 2, MUC: 2, AMS: 2, ZRH: 2,
-    // Australia
-    SYD: 10, MEL: 10, BNE: 10
+    // India & Sri Lanka (UTC+5:30)
+    DEL: 5.5, BOM: 5.5, MAA: 5.5, BLR: 5.5, HYD: 5.5, CCU: 5.5, CMB: 5.5,
+    DAC: 6, KTM: 5.75, MLE: 5,
+    // Middle East
+    DXB: 4, AUH: 4, DOH: 3, RUH: 3, JED: 3, MCT: 4, KWI: 3, BAH: 3, AMM: 3,
+    // UK & Western Europe
+    LHR: 1, LGW: 1, STN: 1, LTN: 1, LCY: 1, MAN: 1, BHX: 1, EDI: 1, GLA: 1, DUB: 1,
+    CDG: 2, ORY: 2, NCE: 2, FRA: 2, MUC: 2, BER: 2, AMS: 2, BRU: 2, ZRH: 2, GVA: 2,
+    VIE: 2, MAD: 2, BCN: 2, FCO: 2, MXP: 2, LIS: 1, ATH: 3, IST: 3, SAW: 3,
+    CPH: 2, ARN: 2, OSL: 2, HEL: 3, WAW: 2, PRG: 2, BUD: 2,
+    // North America (Standard baseline)
+    JFK: -4, EWR: -4, LGA: -4, BOS: -4, IAD: -4, MIA: -4, MCO: -4, ATL: -4, YYZ: -4, YUL: -4,
+    ORD: -5, DFW: -5, IAH: -5,
+    DEN: -6, YYC: -6,
+    LAX: -7, SFO: -7, SEA: -7, LAS: -7, YVR: -7,
+    MEX: -6, CUN: -5,
+    // Australia & NZ
+    SYD: 10, MEL: 10, BNE: 10, ADL: 9.5, OOL: 10,
+    AKL: 12, CHC: 12, WLG: 12,
+    // Africa & South America
+    CAI: 3, JNB: 2, CPT: 2, NBO: 3, GRU: -3, EZE: -3
 };
+
+/**
+ * Resolves accurate UTC offset (in decimal hours) for any airport code, city, or country worldwide
+ */
+export function resolveTimezoneOffsetHours(airportOrCode, dateObj = null) {
+    if (!airportOrCode) return 7; // default southeast asia
+    const str = String(airportOrCode).trim();
+    const code = (str.length === 3 && str === str.toUpperCase()) ? str : lookupAirportCode(str);
+
+    // 1. Check IANA timezone by airport code
+    const ianaTz = AIRPORT_IANA_TIMEZONES[code];
+    if (ianaTz && typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+        try {
+            const d = dateObj || new Date();
+            const parts = new Intl.DateTimeFormat('en-US', { timeZone: ianaTz, timeZoneName: 'shortOffset' }).formatToParts(d);
+            const val = parts.find(p => p.type === 'timeZoneName')?.value;
+            if (!val || val === 'GMT' || val === 'UTC') return 0;
+            const m = val.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+            if (m) {
+                const sign = m[1] === '-' ? -1 : 1;
+                const hrs = parseInt(m[2], 10);
+                const mins = parseInt(m[3] || '0', 10);
+                return sign * (hrs + mins / 60);
+            }
+        } catch (e) {}
+    }
+
+    // 2. Check static AIRPORT_TIMEZONE_OFFSETS table
+    if (code && AIRPORT_TIMEZONE_OFFSETS[code] !== undefined) {
+        return AIRPORT_TIMEZONE_OFFSETS[code];
+    }
+
+    // 3. Fallback: match country name in text
+    const lower = str.toLowerCase();
+    for (const [country, countryTz] of Object.entries(COUNTRY_TIMEZONES)) {
+        if (lower.includes(country)) {
+            if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+                try {
+                    const d = dateObj || new Date();
+                    const parts = new Intl.DateTimeFormat('en-US', { timeZone: countryTz, timeZoneName: 'shortOffset' }).formatToParts(d);
+                    const val = parts.find(p => p.type === 'timeZoneName')?.value;
+                    if (!val || val === 'GMT' || val === 'UTC') return 0;
+                    const m = val.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+                    if (m) {
+                        return (m[1] === '-' ? -1 : 1) * (parseInt(m[2], 10) + parseInt(m[3] || '0', 10) / 60);
+                    }
+                } catch (e) {}
+            }
+        }
+    }
+
+    return 7; // Default Southeast Asia UTC+7
+}
 
 export function lookupAirportCode(name) {
     if (!name) return '';
@@ -393,11 +676,14 @@ export function calculateFlightDuration(depAirportOrCode, depDateStr, depTimeStr
         ? arrAirportOrCode
         : lookupAirportCode(arrAirportOrCode);
 
-    const depOffset = AIRPORT_TIMEZONE_OFFSETS[depCode] ?? 7;
-    const arrOffset = AIRPORT_TIMEZONE_OFFSETS[arrCode] ?? (depOffset || 7);
-
     const depParts = parseFlightDateTime(depDateStr, depTimeStr);
     const arrParts = parseFlightDateTime(arrDateStr, arrTimeStr);
+
+    const depDateObj = depParts ? new Date(depParts.year, depParts.month, depParts.day, depParts.hours, depParts.minutes) : null;
+    const arrDateObj = arrParts ? new Date(arrParts.year, arrParts.month, arrParts.day, arrParts.hours, arrParts.minutes) : null;
+
+    const depOffset = resolveTimezoneOffsetHours(depCode || depAirportOrCode, depDateObj);
+    const arrOffset = resolveTimezoneOffsetHours(arrCode || arrAirportOrCode, arrDateObj || depDateObj);
 
     if (depParts && arrParts) {
         const depUtc = Date.UTC(depParts.year, depParts.month, depParts.day, depParts.hours, depParts.minutes) - (depOffset * 3600000);
@@ -420,8 +706,8 @@ export function calculateFlightDuration(depAirportOrCode, depDateStr, depTimeStr
         const t1 = depTimeStr.match(/(\d{1,2})\s*[:.∶：]\s*(\d{2})/);
         const t2 = arrTimeStr.match(/(\d{1,2})\s*[:.∶：]\s*(\d{2})/);
         if (t1 && t2) {
-            let m1 = parseInt(t1[1], 10) * 60 + parseInt(t1[2], 10) - (depOffset * 60);
-            let m2 = parseInt(t2[1], 10) * 60 + parseInt(t2[2], 10) - (arrOffset * 60);
+            let m1 = parseInt(t1[1], 10) * 60 + parseInt(t1[2], 10) - Math.round(depOffset * 60);
+            let m2 = parseInt(t2[1], 10) * 60 + parseInt(t2[2], 10) - Math.round(arrOffset * 60);
             let diff = m2 - m1;
             if (diff <= 0) diff += 24 * 60;
             if (diff > 0 && diff < 1440) {
