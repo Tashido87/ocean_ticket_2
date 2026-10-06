@@ -167,6 +167,7 @@ const AIRPORT_CODE_MAP = {
     'hanoi': 'HAN',
     'noi bai': 'HAN',
     'da nang': 'DAD',
+    'danang': 'DAD',
     'cam ranh': 'CXR',
     'nha trang': 'CXR',
     'hai phong': 'HPH',
@@ -561,11 +562,28 @@ export function resolveTimezoneOffsetHours(airportOrCode, dateObj = null) {
     return 7; // Default Southeast Asia UTC+7
 }
 
+export function cleanVietnameseAirportText(name) {
+    if (!name) return '';
+    return String(name)
+        .replace(/Ph[uú]\s*Qu\s*[oôốồổỗộ][\u0300-\u036f]*\s*c/gi, 'Phu Quoc')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\u0111/g, 'd')
+        .replace(/\u0110/g, 'D')
+        .replace(/Phu\s*Qu\s*o\s*c/gi, 'Phu Quoc')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 export function lookupAirportCode(name) {
     if (!name) return '';
     const parenthesized = name.match(/\(([A-Z]{3})\)/);
     if (parenthesized) return parenthesized[1];
 
+    const clean = cleanVietnameseAirportText(name).toLowerCase();
+    for (const [key, code] of Object.entries(AIRPORT_CODE_MAP)) {
+        if (clean.includes(key)) return code;
+    }
     const lower = name.toLowerCase();
     for (const [key, code] of Object.entries(AIRPORT_CODE_MAP)) {
         if (lower.includes(key)) return code;
@@ -575,34 +593,37 @@ export function lookupAirportCode(name) {
 
 export function extractCityName(name) {
     if (!name) return '';
+    const clean = cleanVietnameseAirportText(name);
+    const cleanLower = clean.toLowerCase();
     const lower = name.toLowerCase();
-    if (lower.includes('mae fah luang') || lower.includes('chiang rai')) return 'Chiang Rai';
-    if (lower.includes('chiang mai')) return 'Chiang Mai';
-    if (lower.includes('tan son nhat') || lower.includes('ho chi minh') || lower.includes('saigon')) return 'Ho Chi Minh City';
-    if (lower.includes('phu quoc') || lower.includes('phú quốc')) return 'Phu Quoc';
-    if (lower.includes('noi bai') || lower.includes('hanoi') || lower.includes('ha noi')) return 'Hanoi';
-    if (lower.includes('da nang')) return 'Da Nang';
-    if (lower.includes('cam ranh') || lower.includes('nha trang')) return 'Nha Trang';
-    if (lower.includes('klia') || lower.includes('kuala lumpur')) return 'Kuala Lumpur';
-    if (lower.includes('senai') || lower.includes('johor bahru')) return 'Johor Bahru';
-    if (lower.includes('suvarnabhumi') || lower.includes('don mueang') || lower.includes('bangkok')) return 'Bangkok';
-    if (lower.includes('phuket')) return 'Phuket';
-    if (lower.includes('yangon')) return 'Yangon';
-    if (lower.includes('mandalay')) return 'Mandalay';
-    if (lower.includes('narita') || lower.includes('haneda') || lower.includes('tokyo')) return 'Tokyo';
-    if (lower.includes('taipei') || lower.includes('taoyuan') || lower.includes('songshan')) return 'Taipei';
-    if (lower.includes('kaohsiung')) return 'Kaohsiung';
-    if (lower.includes('singapore') || lower.includes('changi')) return 'Singapore';
-    if (lower.includes('incheon') || lower.includes('seoul')) return 'Seoul';
-    if (lower.includes('kansai') || lower.includes('osaka')) return 'Osaka';
-    if (lower.includes('london') || lower.includes('heathrow') || lower.includes('gatwick')) return 'London';
-    if (lower.includes('paris') || lower.includes('charles de gaulle')) return 'Paris';
-    if (lower.includes('frankfurt')) return 'Frankfurt';
-    if (lower.includes('zurich')) return 'Zurich';
-    if (lower.includes('sydney')) return 'Sydney';
-    if (lower.includes('melbourne')) return 'Melbourne';
 
-    return name
+    if (cleanLower.includes('phu quoc') || lower.includes('phu quoc') || lower.includes('phú quốc')) return 'Phu Quoc';
+    if (cleanLower.includes('da nang') || cleanLower.includes('danang') || lower.includes('da nang')) return 'Da Nang';
+    if (cleanLower.includes('mae fah luang') || cleanLower.includes('chiang rai')) return 'Chiang Rai';
+    if (cleanLower.includes('chiang mai')) return 'Chiang Mai';
+    if (cleanLower.includes('tan son nhat') || cleanLower.includes('ho chi minh') || cleanLower.includes('saigon')) return 'Ho Chi Minh City';
+    if (cleanLower.includes('noi bai') || cleanLower.includes('hanoi') || cleanLower.includes('ha noi')) return 'Hanoi';
+    if (cleanLower.includes('cam ranh') || cleanLower.includes('nha trang')) return 'Nha Trang';
+    if (cleanLower.includes('klia') || cleanLower.includes('kuala lumpur')) return 'Kuala Lumpur';
+    if (cleanLower.includes('senai') || cleanLower.includes('johor bahru')) return 'Johor Bahru';
+    if (cleanLower.includes('suvarnabhumi') || cleanLower.includes('don mueang') || cleanLower.includes('bangkok')) return 'Bangkok';
+    if (cleanLower.includes('phuket')) return 'Phuket';
+    if (cleanLower.includes('yangon')) return 'Yangon';
+    if (cleanLower.includes('mandalay')) return 'Mandalay';
+    if (cleanLower.includes('narita') || cleanLower.includes('haneda') || cleanLower.includes('tokyo')) return 'Tokyo';
+    if (cleanLower.includes('taipei') || cleanLower.includes('taoyuan') || cleanLower.includes('songshan')) return 'Taipei';
+    if (cleanLower.includes('kaohsiung')) return 'Kaohsiung';
+    if (cleanLower.includes('singapore') || cleanLower.includes('changi')) return 'Singapore';
+    if (cleanLower.includes('incheon') || cleanLower.includes('seoul')) return 'Seoul';
+    if (cleanLower.includes('kansai') || cleanLower.includes('osaka')) return 'Osaka';
+    if (cleanLower.includes('london') || cleanLower.includes('heathrow') || cleanLower.includes('gatwick')) return 'London';
+    if (cleanLower.includes('paris') || cleanLower.includes('charles de gaulle')) return 'Paris';
+    if (cleanLower.includes('frankfurt')) return 'Frankfurt';
+    if (cleanLower.includes('zurich')) return 'Zurich';
+    if (cleanLower.includes('sydney')) return 'Sydney';
+    if (cleanLower.includes('melbourne')) return 'Melbourne';
+
+    return clean
         .replace(/\([A-Z]{3}\)/g, '')
         .replace(/\s*(?:International|Airport|Airfield|Senai|Terminal\s*[0-9A-Z]+|T\d+).*/i, '')
         .replace(/[,\-\/]+$/, '')
@@ -1091,6 +1112,8 @@ export function parseItineraryText(rawText) {
         if (!/airport/i.test(airport) && /international/i.test(airport)) {
             airport += ' Airport';
         }
+
+        airport = cleanVietnameseAirportText(airport);
 
         return { time, dateRaw, terminal, airport };
     }
