@@ -3625,19 +3625,19 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 
 /* --- AIRASIA E-TICKET GENERATOR --- */
 .airasia-upload-zone {
-    border: 2px dashed rgba(227, 30, 36, 0.35);
-    border-radius: 14px;
+    border: 2px dashed #CBD5E1;
+    border-radius: 12px;
     padding: 24px 20px;
     text-align: center;
-    background: rgba(227, 30, 36, 0.02);
+    background: #F8FAFB;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     margin: 12px 0 14px;
 }
 .airasia-upload-zone:hover,
 .airasia-upload-zone.dragover {
-    border-color: #E31E24;
-    background: rgba(227, 30, 36, 0.06);
+    border-color: #0D6E77;
+    background: #EBF5F6;
     transform: translateY(-1px);
 }
 .airasia-modal-layout {
@@ -3694,10 +3694,10 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     font-size: 0.82rem;
     font-weight: 700;
     text-transform: uppercase;
-    color: #E31E24;
+    color: #0D6E77;
     letter-spacing: 0.5px;
     margin-top: 6px;
-    border-bottom: 1px solid rgba(227, 30, 36, 0.2);
+    border-bottom: 1px solid rgba(13, 110, 119, 0.2);
     padding-bottom: 4px;
 }
 
