@@ -1,0 +1,59 @@
+/* Distinct service identities; only presentation changes, not generated vouchers. */
+#services-view #invoicePanel {
+    --service-accent: #0D6E77;
+    --service-hover: #094F56;
+    --service-tint: #EDF8F7;
+    --service-edge: #B9DDDA;
+}
+#services-view :is(#chinaHotelPanel, #hotelPanel) {
+    --service-accent: #7050B5;
+    --service-hover: #55378F;
+    --service-tint: #F5F1FC;
+    --service-edge: #D8CBEE;
+}
+#services-view #airAsiaPanel {
+    --service-accent: #B4531C;
+    --service-hover: #913C13;
+    --service-tint: #FFF5EA;
+    --service-edge: #F1D3B4;
+}
+body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) {
+    border-top: 3px solid var(--service-accent) !important;
+    border-radius: 14px !important;
+}
+body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) .service-panel-icon {
+    background: var(--service-tint) !important;
+    color: var(--service-accent) !important;
+    border: 1px solid var(--service-edge) !important;
+}
+body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) :is(.airasia-upload-zone, .service-quick-config) {
+    background: var(--service-tint) !important;
+    border-color: var(--service-edge) !important;
+}
+body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) :is(.service-dropzone-icon, .service-quick-hint i) {
+    color: var(--service-accent) !important;
+}
+body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) .btn-generate,
+body #services-view #invoicePanel .format-segment input:checked + label {
+    background: var(--service-accent) !important;
+    color: #FFFFFF !important;
+    border-color: var(--service-accent) !important;
+    box-shadow: 0 2px 5px rgb(15 23 42 / 10%) !important;
+}
+body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) .btn-generate:hover {
+    background: var(--service-hover) !important;
+    border-color: var(--service-hover) !important;
+}
+body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) :is(input, select, button):focus-visible {
+    outline: 2px solid var(--service-accent) !important;
+    outline-offset: 3px;
+}
+body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) .airasia-upload-zone:hover {
+    border-color: var(--service-accent) !important;
+}
+body.dark-theme #services-view #invoicePanel { --service-tint: #163536; --service-edge: #2E6465; }
+body.dark-theme #services-view :is(#chinaHotelPanel, #hotelPanel) { --service-tint: #30263F; --service-edge: #655080; }
+body.dark-theme #services-view #airAsiaPanel { --service-tint: #392C22; --service-edge: #875A39; }
+body.dark-theme #services-view #invoicePanel :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #6DD6CD !important; }
+body.dark-theme #services-view :is(#chinaHotelPanel, #hotelPanel) :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #C6ADFA !important; }
+body.dark-theme #services-view #airAsiaPanel :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #F9B778 !important; }
