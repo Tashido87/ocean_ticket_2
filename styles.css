@@ -474,27 +474,29 @@ body.sidebar-collapsed .app-body {
 
 /* --- VIEWS & LOADING --- */
 .view {
-    display: none;
+    display: none !important;
     opacity: 0;
     transform: translateY(8px);
 }
 
+.view:not(.active) {
+    display: none !important;
+}
+
 .view.active {
-    display: block;
-    opacity: 1;
-    transform: none;
+    display: block !important;
+    opacity: 1 !important;
+    transform: none !important;
 }
 
 /* Smooth view switching (JS adds .view-enter / .view-leave) */
 .view.view-enter {
-    display: block;
+    display: block !important;
     animation: viewEnter var(--duration) var(--ease-spring) both;
 }
 
 .view.view-leave {
-    display: block;
-    pointer-events: none;
-    animation: viewLeave var(--duration-fast) var(--ease-smooth) both;
+    display: none !important;
 }
 
 @keyframes viewEnter {

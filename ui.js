@@ -80,30 +80,36 @@ export function showView(viewName) {
 
     navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
 
-    const currentView = document.querySelector('.view.active');
-
-    // Animate out current view (keep it visible during the leave animation)
-    if (currentView && currentView !== targetView) {
-        currentView.classList.add('view-leave');
-        currentView.classList.remove('active');
-        currentView.addEventListener('animationend', () => {
-            currentView.classList.remove('view-leave');
-        }, { once: true });
-    }
-
-    // Hide other views immediately (except the leaving one)
+    // Forcibly deactivate and hide ALL views except targetView
     views.forEach(view => {
-        if (view !== targetView && view !== currentView) {
-            view.classList.remove('active');
+        if (view !== targetView) {
+            view.classList.remove('active', 'view-leave', 'view-enter');
+            view.style.display = 'none';
         }
     });
 
-    // Animate in target view
+    // Activate only targetView
+    targetView.style.display = 'block';
+    targetView.classList.remove('view-leave');
     targetView.classList.add('active');
     targetView.classList.add('view-enter');
     targetView.addEventListener('animationend', () => {
         targetView.classList.remove('view-enter');
     }, { once: true });
+
+    // Reset window scroll on mobile view change
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Double-check cleanup timeout
+    setTimeout(() => {
+        views.forEach(view => {
+            if (view !== targetView) {
+                view.classList.remove('active', 'view-leave', 'view-enter');
+                view.style.display = 'none';
+            }
+        });
+        targetView.classList.remove('view-enter');
+    }, 250);
 
     // Stagger entrance animations for key blocks
     runIntroAnimations(targetView);

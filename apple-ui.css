@@ -347,12 +347,23 @@ body.material-theme .main-content {
     background: transparent;
 }
 
+body.material-theme .view {
+    display: none !important;
+}
+
+body.material-theme .view.active {
+    display: block !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
 body.material-theme .view.view-enter {
+    display: block !important;
     animation: apple-view-enter 360ms var(--apple-appear) both;
 }
 
 body.material-theme .view.view-leave {
-    animation: apple-view-leave 180ms var(--apple-ease) both;
+    display: none !important;
 }
 
 @keyframes apple-view-enter {
@@ -2107,6 +2118,13 @@ body.material-theme .landing-signin-btn:active {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+    }
+
+    body.material-theme .view:not(.active) {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
     }
 
     /* --- RECORDS PAGE MOBILE POLISH --- */
