@@ -1,0 +1,58 @@
+html[data-background="duo-night"] { background: #102332; }
+html[data-background="duo-night"] body {
+    background: transparent !important;
+    isolation: isolate;
+}
+#app-wallpaper-backdrop { display: none; }
+html[data-background="duo-night"] #app-wallpaper-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(rgb(7 20 32 / 12%), rgb(7 20 32 / 12%)), #102332 url('./assets/backgrounds/duo-night.jpg') center / cover no-repeat;
+}
+html[data-background="duo-night"] :is(.app-container, .app-body, .main-content) { background: transparent !important; }
+html[data-background="duo-night"] body:not(.dark-theme) .sidebar {
+    background: rgb(255 255 255 / 88%) !important;
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+}
+html[data-background="duo-night"] #home-view .dashboard-compact-title { color: #fff !important; text-shadow: 0 1px 4px #102332; }
+html[data-background="duo-night"] #home-view .dashboard-compact-subtitle { color: #e2e8f0 !important; }
+html[data-background="duo-night"] .view > .page-header h2 { color: #fff !important; text-shadow: 0 1px 4px #102332; }
+html[data-background="duo-night"] body:not(.dark-theme) :is(#main-header, #sellForm > #section-payment, .settings-card) {
+    --text-primary: #17333b;
+    --text-secondary: #465d66;
+    --text-muted: #465d66;
+    --apple-secondary-label: #465d66;
+    color: #17333b;
+}
+html[data-background="duo-night"] body:not(.dark-theme) #main-header .header-today-date { color: #334e59 !important; }
+html[data-background="duo-night"] body.dark-theme .settings-card { background: #1c1c1e !important; color: #f5f5f7; }
+html[data-background="duo-night"] body.dark-theme #background-choice-status { color: #c3ccd5; }
+html[data-background="duo-night"] body.dark-theme #settings-view :is(.settings-help, .setting-label-group) { color: #c3ccd5 !important; }
+html[data-background="duo-night"] body.dark-theme #agent-cut-value { color: #6dd6cd !important; background: #163536 !important; }
+html[data-background="duo-night"] body:not(.dark-theme) #main-header,
+html[data-background="duo-night"] body:not(.dark-theme) #home-view .dashboard-period-controls,
+html[data-background="duo-night"] body:not(.dark-theme) #sellForm > #section-payment {
+    background: rgb(255 255 255 / 83%) !important;
+    border-color: rgb(255 255 255 / 60%) !important;
+}
+html[data-background="duo-night"] .ocean-glass-ready > .ocean-glass-layer { opacity: .27; }
+.ocean-glass-wallpaper { position: absolute; max-width: none; object-fit: cover; pointer-events: none; }
+.background-choices { border: 0; margin: 18px 0 0; padding: 0; min-width: 0; }
+.background-choices legend { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-primary); }
+.background-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.background-choice { display: flex; flex-direction: column; gap: 8px; cursor: pointer; padding: 10px; border: 1px solid var(--border-color, #dce2ea); border-radius: 12px; color: var(--text-primary); background: var(--surface, white); font-size: 13px; }
+.background-choice:has(input:checked) { border-color: #0D6E77; box-shadow: 0 0 0 2px rgb(13 110 119 / 18%); }
+.background-choice:focus-within { outline: 2px solid #0D6E77; outline-offset: 3px; }
+.background-choice-name { display: flex; align-items: center; gap: 8px; }
+.background-choice input { accent-color: #0D6E77; width: 16px; height: 16px; margin: 0; flex: none; }
+.background-swatch { height: 76px; border-radius: 8px; border: 1px solid #dce2ea; background: #f8fafc; }
+.background-swatch.night { background: #102332 url('./assets/backgrounds/duo-night.jpg') center / cover; }
+#background-choice-status { font-size: 12px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0 0; }
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+    html[data-background="duo-night"] body:not(.dark-theme) :is(#main-header, #home-view .dashboard-period-controls, #sellForm > #section-payment, .sidebar) { background: var(--surface, Canvas) !important; backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+@media print { html[data-background="duo-night"] #app-wallpaper-backdrop { display: none; } }
