@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-v29';
+const CACHE_NAME = 'ocean-travel-v30';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
