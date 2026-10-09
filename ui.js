@@ -216,13 +216,13 @@ export function closeModal() {
  * @param {string} message The message to display.
  * @param {Function} onConfirm The callback function to execute on confirmation.
  */
-export function showConfirmModal(message, onConfirm) {
+export function showConfirmModal(message, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel', confirmBtnClass = 'btn btn-primary') {
     const content = `
         <div style="text-align: center;">
-            <div style="font-size: 1.1rem; margin-bottom: 2rem;">${message}</div>
-            <div class="form-actions">
-                <button id="confirmCancelBtn" class="btn btn-secondary">Cancel</button>
-                <button id="confirmActionBtn" class="btn btn-primary">Confirm</button>
+            <div style="font-size: 1.1rem; margin-bottom: 1.75rem;">${message}</div>
+            <div class="form-actions" style="display:flex; justify-content:center; gap:0.75rem;">
+                <button id="confirmCancelBtn" class="btn btn-secondary">${cancelText}</button>
+                <button id="confirmActionBtn" class="${confirmBtnClass}">${confirmText}</button>
             </div>
         </div>
     `;

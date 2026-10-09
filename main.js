@@ -27,8 +27,7 @@ import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downlo
 import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } from './agoda-hotel-converter.js?v=19';
 
 // UI Modules
-// MODIFIED: Added 'addExistingPassengerForm' to imports
-import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, openModal, closeModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview, setupDepartureReturnDatepickers } from './ui.js';
+import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, openModal, closeModal, showConfirmModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview, setupDepartureReturnDatepickers } from './ui.js';
 
 function syncGroupToggleState() {
     const start = document.getElementById('searchStartDate')?.value;
@@ -694,12 +693,63 @@ function setupEventListeners() {
         });
     });
 
-    // Sell Ticket Form
-    document.getElementById('cancelSellBtn').addEventListener('click', () => {
+    function isSellFormDirty() {
+        const form = document.getElementById('sellForm');
+        if (!form) return false;
+
+        if (document.getElementById('booking_reference')?.value?.trim()) return true;
+        if (document.getElementById('departing_on')?.value?.trim()) return true;
+        if (document.getElementById('return_date')?.value?.trim()) return true;
+        if (document.getElementById('custom_departure')?.value?.trim()) return true;
+        if (document.getElementById('custom_destination')?.value?.trim()) return true;
+        if (document.getElementById('phone')?.value?.trim()) return true;
+        if (document.getElementById('account_name')?.value?.trim()) return true;
+        if (document.getElementById('account_link')?.value?.trim()) return true;
+
+        const paxForms = form.querySelectorAll('.passenger-form');
+        if (paxForms.length > 1) return true;
+        for (const pax of paxForms) {
+            if (pax.querySelector('.passenger-name')?.value?.trim()) return true;
+            if (pax.querySelector('.passenger-net-amount')?.value?.trim()) return true;
+            if (pax.querySelector('.passenger-base-fare')?.value?.trim()) return true;
+            if (pax.querySelector('.passenger-passport-no')?.value?.trim()) return true;
+            if (pax.querySelector('.passenger-dob')?.value?.trim()) return true;
+            if (pax.querySelector('.nrc-serial')?.value?.trim()) return true;
+            if (pax.querySelector('.passenger-remarks')?.value?.trim()) return true;
+            if (pax.querySelector('.passenger-cost-price')?.value?.trim()) return true;
+            if (pax.querySelector('.passenger-commission')?.value?.trim()) return true;
+        }
+
+        return false;
+    }
+
+    function resetAndExitSellForm() {
         document.getElementById('sellForm').reset();
         resetPassengerForms();
         window.applySellStep?.('section-booking');
         showView('home');
+    }
+
+    // Sell Ticket Form
+    document.getElementById('cancelSellBtn').addEventListener('click', () => {
+        if (isSellFormDirty()) {
+            showConfirmModal(
+                `<i class="fa-solid fa-triangle-exclamation" style="color: #cf2d56; font-size: 2.2rem; margin-bottom: 0.75rem; display: block;"></i>
+                 <strong style="font-size: 1.15rem;">Cancel Ticket Entry?</strong>
+                 <p style="margin: 0.65rem 0 0; font-size: 0.95rem; color: var(--text-secondary, #666); line-height: 1.5;">
+                     Are you sure you want to cancel? All entered ticket and passenger details will be lost.
+                 </p>`,
+                () => {
+                    closeModal();
+                    resetAndExitSellForm();
+                },
+                'Discard & Cancel',
+                'Keep Editing',
+                'btn btn-danger'
+            );
+        } else {
+            resetAndExitSellForm();
+        }
     });
     document.getElementById('sellForm').addEventListener('submit', handleSellTicket);
     document.getElementById('airline').addEventListener('change', handleAirlineChange);

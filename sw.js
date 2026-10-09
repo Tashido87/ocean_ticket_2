@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-v32';
+const CACHE_NAME = 'ocean-travel-v33';
 const CORE_ASSETS = [
     './',
     './index.html',

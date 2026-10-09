@@ -2168,6 +2168,19 @@ body.dark-text-theme:not(.material-theme) .datepicker-view .days .day.selected:n
     transform: translateY(-1px);
 }
 
+.btn-danger {
+    background: #dc2626;
+    color: #ffffff;
+    border: 1px solid #dc2626;
+}
+
+.btn-danger:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(185, 28, 28, 0.35);
+}
+
 .icon-btn {
     background: transparent;
     color: var(--text-secondary);
