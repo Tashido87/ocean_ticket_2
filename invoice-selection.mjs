@@ -14,10 +14,11 @@ export function selectPassengerTickets(allTickets, pnrs, selection, type, isPaid
     if (tickets.some(t => !String(t.name || '').trim())) throw new Error('Selected tickets must have passenger names.');
     return tickets.map(t => {
         const adjustment = Number(selection.adjustments?.[String(t.id)] || 0);
-        const total = Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0) + adjustment;
+        const dateChange = Number(t.date_change || t.date_change_fee || t.date_change_fees || 0);
+        const total = Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0) + dateChange + adjustment;
         if (!Number.isFinite(adjustment) || !Number.isFinite(total) || total < 0) throw new Error('Invalid ticket amount or adjustment.');
         if (type === 'Receipt' && adjustment !== 0) throw new Error('Receipt adjustments are not supported in passenger mode; use the recorded paid amount.');
-        return { ...t, net_amount: Number(t.net_amount || 0), sub_agent_fare: Number(t.sub_agent_fare || 0), extra_fare: Number(t.extra_fare || 0) + adjustment, invoicePassengerSelection: true };
+        return { ...t, net_amount: Number(t.net_amount || 0), sub_agent_fare: Number(t.sub_agent_fare || 0), extra_fare: Number(t.extra_fare || 0) + adjustment, date_change: dateChange, invoicePassengerSelection: true };
     });
 }
 

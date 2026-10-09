@@ -164,8 +164,23 @@ function isMissingAnyRequiredField(result) {
         || !result.sex;
 }
 
+async function ensureTesseract() {
+    if (window.Tesseract) return true;
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+    });
+}
+
 export async function ocrPassport(imageSource, onStatus) {
     onStatus?.('Initialising OCR...');
+    if (!window.Tesseract) {
+        onStatus?.('Loading OCR engine...');
+        await ensureTesseract();
+    }
     if (!window.Tesseract) {
         onStatus?.('OCR unavailable');
         return null;

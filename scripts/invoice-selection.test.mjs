@@ -39,7 +39,7 @@ test('rejects invalid totals and parses numeric database strings', () => {
     assert.equal(select(['a'], 'Invoice', {}, [{ ...tickets[0], net_amount: '100' }], ['OUT'])[0].net_amount, 100);
 });
 const source = readFileSync(new URL('../invoice.js', import.meta.url), 'utf8').replace(/^import .*;\s*$/gm, '').replace(/^export /gm, '');
-const context = vm.createContext({ state: { allTickets: tickets }, formatDateToDMMMY: v => v, parseSheetDate: v => new Date(v), isFeeEntryRow: t => /\(fees\)$/i.test(t.name), selectPassengerTickets });
+const context = vm.createContext({ state: { allTickets: tickets }, formatDateToDMMMY: v => v, parseSheetDate: v => new Date(v), isFeeEntryRow: t => /\(fees\)$/i.test(t.name), selectPassengerTickets, receiptPaymentLabels, isTicketPaid: t => t.paid === true });
 vm.runInContext(source, context);
 test('legacy mixed-PNR policy remains blocked; passenger groups remain separate', () => {
     assert.equal(context.analyzeInvoiceScenario(['OUT', 'BACK']).code, 'SCENARIO_4');
@@ -51,4 +51,44 @@ test('legacy mixed-PNR policy remains blocked; passenger groups remain separate'
     assert.equal(items.length, 2);
     assert.match(items[0].description, /PNR: OUT/);
     assert.match(items[1].description, /PNR: BACK/);
+});
+
+test('date change fees calculate correct rate, amount and total on invoice line items', () => {
+    const feeTicket = {
+        id: 'fee1',
+        name: 'THAW ZIN BO (Fees)',
+        booking_reference: '245442EA',
+        departure: 'Heho',
+        destination: 'Tachilek',
+        departing_on: '2026-10-19',
+        net_amount: 0,
+        extra_fare: 0,
+        sub_agent_fare: 0,
+        date_change: 10000,
+        airline: 'ManYadanarpon',
+        paid: true
+    };
+    const mainTicket = {
+        id: 't1',
+        name: 'THAW ZIN BO',
+        booking_reference: '245442EA',
+        departure: 'Heho',
+        destination: 'Tachilek',
+        departing_on: '2026-10-15',
+        net_amount: 580000,
+        extra_fare: 0,
+        sub_agent_fare: 0,
+        date_change: 0,
+        airline: 'ManYadanarpon',
+        paid: true
+    };
+    const items = context.buildInvoiceLineItems([mainTicket, feeTicket], 'separate');
+    assert.equal(items.length, 2);
+    assert.equal(items[0].rate, 580000);
+    assert.equal(items[0].amount, 580000);
+    assert.match(items[1].description, /^Date Change Fee: /);
+    assert.equal(items[1].rate, 10000);
+    assert.equal(items[1].amount, 10000);
+    const data = context.buildInvoiceDocumentData({ pnrs: ['245442EA'], tickets: [mainTicket, feeTicket] }, 'Invoice', { key: 'magical_land', displayName: 'Magical Land', logoUrl: '' }, '2026-10-09', 0, 1, 'separate');
+    assert.equal(data.totalAmount, 590000);
 });

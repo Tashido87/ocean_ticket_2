@@ -570,7 +570,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     display: inline-block;
 }
 
-.doc-tab[data-tab="passport"][hidden] {
+.doc-tab[hidden] {
     display: none !important;
 }
 

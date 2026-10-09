@@ -66,7 +66,12 @@ function ticketTotal(ticket) {
 
 
 function ownerPayable(ticket) {
-    if (isCanceledTicket(ticket)) return 0;
+    if (isCanceledTicket(ticket)) {
+        if (ticket.cancellation_type === 'Partial Cancellation' || String(ticket.remarks || '').toLowerCase().includes('partial')) {
+            return Number(ticket.net_amount) || 0;
+        }
+        return 0;
+    }
     if (ticket.source === 'self') return 0; // Exclude self-purchased from owner payable
     // Owner payable assumption used in settlement: net/date-change owed owner, commission retained by us.
     return (Number(ticket.net_amount) || 0) + (Number(ticket.date_change) || 0) - (Number(ticket.commission) || 0);
@@ -1799,6 +1804,9 @@ async function handleCancelTicket(docId, type, details = {}) {
                     original_extra_fare: ticket.extra_fare || 0,
                     original_date_change: ticket.date_change || 0,
                     net_amount: details.cancellationFee,
+                    commission: 0,
+                    extra_fare: 0,
+                    date_change: 0,
                     refund_amount: details.refundAmount,
                     refund_payment_method: details.paymentMethod,
                     refund_transaction_id: details.transactionId,

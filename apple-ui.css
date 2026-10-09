@@ -1252,6 +1252,11 @@ body.material-theme #sell-view .leg-tab {
     transition: all 160ms var(--apple-ease);
 }
 
+body.material-theme .doc-tab[hidden],
+body.material-theme #sell-view .doc-tab[hidden] {
+    display: none !important;
+}
+
 body.material-theme .doc-tab:hover,
 body.material-theme .leg-tab:hover {
     color: var(--apple-label);

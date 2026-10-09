@@ -319,12 +319,12 @@ exports.checkBookingDeadlines = onSchedule(
 );
 
 async function sendTelegramAlert(text) {
-    const BOT_TOKEN = '8156964921:AAHDYIjKgVbqsShuRGyIJlgL80NNqqSWi0Y';
-    const CHAT_ID = '1101682157';
+    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8156964921:AAHDYIjKgVbqsShuRGyIJlgL80NNqqSWi0Y';
+    const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '1101682157';
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 
     try {
-        const response = await fetch(url, {
+        let response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -333,6 +333,20 @@ async function sendTelegramAlert(text) {
                 parse_mode: 'Markdown'
             })
         });
+
+        // If Markdown parsing fails due to special characters in names/notes, retry as plain text
+        if (!response.ok && response.status === 400) {
+            const cleanText = text.replace(/[*_`\[\]]/g, '');
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: cleanText
+                })
+            });
+        }
+
         if (!response.ok) {
             const errText = await response.text();
             console.error(`Telegram API responded with status ${response.status}: ${errText}`);

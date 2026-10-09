@@ -209,15 +209,11 @@ function groupBookings(bookings) {
 
     return Object.values(grouped).map(group => {
         group.legs.sort((a, b) => {
-            const parseDate = (dStr) => {
-                if (!dStr) return 0;
-                const parts = dStr.split(/[-\/]/);
-                if (parts.length === 3) {
-                    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
-                }
-                return new Date(dStr).getTime();
-            };
-            return parseDate(a.departing_on) - parseDate(b.departing_on);
+            const dateA = parseSheetDate(a.departing_on);
+            const dateB = parseSheetDate(b.departing_on);
+            const timeA = dateA && !isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+            const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+            return timeA - timeB;
         });
 
         if (group.legs.length > 0) {

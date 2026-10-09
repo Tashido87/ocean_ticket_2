@@ -2530,6 +2530,22 @@ export function populatePassengerCardFromClient(formEl, client) {
         if (g) g.checked = true;
     }
 
+    // Switch to Passport tab if client has passport information and either no NRC or passport is specified
+    const hasPassportData = Boolean(passportNo || client.passport_photo_url || client.document_type === 'Passport');
+    const hasNrcData = Boolean(parsed.region && parsed.serial);
+    if (hasPassportData && (!hasNrcData || client.document_type === 'Passport')) {
+        const nrcTab = formEl.querySelector('.doc-tab[data-tab="nrc"]');
+        const passportTab = formEl.querySelector('.doc-tab[data-tab="passport"]');
+        const nrcPanel = formEl.querySelector('.doc-panel[data-panel="nrc"]');
+        const passportPanel = formEl.querySelector('.doc-panel[data-panel="passport"]');
+        if (passportTab && passportPanel) {
+            nrcTab?.classList.remove('is-active');
+            passportTab.classList.add('is-active');
+            nrcPanel?.classList.remove('is-active');
+            passportPanel.classList.add('is-active');
+        }
+    }
+
     updateAgeBadge(formEl);
     updatePaxAvatar(formEl);
     updatePaxSummary(formEl);
@@ -2878,45 +2894,74 @@ export async function scanPassportWithGemini(file, passengerIndex = 0) {
 
     const imageBase64 = await resizeImageToBase64(file);
 
-    console.log('[Gemini request] sending to /.netlify/functions/gemini-passport-ocr');
+    // 1) Try Netlify function
+    try {
+        console.log('[Gemini request] sending to /.netlify/functions/gemini-passport-ocr');
+        const controller = new AbortController();
+        const abortTimer = setTimeout(() => controller.abort(), 30000);
 
-    const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 60000); // Increased timeout to 60s
+        const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({ imageBase64, mimeType: 'image/jpeg' }),
+        });
+        clearTimeout(abortTimer);
 
-    const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-            imageBase64,
-            mimeType: 'image/jpeg',
-        }),
-    });
-    clearTimeout(abortTimer);
-
-    const data = await response.json();
-
-    console.log('[Gemini passport OCR]', data);
-
-    if (!data.ok) {
-        throw new Error(data.error || 'Gemini passport OCR failed');
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.ok) {
+                return {
+                    fullName: data.fullName || '',
+                    passportNumber: data.passportNo || '',
+                    dateOfBirth: data.dob || '',
+                    expiryDate: data.expiry || '',
+                    nationality: data.nationality || '',
+                    sex: data.sex || '',
+                    title: data.title || '',
+                };
+            }
+        }
+    } catch (netErr) {
+        console.warn('[Netlify OCR not available]:', netErr);
     }
 
-    const finalFields = {
-        fullName: data.fullName || '',
-        passportNumber: data.passportNo || '',
-        dateOfBirth: data.dob || '',
-        expiryDate: data.expiry || '',
-        nationality: data.nationality || '',
-        sex: data.sex || '',
-        title: data.title || '',
-    };
+    // 2) Try Firebase Cloud Function Document AI
+    try {
+        const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js");
+        const { functions } = await import("./firebase-config.js");
+        const ocrPassportCallable = httpsCallable(functions, 'ocrPassport');
+        const res = await ocrPassportCallable({ imageBase64, mimeType: 'image/jpeg' });
+        if (res && res.data) {
+            const d = res.data;
+            const entities = d.entities || [];
+            const getVal = (type) => entities.find(e => e.type === type)?.value || '';
+            const fullName = getVal('given_name') && getVal('family_name')
+                ? `${getVal('given_name')} ${getVal('family_name')}`.toUpperCase()
+                : (getVal('full_name') || '').toUpperCase();
+            const passportNumber = (getVal('document_id') || getVal('passport_number') || '').toUpperCase();
+            const dob = getVal('birth_date') || getVal('dob') || '';
+            const expiry = getVal('expiration_date') || getVal('expiry') || '';
+            const sex = (getVal('sex') || getVal('gender') || '').toUpperCase();
+            const nationality = (getVal('nationality') || 'MMR').toUpperCase();
 
-    console.log('[Final applied passenger fields]', finalFields);
+            if (fullName || passportNumber) {
+                return {
+                    fullName,
+                    passportNumber,
+                    dateOfBirth: dob,
+                    expiryDate: expiry,
+                    nationality,
+                    sex,
+                    title: sex === 'M' ? 'MR' : (sex === 'F' ? 'MS' : '')
+                };
+            }
+        }
+    } catch (fbErr) {
+        console.warn('[Firebase Cloud Function OCR unavailable]:', fbErr);
+    }
 
-    return finalFields;
+    throw new Error('Cloud OCR service unavailable');
 }
 
 /**
@@ -3178,12 +3223,14 @@ function validateNrc(formEl) {
     const title = formEl.querySelector('.passenger-gender:checked')?.value || '';
     const isChild = ['MSTR', 'MISS'].includes(title);
     const isNrcOptional = isInternationalFlight();
+    const passportNo = formEl.querySelector('.passenger-passport-no')?.value?.trim();
+    const hasValidPassport = passportNo && passportNo.length >= 5;
 
     if (filled === 0 || filled === 4) {
         wrap.classList.remove('is-invalid');
         helper.classList.remove('is-error');
         helper.textContent = 'Format: 12/ABCDEF(N)123456';
-        return (isChild || isNrcOptional) ? true : (filled === 4);
+        return (isChild || isNrcOptional || hasValidPassport) ? true : (filled === 4);
     }
     wrap.classList.add('is-invalid');
     helper.classList.add('is-error');
@@ -3205,9 +3252,11 @@ function updatePaxSummary(formEl) {
     const bucket = ageBucket(age);
     let id = '';
     const intl = isInternationalFlight();
-    if (intl) {
-        id = formEl.querySelector('.passenger-passport-no').value.trim();
-    } else {
+    const passportNo = formEl.querySelector('.passenger-passport-no')?.value?.trim();
+    if (intl || passportNo) {
+        id = passportNo;
+    }
+    if (!id) {
         id = joinNrc({
             region: formEl.querySelector('.nrc-region').value,
             township: formEl.querySelector('.nrc-township').value,
@@ -3328,7 +3377,11 @@ function isPassengerComplete(formEl) {
         const passport = formEl.querySelector('.passenger-passport-no').value.trim();
         return nrcOk && passport.length >= 5;
     } else {
-        // Domestic requires NRC only
+        // Domestic accepts either NRC or Passport
+        const passport = formEl.querySelector('.passenger-passport-no').value.trim();
+        if (passport.length >= 5) {
+            return true;
+        }
         return validateNrc(formEl);
     }
 }
@@ -3374,28 +3427,54 @@ export function applyFlightTypeToCard(formEl) {
     const nrcPanel = formEl.querySelector('.doc-panel[data-panel="nrc"]');
     const passportPanel = formEl.querySelector('.doc-panel[data-panel="passport"]');
 
-    nrcTab.classList.toggle('is-required', !intl);
-    passportTab.classList.toggle('is-required', intl);
-    passportTab.hidden = !intl;
-    passportPanel.hidden = !intl;
+    if (intl) {
+        // International flights require passport; NRC cannot be used
+        if (nrcTab) nrcTab.hidden = true;
+        if (nrcPanel) nrcPanel.hidden = true;
+        if (passportTab) {
+            passportTab.hidden = false;
+            passportTab.classList.add('is-required', 'is-active');
+        }
+        if (passportPanel) {
+            passportPanel.hidden = false;
+            passportPanel.classList.add('is-active');
+        }
+    } else {
+        // Domestic flights accept both NRC and Passport
+        if (nrcTab) {
+            nrcTab.hidden = false;
+            nrcTab.classList.add('is-required');
+        }
+        if (passportTab) {
+            passportTab.hidden = false;
+            passportTab.classList.remove('is-required');
+        }
+        if (nrcPanel) nrcPanel.hidden = false;
+        if (passportPanel) passportPanel.hidden = false;
+
+        // Keep Passport active if already active or if passport is filled while NRC is empty
+        const passportNo = formEl.querySelector('.passenger-passport-no')?.value?.trim();
+        const nrcSerial = formEl.querySelector('.nrc-serial')?.value?.trim();
+        const preferPassport = passportTab?.classList.contains('is-active') || (passportNo && !nrcSerial);
+
+        if (preferPassport) {
+            nrcTab?.classList.remove('is-active');
+            passportTab?.classList.add('is-active');
+            nrcPanel?.classList.remove('is-active');
+            passportPanel?.classList.add('is-active');
+        } else {
+            nrcTab?.classList.add('is-active');
+            passportTab?.classList.remove('is-active');
+            nrcPanel?.classList.add('is-active');
+            passportPanel?.classList.remove('is-active');
+        }
+    }
 
     // Show intl-only elements
     formEl.querySelectorAll('.intl-only').forEach(el => {
         el.style.display = intl ? '' : 'none';
     });
 
-    // Default tab: domestic → NRC, international → Passport
-    if (intl) {
-        nrcTab.classList.remove('is-active');
-        passportTab.classList.add('is-active');
-        nrcPanel.classList.remove('is-active');
-        passportPanel.classList.add('is-active');
-    } else {
-        nrcTab.classList.add('is-active');
-        passportTab.classList.remove('is-active');
-        nrcPanel.classList.add('is-active');
-        passportPanel.classList.remove('is-active');
-    }
     updatePaxStatus(formEl);
 }
 
@@ -4095,13 +4174,20 @@ export function enhanceMobileBankingSelect(paymentSelect, opts = {}) {
 
     row.appendChild(bankSelect);
 
+    const isSellForm = paymentSelect.id === 'payment_method';
+    const paidCheckbox = isSellForm ? document.getElementById('paid') : null;
+
     const toggleBankSelect = () => {
         const isMobile = paymentSelect.value === 'Mobile Banking';
-        bankSelect.classList.toggle('show', isMobile);
-        bankSelect.required = isMobile;
+        const isPaidChecked = !paidCheckbox || paidCheckbox.checked;
 
-        // If switching away, keep selection but make it inert
-        if (!isMobile) {
+        // If ticket is unpaid (paid is not checked), bank selection is never required
+        const shouldShow = isMobile && isPaidChecked;
+        bankSelect.classList.toggle('show', shouldShow);
+        bankSelect.required = isMobile && isPaidChecked;
+
+        // If switching away or unpaid, keep selection but make it inert
+        if (!shouldShow) {
             bankSelect.blur();
         } else {
             // Gentle nudge for better UX
@@ -4112,6 +4198,24 @@ export function enhanceMobileBankingSelect(paymentSelect, opts = {}) {
     };
 
     paymentSelect.addEventListener('change', toggleBankSelect);
+    if (paidCheckbox) {
+        paidCheckbox.addEventListener('change', () => {
+            toggleBankSelect();
+            const paidDateEl = document.getElementById('paid_date');
+            if (!paidCheckbox.checked) {
+                if (paidDateEl) paidDateEl.value = '';
+                bankSelect.required = false;
+            } else {
+                if (paidDateEl && !paidDateEl.value) {
+                    const today = new Date();
+                    const dd = String(today.getDate()).padStart(2, '0');
+                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                    const yyyy = today.getFullYear();
+                    paidDateEl.value = `${dd}/${mm}/${yyyy}`;
+                }
+            }
+        });
+    }
     toggleBankSelect();
 
     paymentSelect.dataset.mobileBankingEnhanced = 'true';

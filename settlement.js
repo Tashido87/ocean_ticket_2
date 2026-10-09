@@ -245,8 +245,10 @@ function adjustmentSignedAmount(a) {
 /**
  * Comprehensive settlement summary for the active range/basis.
  */
-export function getSettlementSummary() {
-    const { start, end } = getSettlementPeriodRange();
+export function getSettlementSummary(customRange = null) {
+    const range = (customRange && customRange.start && customRange.end) ? customRange : getSettlementPeriodRange();
+    const start = range.start;
+    const end = range.end;
     const tickets = state.allTickets.filter(t => !isExcluded(t));
 
     let totalRevenue = 0;       // net_amount + date_change (not self purchase)
@@ -786,6 +788,10 @@ function renderReconciliation() {
             ${reconcileTerm('Paid to owner', s.paidToOwner, 'teal')}
             <span class="settle-equation-op">−</span>
             ${reconcileTerm('My commission', s.myCommission, 'teal')}
+            ${Math.abs(s.adjustmentsTotal || 0) > 0 ? `
+            <span class="settle-equation-op">${(s.adjustmentsTotal || 0) >= 0 ? '+' : '−'}</span>
+            ${reconcileTerm('Adjustments', Math.abs(s.adjustmentsTotal || 0), 'amber')}
+            ` : ''}
             <span class="settle-equation-op">=</span>
             ${reconcileTerm('Remaining due', s.remainingDue, dueClass)}
         </div>

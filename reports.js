@@ -8,7 +8,9 @@ import {
 import {
     showToast,
     parseSheetDate,
-    formatDateToDMMMY
+    formatDateToDMMMY,
+    isCanceledTicket,
+    isFeeEntryRow
 } from './utils.js';
 
 /**
@@ -559,12 +561,13 @@ export async function exportPrivateReportToPdf() {
 
     const ticketsInMonth = state.allTickets.filter(t => {
         const issuedDate = parseSheetDate(t.issued_date);
-        return issuedDate >= startDate && issuedDate <= endDate;
+        return issuedDate >= startDate && issuedDate <= endDate && !isCanceledTicket(t);
     });
 
     const hotelsInMonth = (state.allHotels || []).filter(h => {
         const checkinDate = parseSheetDate(h.checkin);
-        return checkinDate >= startDate && checkinDate <= endDate;
+        const isCancelled = String(h.status || '').toLowerCase() === 'cancelled';
+        return checkinDate >= startDate && checkinDate <= endDate && !isCancelled;
     });
 
     if (ticketsInMonth.length === 0 && hotelsInMonth.length === 0) {

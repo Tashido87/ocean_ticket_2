@@ -17,6 +17,7 @@ import {
     query,
     orderBy,
     where,
+    limit,
     onSnapshot,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -33,14 +34,14 @@ const dashboardTasksCol = collection(db, 'dashboardTasks');
 
 // --- TICKETS ---
 
-export async function getTickets() {
-    const q = query(ticketsCol, orderBy('createdAt', 'desc'));
+export async function getTickets(maxLimit = 2000) {
+    const q = maxLimit ? query(ticketsCol, orderBy('createdAt', 'desc'), limit(maxLimit)) : query(ticketsCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export function onTicketsChange(callback, errorCallback) {
-    const q = query(ticketsCol, orderBy('createdAt', 'desc'));
+export function onTicketsChange(callback, errorCallback, maxLimit = 2000) {
+    const q = maxLimit ? query(ticketsCol, orderBy('createdAt', 'desc'), limit(maxLimit)) : query(ticketsCol, orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
         const tickets = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         callback(tickets);
@@ -96,14 +97,14 @@ export async function batchUpdateTickets(updates) {
 
 // --- BOOKINGS ---
 
-export async function getBookings() {
-    const q = query(bookingsCol, orderBy('createdAt', 'desc'));
+export async function getBookings(maxLimit = 1000) {
+    const q = maxLimit ? query(bookingsCol, orderBy('createdAt', 'desc'), limit(maxLimit)) : query(bookingsCol, orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export function onBookingsChange(callback, errorCallback) {
-    const q = query(bookingsCol, orderBy('createdAt', 'desc'));
+export function onBookingsChange(callback, errorCallback, maxLimit = 1000) {
+    const q = maxLimit ? query(bookingsCol, orderBy('createdAt', 'desc'), limit(maxLimit)) : query(bookingsCol, orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
         const bookings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         callback(bookings);

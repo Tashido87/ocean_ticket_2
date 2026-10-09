@@ -296,20 +296,36 @@ export async function initializeApp() {
             if (dashboardContent) dashboardContent.style.display = 'flex';
         };
 
+        const debouncedRefreshHeavyData = debounce(() => {
+            updateUnpaidCount();
+            updateNotifications();
+            buildClientList();
+            updateDashboardData();
+            if (typeof updateInvoiceAdjustmentsSection === 'function') {
+                updateInvoiceAdjustmentsSection();
+            }
+        }, 70);
+
         // Set up real-time listeners
         state.unsubscribers.push(
             onTicketsChange((tickets) => {
+                const isInitial = !initialDataShown;
                 state.allTickets = tickets;
                 revealDashboard();
                 sanitizeTickets(tickets);
                 populateSearchAirlines();
-                updateUnpaidCount();
                 displayInitialTickets(state.currentPage);
-                updateNotifications();
-                buildClientList();
-                updateDashboardData();
-                if (typeof updateInvoiceAdjustmentsSection === 'function') {
-                    updateInvoiceAdjustmentsSection();
+
+                if (isInitial) {
+                    updateUnpaidCount();
+                    updateNotifications();
+                    buildClientList();
+                    updateDashboardData();
+                    if (typeof updateInvoiceAdjustmentsSection === 'function') {
+                        updateInvoiceAdjustmentsSection();
+                    }
+                } else {
+                    debouncedRefreshHeavyData();
                 }
             }, (err) => {
                 revealDashboard();
@@ -321,8 +337,7 @@ export async function initializeApp() {
             onBookingsChange((bookings) => {
                 state.allBookings = bookings;
                 displayBookings();
-                updateNotifications();
-                updateDashboardData();
+                debouncedRefreshHeavyData();
             })
         );
 
@@ -931,7 +946,7 @@ function setupEventListeners() {
                 const name = t.name.replace(/\s*\(\s*fees\s*\)\s*$/i, '').trim();
                 if (!groups.has(name)) groups.set(name, { total: 0, details: [] });
                 const group = groups.get(name);
-                group.total += Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0);
+                group.total += Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0) + Number(t.date_change || t.date_change_fee || t.date_change_fees || 0);
                 group.details.push(`${t.booking_reference}: ${t.departure} → ${t.destination} · ${t.departing_on || 'Date missing'} · ${t.airline || 'Airline missing'}${isFeeEntryRow(t) ? ' · Fee' : ''}`);
             });
             preview.textContent = [...groups].map(([name, g]) => `${name} — ${g.total.toLocaleString()} MMK\n${g.details.join('\n')}`).join('\n\n');
@@ -964,7 +979,8 @@ function setupEventListeners() {
             check.type = 'checkbox'; check.dataset.ticket = String(t.id); check.disabled = !t.id || isCanceledTicket(t);
             check.style.cssText = 'width:auto;flex:none';
             const text = document.createElement('span');
-            text.textContent = `${t.name} · ${t.booking_reference} · ${t.departure} → ${t.destination} · ${t.departing_on || 'Date missing'} · ${t.airline || 'Airline missing'} · ${(Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0)).toLocaleString()} MMK · ${isTicketPaid(t) ? 'Paid' : 'Unpaid'}${isFeeEntryRow(t) ? ' · Fee' : ''}${isCanceledTicket(t) ? ' · Cancelled (unavailable)' : ''}`;
+            const itemAmt = Number(t.net_amount || 0) + Number(t.extra_fare || 0) + Number(t.sub_agent_fare || 0) + Number(t.date_change || t.date_change_fee || t.date_change_fees || 0);
+            text.textContent = `${t.name} · ${t.booking_reference} · ${t.departure} → ${t.destination} · ${t.departing_on || 'Date missing'} · ${t.airline || 'Airline missing'} · ${itemAmt.toLocaleString()} MMK · ${isTicketPaid(t) ? 'Paid' : 'Unpaid'}${isFeeEntryRow(t) ? ' · Fee' : ''}${isCanceledTicket(t) ? ' · Cancelled (unavailable)' : ''}`;
             label.append(check, text);
             const adjustment = document.createElement('input');
             adjustment.type = 'text'; adjustment.inputMode = 'decimal'; adjustment.dataset.adjustment = String(t.id);
@@ -1670,8 +1686,8 @@ export function updateDashboardData() {
 
     const prevProfit = prevCommission + prevExtraFare + prevSelfProfit;
 
-    // 4. Remaining Due to Owner (from settlement module — global, not period-scoped)
-    const settleSummary = getSettlementSummary();
+    // 4. Remaining Due to Owner (scoped to active dashboard date range)
+    const settleSummary = getSettlementSummary(range);
     const curRemainingDue = settleSummary.remainingDue;
 
     // Also gather data for side panels

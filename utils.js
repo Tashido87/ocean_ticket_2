@@ -282,7 +282,9 @@ export function formatDateToDMMMY(dateString) {
  * @returns {Date} The parsed Date object.
  */
 export function parseSheetDate(dateString) {
-    if (!dateString) return new Date(0);
+    if (dateString instanceof Date) {
+        return isNaN(dateString.getTime()) ? new Date(0) : dateString;
+    }
     const safeDateString = String(dateString).trim();
     const monthMap = {
         'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5,
@@ -291,7 +293,12 @@ export function parseSheetDate(dateString) {
     const parts = safeDateString.split(/[-\/]/);
     if (parts.length === 3) {
         let day, month, year;
-        if (isNaN(parseInt(parts[1], 10))) {
+        if (parts[0].length === 4) {
+            // ISO format: YYYY-MM-DD or YYYY/MM/DD
+            year = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10) - 1;
+            day = parseInt(parts[2], 10);
+        } else if (isNaN(parseInt(parts[1], 10))) {
             // DD-Mon-YYYY
             day = parseInt(parts[0], 10);
             month = monthMap[parts[1].toUpperCase().substring(0, 3)];

@@ -5,7 +5,7 @@
  */
 
 import { state } from './state.js';
-import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation } from './db.js';
+import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation, updateBooking } from './db.js';
 import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
@@ -89,7 +89,7 @@ function getPassengerValidationError(passenger, index, isInternational) {
         return `${label}: Please complete all NRC parts.`;
     }
 
-    if (!isChild && !isInternational && !passenger.nrc_no) return `${label}: complete NRC number is required.`;
+    if (!isChild && !isInternational && !passenger.nrc_no && !passenger.passport_no) return `${label}: complete NRC or Passport number is required.`;
     if (isInternational && !passenger.passport_no) return `${label}: passport number is required for international tickets.`;
     if (isInternational && passenger.passport_no.length < 5) return `${label}: passport number looks too short.`;
     return '';
@@ -1567,7 +1567,12 @@ async function confirmAndSaveTicket(form, sharedData, passengerData, returnShare
 
         if (state.bookingToUpdate) {
             for (const docId of state.bookingToUpdate) {
-                await deleteDocument('bookings', docId);
+                await updateBooking(docId, {
+                    status: 'issued',
+                    remark: 'issued',
+                    issuedTicketPnr: sharedData.booking_reference,
+                    issuedAt: new Date().toISOString()
+                });
             }
         }
 
@@ -1599,10 +1604,19 @@ async function confirmAndSaveTicket(form, sharedData, passengerData, returnShare
  * @returns {{sharedData: Object, passengerData: Array<Object>}} The collected data.
  */
 function collectFormData(form) {
+    const isInternational = !!document.getElementById('flightTypeToggle')?.checked;
+    const isRound = !!document.getElementById('trip_type_round')?.checked;
+    const isPaid = !!form.querySelector('#paid')?.checked;
+
     // Payment Method (supports Mobile Banking sub-method stored as: "Mobile Banking (KBZ Special)")
-    const basePaymentMethod = (form.querySelector('#payment_method')?.value || '').trim();
-    const bankPaymentMethod = (document.getElementById('payment_method_bank')?.value || '').trim();
-    const finalPaymentMethod = formatPaymentMethod(basePaymentMethod, bankPaymentMethod);
+    let finalPaymentMethod = '';
+    let paidDate = '';
+    if (isPaid) {
+        const basePaymentMethod = (form.querySelector('#payment_method')?.value || '').trim();
+        const bankPaymentMethod = (document.getElementById('payment_method_bank')?.value || '').trim();
+        finalPaymentMethod = formatPaymentMethod(basePaymentMethod, bankPaymentMethod);
+        paidDate = form.querySelector('#paid_date')?.value || '';
+    }
 
     // Handle Custom Location Input (when "CUSTOM" is selected)
     let departureVal = form.querySelector('#departure').value;
@@ -1632,9 +1646,6 @@ function collectFormData(form) {
         }
     }
 
-    const isInternational = !!document.getElementById('flightTypeToggle')?.checked;
-    const isRound = !!document.getElementById('trip_type_round')?.checked;
-
     const sharedData = {
         issued_date: form.querySelector('#issued_date').value,
         phone: form.querySelector('#phone').value,
@@ -1650,9 +1661,9 @@ function collectFormData(form) {
         is_international: isInternational,
         trip_type: isRound ? 'Round-Trip' : 'One-Way',
         is_round_trip: isRound,
-        paid: form.querySelector('#paid').checked,
+        paid: isPaid,
         payment_method: finalPaymentMethod,
-        paid_date: form.querySelector('#paid_date').value,
+        paid_date: paidDate,
         source: form.querySelector('input[name="ticket_source"]:checked')?.value || 'owner'
     };
 
@@ -1716,8 +1727,8 @@ function collectFormData(form) {
             name: readPassengerInput(pForm, '.passenger-name').toUpperCase(),
             dob: readPassengerInput(pForm, '.passenger-dob'),
             nationality: (readPassengerInput(pForm, '.passenger-nationality') || 'MMR').toUpperCase(),
-            document_type: isInternational ? 'Passport' : 'NRC',
-            id_no: nrcNo || passportNo,
+            document_type: (isInternational || (passportNo && !nrcNo)) ? 'Passport' : 'NRC',
+            id_no: (passportNo && !nrcNo) ? passportNo : (nrcNo || passportNo),
             nrc,
             nrc_no: nrcNo,
             passport_no: passportNo,
@@ -2216,7 +2227,17 @@ export function openEditTicketModal(ticket) {
     document.getElementById('editCancelBtn').addEventListener('click', closeModal);
     document.getElementById('editSaveBtn').addEventListener('click', async () => {
         const route = document.getElementById('editRoute').value.trim();
-        const [dep, dest] = route.split(/[→\-\s]+/).map(s => s.trim()).filter(Boolean);
+        let dep = ticket.departure;
+        let dest = ticket.destination;
+        if (route) {
+            const parts = route.split(/\s*(?:[→\u2192\-]|\bto\b)\s*/i).map(s => s.trim()).filter(Boolean);
+            if (parts.length >= 2) {
+                dep = parts[0];
+                dest = parts[1];
+            } else if (parts.length === 1) {
+                dep = parts[0];
+            }
+        }
         
         const rawDate = document.getElementById('editTravelDate').value.trim();
         const pd = parseSheetDate(rawDate);
