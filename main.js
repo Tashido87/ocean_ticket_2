@@ -1678,22 +1678,31 @@ function groupUnpaidTickets(rows) {
             const feeTickets = tickets.filter(t => isFeeEntryRow(t));
             const passengerTicket = nonFeeTickets[0] || feeTickets[0] || tickets[0];
 
-            // Resolve Account / Client Name (display Client name only)
+            // Resolve Client Name (ticket.name represents Client Name; account_name is Social Media Account Name)
             const accountName = String(
                 passengerTicket.account_name ||
                 tickets.find(t => t.account_name)?.account_name ||
                 ''
             ).trim();
 
-            const rawPaxName = String(
+            const candidateTickets = nonFeeTickets.length > 0 ? nonFeeTickets : (tickets.length > 0 ? tickets : [passengerTicket]);
+            const clientNames = [...new Set(
+                candidateTickets
+                    .map(t => String(t.name || '')
+                        .replace(/\s*\(\s*(fees|balance)\s*\)\s*$/i, '')
+                        .trim()
+                    )
+                    .filter(n => n && n.toLowerCase() !== 'undefined')
+            )];
+
+            const rawPaxName = clientNames.join(', ') || String(
                 passengerTicket.name ||
                 tickets.find(t => t.name)?.name ||
                 ''
             ).replace(/\s*\(fees\)\s*$/i, '').replace(/\s*\(balance\)\s*$/i, '').trim();
 
-            const clientLabel = (accountName && accountName.toLowerCase() !== 'undefined')
-                ? accountName
-                : (rawPaxName || 'Client');
+            const clientLabel = rawPaxName ||
+                (accountName && accountName.toLowerCase() !== 'undefined' ? accountName : 'Client');
 
             // Travel Date: prefer ticket with valid departing_on
             const dateTicket = nonFeeTickets.find(t => parseSheetDate(t.departing_on)) ||
@@ -1706,7 +1715,8 @@ function groupUnpaidTickets(rows) {
             groups.set(pnrKey, {
                 pnr: displayPnr,
                 client: clientLabel,
-                rawClient: accountName,
+                rawClient: clientLabel,
+                socialAccount: accountName,
                 rawPassenger: rawPaxName,
                 route: dashboardRouteLabel(routeTicket),
                 dueDate: parseSheetDate(dateTicket.departing_on),
@@ -2226,6 +2236,7 @@ function renderDashboardUnpaidTickets(groups) {
             String(g.pnr || '').toLowerCase().includes(term) ||
             String(g.client || '').toLowerCase().includes(term) ||
             String(g.rawClient || '').toLowerCase().includes(term) ||
+            String(g.socialAccount || '').toLowerCase().includes(term) ||
             String(g.rawPassenger || '').toLowerCase().includes(term) ||
             String(g.route || '').toLowerCase().includes(term)
         )
