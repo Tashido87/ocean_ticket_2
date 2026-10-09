@@ -8,7 +8,7 @@
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
 import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, batchUpdateTickets } from './db.js';
-import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta } from './utils.js';
+import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta, formatDateForSheet } from './utils.js';
 
 // Feature Modules
 import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets } from './tickets.js?v=10';
@@ -1992,6 +1992,91 @@ export function showTripPlanDetail(pnr) {
         `;
     }).join('');
 
+function getFeeRowDateChangeText(t, allRows = []) {
+    if (!t) return 'Date Change';
+
+    const formatCleanDate = (val) => {
+        if (!val) return '';
+        const s = String(val).trim();
+        if (s === '—' || s === 'N/A' || s === 'Date missing') return '';
+        const parsed = parseSheetDate(s);
+        if (parsed && !isNaN(parsed.getTime())) {
+            return formatDateForSheet(parsed);
+        }
+        return s;
+    };
+
+    // 1. Direct explicit previous_date and new_date on ticket
+    if (t.previous_date && (t.new_date || t.departing_on)) {
+        const from = formatCleanDate(t.previous_date);
+        const to = formatCleanDate(t.new_date || t.departing_on);
+        if (from && to && from !== to) return `${from} → ${to}`;
+    }
+
+    // 2. Check if remarks already has explicit date change pattern (e.g. "15/10/2026 → 19/10/2026")
+    const rawRemarks = String(t.remarks || '').trim();
+    if (rawRemarks) {
+        const arrowMatch = rawRemarks.match(/(\d{1,2}[-/.](?:\d{1,2}|[A-Za-z]{3,4})[-/.]\d{2,4})\s*(?:→|->|to)\s*(\d{1,2}[-/.](?:\d{1,2}|[A-Za-z]{3,4})[-/.]\d{2,4})/i);
+        if (arrowMatch) {
+            const from = formatCleanDate(arrowMatch[1]);
+            const to = formatCleanDate(arrowMatch[2]);
+            if (from && to) return `${from} → ${to}`;
+        }
+    }
+
+    // 3. Search state.history for Travel Date modifications for this PNR
+    const pnr = String(t.booking_reference || '').trim().toUpperCase();
+    const baseName = String(t.name || '').replace(/\s*\(fees\)\s*$/i, '').trim().toUpperCase();
+
+    if (Array.isArray(state.history) && state.history.length > 0 && pnr) {
+        const matchingHistory = state.history.filter(h => {
+            const hpnr = String(h.pnr || '').trim().toUpperCase();
+            if (!hpnr || hpnr !== pnr) return false;
+            const details = String(h.details || '');
+            return details.includes('Travel Date:');
+        });
+
+        if (matchingHistory.length > 0) {
+            // Find entry matching passenger name or fallback to latest matching PNR entry
+            const entry = matchingHistory.find(h => {
+                const hName = String(h.name || '').replace(/\s*\(fees\)\s*$/i, '').trim().toUpperCase();
+                return hName && baseName && (hName.includes(baseName) || baseName.includes(hName));
+            }) || matchingHistory[0];
+
+            const details = String(entry.details || '');
+            const dateMatch = details.match(/Travel Date:\s*([^;.\n]+?)\s+to\s+([^;.\n]+?)(?:[;.]|$)/i);
+            if (dateMatch) {
+                const from = formatCleanDate(dateMatch[1]);
+                const to = formatCleanDate(dateMatch[2]);
+                if (from && to) return `${from} → ${to}`;
+            }
+        }
+    }
+
+    // 4. Check against non-fee passenger tickets in allRows
+    if (Array.isArray(allRows) && t.departing_on) {
+        const passengerTicket = allRows.find(row => !isFeeEntryRow(row) && row.departing_on);
+        if (passengerTicket && passengerTicket.departing_on) {
+            const from = formatCleanDate(passengerTicket.departing_on);
+            const to = formatCleanDate(t.departing_on);
+            if (from && to && from !== to) return `${from} → ${to}`;
+        }
+    }
+
+    // 5. If we only know destination date (departing_on)
+    if (t.departing_on) {
+        const to = formatCleanDate(t.departing_on);
+        if (to) return `→ ${to}`;
+    }
+
+    // 6. Fallback if remarks was generic fee text: avoid noise
+    if (rawRemarks.startsWith('Fee Entry')) {
+        return 'Date Change';
+    }
+
+    return rawRemarks || 'Date Change';
+}
+
     const feeList = feeRows.length ? feeRows.map(t => {
         const paid = isTicketPaid(t);
         const amount = ticketSalesAmount(t);
@@ -2001,12 +2086,13 @@ export function showTripPlanDetail(pnr) {
         const nameHtml = ck
             ? `<a href="#" class="clickable-client-link pax-name-premium" data-client-key="${dashboardEscapeHtml(ck)}">${dashboardEscapeHtml(t.name || 'Fee')}</a>`
             : `<span class="pax-name-premium">${dashboardEscapeHtml(t.name || 'Fee')}</span>`;
+        const dateChangeSub = getFeeRowDateChangeText(t, allRows);
         return `
             <div class="pax-row-premium">
                 <div class="pax-avatar fee-avatar"><i class="fa-solid fa-tag"></i></div>
                 <div class="pax-details-premium">
                     ${nameHtml}
-                    <span class="pax-ticket-premium">${dashboardEscapeHtml(t.remarks || 'Date/Extra Change')}</span>
+                    <span class="pax-ticket-premium">${dashboardEscapeHtml(dateChangeSub)}</span>
                 </div>
                 <div class="pax-finance-premium">
                     <span class="pax-amount-premium">${formatDashboardAmount(amount)} MMK</span>

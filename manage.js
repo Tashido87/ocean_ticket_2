@@ -752,6 +752,11 @@ function openFinancialModal(docId) {
                 const sectorTickets = ticketsToUpdate.filter(t => t.departure === ticket.departure && t.destination === ticket.destination);
                 
                 for (const t of sectorTickets) {
+                    const feeRemarks = (dateChanged && (ticket.departing_on || newDateVal))
+                        ? `${ticket.departing_on || '—'} → ${newDateVal || newDateFormatted}`
+                        : (dateChangeFee > 0 && newDateFormatted
+                            ? `${ticket.departing_on || '—'} → ${newDateFormatted}`
+                            : `Fee Entry | Date Change Fee: ${dateChangeFee.toLocaleString()} MMK, Comm: ${dateChangeComm.toLocaleString()} MMK, Extra: ${dateChangeExtra.toLocaleString()} MMK`);
                     const feeData = {
                         name: `${t.name} (Fees)`,
                         booking_reference: t.booking_reference,
@@ -768,7 +773,9 @@ function openFinancialModal(docId) {
                         paid: dateChangePaid,
                         paid_date: dateChangePaidDate,
                         payment_method: dateChangeMethod,
-                        remarks: `Fee Entry | Date Change Fee: ${dateChangeFee.toLocaleString()} MMK, Comm: ${dateChangeComm.toLocaleString()} MMK, Extra: ${dateChangeExtra.toLocaleString()} MMK`,
+                        remarks: feeRemarks,
+                        previous_date: ticket.departing_on || '',
+                        new_date: newDateVal || newDateFormatted || '',
                         source: t.source || '',
                         account_name: t.account_name || '',
                         account_type: t.account_type || '',
@@ -1674,6 +1681,11 @@ async function handleUpdateTicket(e) {
             const today = formatDateForSheet(new Date());
             const feePaidDate = finalPaid ? (newPaidDate ? formatDateForSheet(newPaidDate) : today) : '';
             
+            const feeRemarks = dateChanged && (masterTicket.departing_on || newTravelDateVal)
+                ? `${masterTicket.departing_on || '—'} → ${formatDateForSheet(newTravelDateVal)}`
+                : (dateChangeFees > 0 && newTravelDateVal
+                    ? `${masterTicket.departing_on || '—'} → ${formatDateForSheet(newTravelDateVal)}`
+                    : 'Fee Entry');
             await addTickets([{
                 issued_date: today,
                 name: `${masterTicket.name} (Fees)`,
@@ -1693,7 +1705,9 @@ async function handleUpdateTicket(e) {
                 payment_method: finalPaymentMethod,
                 paid_date: feePaidDate,
                 commission: extraFare,
-                remarks: 'Fee Entry',
+                remarks: feeRemarks,
+                previous_date: masterTicket.departing_on || '',
+                new_date: newTravelDateVal ? formatDateForSheet(newTravelDateVal) : '',
                 extra_fare: 0,
                 date_change: 0,
                 gender: masterTicket.gender
