@@ -1678,7 +1678,7 @@ function groupUnpaidTickets(rows) {
             const feeTickets = tickets.filter(t => isFeeEntryRow(t));
             const passengerTicket = nonFeeTickets[0] || feeTickets[0] || tickets[0];
 
-            // Resolve Account / Client Name vs Passenger Name
+            // Resolve Account / Client Name (display Client name only)
             const accountName = String(
                 passengerTicket.account_name ||
                 tickets.find(t => t.account_name)?.account_name ||
@@ -1691,14 +1691,9 @@ function groupUnpaidTickets(rows) {
                 ''
             ).replace(/\s*\(fees\)\s*$/i, '').replace(/\s*\(balance\)\s*$/i, '').trim();
 
-            let clientLabel = rawPaxName || 'Passenger';
-            if (accountName && accountName.toLowerCase() !== 'undefined') {
-                if (rawPaxName && accountName.toLowerCase() !== rawPaxName.toLowerCase()) {
-                    clientLabel = `${accountName} (${rawPaxName})`;
-                } else {
-                    clientLabel = accountName;
-                }
-            }
+            const clientLabel = (accountName && accountName.toLowerCase() !== 'undefined')
+                ? accountName
+                : (rawPaxName || 'Client');
 
             // Travel Date: prefer ticket with valid departing_on
             const dateTicket = nonFeeTickets.find(t => parseSheetDate(t.departing_on)) ||
@@ -2201,8 +2196,6 @@ function renderDashboardTravelSchedule(groups) {
 }
 
 let dashboardUnpaidSearchTerm = '';
-let dashboardUnpaidCurrentPage = 1;
-const DASHBOARD_UNPAID_PAGE_SIZE = 5;
 
 function renderDashboardUnpaidTickets(groups) {
     const container = document.getElementById('dashboardUnpaidTickets');
@@ -2226,7 +2219,7 @@ function renderDashboardUnpaidTickets(groups) {
         return;
     }
 
-    // Filter groups by search term
+    // Filter groups by search term if provided
     const term = (dashboardUnpaidSearchTerm || '').toLowerCase().trim();
     const filteredGroups = term
         ? groups.filter(g =>
@@ -2238,16 +2231,7 @@ function renderDashboardUnpaidTickets(groups) {
         )
         : groups;
 
-    const totalFiltered = filteredGroups.length;
-    const maxPage = Math.max(1, Math.ceil(totalFiltered / DASHBOARD_UNPAID_PAGE_SIZE));
-    if (dashboardUnpaidCurrentPage > maxPage) dashboardUnpaidCurrentPage = maxPage;
-    if (dashboardUnpaidCurrentPage < 1) dashboardUnpaidCurrentPage = 1;
-
-    const startIndex = (dashboardUnpaidCurrentPage - 1) * DASHBOARD_UNPAID_PAGE_SIZE;
-    const endIndex = Math.min(startIndex + DASHBOARD_UNPAID_PAGE_SIZE, totalFiltered);
-    const paginatedGroups = filteredGroups.slice(startIndex, endIndex);
-
-    const rows = paginatedGroups.map(group => {
+    const rows = filteredGroups.map(group => {
         const feeBadge = group.hasFeeRows
             ? `<span class="unpaid-tag-fee" title="Includes Date Change or Fee Entry">Fee</span>`
             : '';
@@ -2261,25 +2245,6 @@ function renderDashboardUnpaidTickets(groups) {
             </tr>
         `;
     }).join('');
-
-    const paginationHtml = totalFiltered > DASHBOARD_UNPAID_PAGE_SIZE ? `
-        <div class="dashboard-table-pagination">
-            <span>Showing ${totalFiltered === 0 ? 0 : startIndex + 1}–${endIndex} of ${totalFiltered} PNRs</span>
-            <div class="pagination-buttons">
-                <button type="button" class="btn-page-nav" id="unpaidPrevPage" ${dashboardUnpaidCurrentPage === 1 ? 'disabled' : ''} aria-label="Previous page">
-                    <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <span class="pagination-page-indicator">${dashboardUnpaidCurrentPage} / ${maxPage}</span>
-                <button type="button" class="btn-page-nav" id="unpaidNextPage" ${dashboardUnpaidCurrentPage >= maxPage ? 'disabled' : ''} aria-label="Next page">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-    ` : (totalFiltered > 0 ? `
-        <div class="dashboard-table-pagination">
-            <span>Showing all ${totalFiltered} PNRs</span>
-        </div>
-    ` : '');
 
     container.innerHTML = `
         <div class="unpaid-summary-grid">
@@ -2296,10 +2261,10 @@ function renderDashboardUnpaidTickets(groups) {
                 <thead>
                     <tr>
                         <th>PNR</th>
-                        <th>Client / Passenger</th>
-                        <th>Route</th>
-                        <th>Amount Due</th>
-                        <th>Action</th>
+                        <th>CLIENT</th>
+                        <th>ROUTE</th>
+                        <th>AMOUNT DUE</th>
+                        <th>ACTION</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -2307,7 +2272,6 @@ function renderDashboardUnpaidTickets(groups) {
                 </tbody>
             </table>
         </div>
-        ${paginationHtml}
     `;
 
     wireDashboardPnrButtons(container);
@@ -2316,32 +2280,11 @@ function renderDashboardUnpaidTickets(groups) {
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             dashboardUnpaidSearchTerm = e.target.value;
-            dashboardUnpaidCurrentPage = 1;
             renderDashboardUnpaidTickets(groups);
             const inputRef = document.getElementById('dashboardUnpaidSearch');
             if (inputRef) {
                 inputRef.focus();
                 inputRef.selectionStart = inputRef.selectionEnd = inputRef.value.length;
-            }
-        });
-    }
-
-    const prevBtn = document.getElementById('unpaidPrevPage');
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (dashboardUnpaidCurrentPage > 1) {
-                dashboardUnpaidCurrentPage--;
-                renderDashboardUnpaidTickets(groups);
-            }
-        });
-    }
-
-    const nextBtn = document.getElementById('unpaidNextPage');
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            if (dashboardUnpaidCurrentPage < maxPage) {
-                dashboardUnpaidCurrentPage++;
-                renderDashboardUnpaidTickets(groups);
             }
         });
     }

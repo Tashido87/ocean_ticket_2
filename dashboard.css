@@ -572,57 +572,9 @@
   vertical-align: middle !important;
 }
 
-#home-view .dashboard-table-pagination {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  padding: 6px 4px 2px 4px !important;
-  font-size: 11px !important;
-  color: var(--dash-text-muted) !important;
-}
-
-#home-view .dashboard-table-pagination .pagination-buttons {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-}
-
-#home-view .dashboard-table-pagination .pagination-page-indicator {
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: var(--dash-text) !important;
-}
-
-#home-view .dashboard-table-pagination .btn-page-nav {
-  padding: 2px 7px !important;
-  font-size: 10.5px !important;
-  border-radius: 4px !important;
-  border: 1px solid var(--dash-border) !important;
-  background: var(--dash-surface) !important;
-  color: var(--dash-text) !important;
-  cursor: pointer !important;
-  line-height: 1.4 !important;
-}
-
-#home-view .dashboard-table-pagination .btn-page-nav:disabled {
-  opacity: 0.35 !important;
-  cursor: not-allowed !important;
-}
-
 #home-view .dashboard-table-wrap {
-  max-height: 200px !important;
-  overflow-y: auto !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent !important;
-}
-
-#home-view .dashboard-table-wrap::-webkit-scrollbar {
-  width: 5px !important;
-}
-
-#home-view .dashboard-table-wrap::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2) !important;
-  border-radius: 3px !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 
 #home-view .dashboard-mini-table {
