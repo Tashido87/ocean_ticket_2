@@ -557,7 +557,8 @@ export function updateNotifications() {
     let grandTotalUnpaid = 0; // ADDED: Variable for total
 
     state.allTickets.forEach(t => {
-        if (isTicketPaid(t)) return;
+        const hasOutstanding = t.outstanding_amount !== undefined && Number(t.outstanding_amount) > 0;
+        if (isTicketPaid(t) && !hasOutstanding) return;
         const lowerRemarks = String(t.remarks || '').toLowerCase();
         if (lowerRemarks.includes('cancel') || lowerRemarks.includes('refund')) return;
 
@@ -569,7 +570,9 @@ export function updateNotifications() {
             unpaidGroups[pnr] = { pnr, passengers: [], totalDue: 0 };
         }
 
-        const amt = (t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0);
+        const amt = hasOutstanding
+            ? Number(t.outstanding_amount)
+            : ((t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0));
         unpaidGroups[pnr].totalDue += amt;
         grandTotalUnpaid += amt; // ADDED: Sum up total
 
@@ -1085,7 +1088,8 @@ export function showNotificationModal() {
     // - Excludes cancelled/refund
     // - Fee-entry rows count toward totals but do not inflate passenger names
     const unpaidTickets = state.allTickets.filter(t => {
-        if (isTicketPaid(t)) return false;
+        const hasOutstanding = t.outstanding_amount !== undefined && Number(t.outstanding_amount) > 0;
+        if (isTicketPaid(t) && !hasOutstanding) return false;
         const r = String(t.remarks || '').toLowerCase();
         if (r.includes('cancel') || r.includes('refund')) return false;
         return true;
@@ -1109,7 +1113,10 @@ export function showNotificationModal() {
             acc[pnr].passengers.add(normalizePassengerName(t.name) || 'N/A');
         }
 
-        const amt = (t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0);
+        const hasOutstanding = t.outstanding_amount !== undefined && Number(t.outstanding_amount) > 0;
+        const amt = hasOutstanding
+            ? Number(t.outstanding_amount)
+            : ((t.net_amount || 0) + (t.extra_fare || 0) + (t.date_change || 0));
         acc[pnr].total_due += amt;
 
         const route = (t.departure && t.destination)

@@ -2125,7 +2125,10 @@ export function populateSearchAirlines() {
  * Updates the unpaid ticket count badge in the search form.
  */
 export function updateUnpaidCount() {
-    const unpaidTickets = state.allTickets.filter(t => !isTicketPaid(t));
+    const unpaidTickets = state.allTickets.filter(t => {
+        const hasOutstanding = t.outstanding_amount !== undefined && Number(t.outstanding_amount) > 0;
+        return hasOutstanding || !isTicketPaid(t);
+    });
     const count = unpaidTickets.length;
     const label = document.getElementById('unpaid-only-label');
     if (!label) return;

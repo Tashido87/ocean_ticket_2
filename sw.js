@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-v33';
+const CACHE_NAME = 'ocean-travel-v34';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -10,11 +10,11 @@ const CORE_ASSETS = [
     './apple-ui.css?v=22',
     './sell-desktop-layout.css?v=1',
     './pnr-detail.css?v=2',
-    './dashboard.css?v=5',
+    './dashboard.css?v=6',
     './page-harmony.css?v=1',
     './service-colors.css?v=1',
     './background-settings.css?v=1',
-    './main.js?v=102',
+    './main.js?v=103',
     './utils.js',
     './state.js',
     './db.js',

@@ -537,9 +537,92 @@
   color: var(--dash-text-faint) !important;
 }
 
+#home-view .dashboard-unpaid-toolbar {
+  margin: 6px 0 8px 0 !important;
+  display: flex !important;
+  gap: 6px !important;
+}
+
+#home-view .dashboard-unpaid-toolbar input {
+  width: 100% !important;
+  padding: 5px 10px !important;
+  font-size: 11.5px !important;
+  border: 1px solid var(--dash-border) !important;
+  border-radius: 6px !important;
+  background: var(--dash-surface-subtle) !important;
+  color: var(--dash-text) !important;
+  outline: none !important;
+  transition: border-color 0.15s ease !important;
+}
+
+#home-view .dashboard-unpaid-toolbar input:focus {
+  border-color: var(--dash-coral) !important;
+}
+
+#home-view .unpaid-tag-fee {
+  display: inline-block !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+  margin-left: 4px !important;
+  vertical-align: middle !important;
+}
+
+#home-view .dashboard-table-pagination {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 6px 4px 2px 4px !important;
+  font-size: 11px !important;
+  color: var(--dash-text-muted) !important;
+}
+
+#home-view .dashboard-table-pagination .pagination-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+#home-view .dashboard-table-pagination .pagination-page-indicator {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--dash-text) !important;
+}
+
+#home-view .dashboard-table-pagination .btn-page-nav {
+  padding: 2px 7px !important;
+  font-size: 10.5px !important;
+  border-radius: 4px !important;
+  border: 1px solid var(--dash-border) !important;
+  background: var(--dash-surface) !important;
+  color: var(--dash-text) !important;
+  cursor: pointer !important;
+  line-height: 1.4 !important;
+}
+
+#home-view .dashboard-table-pagination .btn-page-nav:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+}
+
 #home-view .dashboard-table-wrap {
-  max-height: 185px !important;
+  max-height: 200px !important;
   overflow-y: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent !important;
+}
+
+#home-view .dashboard-table-wrap::-webkit-scrollbar {
+  width: 5px !important;
+}
+
+#home-view .dashboard-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 3px !important;
 }
 
 #home-view .dashboard-mini-table {

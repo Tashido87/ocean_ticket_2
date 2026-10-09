@@ -1639,35 +1639,86 @@ function groupUnpaidTickets(rows) {
     // or on "(Fees)" change rows. Fee rows are not clients, but they are still receivables.
     const activeTickets = rows.filter(ticket => !isCanceledTicket(ticket));
 
-    // Group by PNR first
+    // Group by PNR first (normalize PNR to upper-case trim)
     const pnrGroups = new Map();
     activeTickets.forEach(ticket => {
-        const pnr = String(ticket.booking_reference || '').trim() || ticket.id || 'No PNR';
-        if (!pnrGroups.has(pnr)) pnrGroups.set(pnr, []);
-        pnrGroups.get(pnr).push(ticket);
+        const rawPnr = String(ticket.booking_reference || '').trim();
+        const pnrKey = rawPnr.toUpperCase() || String(ticket.id || '').trim() || 'No PNR';
+        if (!pnrGroups.has(pnrKey)) {
+            pnrGroups.set(pnrKey, { displayPnr: rawPnr || pnrKey, tickets: [] });
+        }
+        pnrGroups.get(pnrKey).tickets.push(ticket);
     });
 
     // For each PNR, compute total unpaid amount across ALL rows (passenger + fees)
-    pnrGroups.forEach((tickets, pnr) => {
-        const unpaidAmount = tickets
-            .filter(t => !isTicketPaid(t))
-            .reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+    pnrGroups.forEach(({ displayPnr, tickets }, pnrKey) => {
+        let unpaidAmount = 0;
+        let hasFeeUnpaid = false;
+
+        tickets.forEach(t => {
+            const isFee = isFeeEntryRow(t);
+            let itemUnpaid = 0;
+
+            if (t.outstanding_amount !== undefined && Number(t.outstanding_amount) >= 0) {
+                itemUnpaid = Number(t.outstanding_amount);
+            } else if (!isTicketPaid(t)) {
+                itemUnpaid = ticketSalesAmount(t);
+            }
+
+            if (itemUnpaid > 0) {
+                unpaidAmount += itemUnpaid;
+                if (isFee || Number(t.date_change) > 0) {
+                    hasFeeUnpaid = true;
+                }
+            }
+        });
 
         if (unpaidAmount > 0) {
-            // Use the passenger row (non-fee) for display name/route/dates
-            const passengerTicket = tickets.find(t => !isFeeEntryRow(t)) || tickets[0];
-            const displayName = String(passengerTicket.name || tickets[0]?.name || '')
-                .replace(/\([^)]+\)\s*$/i, '')
-                .trim();
-            groups.set(pnr, {
-                pnr,
-                client: displayName || 'Passenger',
-                route: dashboardRouteLabel(passengerTicket),
-                dueDate: parseSheetDate(passengerTicket.departing_on),
+            const nonFeeTickets = tickets.filter(t => !isFeeEntryRow(t));
+            const feeTickets = tickets.filter(t => isFeeEntryRow(t));
+            const passengerTicket = nonFeeTickets[0] || feeTickets[0] || tickets[0];
+
+            // Resolve Account / Client Name vs Passenger Name
+            const accountName = String(
+                passengerTicket.account_name ||
+                tickets.find(t => t.account_name)?.account_name ||
+                ''
+            ).trim();
+
+            const rawPaxName = String(
+                passengerTicket.name ||
+                tickets.find(t => t.name)?.name ||
+                ''
+            ).replace(/\s*\(fees\)\s*$/i, '').replace(/\s*\(balance\)\s*$/i, '').trim();
+
+            let clientLabel = rawPaxName || 'Passenger';
+            if (accountName && accountName.toLowerCase() !== 'undefined') {
+                if (rawPaxName && accountName.toLowerCase() !== rawPaxName.toLowerCase()) {
+                    clientLabel = `${accountName} (${rawPaxName})`;
+                } else {
+                    clientLabel = accountName;
+                }
+            }
+
+            // Travel Date: prefer ticket with valid departing_on
+            const dateTicket = nonFeeTickets.find(t => parseSheetDate(t.departing_on)) ||
+                               feeTickets.find(t => parseSheetDate(t.departing_on)) ||
+                               passengerTicket;
+            const routeTicket = nonFeeTickets.find(t => t.departure && t.destination) ||
+                                feeTickets.find(t => t.departure && t.destination) ||
+                                passengerTicket;
+
+            groups.set(pnrKey, {
+                pnr: displayPnr,
+                client: clientLabel,
+                rawClient: accountName,
+                rawPassenger: rawPaxName,
+                route: dashboardRouteLabel(routeTicket),
+                dueDate: parseSheetDate(dateTicket.departing_on),
                 issuedDate: parseSheetDate(passengerTicket.issued_date),
                 amount: unpaidAmount,
-                tickets: tickets.filter(t => !isFeeEntryRow(t)).length,
-                hasFeeRows: tickets.some(t => isFeeEntryRow(t) && !isTicketPaid(t))
+                tickets: nonFeeTickets.length || tickets.length,
+                hasFeeRows: hasFeeUnpaid
             });
         }
     });
@@ -2149,6 +2200,10 @@ function renderDashboardTravelSchedule(groups) {
     wireDashboardPnrButtons(container);
 }
 
+let dashboardUnpaidSearchTerm = '';
+let dashboardUnpaidCurrentPage = 1;
+const DASHBOARD_UNPAID_PAGE_SIZE = 5;
+
 function renderDashboardUnpaidTickets(groups) {
     const container = document.getElementById('dashboardUnpaidTickets');
     if (!container) return;
@@ -2171,17 +2226,60 @@ function renderDashboardUnpaidTickets(groups) {
         return;
     }
 
-    const rows = groups.map(group => {
+    // Filter groups by search term
+    const term = (dashboardUnpaidSearchTerm || '').toLowerCase().trim();
+    const filteredGroups = term
+        ? groups.filter(g =>
+            String(g.pnr || '').toLowerCase().includes(term) ||
+            String(g.client || '').toLowerCase().includes(term) ||
+            String(g.rawClient || '').toLowerCase().includes(term) ||
+            String(g.rawPassenger || '').toLowerCase().includes(term) ||
+            String(g.route || '').toLowerCase().includes(term)
+        )
+        : groups;
+
+    const totalFiltered = filteredGroups.length;
+    const maxPage = Math.max(1, Math.ceil(totalFiltered / DASHBOARD_UNPAID_PAGE_SIZE));
+    if (dashboardUnpaidCurrentPage > maxPage) dashboardUnpaidCurrentPage = maxPage;
+    if (dashboardUnpaidCurrentPage < 1) dashboardUnpaidCurrentPage = 1;
+
+    const startIndex = (dashboardUnpaidCurrentPage - 1) * DASHBOARD_UNPAID_PAGE_SIZE;
+    const endIndex = Math.min(startIndex + DASHBOARD_UNPAID_PAGE_SIZE, totalFiltered);
+    const paginatedGroups = filteredGroups.slice(startIndex, endIndex);
+
+    const rows = paginatedGroups.map(group => {
+        const feeBadge = group.hasFeeRows
+            ? `<span class="unpaid-tag-fee" title="Includes Date Change or Fee Entry">Fee</span>`
+            : '';
         return `
             <tr>
                 <td><strong><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></strong></td>
                 <td>${dashboardEscapeHtml(group.client)}</td>
                 <td>${dashboardEscapeHtml(group.route)}</td>
-                <td class="num">${formatDashboardAmount(group.amount)} MMK</td>
-                <td><button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}"><i class="fa-solid fa-eye"></i></button></td>
+                <td class="num">${formatDashboardAmount(group.amount)} MMK ${feeBadge}</td>
+                <td><button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}" title="View details"><i class="fa-solid fa-eye"></i></button></td>
             </tr>
         `;
     }).join('');
+
+    const paginationHtml = totalFiltered > DASHBOARD_UNPAID_PAGE_SIZE ? `
+        <div class="dashboard-table-pagination">
+            <span>Showing ${totalFiltered === 0 ? 0 : startIndex + 1}–${endIndex} of ${totalFiltered} PNRs</span>
+            <div class="pagination-buttons">
+                <button type="button" class="btn-page-nav" id="unpaidPrevPage" ${dashboardUnpaidCurrentPage === 1 ? 'disabled' : ''} aria-label="Previous page">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span class="pagination-page-indicator">${dashboardUnpaidCurrentPage} / ${maxPage}</span>
+                <button type="button" class="btn-page-nav" id="unpaidNextPage" ${dashboardUnpaidCurrentPage >= maxPage ? 'disabled' : ''} aria-label="Next page">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    ` : (totalFiltered > 0 ? `
+        <div class="dashboard-table-pagination">
+            <span>Showing all ${totalFiltered} PNRs</span>
+        </div>
+    ` : '');
 
     container.innerHTML = `
         <div class="unpaid-summary-grid">
@@ -2190,22 +2288,63 @@ function renderDashboardUnpaidTickets(groups) {
             <div><span>Due Today</span><strong>${dueToday.length}</strong><small>PNR</small></div>
             <div><span>Due This Week</span><strong>${dueThisWeek.length}</strong><small>PNR</small></div>
         </div>
+        <div class="dashboard-unpaid-toolbar">
+            <input type="text" id="dashboardUnpaidSearch" placeholder="Filter PNR, client, or route..." value="${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}">
+        </div>
         <div class="dashboard-table-wrap">
             <table class="dashboard-mini-table">
                 <thead>
                     <tr>
                         <th>PNR</th>
-                        <th>Client</th>
+                        <th>Client / Passenger</th>
                         <th>Route</th>
                         <th>Amount Due</th>
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody>${rows}</tbody>
+                <tbody>
+                    ${rows || `<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--dash-text-muted);">No unpaid tickets matching "${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}"</td></tr>`}
+                </tbody>
             </table>
         </div>
+        ${paginationHtml}
     `;
+
     wireDashboardPnrButtons(container);
+
+    const searchInput = document.getElementById('dashboardUnpaidSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            dashboardUnpaidSearchTerm = e.target.value;
+            dashboardUnpaidCurrentPage = 1;
+            renderDashboardUnpaidTickets(groups);
+            const inputRef = document.getElementById('dashboardUnpaidSearch');
+            if (inputRef) {
+                inputRef.focus();
+                inputRef.selectionStart = inputRef.selectionEnd = inputRef.value.length;
+            }
+        });
+    }
+
+    const prevBtn = document.getElementById('unpaidPrevPage');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (dashboardUnpaidCurrentPage > 1) {
+                dashboardUnpaidCurrentPage--;
+                renderDashboardUnpaidTickets(groups);
+            }
+        });
+    }
+
+    const nextBtn = document.getElementById('unpaidNextPage');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (dashboardUnpaidCurrentPage < maxPage) {
+                dashboardUnpaidCurrentPage++;
+                renderDashboardUnpaidTickets(groups);
+            }
+        });
+    }
 }
 
 function getBookingDeadlineReminderRows(activeBookings) {
