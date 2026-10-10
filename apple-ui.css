@@ -135,8 +135,8 @@ body.material-theme .sidebar {
     background: var(--apple-sidebar);
     border-right: 1px solid rgba(255, 255, 255, 0.45);
     box-shadow: 1px 0 0 var(--apple-separator);
-    backdrop-filter: blur(28px) saturate(155%);
-    -webkit-backdrop-filter: blur(28px) saturate(155%);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     transition: transform 340ms var(--apple-appear), width 340ms var(--apple-appear);
 }
 
@@ -286,8 +286,8 @@ body.material-theme .header {
     background: var(--apple-toolbar);
     border: 0;
     box-shadow: inset 0 -1px var(--apple-separator);
-    backdrop-filter: blur(24px) saturate(155%);
-    -webkit-backdrop-filter: blur(24px) saturate(155%);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 body.material-theme .header::after {
@@ -387,8 +387,8 @@ body.material-theme .settle-kpi-card {
     border: 1px solid var(--apple-separator);
     border-radius: var(--apple-radius);
     box-shadow: var(--apple-shadow);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 body.material-theme .glass-card::before,
@@ -1427,8 +1427,8 @@ body.material-theme .settle-link {
 body.material-theme .modal {
     padding: 20px;
     background: rgba(0, 0, 0, 0.34);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 body.material-theme .modal-content {
@@ -1459,8 +1459,8 @@ body.material-theme .service-toast.is-visible {
     border-radius: 12px;
     background: rgba(28, 28, 30, 0.92);
     box-shadow: var(--apple-shadow-floating);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 /* VanillaJS Datepicker — Apple Calendar Polish */
@@ -1548,8 +1548,8 @@ body.material-theme .landing-stack {
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.7);
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(30px) saturate(150%);
-    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 body.material-theme .landing-corner-logo {
@@ -1622,8 +1622,8 @@ body.material-theme .landing-signin-btn:active {
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         z-index: 9998;
         pointer-events: auto;
     }
@@ -1694,8 +1694,8 @@ body.material-theme .landing-signin-btn:active {
         padding: 8px 14px !important;
         z-index: 1000 !important;
         background: var(--apple-toolbar) !important;
-        backdrop-filter: blur(24px) saturate(155%) !important;
-        -webkit-backdrop-filter: blur(24px) saturate(155%) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
         border-bottom: 1px solid var(--apple-separator) !important;
         box-shadow: 0 1px 0 var(--apple-separator), 0 2px 10px rgba(0, 0, 0, 0.04) !important;
         box-sizing: border-box !important;
@@ -2589,8 +2589,8 @@ body.material-theme .landing-signin-btn:active {
     body.material-theme .header,
     body.material-theme .landing-stack {
         background: var(--apple-card);
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
     }
 }
 

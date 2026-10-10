@@ -4,9 +4,10 @@ import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..');
-const cssFiles = ['styles.css', 'landing.css', 'sell.css', 'apple-ui.css', 'sell-desktop-layout.css', 'pnr-detail.css', 'dashboard.css', 'page-harmony.css', 'service-colors.css', 'vendor/liquid-glass.css', 'liquid-glass-ui.css'];
+const cssFiles = ['styles.css', 'landing.css', 'sell.css', 'apple-ui.css', 'sell-desktop-layout.css', 'pnr-detail.css', 'dashboard.css', 'page-harmony.css', 'service-colors.css', 'solid-ui.css'];
 const index = await readFile(path.join(root, 'index.html'), 'utf8');
 const main = await readFile(path.join(root, 'main.js'), 'utf8');
+assert(!/glass-start|liquid-glass/.test(index + main));
 assert(!/<script[^>]+src=["'][^"']*(jspdf|html2canvas|pdf\.min|tesseract)/i.test(index));
 assert(!/^import .*from ['"].*(hotel\.js|airasia-converter|agoda-hotel-converter)/m.test(main));
 const fixture = index.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace('</body>', `<script>document.querySelector('#initial-splash')?.remove();document.body.className='material-theme';document.querySelectorAll('.view').forEach(e=>{e.style.display='block';e.classList.add('active')});document.querySelector('#dashboard-content').style.display='flex';</script></body>`);
@@ -18,7 +19,7 @@ const server = createServer(async (req, res) => {
         res.end(url.pathname === '/old' ? fixture.replace('<link rel="stylesheet" href="app-styles.min.css?v=1">', cssFiles.map(f => `<link rel="stylesheet" href="/${f}">`).join('')) : fixture);
         return;
     }
-    const allowed = [...cssFiles, 'app-styles.min.css', 'document-libraries.js', 'glass-start.js'];
+    const allowed = [...cssFiles, 'app-styles.min.css', 'document-libraries.js'];
     if (!allowed.includes(url.pathname.slice(1))) { res.writeHead(404); res.end(); return; }
     res.setHeader('Content-Type', url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript');
     res.end(await readFile(path.join(root, url.pathname)));
@@ -50,14 +51,6 @@ try {
     assert.equal(await page.evaluate(() => window.libs.loadDocumentLibraries('canvas').then(() => false, () => true)), true);
     await page.evaluate(() => window.libs.loadDocumentLibraries('canvas'));
     assert.equal(requests.filter(u => u.includes('html2canvas')).length, 2);
-    let gpuRequests = 0;
-    await page.route('**/liquid-glass-ui.js*', route => { gpuRequests++; return route.fulfill({ contentType: 'text/javascript', body: 'window.glassStarted=true;' }); });
-    await page.addScriptTag({ url: `${base}/glass-start.js` });
-    await page.waitForTimeout(250);
-    assert.equal(gpuRequests, 0);
-    await page.evaluate(() => { dispatchEvent(new Event('ocean:app-ready')); dispatchEvent(new Event('ocean:app-ready')); });
-    await page.waitForFunction(() => window.glassStarted, null, { timeout: 10000 });
-    assert.equal(gpuRequests, 1);
     const snapshot = async (url, width, dark) => {
         await page.setViewportSize({ width, height: 1000 });
         await page.goto(url);
@@ -72,6 +65,7 @@ try {
         const old = await snapshot(`${base}/old`, width, dark);
         const current = await snapshot(`${base}/new`, width, dark);
         assert.deepEqual(current, old, `CSS changed at ${width}px dark=${dark}`);
+        assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('*')].filter(el => getComputedStyle(el).backdropFilter !== 'none').map(el => ({ tag: el.tagName, id: el.id, style: el.getAttribute('style'), filter: getComputedStyle(el).backdropFilter }))), []);
     }
-    console.log('PASS: zero eager document requests, PDF plugin ordering, concurrent deduplication, retry, deferred GPU and matching CSS computed styles (desktop/mobile, light/dark).');
+    console.log('PASS: lazy document tools, retry, no glass startup, no backdrop filters and matching CSS (desktop/mobile, light/dark).');
 } finally { await browser?.close(); server.close(); }

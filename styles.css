@@ -12,8 +12,8 @@ body:not(.material-theme) .glass-card,
 body:not(.material-theme) .header,
 body:not(.material-theme) .modal-content,
 body:not(.material-theme) .settings-card {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 /* ----------  APPLE LIQUID-GLASS THEME  ---------- */
 
@@ -3120,8 +3120,8 @@ body.material-theme .glass-card,
 body.material-theme .settings-card,
 body.material-theme .modal-content {
     background: #ffffff;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid var(--border-color);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
@@ -3137,8 +3137,8 @@ body.material-theme .glass-card:hover {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
     background: #ffffff;
     border-color: rgba(38, 37, 30, 0.20);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 body.material-theme.dark-theme .glass-card:hover {
     background: #2e2d2a;
@@ -3259,8 +3259,8 @@ body.material-theme.dark-theme tbody tr:hover {
 
 body.material-theme .slider {
     background-color: #dee2e6;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 body.material-theme.dark-theme .slider {
     background-color: #6c757d;
@@ -3644,8 +3644,8 @@ body.material-theme .header {
     height: 90px;
     padding: 0.55rem 1.25rem;
     background: #ffffff !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border-bottom: 1px solid #e8e8e3 !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
 }
@@ -5674,8 +5674,8 @@ body:not(.material-theme) #services-container .service-panel {
     border: var(--liquid-border);
     box-shadow: var(--liquid-shadow);
     position: relative;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 body:not(.material-theme) #services-container .service-panel::before {
@@ -5689,8 +5689,8 @@ body:not(.material-theme) #services-container .service-panel::before {
 }
 
 body:not(.material-theme) #services-container .service-panel:hover {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     box-shadow: 0 12px 40px rgba(0,0,0,0.08);
     background-color: var(--glass-bg-hover);
     border-color: rgba(36, 36, 43, 0.15);
@@ -6181,8 +6181,8 @@ body.material-theme #monthly-extra-fare-box .icon { color: #f59e0b !important; }
 /* Notion-like modal backdrop */
 body.material-theme .modal {
     background: rgba(38, 37, 30, 0.35);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 body.material-theme.dark-theme .modal {
@@ -6988,8 +6988,8 @@ body.material-theme .global-search-suggestions {
     border-radius: 18px;
     background: #ffffff;
     box-shadow: 0 24px 70px rgba(38, 37, 30, 0.18);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     animation: searchDrop 180ms var(--ease-spring) both;
 }
 

@@ -295,7 +295,6 @@ export async function initializeApp() {
             const dashboardContent = document.getElementById('dashboard-content');
             if (loading) loading.style.display = 'none';
             if (dashboardContent) dashboardContent.style.display = 'flex';
-            window.dispatchEvent(new Event('ocean:app-ready'));
         };
 
         const debouncedRefreshHeavyData = debounce(() => {

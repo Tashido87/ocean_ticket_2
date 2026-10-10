@@ -1,0 +1,17 @@
+/* Plain surfaces: no backdrop sampling or GPU glass effects anywhere in the app. */
+*, *::before, *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+body #main-header,
+body #sidebar,
+body #home-view .dashboard-period-controls,
+body #sellForm > #section-payment {
+    background: #fff !important;
+}
+body.dark-theme #main-header,
+body.dark-theme #sidebar,
+body.dark-theme #home-view .dashboard-period-controls,
+body.dark-theme #sellForm > #section-payment {
+    background: #1e293b !important;
+}

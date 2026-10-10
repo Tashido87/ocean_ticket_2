@@ -870,7 +870,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     top: 24px;
     right: 24px;
     background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(10px);
+    backdrop-filter: none !important;
     border: 1px solid rgba(255,255,255,0.25);
     color: white;
     width: 44px;
