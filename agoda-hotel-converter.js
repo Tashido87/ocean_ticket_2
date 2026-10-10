@@ -1071,77 +1071,89 @@ export async function generateAgodaPdfDoc(data) {
  * Directly renders the pixel-perfect HTML preview layout into an A4 PDF via html2canvas & jsPDF,
  * guaranteeing 100% exact match to the live preview with zero text clipping or overlapping.
  */
+let isAgodaPdfDownloading = false;
+
 export async function downloadAgodaPdf(data) {
-    await loadDocumentLibraries('pdf', 'canvas');
-    const clientName = (data.clientName || 'Guest').trim();
-    const safeName = clientName.replace(/[^a-zA-Z0-9]/g, '_');
-    const safeId = (data.bookingId || 'Agoda').replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `Agoda_Hotel_Booking_${safeName}_${safeId}.pdf`;
+    if (isAgodaPdfDownloading) {
+        console.warn('downloadAgodaPdf is already in progress, ignoring duplicate trigger.');
+        return null;
+    }
+    isAgodaPdfDownloading = true;
 
-    if (window.html2canvas && window.jspdf) {
-        // Ensure images are preloaded
-        await preloadAgodaAssets();
+    try {
+        await loadDocumentLibraries('pdf', 'canvas');
+        const clientName = (data.clientName || 'Guest').trim();
+        const safeName = clientName.replace(/[^a-zA-Z0-9]/g, '_');
+        const safeId = (data.bookingId || 'Agoda').replace(/[^a-zA-Z0-9]/g, '_');
+        const filename = `Agoda_Hotel_Booking_${safeName}_${safeId}.pdf`;
 
-        const container = document.createElement('div');
-        container.style.position = 'fixed';
-        container.style.left = '-9999px';
-        container.style.top = '0';
-        container.style.width = '708px';
-        container.style.background = '#ffffff';
-        container.innerHTML = renderAgodaHotelHtml(data);
-        document.body.appendChild(container);
+        if (window.html2canvas && window.jspdf) {
+            // Ensure images are preloaded
+            await preloadAgodaAssets();
 
-        try {
-            const targetNode = container.firstElementChild || container;
-            targetNode.style.width = '708px';
-            targetNode.style.maxWidth = '708px';
+            const container = document.createElement('div');
+            container.style.position = 'fixed';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+            container.style.width = '708px';
+            container.style.background = '#ffffff';
+            container.innerHTML = renderAgodaHotelHtml(data);
+            document.body.appendChild(container);
 
-            const canvas = await window.html2canvas(targetNode, {
-                scale: 2.5,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                logging: false
-            });
+            try {
+                const targetNode = container.firstElementChild || container;
+                targetNode.style.width = '708px';
+                targetNode.style.maxWidth = '708px';
 
-            const imgData = canvas.toDataURL('image/jpeg', 0.98);
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'pt',
-                format: 'a4'
-            });
+                const canvas = await window.html2canvas(targetNode, {
+                    scale: 2.5,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
 
-            // A4 dimensions: 595.28 x 841.89 pt
-            const pdfPageWidth = 595.28;
-            const pdfPageHeight = 841.89;
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'pt',
+                    format: 'a4'
+                });
 
-            // Render with professional margins (20pt left/right, 24pt top)
-            const marginX = 20.0;
-            const marginY = 24.0;
-            const printWidth = pdfPageWidth - (marginX * 2);
-            const imgAspect = canvas.height / canvas.width;
-            let printHeight = printWidth * imgAspect;
+                // A4 dimensions: 595.28 x 841.89 pt
+                const pdfPageWidth = 595.28;
+                const pdfPageHeight = 841.89;
 
-            // Ensure it fits strictly on 1 single page without spilling over
-            const maxPrintHeight = pdfPageHeight - (marginY * 2);
-            if (printHeight > maxPrintHeight) {
-                printHeight = maxPrintHeight;
-            }
+                // Render with professional margins (20pt left/right, 24pt top)
+                const marginX = 20.0;
+                const marginY = 24.0;
+                const printWidth = pdfPageWidth - (marginX * 2);
+                const imgAspect = canvas.height / canvas.width;
+                let printHeight = printWidth * imgAspect;
 
-            pdf.addImage(imgData, 'JPEG', marginX, marginY, printWidth, printHeight);
-            pdf.save(filename);
-            return filename;
-        } finally {
-            if (container.parentNode) {
-                container.parentNode.removeChild(container);
+                // Ensure it fits strictly on 1 single page without spilling over
+                const maxPrintHeight = pdfPageHeight - (marginY * 2);
+                if (printHeight > maxPrintHeight) {
+                    printHeight = maxPrintHeight;
+                }
+
+                pdf.addImage(imgData, 'JPEG', marginX, marginY, printWidth, printHeight);
+                pdf.save(filename);
+                return filename;
+            } finally {
+                if (container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
             }
         }
-    }
 
-    // Fallback to vector jsPDF
-    const doc = await generateAgodaPdfDoc(data);
-    doc.save(filename);
-    return filename;
+        // Fallback to vector jsPDF
+        const doc = await generateAgodaPdfDoc(data);
+        doc.save(filename);
+        return filename;
+    } finally {
+        isAgodaPdfDownloading = false;
+    }
 }
 
 /**

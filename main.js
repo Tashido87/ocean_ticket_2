@@ -3963,7 +3963,10 @@ function initializeAirAsiaGenerator() {
 }
 
 // --- CHINA VISA HOTEL BOOKING (AGODA) GENERATOR LOGIC ---
+let chinaHotelGeneratorInitialized = false;
 function initializeChinaHotelGenerator() {
+    if (chinaHotelGeneratorInitialized) return;
+    chinaHotelGeneratorInitialized = true;
     const openBtn = document.getElementById('openChinaHotelBtn');
     const quickBtn = document.getElementById('quickChinaHotelBtn');
     const modal = document.getElementById('chinaHotelModal');
@@ -4266,7 +4269,10 @@ function initializeChinaHotelGenerator() {
 
     openBtn?.addEventListener('click', openHotelEditorWithData);
 
+    let isQuickHotelDownloading = false;
     quickBtn?.addEventListener('click', async () => {
+        if (isQuickHotelDownloading) return;
+
         const quickDest = document.getElementById('service_hotel_destination')?.value || 'Bangkok';
         const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Bangkok;
         const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim();
@@ -4290,6 +4296,12 @@ function initializeChinaHotelGenerator() {
             return;
         }
 
+        isQuickHotelDownloading = true;
+        quickBtn.disabled = true;
+        const originalQuickHtml = quickBtn.innerHTML;
+        quickBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+        showToast('Generating Agoda Booking PDF...', 'info');
+
         const data = {
             destination: quickDest,
             bookingId: generateRandomBookingId(),
@@ -4306,13 +4318,18 @@ function initializeChinaHotelGenerator() {
             numChildren: 0
         };
 
-        showToast('Generating Agoda Booking PDF...', 'info');
         try {
             const filename = await downloadAgodaPdf(data);
-            showToast(`PDF downloaded: ${filename}`, 'success');
+            if (filename) {
+                showToast(`PDF downloaded: ${filename}`, 'success');
+            }
         } catch (e) {
             console.error(e);
             showToast(`Error generating PDF: ${e.message}`, 'error');
+        } finally {
+            isQuickHotelDownloading = false;
+            quickBtn.disabled = false;
+            quickBtn.innerHTML = originalQuickHtml;
         }
     });
 
@@ -4323,7 +4340,10 @@ function initializeChinaHotelGenerator() {
         if (e.target === modal) modal.classList.remove('show');
     });
 
+    let isChinaHotelDownloading = false;
     downloadPdfBtn?.addEventListener('click', async () => {
+        if (isChinaHotelDownloading) return;
+
         const clientName = (document.getElementById('agoda_client_name')?.value || '').trim();
         const arrivalDate = (document.getElementById('agoda_arrival_date')?.value || '').trim();
         const departureDate = (document.getElementById('agoda_departure_date')?.value || '').trim();
@@ -4344,14 +4364,25 @@ function initializeChinaHotelGenerator() {
             return;
         }
 
+        isChinaHotelDownloading = true;
+        downloadPdfBtn.disabled = true;
+        const originalBtnHtml = downloadPdfBtn.innerHTML;
+        downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
         showToast('Generating official Agoda PDF...', 'info');
+
         try {
             const data = collectFormData();
             const filename = await downloadAgodaPdf(data);
-            showToast(`PDF downloaded: ${filename}`, 'success');
+            if (filename) {
+                showToast(`PDF downloaded: ${filename}`, 'success');
+            }
         } catch (err) {
             console.error('PDF generation error:', err);
             showToast(`PDF generation failed: ${err.message}`, 'error');
+        } finally {
+            isChinaHotelDownloading = false;
+            downloadPdfBtn.disabled = false;
+            downloadPdfBtn.innerHTML = originalBtnHtml;
         }
     });
 }
@@ -4381,7 +4412,7 @@ async function loadPageFeatures(viewName) {
         }
         if (viewName === 'services' && !servicesPageReady) {
             const [air, agoda] = await Promise.all([
-                import('./airasia-converter.js?v=32'), import('./agoda-hotel-converter.js?v=22')
+                import('./airasia-converter.js?v=32'), import('./agoda-hotel-converter.js?v=23')
             ]);
             ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } = air);
             ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
