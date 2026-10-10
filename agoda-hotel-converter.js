@@ -18,6 +18,16 @@ export const DESTINATION_PRESETS = {
         bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
         benefits: 'Express check-in, Free WiFi'
     },
+    'Chiang Mai': {
+        destination: 'Chiang Mai',
+        propertyName: 'Duangtawan Hotel Chiang Mai',
+        propertyAddress: '132 Loi Kroh Rd, Tambon, Chang Khlan, Chiang Mai,\nChiang Mai Province, 50100, Thailand',
+        propertyContact: '+66 53 905 000',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
+    },
     Guangzhou: {
         destination: 'Guangzhou',
         propertyName: 'Grand Park Guangzhou Hotel',
@@ -49,6 +59,7 @@ export const DESTINATION_PRESETS = {
         benefits: 'Coffee & tea, Free pool access, Free fitness center access, Free WiFi, Parking'
     }
 };
+DESTINATION_PRESETS.ChiangMai = DESTINATION_PRESETS['Chiang Mai'];
 
 let cachedAgodaLogoDataUrl = null;
 let cachedAgodaStampDataUrl = null;
@@ -1276,6 +1287,9 @@ function extractHotelAndAddress(text) {
 function detectHotelDestination(text = '', propertyName = '', propertyAddress = '') {
     const combined = `${text} ${propertyName} ${propertyAddress}`.toLowerCase();
     if (combined.includes('singapore')) return 'Singapore';
+    if (combined.includes('chiang mai') || combined.includes('duangtawan') || combined.includes('cnx') || combined.includes('loi kroh')) {
+        return 'Chiang Mai';
+    }
     if (combined.includes('guangzhou') || combined.includes('china') || combined.includes('beijing') || combined.includes('shanghai') || combined.includes('shenzhen') || combined.includes('chengdu')) {
         return 'Guangzhou';
     }
