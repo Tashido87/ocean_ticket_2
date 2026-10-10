@@ -3950,7 +3950,7 @@ body.material-theme .datepicker-cell.disabled {
 
 .service-quick-grid {
     display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
     gap: 10px !important;
     margin-bottom: 8px !important;
 }

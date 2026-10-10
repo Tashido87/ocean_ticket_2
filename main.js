@@ -4029,6 +4029,9 @@ function initializeChinaHotelGenerator() {
             if (document.getElementById('service_hotel_departure') && parsedData.departureDate) {
                 document.getElementById('service_hotel_departure').value = parsedData.departureDate;
             }
+            if (document.getElementById('service_hotel_adults') && parsedData.numAdults) {
+                document.getElementById('service_hotel_adults').value = parsedData.numAdults;
+            }
 
             modal.classList.add('show');
             const hotelName = parsedData.propertyName || 'Hotel';
@@ -4238,6 +4241,7 @@ function initializeChinaHotelGenerator() {
         const quickDest = document.getElementById('service_hotel_destination')?.value || 'Bangkok';
         const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Bangkok;
         const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim();
+        const quickAdults = parseInt(document.getElementById('service_hotel_adults')?.value || '1', 10) || 1;
         const quickArrival = (document.getElementById('service_hotel_arrival')?.value || '').trim();
         const quickDeparture = (document.getElementById('service_hotel_departure')?.value || '').trim();
 
@@ -4253,7 +4257,7 @@ function initializeChinaHotelGenerator() {
             propertyContact: preset.propertyContact,
             numRooms: 1,
             numExtraBeds: 0,
-            numAdults: 1,
+            numAdults: quickAdults,
             numChildren: 0
         });
 
@@ -4266,6 +4270,7 @@ function initializeChinaHotelGenerator() {
         const quickDest = document.getElementById('service_hotel_destination')?.value || 'Bangkok';
         const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Bangkok;
         const quickClient = (document.getElementById('service_hotel_client_name')?.value || '').trim();
+        const quickAdults = parseInt(document.getElementById('service_hotel_adults')?.value || '1', 10) || 1;
         const quickArrival = (document.getElementById('service_hotel_arrival')?.value || '').trim();
         const quickDeparture = (document.getElementById('service_hotel_departure')?.value || '').trim();
 
@@ -4297,7 +4302,7 @@ function initializeChinaHotelGenerator() {
             departureDate: formatAgodaDate(quickDeparture),
             numRooms: 1,
             numExtraBeds: 0,
-            numAdults: 1,
+            numAdults: quickAdults,
             numChildren: 0
         };
 
@@ -4376,7 +4381,7 @@ async function loadPageFeatures(viewName) {
         }
         if (viewName === 'services' && !servicesPageReady) {
             const [air, agoda] = await Promise.all([
-                import('./airasia-converter.js?v=32'), import('./agoda-hotel-converter.js?v=21')
+                import('./airasia-converter.js?v=32'), import('./agoda-hotel-converter.js?v=22')
             ]);
             ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } = air);
             ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);

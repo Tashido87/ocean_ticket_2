@@ -57,9 +57,42 @@ export const DESTINATION_PRESETS = {
         bookedPayableTitle: 'Booked And Payable Through :',
         bookedPayableAddress: 'Agoda Company Pte, Ltd.\n36 Robinson Road, City House #20-01,\nSingapore 068877',
         benefits: 'Coffee & tea, Free pool access, Free fitness center access, Free WiFi, Parking'
+    },
+    Hanoi: {
+        destination: 'Hanoi',
+        propertyName: 'Alley Garden Hotel & Spa',
+        propertyAddress: '8 Ngõ 19 P. Nhà Chung, Hoàn Kiếm,\nHà Nội 100000, Vietnam',
+        propertyContact: '+84 985 436 518',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
+    },
+    'Da Nang': {
+        destination: 'Da Nang',
+        propertyName: 'My Khe II Hotel',
+        propertyAddress: '260 Võ Nguyên Giáp, Phước Mỹ Ward,\nSơn Trà District, Da Nang City, Vietnam',
+        propertyContact: '+84 932 417 277',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
+    },
+    'Ho Chi Minh': {
+        destination: 'Ho Chi Minh',
+        propertyName: 'Golden Lunar Hotel',
+        propertyAddress: '175/24 Phạm Ngũ Lão, Phường Phạm Ngũ Lão,\nDistrict 1, Ho Chi Minh City 700000, Vietnam',
+        propertyContact: '+84 764 964 293',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
     }
 };
 DESTINATION_PRESETS.ChiangMai = DESTINATION_PRESETS['Chiang Mai'];
+DESTINATION_PRESETS.DaNang = DESTINATION_PRESETS['Da Nang'];
+DESTINATION_PRESETS.HoChiMinh = DESTINATION_PRESETS['Ho Chi Minh'];
+DESTINATION_PRESETS.Saigon = DESTINATION_PRESETS['Ho Chi Minh'];
 
 let cachedAgodaLogoDataUrl = null;
 let cachedAgodaStampDataUrl = null;
@@ -1289,6 +1322,15 @@ function detectHotelDestination(text = '', propertyName = '', propertyAddress = 
     if (combined.includes('singapore')) return 'Singapore';
     if (combined.includes('chiang mai') || combined.includes('duangtawan') || combined.includes('cnx') || combined.includes('loi kroh')) {
         return 'Chiang Mai';
+    }
+    if (combined.includes('hanoi') || combined.includes('ha noi') || combined.includes('alley garden') || combined.includes('nhà chung') || combined.includes('nha chung') || combined.includes('hoàn kiếm') || combined.includes('hoan kiem')) {
+        return 'Hanoi';
+    }
+    if (combined.includes('da nang') || combined.includes('danang') || combined.includes('my khe') || combined.includes('sơn trà') || combined.includes('son tra')) {
+        return 'Da Nang';
+    }
+    if (combined.includes('ho chi minh') || combined.includes('hochíminh') || combined.includes('saigon') || combined.includes('sài gòn') || combined.includes('golden lunar') || combined.includes('phạm ngũ lão') || combined.includes('pham ngu lao')) {
+        return 'Ho Chi Minh';
     }
     if (combined.includes('guangzhou') || combined.includes('china') || combined.includes('beijing') || combined.includes('shanghai') || combined.includes('shenzhen') || combined.includes('chengdu')) {
         return 'Guangzhou';
