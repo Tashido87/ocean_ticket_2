@@ -21,7 +21,6 @@ function unmount(record) {
     record.scene = null;
     record.layer?.remove();
     record.layer = null;
-    record.wallpaper = null;
     record.host.classList.remove('ocean-glass-ready');
     record.pending = false;
 }
@@ -46,15 +45,6 @@ async function mount(record) {
         content.className = 'ocean-glass-backdrop lg-content';
         // Explicit decorative backdrop avoids capturing customer data or moving controls.
         content.innerHTML = '<span class="ocean-glass-orb"></span><span class="ocean-glass-orb secondary"></span>';
-        if (document.documentElement.dataset.background === 'duo-night') {
-            const wallpaper = document.createElement('img');
-            wallpaper.src = './assets/backgrounds/duo-night.jpg';
-            wallpaper.alt = '';
-            wallpaper.className = 'ocean-glass-wallpaper';
-            content.replaceChildren(wallpaper);
-            record.wallpaper = wallpaper;
-            alignWallpaper(record);
-        }
         const surface = document.createElement('div');
         surface.className = 'ocean-glass-surface lg-surface';
         layer.append(content, surface);
@@ -73,7 +63,7 @@ async function mount(record) {
         });
         record.scene.setContent(content);
         record.scene.addSurface(surface, {
-            material: 'regular', radius: 16, refraction: record.wallpaper ? 4 : 10,
+            material: 'regular', radius: 16, refraction: 10,
             appearance: document.body.classList.contains('dark-theme') ? 'dark' : 'light',
             interactive: false, fluid: false, motion: 'none'
         });
@@ -120,20 +110,6 @@ mutations.observe(document.body, { childList: true, subtree: true });
 function reset() {
     for (const record of hosts.values()) { unmount(record); void mount(record); }
 }
-function alignWallpaper(record) {
-    if (!record.wallpaper) return;
-    const rect = record.host.getBoundingClientRect();
-    Object.assign(record.wallpaper.style, { width: `${innerWidth}px`, height: `${innerHeight}px`, left: `${-rect.left}px`, top: `${-rect.top}px` });
-}
-let wallpaperFrame = false;
-function scheduleWallpaperAlignment() {
-    if (wallpaperFrame) return;
-    wallpaperFrame = true;
-    requestAnimationFrame(() => { wallpaperFrame = false; for (const record of hosts.values()) alignWallpaper(record); });
-}
-window.addEventListener('scroll', scheduleWallpaperAlignment, { passive: true, capture: true });
-window.addEventListener('resize', scheduleWallpaperAlignment, { passive: true });
-window.addEventListener('ocean-background-change', reset);
 for (const query of [reduced, transparency, contrast, desktop]) query.addEventListener('change', reset);
 document.addEventListener('visibilitychange', reset);
 let dark = document.body.classList.contains('dark-theme');
