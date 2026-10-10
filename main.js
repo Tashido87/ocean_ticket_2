@@ -21,10 +21,12 @@ import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=28';
 import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
-import { initHotelService, initHotelReservationSystem, renderHotelReservations, hideHotelReservationForm } from './hotel.js?v=22'; 
+let hotelModule;
+const renderHotelReservations = () => hotelModule?.renderHotelReservations();
+const hideHotelReservationForm = () => hotelModule?.hideHotelReservationForm();
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-import { extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } from './airasia-converter.js?v=31';
-import { renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } from './agoda-hotel-converter.js?v=19';
+let extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine;
+let renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf;
 
 // UI Modules
 import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, openModal, closeModal, showConfirmModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview, setupDepartureReturnDatepickers } from './ui.js';
@@ -293,6 +295,7 @@ export async function initializeApp() {
             const dashboardContent = document.getElementById('dashboard-content');
             if (loading) loading.style.display = 'none';
             if (dashboardContent) dashboardContent.style.display = 'flex';
+            window.dispatchEvent(new Event('ocean:app-ready'));
         };
 
         const debouncedRefreshHeavyData = debounce(() => {
@@ -810,8 +813,6 @@ function setupEventListeners() {
     // Settlement is wired by initSettlementView() in initializeApp().
 
     // Hotel Service Initialization
-    initHotelService();
-    initHotelReservationSystem();
 
     // Invoice Generation Logic — unified Generate button with format selector
     const invoiceGenerateBtn = document.getElementById('invoiceGenerateBtn');
@@ -4352,14 +4353,58 @@ function initializeChinaHotelGenerator() {
 }
 
 // --- APP START ---
+let hotelPageReady = false;
+let servicesPageReady = false;
+const featureLoads = new Map();
+async function loadPageFeatures(viewName) {
+    if (!['hotel', 'services'].includes(viewName)) return;
+    if ((viewName === 'hotel' && hotelPageReady) || (viewName === 'services' && servicesPageReady)) return;
+    if (featureLoads.has(viewName)) return featureLoads.get(viewName);
+    const view = document.getElementById(`${viewName}-view`);
+    view.inert = true;
+    view.setAttribute('aria-busy', 'true');
+    const notice = document.createElement('p');
+    notice.setAttribute('role', 'status');
+    notice.textContent = 'Loading page tools…';
+    view.before(notice);
+    const task = (async () => {
+        if (!hotelModule) hotelModule = await import('./hotel.js?v=23');
+        if (!hotelPageReady) {
+            hotelModule.initHotelService();
+            hotelModule.initHotelReservationSystem();
+            hotelPageReady = true;
+            hotelModule.renderHotelReservations();
+        }
+        if (viewName === 'services' && !servicesPageReady) {
+            const [air, agoda] = await Promise.all([
+                import('./airasia-converter.js?v=32'), import('./agoda-hotel-converter.js?v=20')
+            ]);
+            ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } = air);
+            ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
+            initializeAirAsiaGenerator();
+            initializeChinaHotelGenerator();
+            servicesPageReady = true;
+        }
+    })().catch(error => {
+        console.error('Page tools failed to load:', error);
+        showToast('Unable to load page tools. Check your connection and reopen this page to retry.', 'error');
+    }).finally(() => {
+        view.inert = false;
+        view.removeAttribute('aria-busy');
+        notice.remove();
+        featureLoads.delete(viewName);
+    });
+    featureLoads.set(viewName, task);
+    return task;
+}
+document.addEventListener('ocean:viewchange', event => { void loadPageFeatures(event.detail); });
+window.addEventListener('ocean:document-load-error', event => showToast(event.detail, 'error'));
 window.onload = async () => {
     // Initialize UI components that don't depend on data
     initializeDatepickers();
     initializeTimePicker();
     setupEventListeners();
     initializeUISettings();
-    initializeAirAsiaGenerator();
-    initializeChinaHotelGenerator();
     // Show today's date in the header
     const headerDateEl = document.getElementById('headerTodayDateText');
     if (headerDateEl) {

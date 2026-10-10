@@ -165,14 +165,11 @@ function isMissingAnyRequiredField(result) {
 }
 
 async function ensureTesseract() {
-    if (window.Tesseract) return true;
-    return new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.head.appendChild(script);
-    });
+    try {
+        const { loadDocumentLibraries } = await import('./document-libraries.js');
+        await loadDocumentLibraries('ocr');
+        return true;
+    } catch { return false; }
 }
 
 export async function ocrPassport(imageSource, onStatus) {

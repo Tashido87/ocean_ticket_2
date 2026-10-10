@@ -1,3 +1,4 @@
+import { loadDocumentLibraries } from './document-libraries.js';
 /**
  * @fileoverview Owner Settlement Dashboard.
  *
@@ -1826,7 +1827,8 @@ function printStatementHtml() {
     setTimeout(() => w.print(), 250);
 }
 
-export function exportStatementPdf() {
+export async function exportStatementPdf() {
+    await loadDocumentLibraries('pdf', 'table');
     if (!window.jspdf) { showToast('PDF library not available.', 'error'); return; }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });

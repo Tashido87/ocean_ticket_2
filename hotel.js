@@ -1,3 +1,4 @@
+import { loadDocumentLibraries } from './document-libraries.js';
 /**
  * @fileoverview Manages the Hotel Booking Voucher generation service.
  * Supports specific layouts for Bangkok (BKK) and Kuala Lumpur (KUL).
@@ -169,6 +170,7 @@ function buildPaxString(adultCount, childCount) {
  * @param {string} format 'pdf' or 'png'
  */
 async function generateVoucher(format) {
+    await loadDocumentLibraries('pdf', 'table', 'canvas');
     // 1. Collect Inputs
     const city = document.getElementById('hotel-city').value; // BKK or KUL
     const guestSource = document.querySelector('input[name="hotel_guest_source"]:checked')?.value || 'pnr';
@@ -526,6 +528,7 @@ function generateTruePdfKUL(data) {
  * Generates and downloads a PNG image using html2canvas.
  */
 async function downloadPNG(element, filename) {
+    await loadDocumentLibraries('canvas');
     if (!window.html2canvas) {
         showToast("HTML2Canvas library not loaded.", "error");
         return;
@@ -1358,6 +1361,7 @@ window.setHotelPage = (page) => {
 };
 
 export async function exportHotelVoucher(id, isShare = false) {
+    await loadDocumentLibraries('canvas');
     const res = state.allHotels.find(h => h.id === id);
     if (!res) {
         showToast('Reservation not found.', 'error');
@@ -1496,5 +1500,4 @@ export async function exportHotelVoucher(id, isShare = false) {
         container.remove();
     }
 }
-
 

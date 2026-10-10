@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "build:styles": "node scripts/build-styles.mjs",
     "build:glass": "esbuild scripts/liquid-glass-vendor.js --bundle --format=esm --minify --outdir=vendor --entry-names=liquid-glass --legal-comments=eof"
   },
   "dependencies": {

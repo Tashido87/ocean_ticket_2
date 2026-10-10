@@ -1,3 +1,4 @@
+import { loadDocumentLibraries } from './document-libraries.js';
 /**
  * @fileoverview Handles invoice/receipt generation for PDF and image exports.
  * Supports shared invoice logic with switchable branding.
@@ -245,16 +246,9 @@ async function loadImageAsset(url) {
     });
 }
 
-function loadHtml2Canvas() {
-    return new Promise((resolve, reject) => {
-        if (window.html2canvas) return resolve(window.html2canvas);
-
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-        script.onload = () => resolve(window.html2canvas);
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
+async function loadHtml2Canvas() {
+    await loadDocumentLibraries('canvas');
+    return window.html2canvas;
 }
 
 function getInvoiceCSS(theme = INVOICE_THEME) {
@@ -1674,6 +1668,7 @@ export function analyzeInvoiceScenario(pnrList) {
 }
 
 export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null, selection = null) {
+    await loadDocumentLibraries('pdf', 'table');
     const cleanPnrs = pnrList.map((pnr) => pnr.trim().toUpperCase()).filter(Boolean);
     let tickets = state.allTickets.filter((ticket) => cleanPnrs.includes(ticket.booking_reference));
     if (selection) {
@@ -1730,6 +1725,7 @@ export async function generateInvoice(pnrList, type = 'Invoice', dateStr = null,
 }
 
 export async function generateInvoiceImage(pnrList, type = 'Invoice', dateStr = null, forcedMode = 'auto', brandKey = 'ocean', adjustments = null, selection = null, isShare = false) {
+    await loadDocumentLibraries('canvas');
     try {
         await loadHtml2Canvas();
     } catch (error) {

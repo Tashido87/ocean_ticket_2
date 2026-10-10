@@ -92,6 +92,7 @@ export function showView(viewName) {
     targetView.style.display = 'block';
     targetView.classList.remove('view-leave');
     targetView.classList.add('active');
+    document.dispatchEvent(new CustomEvent('ocean:viewchange', { detail: viewName }));
     targetView.classList.add('view-enter');
     targetView.addEventListener('animationend', () => {
         targetView.classList.remove('view-enter');

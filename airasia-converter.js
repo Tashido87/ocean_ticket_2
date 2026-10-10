@@ -1,3 +1,4 @@
+import { loadDocumentLibraries } from './document-libraries.js';
 /**
  * AirAsia E-Ticket Itinerary Generator & Converter
  * Converts Trip.com / OTA PDF itineraries into official AirAsia E-Ticket Receipts.
@@ -1492,6 +1493,7 @@ export function parseItineraryText(rawText) {
  * Extract text from uploaded PDF file using PDF.js
  */
 export async function extractTextFromPdf(file) {
+    await loadDocumentLibraries('reader');
     if (!window.pdfjsLib) {
         throw new Error('PDF.js library is not loaded. Please check your internet connection.');
     }
@@ -1634,6 +1636,7 @@ export function resolveAllPnrs(data) {
 const AIRPLANE_WHITE_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAbElEQVR4nO3VuxGAMAyD4YhjKxiHIiOxrSjoOAqby6Pg/2qdI6dxKQAAAACAORQN2q49izxJOkO56EDb/l4nT1K4W4hvR9Oh7+/UzGctPcuMwAKzscBsLDDbmszvA+7Zlgn/5xIDAAAAABq7AKFlHkgPZB8oAAAAAElFTkSuQmCC';
 
 export async function generateThaiAirwaysPdfDoc(data) {
+    await loadDocumentLibraries('pdf');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
@@ -2087,6 +2090,7 @@ export async function generateThaiAirwaysPdfDoc(data) {
  * Check-in highlight tint: #DDF3E4 [221, 243, 228] (border: #58B675, text: #007A3D)
  */
 export async function generateEvaAirPdfDoc(data) {
+    await loadDocumentLibraries('pdf');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
@@ -2621,6 +2625,7 @@ export async function generateEvaAirPdfDoc(data) {
  * Check-in highlight tint: #EBF2FC [235, 242, 252] (border: #9CB8E2, text: #1B3A6B)
  */
 export async function generateSingaporeAirlinesPdfDoc(data) {
+    await loadDocumentLibraries('pdf');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
@@ -3112,6 +3117,7 @@ export async function generateSingaporeAirlinesPdfDoc(data) {
  * Dark text: #333333 [51, 51, 51]
  */
 export async function generateScootPdfDoc(data) {
+    await loadDocumentLibraries('pdf');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
@@ -3637,6 +3643,7 @@ export async function generateScootPdfDoc(data) {
  * Generate native vector jsPDF document matching the exact official template
  */
 export async function generateAirAsiaPdfDoc(data) {
+    await loadDocumentLibraries('pdf');
     if (data.airline === 'Scoot' || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '')) {
         return generateScootPdfDoc(data);
     }
@@ -5171,6 +5178,7 @@ export function renderAirAsiaTicketHtml(data) {
  * Export ticket as image (PNG)
  */
 export async function downloadAirAsiaImage(data) {
+    await loadDocumentLibraries('canvas');
     if (!window.html2canvas) {
         throw new Error('html2canvas library is not loaded');
     }

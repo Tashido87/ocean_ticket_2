@@ -1,3 +1,4 @@
+import { loadDocumentLibraries } from './document-libraries.js';
 /**
  * @fileoverview Manages the generation and exporting of PDF reports.
  */
@@ -134,6 +135,7 @@ export function exportSelectedToExcel() {
  * Exports the Agent Report to a PDF file.
  */
 export async function exportToPdf(isShare = false) {
+    await loadDocumentLibraries('pdf', 'table');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const exportType = document.querySelector('input[name="exportType"]:checked').value;
@@ -542,6 +544,7 @@ export async function exportToPdf(isShare = false) {
  * Exports the Private financial summary report to a PDF file.
  */
 export async function exportPrivateReportToPdf() {
+    await loadDocumentLibraries('pdf', 'table');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 

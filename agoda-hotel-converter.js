@@ -1,3 +1,4 @@
+import { loadDocumentLibraries } from './document-libraries.js';
 /**
  * Agoda Hotel Booking Confirmation Generator
  * Generates official Agoda Booking Confirmations (Guangzhou, Singapore, etc.).
@@ -497,6 +498,7 @@ export function renderAgodaHotelHtml(data = {}) {
  * Generate native jsPDF vector document matching original coordinates
  */
 export async function generateAgodaPdfDoc(data) {
+    await loadDocumentLibraries('pdf');
     if (!window.jspdf || !window.jspdf.jsPDF) {
         throw new Error('jsPDF library is not loaded');
     }
@@ -1026,6 +1028,7 @@ export async function generateAgodaPdfDoc(data) {
  * guaranteeing 100% exact match to the live preview with zero text clipping or overlapping.
  */
 export async function downloadAgodaPdf(data) {
+    await loadDocumentLibraries('pdf', 'canvas');
     const clientName = (data.clientName || 'Guest').trim();
     const safeName = clientName.replace(/[^a-zA-Z0-9]/g, '_');
     const safeId = (data.bookingId || 'Agoda').replace(/[^a-zA-Z0-9]/g, '_');
@@ -1102,6 +1105,7 @@ export async function downloadAgodaPdf(data) {
  * Renders the official PDF directly to canvas via PDF.js to guarantee 100% identical dimensions, layout, and quality as the PDF.
  */
 export async function downloadAgodaImage(data) {
+    await loadDocumentLibraries('pdf', 'canvas', 'reader');
     const clientName = (data.clientName || 'Guest').trim();
     const safeName = clientName.replace(/[^a-zA-Z0-9]/g, '_');
     const safeId = (data.bookingId || 'Agoda').replace(/[^a-zA-Z0-9]/g, '_');
@@ -1485,6 +1489,7 @@ export function parseHotelConfirmationText(text) {
  * Extract text and parse Agoda / Trip.com hotel confirmation voucher PDF file
  */
 export async function parseHotelConfirmationPdf(file) {
+    await loadDocumentLibraries('reader');
     if (!window.pdfjsLib) {
         throw new Error('PDF.js library is not loaded. Please check your internet connection.');
     }
