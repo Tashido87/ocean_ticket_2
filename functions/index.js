@@ -41,6 +41,14 @@ const PARAM_SERVICE_ACCOUNT = defineString('DOCAI_SERVICE_ACCOUNT', {
     default: 'ocean-travel@ocean-ticket-bf235.iam.gserviceaccount.com',
     description: 'Runtime service account that has the Document AI API User role.'
 });
+const PARAM_TELEGRAM_BOT_TOKEN = defineString('TELEGRAM_BOT_TOKEN', {
+    default: '',
+    description: 'Telegram Bot Token for ticketing deadline alerts.'
+});
+const PARAM_TELEGRAM_CHAT_ID = defineString('TELEGRAM_CHAT_ID', {
+    default: '1101682157',
+    description: 'Telegram Chat ID where deadline alerts are sent.'
+});
 
 setGlobalOptions({
     region: 'us-central1',
@@ -319,8 +327,14 @@ exports.checkBookingDeadlines = onSchedule(
 );
 
 async function sendTelegramAlert(text) {
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8156964921:AAHDYIjKgVbqsShuRGyIJlgL80NNqqSWi0Y';
-    const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '1101682157';
+    const BOT_TOKEN = (typeof PARAM_TELEGRAM_BOT_TOKEN !== 'undefined' && PARAM_TELEGRAM_BOT_TOKEN.value()) || process.env.TELEGRAM_BOT_TOKEN;
+    const CHAT_ID = (typeof PARAM_TELEGRAM_CHAT_ID !== 'undefined' && PARAM_TELEGRAM_CHAT_ID.value()) || process.env.TELEGRAM_CHAT_ID || '1101682157';
+
+    if (!BOT_TOKEN) {
+        console.warn('sendTelegramAlert: TELEGRAM_BOT_TOKEN is not configured.');
+        return;
+    }
+
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 
     try {
