@@ -1756,8 +1756,13 @@
 
                         <div class="airasia-form-row">
                             <div class="airasia-form-group" style="grid-column: 1 / -1;">
-                                <label for="agoda_booking_ref_no">Booking Reference No. (optional)</label>
-                                <input type="text" id="agoda_booking_ref_no" placeholder="Optional reference or empty">
+                                <label for="agoda_booking_ref_no" style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span>Booking Reference No. (9 digits)</span>
+                                    <button type="button" id="agoda_roll_booking_ref_no" class="btn btn-sm btn-secondary" style="padding:1px 6px; font-size:10px;" title="Generate new random Booking Reference No">
+                                        <i class="fa-solid fa-arrows-rotate"></i> Roll
+                                    </button>
+                                </label>
+                                <input type="text" id="agoda_booking_ref_no" placeholder="e.g. 754921638" style="font-weight:700;">
                             </div>
                         </div>
 
@@ -1890,6 +1895,6 @@
 
     <div id="toast"><span id="toastMessage"></span></div>
 
-    <script src="main.js?v=110" type="module"></script>
+    <script src="main.js?v=111" type="module"></script>
 </body>
 </html>

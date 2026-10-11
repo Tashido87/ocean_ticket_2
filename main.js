@@ -26,7 +26,7 @@ const renderHotelReservations = () => hotelModule?.renderHotelReservations();
 const hideHotelReservationForm = () => hotelModule?.hideHotelReservationForm();
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 let extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine;
-let renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf;
+let renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf;
 
 // UI Modules
 import { showView, initializeDatepickers, initializeTimePicker, initializeCityDropdowns, updateToggleLabels, updateDynamicTimes, updateNotifications, updateUpcomingPnrs, initializeUISettings, openModal, closeModal, showConfirmModal, populateFlightLocations, addPassengerForm, removePassengerForm, resetPassengerForms, addBookingPassengerForm, removeBookingPassengerForm, resetBookingPassengerForms, showNewBookingForm, hideNewBookingForm, showInvoiceOptionModal, initializePaymentMethodEnhancements, addExistingPassengerForm, applyFlightTypeToAllPaxForms, initializeSellFormEnhancements, updateSellRoutePreview, setupDepartureReturnDatepickers } from './ui.js';
@@ -3976,6 +3976,7 @@ function initializeChinaHotelGenerator() {
     const previewContainer = document.getElementById('agodaPreviewContainer');
     const rollBookingBtn = document.getElementById('agoda_roll_booking_id');
     const rollMemberBtn = document.getElementById('agoda_roll_member_id');
+    const rollBookingRefBtn = document.getElementById('agoda_roll_booking_ref_no');
     const switchToOldBtn = document.getElementById('switchToOldHotelBtn');
     const switchToAgodaBtn = document.getElementById('switchToAgodaHotelBtn');
     const chinaHotelPanel = document.getElementById('chinaHotelPanel');
@@ -4076,7 +4077,7 @@ function initializeChinaHotelGenerator() {
             destination: dest,
             bookingId: document.getElementById('agoda_booking_id')?.value || generateRandomBookingId(),
             memberId: document.getElementById('agoda_member_id')?.value || generateRandomMemberId(),
-            bookingRefNo: document.getElementById('agoda_booking_ref_no')?.value || '',
+            bookingRefNo: (document.getElementById('agoda_booking_ref_no')?.value || '').trim() || generateRandomBookingRefNo(),
             clientName: (document.getElementById('agoda_client_name')?.value || '').trim().toUpperCase(),
             countryOfResidence: document.getElementById('agoda_country')?.value || 'Myanmar',
             numAdults: parseInt(document.getElementById('agoda_num_adults')?.value || '1', 10),
@@ -4110,7 +4111,7 @@ function initializeChinaHotelGenerator() {
             document.getElementById('agoda_member_id').value = data.memberId || generateRandomMemberId();
         }
         if (document.getElementById('agoda_booking_ref_no')) {
-            document.getElementById('agoda_booking_ref_no').value = data.bookingRefNo || '';
+            document.getElementById('agoda_booking_ref_no').value = data.bookingRefNo || generateRandomBookingRefNo();
         }
         if (document.getElementById('agoda_client_name')) {
             document.getElementById('agoda_client_name').value = data.clientName || '';
@@ -4240,6 +4241,16 @@ function initializeChinaHotelGenerator() {
         }
     });
 
+    // Roll Booking Reference No button
+    rollBookingRefBtn?.addEventListener('click', () => {
+        const input = document.getElementById('agoda_booking_ref_no');
+        if (input) {
+            input.value = generateRandomBookingRefNo();
+            updatePreview();
+            showToast('New Booking Reference No generated!', 'info');
+        }
+    });
+
     function openHotelEditorWithData() {
         const quickDest = document.getElementById('service_hotel_destination')?.value || 'Bangkok';
         const preset = DESTINATION_PRESETS[quickDest] || DESTINATION_PRESETS.Bangkok;
@@ -4252,6 +4263,7 @@ function initializeChinaHotelGenerator() {
             destination: quickDest,
             bookingId: generateRandomBookingId(),
             memberId: generateRandomMemberId(),
+            bookingRefNo: generateRandomBookingRefNo(),
             clientName: quickClient || '',
             arrivalDate: quickArrival ? formatAgodaDate(quickArrival) : '',
             departureDate: quickDeparture ? formatAgodaDate(quickDeparture) : '',
@@ -4306,6 +4318,7 @@ function initializeChinaHotelGenerator() {
             destination: quickDest,
             bookingId: generateRandomBookingId(),
             memberId: generateRandomMemberId(),
+            bookingRefNo: generateRandomBookingRefNo(),
             clientName: quickClient,
             propertyName: preset.propertyName,
             propertyAddress: preset.propertyAddress,
@@ -4412,10 +4425,10 @@ async function loadPageFeatures(viewName) {
         }
         if (viewName === 'services' && !servicesPageReady) {
             const [air, agoda] = await Promise.all([
-                import('./airasia-converter.js?v=32'), import('./agoda-hotel-converter.js?v=23')
+                import('./airasia-converter.js?v=32'), import('./agoda-hotel-converter.js?v=24')
             ]);
             ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } = air);
-            ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
+            ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
             initializeAirAsiaGenerator();
             initializeChinaHotelGenerator();
             servicesPageReady = true;

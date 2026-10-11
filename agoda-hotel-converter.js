@@ -187,6 +187,15 @@ export function generateRandomMemberId() {
 }
 
 /**
+ * Generates a random 9-digit Agoda booking reference number (e.g., 754921638)
+ */
+export function generateRandomBookingRefNo() {
+    const firstDigit = ['3', '7', '8', '9'][Math.floor(Math.random() * 4)];
+    const random8 = Math.floor(10000000 + Math.random() * 90000000).toString();
+    return firstDigit + random8;
+}
+
+/**
  * Formats a date into "Month D, YYYY" (e.g. "October 16, 2026")
  */
 export function formatAgodaDate(dateInput) {
@@ -255,7 +264,7 @@ export function renderAgodaHotelHtml(data = {}) {
     const clientName = (data.clientName || '').trim().toUpperCase();
     const bookingId = data.bookingId || generateRandomBookingId();
     const memberId = data.memberId || generateRandomMemberId();
-    const bookingRefNo = data.bookingRefNo || '';
+    const bookingRefNo = (data.bookingRefNo && String(data.bookingRefNo).trim()) || generateRandomBookingRefNo();
     const countryOfResidence = data.countryOfResidence || 'Myanmar';
     const propertyName = data.propertyName || preset.propertyName;
     const propertyAddress = data.propertyAddress || preset.propertyAddress;
@@ -559,7 +568,7 @@ export async function generateAgodaPdfDoc(data) {
     const clientName = (data.clientName || '').trim().toUpperCase();
     const bookingId = String(data.bookingId || generateRandomBookingId());
     const memberId = String(data.memberId || generateRandomMemberId());
-    const bookingRefNo = String(data.bookingRefNo || '');
+    const bookingRefNo = String((data.bookingRefNo && String(data.bookingRefNo).trim()) || generateRandomBookingRefNo());
     const countryOfResidence = String(data.countryOfResidence || 'Myanmar');
     const propertyName = String(data.propertyName || preset.propertyName);
     const propertyAddress = String(data.propertyAddress || preset.propertyAddress);
@@ -1411,7 +1420,9 @@ export function parseHotelConfirmationText(text) {
         if (candidateRef.includes(':') || /^(?:Client|Member|Guest|Property|Number|Address)\b/i.test(candidateRef)) {
             candidateRef = '';
         }
-        result.bookingRefNo = candidateRef;
+        result.bookingRefNo = candidateRef || generateRandomBookingRefNo();
+    } else {
+        result.bookingRefNo = generateRandomBookingRefNo();
     }
 
     // 3. Client / Guest Name
