@@ -4153,6 +4153,164 @@ export async function generateAirAsiaPdfDoc(data) {
 /**
  * Download the generated vector PDF
  */
+const TICKET_MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const TICKET_MONTH_LOOKUP = {
+    jan: 'Jan', january: 'Jan',
+    feb: 'Feb', february: 'Feb',
+    mar: 'Mar', march: 'Mar',
+    apr: 'Apr', april: 'Apr',
+    may: 'May',
+    jun: 'Jun', june: 'Jun',
+    jul: 'Jul', july: 'Jul',
+    aug: 'Aug', august: 'Aug',
+    sep: 'Sep', sept: 'Sep', september: 'Sep',
+    oct: 'Oct', october: 'Oct',
+    nov: 'Nov', november: 'Nov',
+    dec: 'Dec', december: 'Dec'
+};
+
+export function resolveAirportCodeForFilename(str) {
+    if (!str) return '';
+    const s = String(str).trim();
+    if (/^[A-Z]{3}$/.test(s)) return s;
+    const parenthesized = s.match(/\(([A-Z]{3})\)/i);
+    if (parenthesized) return parenthesized[1].toUpperCase();
+    const lookedUp = lookupAirportCode(s);
+    if (lookedUp) return lookedUp;
+    const codeMatch = s.match(/\b([A-Z]{3})\b/);
+    if (codeMatch) return codeMatch[1];
+    return s.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase();
+}
+
+export function buildSectorCode(data) {
+    const flights = Array.isArray(data?.flights) && data.flights.length > 0 ? data.flights : null;
+    if (flights) {
+        const legs = [];
+        for (let i = 0; i < flights.length; i++) {
+            const f = flights[i];
+            const d = resolveAirportCodeForFilename(f.depAirport || (i === 0 ? data.depAirport : ''));
+            const a = resolveAirportCodeForFilename(f.arrAirport || (i === flights.length - 1 ? data.arrAirport : ''));
+            if (d && a) {
+                if (legs.length === 0) {
+                    legs.push(d, a);
+                } else {
+                    if (legs[legs.length - 1] === d) {
+                        legs.push(a);
+                    } else {
+                        legs.push(d, a);
+                    }
+                }
+            } else if (f.route) {
+                const parts = String(f.route).split(/\s*(?:[-–—>]|\bto\b|\/)\s*/i).filter(Boolean);
+                if (parts.length >= 2) {
+                    const cd1 = resolveAirportCodeForFilename(parts[0]);
+                    const cd2 = resolveAirportCodeForFilename(parts[parts.length - 1]);
+                    if (cd1 && cd2) {
+                        if (legs.length === 0) legs.push(cd1, cd2);
+                        else if (legs[legs.length - 1] === cd1) legs.push(cd2);
+                        else legs.push(cd1, cd2);
+                    }
+                }
+            }
+        }
+        if (legs.length >= 2) {
+            return legs.join('-');
+        }
+    }
+
+    const dep = resolveAirportCodeForFilename(data?.depAirport);
+    const arr = resolveAirportCodeForFilename(data?.arrAirport);
+    if (dep && arr) {
+        return `${dep}-${arr}`;
+    }
+
+    if (data?.route) {
+        const parts = String(data.route).split(/\s*(?:[-–—>]|\bto\b|\/)\s*/i).filter(Boolean);
+        if (parts.length >= 2) {
+            const c1 = resolveAirportCodeForFilename(parts[0]);
+            const c2 = resolveAirportCodeForFilename(parts[parts.length - 1]);
+            if (c1 && c2) return `${c1}-${c2}`;
+        }
+    }
+
+    return 'TICKET';
+}
+
+export function formatTicketDateShort(dateVal) {
+    const formatFromDate = (d) => {
+        const day = String(d.getDate()).padStart(2, '0');
+        const mon = TICKET_MONTH_NAMES[d.getMonth()] || 'Jan';
+        const yr = d.getFullYear();
+        return `${day}${mon}${yr}`;
+    };
+
+    if (!dateVal) return formatFromDate(new Date());
+    if (dateVal instanceof Date && !isNaN(dateVal.getTime())) return formatFromDate(dateVal);
+    const str = String(dateVal).trim();
+
+    const compactMatch = str.match(/^(\d{1,2})[-/]?([A-Za-z]{3,9})[-/]?(\d{4})$/);
+    if (compactMatch) {
+        const day = compactMatch[1].padStart(2, '0');
+        const mon = TICKET_MONTH_LOOKUP[compactMatch[2].toLowerCase()] || compactMatch[2].slice(0, 3);
+        const yr = compactMatch[3];
+        return `${day}${mon}${yr}`;
+    }
+
+    const textMatch = str.match(/(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})/i);
+    if (textMatch) {
+        const day = textMatch[1].padStart(2, '0');
+        const mon = TICKET_MONTH_LOOKUP[textMatch[2].toLowerCase()] || textMatch[2].slice(0, 3);
+        const yr = textMatch[3];
+        return `${day}${mon}${yr}`;
+    }
+
+    const textMatch2 = str.match(/([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})/i);
+    if (textMatch2) {
+        const mon = TICKET_MONTH_LOOKUP[textMatch2[1].toLowerCase()] || textMatch2[1].slice(0, 3);
+        const day = textMatch2[2].padStart(2, '0');
+        const yr = textMatch2[3];
+        return `${day}${mon}${yr}`;
+    }
+
+    const isoMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (isoMatch) {
+        const yr = isoMatch[1];
+        const mIdx = parseInt(isoMatch[2], 10) - 1;
+        const day = isoMatch[3].padStart(2, '0');
+        const mon = TICKET_MONTH_NAMES[mIdx] || 'Jan';
+        return `${day}${mon}${yr}`;
+    }
+
+    const dmyMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+    if (dmyMatch) {
+        const day = dmyMatch[1].padStart(2, '0');
+        const mIdx = parseInt(dmyMatch[2], 10) - 1;
+        const mon = TICKET_MONTH_NAMES[mIdx] || 'Jan';
+        const yr = dmyMatch[3];
+        return `${day}${mon}${yr}`;
+    }
+
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+        return formatFromDate(parsed);
+    }
+
+    return formatFromDate(new Date());
+}
+
+export function buildTicketDownloadFilename(data, ext = 'pdf') {
+    const sector = buildSectorCode(data);
+    const rawDate = (data?.flights && (data.flights[0]?.depDateFormatted || data.flights[0]?.depDate || data.flights[0]?.date)) ||
+                    data?.departureDate || data?.flightDate || data?.date || data?.bookingDate || data?.issuedDate;
+    const dateStr = formatTicketDateShort(rawDate);
+    const paxCount = (Array.isArray(data?.passengers) && data.passengers.length > 0)
+        ? data.passengers.length
+        : (parseInt(data?.passengerCount, 10) || 1);
+    const paxStr = `${paxCount}Pax`;
+    const cleanExt = ext.replace(/^\./, '');
+    return `${sector}_${dateStr}_${paxStr}.${cleanExt}`;
+}
+
 let isAirAsiaPdfDownloading = false;
 
 export async function downloadAirAsiaPdf(data) {
@@ -4163,16 +4321,7 @@ export async function downloadAirAsiaPdf(data) {
     isAirAsiaPdfDownloading = true;
 
     try {
-        const isScoot = (data.airline === 'Scoot') || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '');
-        const isEva = (data.airline === 'EVA Air') || /eva\s*air|\bBR\s*\d/i.test(data.airlineName || '') || /BR\s*\d/i.test(data.flightNo || '');
-        const isSIA = (data.airline === 'Singapore Airlines') || /singapore\s*air(?:lines)?|\bSQ\s*\d/i.test(data.airlineName || '') || /SQ\s*\d/i.test(data.flightNo || '');
-        const isThai = (data.airline === 'Thai Airways') || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '');
-        const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
-        const prefix = isScoot ? 'Scoot' : (isEva ? 'EVAAir' : (isSIA ? 'SingaporeAirlines' : (isThai ? 'ThaiAirways' : (isVietJet ? 'VietJet' : 'AirAsia'))));
-        const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
-        const safeName = primaryName.replace(/[^a-zA-Z0-9]/g, '_');
-        const safePnr = (data.pnr || data.bookingNo || 'Itinerary').replace(/[^a-zA-Z0-9]/g, '_');
-        const filename = `${prefix}_Ticket_${safeName}_${safePnr}.pdf`;
+        const filename = buildTicketDownloadFilename(data, 'pdf');
 
         const doc = await generateAirAsiaPdfDoc(data);
         doc.save(filename);
@@ -5203,16 +5352,7 @@ export async function downloadAirAsiaImage(data) {
         backgroundColor: '#ffffff'
     });
 
-    const isScoot = (data.airline === 'Scoot') || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '');
-    const isEva = (data.airline === 'EVA Air') || /eva\s*air|\bBR\s*\d/i.test(data.airlineName || '') || /BR\s*\d/i.test(data.flightNo || '');
-    const isSIA = (data.airline === 'Singapore Airlines') || /singapore\s*air(?:lines)?|\bSQ\s*\d/i.test(data.airlineName || '') || /SQ\s*\d/i.test(data.flightNo || '');
-    const isThai = (data.airline === 'Thai Airways') || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '');
-    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
-    const prefix = isScoot ? 'Scoot' : (isEva ? 'EVAAir' : (isSIA ? 'SingaporeAirlines' : (isThai ? 'ThaiAirways' : (isVietJet ? 'VietJet' : 'AirAsia'))));
-    const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
-    const safeName = primaryName.replace(/[^a-zA-Z0-9]/g, '_');
-    const safePnr = (data.pnr || data.bookingNo || 'Itinerary').replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `${prefix}_Ticket_${safeName}_${safePnr}.png`;
+    const filename = buildTicketDownloadFilename(data, 'png');
 
     const link = document.createElement('a');
     link.download = filename;

@@ -4435,7 +4435,7 @@ async function loadPageFeatures(viewName) {
         }
         if (viewName === 'services' && !servicesPageReady) {
             const [air, agoda] = await Promise.all([
-                import('./airasia-converter.js?v=33'), import('./agoda-hotel-converter.js?v=24')
+                import('./airasia-converter.js?v=34'), import('./agoda-hotel-converter.js?v=24')
             ]);
             ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } = air);
             ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
