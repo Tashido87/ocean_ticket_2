@@ -4153,21 +4153,33 @@ export async function generateAirAsiaPdfDoc(data) {
 /**
  * Download the generated vector PDF
  */
-export async function downloadAirAsiaPdf(data) {
-    const isScoot = (data.airline === 'Scoot') || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '');
-    const isEva = (data.airline === 'EVA Air') || /eva\s*air|\bBR\s*\d/i.test(data.airlineName || '') || /BR\s*\d/i.test(data.flightNo || '');
-    const isSIA = (data.airline === 'Singapore Airlines') || /singapore\s*air(?:lines)?|\bSQ\s*\d/i.test(data.airlineName || '') || /SQ\s*\d/i.test(data.flightNo || '');
-    const isThai = (data.airline === 'Thai Airways') || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '');
-    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
-    const prefix = isScoot ? 'Scoot' : (isEva ? 'EVAAir' : (isSIA ? 'SingaporeAirlines' : (isThai ? 'ThaiAirways' : (isVietJet ? 'VietJet' : 'AirAsia'))));
-    const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
-    const safeName = primaryName.replace(/[^a-zA-Z0-9]/g, '_');
-    const safePnr = (data.pnr || data.bookingNo || 'Itinerary').replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `${prefix}_Ticket_${safeName}_${safePnr}.pdf`;
+let isAirAsiaPdfDownloading = false;
 
-    const doc = await generateAirAsiaPdfDoc(data);
-    doc.save(filename);
-    return filename;
+export async function downloadAirAsiaPdf(data) {
+    if (isAirAsiaPdfDownloading) {
+        console.warn('downloadAirAsiaPdf is already in progress, ignoring duplicate trigger.');
+        return null;
+    }
+    isAirAsiaPdfDownloading = true;
+
+    try {
+        const isScoot = (data.airline === 'Scoot') || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '');
+        const isEva = (data.airline === 'EVA Air') || /eva\s*air|\bBR\s*\d/i.test(data.airlineName || '') || /BR\s*\d/i.test(data.flightNo || '');
+        const isSIA = (data.airline === 'Singapore Airlines') || /singapore\s*air(?:lines)?|\bSQ\s*\d/i.test(data.airlineName || '') || /SQ\s*\d/i.test(data.flightNo || '');
+        const isThai = (data.airline === 'Thai Airways') || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '');
+        const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
+        const prefix = isScoot ? 'Scoot' : (isEva ? 'EVAAir' : (isSIA ? 'SingaporeAirlines' : (isThai ? 'ThaiAirways' : (isVietJet ? 'VietJet' : 'AirAsia'))));
+        const primaryName = (data.passengers && data.passengers[0]?.name) || data.passengerName || prefix;
+        const safeName = primaryName.replace(/[^a-zA-Z0-9]/g, '_');
+        const safePnr = (data.pnr || data.bookingNo || 'Itinerary').replace(/[^a-zA-Z0-9]/g, '_');
+        const filename = `${prefix}_Ticket_${safeName}_${safePnr}.pdf`;
+
+        const doc = await generateAirAsiaPdfDoc(data);
+        doc.save(filename);
+        return filename;
+    } finally {
+        isAirAsiaPdfDownloading = false;
+    }
 }
 
 /**

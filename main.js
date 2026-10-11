@@ -3278,7 +3278,10 @@ export function updateComparisonChart() {
 }
 
 // --- AIRASIA E-TICKET GENERATOR LOGIC ---
+let airAsiaGeneratorInitialized = false;
 function initializeAirAsiaGenerator() {
+    if (airAsiaGeneratorInitialized) return;
+    airAsiaGeneratorInitialized = true;
     const dropZone = document.getElementById('airAsiaDropZone');
     const fileInput = document.getElementById('airAsiaFileInput');
     const uploadBtn = document.getElementById('airAsiaUploadBtn');
@@ -3945,17 +3948,24 @@ function initializeAirAsiaGenerator() {
     closeBtn?.addEventListener('click', () => modal.classList.remove('show'));
     cancelBtn?.addEventListener('click', () => modal.classList.remove('show'));
 
+    let isAirAsiaDownloading = false;
     downloadPdfBtn?.addEventListener('click', async () => {
+        if (isAirAsiaDownloading) return;
+        isAirAsiaDownloading = true;
+
         try {
             downloadPdfBtn.disabled = true;
             downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
             const data = collectFormData();
             const filename = await downloadAirAsiaPdf(data);
-            showToast(`AirAsia PDF downloaded: ${filename}`, 'success');
+            if (filename) {
+                showToast(`AirAsia PDF downloaded: ${filename}`, 'success');
+            }
         } catch (err) {
             console.error('PDF generation error:', err);
             showToast(`Could not generate PDF: ${err.message}`, 'error');
         } finally {
+            isAirAsiaDownloading = false;
             downloadPdfBtn.disabled = false;
             downloadPdfBtn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Download PDF';
         }
@@ -4425,7 +4435,7 @@ async function loadPageFeatures(viewName) {
         }
         if (viewName === 'services' && !servicesPageReady) {
             const [air, agoda] = await Promise.all([
-                import('./airasia-converter.js?v=32'), import('./agoda-hotel-converter.js?v=24')
+                import('./airasia-converter.js?v=33'), import('./agoda-hotel-converter.js?v=24')
             ]);
             ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } = air);
             ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
