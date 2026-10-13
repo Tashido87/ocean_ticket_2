@@ -1,11 +1,8 @@
 /* Booking, Hotel and Manage share the current Dashboard design tokens. */
 :is(#booking-view, #hotel-view, #manage-view) {
-    --text-primary: var(--dash-text);
-    --text-secondary: var(--dash-text-muted);
-    --text-muted: var(--dash-text-muted);
-    --primary-accent: var(--dash-teal);
+    /* Dashboard tokens derive from global tokens, never alias back to them. */
+    --text-muted: var(--text-secondary);
     --border-color: var(--dash-border);
-    --surface: var(--dash-surface);
     font-size: 13px;
     line-height: 1.45;
 }

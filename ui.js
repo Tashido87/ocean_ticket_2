@@ -37,6 +37,7 @@ function normalizePassengerName(name) {
  */
 let activeIntroTimer = null;
 let activeViewTimer = null;
+let activeIntroItems = [];
 
 function runIntroAnimations(viewEl) {
     if (!viewEl) return;
@@ -46,6 +47,11 @@ function runIntroAnimations(viewEl) {
         clearTimeout(activeIntroTimer);
         activeIntroTimer = null;
     }
+    activeIntroItems.forEach(el => {
+        el.classList.remove('animate-in');
+        el.style.removeProperty('--stagger-delay');
+    });
+    activeIntroItems = [];
 
     // Only run staggered entrance once per view so repeated tab switching stays instant
     if (viewEl.dataset.hasAnimated === 'true') {
@@ -72,6 +78,7 @@ function runIntroAnimations(viewEl) {
     }
 
     const limited = items.slice(0, 12);
+    activeIntroItems = limited;
     limited.forEach((el, idx) => {
         el.style.setProperty('--stagger-delay', `${Math.min(idx, 8) * 25}ms`);
         el.classList.add('animate-in');
@@ -83,6 +90,7 @@ function runIntroAnimations(viewEl) {
             el.style.removeProperty('--stagger-delay');
         });
         activeIntroTimer = null;
+        activeIntroItems = [];
     }, 350);
 }
 
@@ -215,6 +223,7 @@ export function showView(viewName) {
 let lastFocusedElementBeforeModal = null;
 let modalKeydownHandler = null;
 let modalInertElements = [];
+let modalFocusFrame = null;
 
 /**
  * Opens the main modal with specified content.
@@ -226,7 +235,10 @@ export function openModal(content, sizeClass = '') {
     if (!modal) return;
 
     // 1. Save trigger element for focus return
-    lastFocusedElementBeforeModal = document.activeElement;
+    if (!modal.classList.contains('show')) {
+        lastFocusedElementBeforeModal = document.activeElement;
+    }
+    if (modalFocusFrame !== null) cancelAnimationFrame(modalFocusFrame);
 
     const modalBody = document.getElementById('modalBody');
     modalBody.innerHTML = content;
@@ -258,13 +270,12 @@ export function openModal(content, sizeClass = '') {
     }
 
     // 3. Background Inert & aria-hidden to prevent background navigation
-    modalInertElements = [];
     Array.from(document.body.children).forEach(child => {
-        if (child !== modal && !child.classList.contains('modal') && child.tagName !== 'SCRIPT' && child.id !== 'toast') {
+        if (child !== modal && !child.contains(modal) && !child.classList.contains('modal') && child.tagName !== 'SCRIPT' && child.id !== 'toast') {
             if (!child.hasAttribute('inert')) {
+                modalInertElements.push({ element: child, ariaHidden: child.getAttribute('aria-hidden') });
                 child.setAttribute('inert', '');
                 child.setAttribute('aria-hidden', 'true');
-                modalInertElements.push(child);
             }
         }
     });
@@ -283,7 +294,9 @@ export function openModal(content, sizeClass = '') {
     };
 
     // Set initial focus
-    requestAnimationFrame(() => {
+    modalFocusFrame = requestAnimationFrame(() => {
+        modalFocusFrame = null;
+        if (!modal.classList.contains('show')) return;
         const focusables = getFocusableElements();
         const autoFocusEl = modal.querySelector('[autofocus]');
         if (autoFocusEl && typeof autoFocusEl.focus === 'function') {
@@ -342,6 +355,8 @@ export function openModal(content, sizeClass = '') {
 export function closeModal() {
     const modal = document.getElementById('modal');
     if (!modal) return;
+    if (modalFocusFrame !== null) cancelAnimationFrame(modalFocusFrame);
+    modalFocusFrame = null;
 
     modal.classList.remove('show');
     modal.classList.remove('solid-modal-open');
@@ -353,9 +368,10 @@ export function closeModal() {
     document.body.classList.remove('modal-open');
 
     // Restore background elements
-    modalInertElements.forEach(el => {
-        el.removeAttribute('inert');
-        el.removeAttribute('aria-hidden');
+    modalInertElements.forEach(({ element, ariaHidden }) => {
+        element.removeAttribute('inert');
+        if (ariaHidden === null) element.removeAttribute('aria-hidden');
+        else element.setAttribute('aria-hidden', ariaHidden);
     });
     modalInertElements = [];
 

@@ -2004,7 +2004,17 @@ function initializeDashboardSelectors() {
 /**
  * Updates the main dashboard cards with the latest data.
  */
+let dashboardRenderFrame = null;
 export function updateDashboardData() {
+    if (!document.getElementById('home-view')?.classList.contains('active')) return;
+    if (dashboardRenderFrame !== null) return;
+    dashboardRenderFrame = requestAnimationFrame(() => {
+        dashboardRenderFrame = null;
+        if (document.getElementById('home-view')?.classList.contains('active')) renderDashboardData();
+    });
+}
+
+function renderDashboardData() {
     const range = getDashboardDateRange();
     const prevRange = getPreviousDashboardRange(range);
     const ticketsInPeriod = activeTicketRowsInRange(range);
@@ -4902,6 +4912,7 @@ async function loadPageFeatures(viewName) {
 document.addEventListener('ocean:viewchange', event => {
     const viewName = event.detail;
     void loadPageFeatures(viewName);
+    if (viewName === 'home') updateDashboardData();
     if (viewName === 'records' && state.recordsDirty) {
         state.recordsDirty = false;
         displayInitialTickets(state.currentPage);
