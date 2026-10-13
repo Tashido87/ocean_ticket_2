@@ -42,12 +42,37 @@ export function makeClickable(text) {
  * @param {string} [accountType=''] The account type (Facebook, Viber, Telegram, WhatsApp, etc.).
  * @returns {string} The safe link for href.
  */
+const ALLOWED_URL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'viber:', 'weixin:']);
+
+export function isSafeProtocol(url) {
+    if (!url) return false;
+    const trimmed = String(url).trim();
+    const match = trimmed.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/i);
+    if (match) {
+        return ALLOWED_URL_PROTOCOLS.has(match[1].toLowerCase() + ':');
+    }
+    return true;
+}
+
+export function sanitizeUrl(url) {
+    if (!url) return '';
+    const trimmed = String(url).trim();
+    if (!isSafeProtocol(trimmed)) return '';
+    return trimmed;
+}
+
 export function formatSafeAccountLink(rawLink, accountType = '') {
     if (!rawLink) return '';
     let link = String(rawLink).trim();
     if (!link) return '';
 
-    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(link)) {
+    // Reject dangerous URI schemes (javascript:, data:, vbscript:, etc.)
+    const schemeMatch = link.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/i);
+    if (schemeMatch) {
+        const scheme = schemeMatch[1].toLowerCase() + ':';
+        if (!ALLOWED_URL_PROTOCOLS.has(scheme)) {
+            return '';
+        }
         return link;
     }
 
@@ -537,9 +562,13 @@ export function renderRecentActivity() {
 }
 
 export function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 const AIRLINE_LOGO_ALIASES = {

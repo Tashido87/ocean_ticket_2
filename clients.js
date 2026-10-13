@@ -10,7 +10,8 @@ import {
     showToast,
     parseSheetDate,
     formatDateToDMMMY,
-    renderAirlineName
+    renderAirlineName,
+    escapeHtml
 } from './utils.js';
 import {
     openModal,
@@ -290,10 +291,10 @@ export function renderClientsView(page) {
         if (state.onlyShowFeatured) {
             message = 'You have not marked any clients as featured.';
         } else if (searchQuery) {
-            message = `Your search for "${searchQuery}" did not match any clients.`;
+            message = `Your search for "${escapeHtml(searchQuery)}" did not match any clients.`;
         }
         const icon = searchQuery ? `fa-user-slash` : `fa-users`;
-        tbody.innerHTML = `<tr><td colspan="${colSpan}"><div class="empty-state" style="padding: 2rem 1rem;"><i class="fa-solid ${icon}"></i><h4>No Clients Found</h4><p>${message}</p></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${colSpan}"><div class="empty-state" style="padding: 2rem 1rem;"><i class="fa-solid ${icon}"></i><h4>No Clients Found</h4><p>${escapeHtml(message)}</p></div></td></tr>`;
         return;
     }
 
@@ -302,20 +303,31 @@ export function renderClientsView(page) {
     paginated.forEach(client => {
         const isFeatured = state.featuredClients.includes(client.client_key) || state.featuredClients.includes(client.name);
         const row = tbody.insertRow();
-        row.innerHTML = `
-            <td><i class="fa-regular fa-star star-icon ${isFeatured ? 'featured' : ''}"></i></td>
-            <td class="client-name-cell">${client.name || ''}</td>
-            <td>${client.phone || ''}</td>
-            <td>${client.account_name || ''}</td>
-            <td>${client.account_type || ''}</td>
-            <td>${client.ticket_count}</td>
-            <td class="client-actions">
-                <button class="icon-btn icon-btn-table" title="Detail"><i class="fa-solid fa-eye"></i></button>
-                <button class="icon-btn icon-btn-table" title="Copy Info"><i class="fa-solid fa-copy"></i></button>
-                <button class="icon-btn icon-btn-table" title="New Booking"><i class="fa-solid fa-calendar-plus"></i></button>
-                <button class="icon-btn icon-btn-table" title="Sell New Ticket"><i class="fa-solid fa-ticket"></i></button>
-            </td>
-        `
+
+        const starCell = row.insertCell(0);
+        const nameCell = row.insertCell(1);
+        nameCell.className = 'client-name-cell';
+        const phoneCell = row.insertCell(2);
+        const accountCell = row.insertCell(3);
+        const typeCell = row.insertCell(4);
+        const countCell = row.insertCell(5);
+        const actionsCell = row.insertCell(6);
+        actionsCell.className = 'client-actions';
+
+        starCell.innerHTML = `<i class="fa-regular fa-star star-icon ${isFeatured ? 'featured' : ''}"></i>`;
+
+        nameCell.textContent = client.name || '';
+        phoneCell.textContent = client.phone || '';
+        accountCell.textContent = client.account_name || '';
+        typeCell.textContent = client.account_type || '';
+        countCell.textContent = String(client.ticket_count ?? 0);
+
+        actionsCell.innerHTML = `
+            <button class="icon-btn icon-btn-table" title="Detail"><i class="fa-solid fa-eye"></i></button>
+            <button class="icon-btn icon-btn-table" title="Copy Info"><i class="fa-solid fa-copy"></i></button>
+            <button class="icon-btn icon-btn-table" title="New Booking"><i class="fa-solid fa-calendar-plus"></i></button>
+            <button class="icon-btn icon-btn-table" title="Sell New Ticket"><i class="fa-solid fa-ticket"></i></button>
+        `;
         // Add event listeners
         row.querySelector('.star-icon').addEventListener('click', (e) => toggleFeaturedClient(e, client.client_key));
         row.querySelector('[title="Detail"]').addEventListener('click', () => viewClientHistory(client.client_key));

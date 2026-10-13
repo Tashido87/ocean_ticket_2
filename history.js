@@ -105,30 +105,70 @@ export function displayHistory(page, historyToShow = state.history) {
     paginated.forEach(entry => {
         const row = container.insertRow();
 
-        // User badge
+        // User badge data
         const userName = entry.user?.displayName || entry.user?.name || entry.user?.email || '—';
         const userEmail = entry.user?.email ? ` (${entry.user.email})` : '';
-        const userHtml = `<span class="audit-user-badge" title="${escapeHtml(userName + userEmail)}"><i class="fa-solid fa-user-circle"></i> ${escapeHtml(userName)}</span>`;
 
-        // Details + structured change chips
-        let detailsHtml = escapeHtml(entry.details || '');
-        if (Array.isArray(entry.changes) && entry.changes.length > 0) {
-            const chips = entry.changes.map(c => {
-                const fieldName = escapeHtml(String(c.field || '').replace(/_/g, ' '));
-                const fromVal = escapeHtml(String(c.from ?? '—'));
-                const toVal = escapeHtml(String(c.to ?? '—'));
-                return `<span class="audit-diff-chip"><strong>${fieldName}:</strong> <span class="diff-from">${fromVal}</span> <i class="fa-solid fa-arrow-right-long"></i> <span class="diff-to">${toVal}</span></span>`;
-            }).join(' ');
-            detailsHtml = `<div class="audit-diff-container">${chips}</div>` + (entry.details ? `<div class="audit-note">${escapeHtml(entry.details)}</div>` : '');
+        const dateCell = row.insertCell(0);
+        const userCell = row.insertCell(1);
+        const nameCell = row.insertCell(2);
+        const pnrCell = row.insertCell(3);
+        const detailsCell = row.insertCell(4);
+
+        // Date badge
+        const dateBadge = document.createElement('span');
+        dateBadge.className = 'audit-date-badge';
+        dateBadge.textContent = entry.date || '';
+        dateCell.appendChild(dateBadge);
+
+        // User badge
+        const userBadge = document.createElement('span');
+        userBadge.className = 'audit-user-badge';
+        userBadge.title = userName + userEmail;
+        userBadge.innerHTML = `<i class="fa-solid fa-user-circle"></i> `;
+        userBadge.appendChild(document.createTextNode(userName));
+        userCell.appendChild(userBadge);
+
+        // Name cell (plain text)
+        const nameStrong = document.createElement('strong');
+        nameStrong.textContent = entry.name || '';
+        nameCell.appendChild(nameStrong);
+
+        // PNR cell
+        if (entry.pnr) {
+            const pnrLink = document.createElement('a');
+            pnrLink.href = '#';
+            pnrLink.className = 'clickable-pnr';
+            pnrLink.dataset.pnr = entry.pnr;
+            pnrLink.textContent = entry.pnr;
+            pnrCell.appendChild(pnrLink);
+        } else {
+            pnrCell.textContent = '—';
         }
 
-        row.innerHTML = `
-            <td><span class="audit-date-badge">${escapeHtml(entry.date || '')}</span></td>
-            <td>${userHtml}</td>
-            <td><strong>${escapeHtml(entry.name || '')}</strong></td>
-            <td>${entry.pnr ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(entry.pnr)}">${escapeHtml(entry.pnr)}</a>` : '—'}</td>
-            <td>${detailsHtml}</td>
-        `;
+        // Details cell
+        if (Array.isArray(entry.changes) && entry.changes.length > 0) {
+            const diffContainer = document.createElement('div');
+            diffContainer.className = 'audit-diff-container';
+            entry.changes.forEach(c => {
+                const chip = document.createElement('span');
+                chip.className = 'audit-diff-chip';
+                const fieldName = String(c.field || '').replace(/_/g, ' ');
+                const fromVal = String(c.from ?? '—');
+                const toVal = String(c.to ?? '—');
+                chip.innerHTML = `<strong>${escapeHtml(fieldName)}:</strong> <span class="diff-from">${escapeHtml(fromVal)}</span> <i class="fa-solid fa-arrow-right-long"></i> <span class="diff-to">${escapeHtml(toVal)}</span>`;
+                diffContainer.appendChild(chip);
+            });
+            detailsCell.appendChild(diffContainer);
+            if (entry.details) {
+                const note = document.createElement('div');
+                note.className = 'audit-note';
+                note.textContent = entry.details;
+                detailsCell.appendChild(note);
+            }
+        } else {
+            detailsCell.textContent = entry.details || '';
+        }
     });
 
     setupGenericPagination(historyToShow, 'modificationHistoryPagination', (p) => displayHistory(p, historyToShow), page);
