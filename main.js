@@ -1721,6 +1721,14 @@ function inDashboardRange(date, range) {
 
 
 function ticketSalesAmount(t) {
+    return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0);
+}
+
+function ticketRevenueAmount(t) {
+    return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0);
+}
+
+function ticketGrossAmount(t) {
     return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0) + (Number(t.extra_fare) || 0) + (Number(t.sub_agent_fare) || 0);
 }
 
@@ -1877,7 +1885,7 @@ function getUpcomingTripGroups(days = 14) {
         const group = groups.get(key);
         group.passengers += 1;
         if (isTicketPaid(ticket)) group.paidPassengers += 1;
-        else group.unpaidAmount += ticketSalesAmount(ticket);
+        else group.unpaidAmount += ticketGrossAmount(ticket);
     });
 
     return [...groups.values()].sort((a, b) => a.date - b.date);
@@ -1913,7 +1921,7 @@ function groupUnpaidTickets(rows) {
             if (t.outstanding_amount !== undefined && Number(t.outstanding_amount) >= 0) {
                 itemUnpaid = Number(t.outstanding_amount);
             } else if (!isTicketPaid(t)) {
-                itemUnpaid = ticketSalesAmount(t);
+                itemUnpaid = ticketGrossAmount(t);
             }
 
             if (itemUnpaid > 0) {
@@ -2020,11 +2028,9 @@ function renderDashboardData() {
     const ticketsInPeriod = activeTicketRowsInRange(range);
     const prevTicketsInPeriod = activeTicketRowsInRange(prevRange);
 
-    // 1. Total Sales (Customer Price)
-    const curHotelSales = activeHotelRowsInRange(range).filter(h => h.source !== 'self').reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
-    const prevHotelSales = activeHotelRowsInRange(prevRange).filter(h => h.source !== 'self').reduce((sum, h) => sum + (Number(h.base_fare) || 0), 0);
-    const curSales = ticketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + ticketSalesAmount(t), 0) + curHotelSales;
-    const prevSales = prevTicketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + ticketSalesAmount(t), 0) + prevHotelSales;
+    // 1. Total Sales (Net amount + Date change fees)
+    const curSales = ticketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + ticketSalesAmount(t), 0);
+    const prevSales = prevTicketsInPeriod.filter(t => t.source !== 'self').reduce((sum, t) => sum + ticketSalesAmount(t), 0);
 
     // 2. Total Tickets (Count of Passenger Tickets)
     const curTickets = ticketsInPeriod.filter(t => !isFeeEntryRow(t) && !isCanceledTicket(t) && t.source !== 'self').length;
@@ -2255,7 +2261,7 @@ export function showTripPlanDetail(pnr) {
         }
         const entry = passengerMap.get(key);
         if (leg === 'return') entry.hasReturn = true;
-        entry.amount += ticketSalesAmount(t);
+        entry.amount += ticketGrossAmount(t);
         if (!isTicketPaid(t)) entry.allPaid = false;
         if (t.ticket_number && t.ticket_number !== 'N/A') {
             if (!entry.tickets.includes(t.ticket_number)) {
@@ -2381,7 +2387,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
 
     const feeList = feeRows.length ? feeRows.map(t => {
         const paid = isTicketPaid(t);
-        const amount = ticketSalesAmount(t);
+        const amount = ticketGrossAmount(t);
         const baseName = String(t.name || '').replace(/\s*\(fees\)\s*$/i, '').trim();
         const matchedClient = state.allClients.find(c => String(c.name || '').toLowerCase() === baseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
         const ck = matchedClient?.client_key || '';
@@ -2406,8 +2412,8 @@ function getFeeRowDateChangeText(t, allRows = []) {
         `;
     }).join('') : '';
 
-    const totalUnpaid = allRows.filter(t => !isTicketPaid(t)).reduce((s, t) => s + ticketSalesAmount(t), 0);
-    const totalAmount = allRows.reduce((s, t) => s + ticketSalesAmount(t), 0);
+    const totalUnpaid = allRows.filter(t => !isTicketPaid(t)).reduce((s, t) => s + ticketGrossAmount(t), 0);
+    const totalAmount = allRows.reduce((s, t) => s + ticketGrossAmount(t), 0);
     const totalReceived = Math.max(0, totalAmount - totalUnpaid);
     const isLargePax = uniquePassengers.length >= 4;
 
