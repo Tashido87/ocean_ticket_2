@@ -2848,8 +2848,19 @@ export function updatePaymentStatusChart() {
     const hasData = data.some(v => v > 0);
     if (!hasData) data = [1, 0, 0, 0];
 
-    if (state.charts.paymentStatusChart) state.charts.paymentStatusChart.destroy();
     const p = dashboardChartPalette();
+    if (state.charts.paymentStatusChart) {
+        state.charts.paymentStatusChart.data.labels = labels;
+        state.charts.paymentStatusChart.data.datasets[0].data = data;
+        state.charts.paymentStatusChart.data.datasets[0].backgroundColor = hasData ? [p.mint, p.coral, p.butter, p.lavender] : ['#f1eee9', '#f1eee9', '#f1eee9', '#f1eee9'];
+        state.charts.paymentStatusChart.data.datasets[0].borderColor = p.surface;
+        if (state.charts.paymentStatusChart.options.plugins?.legend?.labels) {
+            state.charts.paymentStatusChart.options.plugins.legend.labels.color = p.text;
+        }
+        state.charts.paymentStatusChart.update('none');
+        return;
+    }
+
     state.charts.paymentStatusChart = new Chart(canvas.getContext('2d'), {
         type: 'doughnut',
         data: {
@@ -2889,8 +2900,19 @@ export function updateRoutePerformanceChart() {
     let rows = Object.entries(groups).sort((a, b) => b[1].profit - a[1].profit).slice(0, 5);
     if (rows.length === 0) rows = [['No route data', { profit: 0, tickets: 0 }]];
 
-    if (state.charts.routePerformanceChart) state.charts.routePerformanceChart.destroy();
     const p = dashboardChartPalette();
+    if (state.charts.routePerformanceChart) {
+        state.charts.routePerformanceChart.data.labels = rows.map(r => r[0]);
+        state.charts.routePerformanceChart.data.datasets[0].data = rows.map(r => r[1].profit);
+        state.charts.routePerformanceChart.data.datasets[0].backgroundColor = p.mint;
+        state.charts.routePerformanceChart.data.datasets[0].borderColor = p.ink;
+        state.charts.routePerformanceChart.options.scales.x.ticks.color = p.text;
+        state.charts.routePerformanceChart.options.scales.x.grid.color = p.grid;
+        state.charts.routePerformanceChart.options.scales.y.ticks.color = p.text;
+        state.charts.routePerformanceChart.update('none');
+        return;
+    }
+
     state.charts.routePerformanceChart = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
@@ -2939,8 +2961,25 @@ export function updateOwnerPayableChart() {
         paidToOwner[d.getMonth()] += Number(s.amount_paid) || 0;
     });
 
-    if (state.charts.ownerPayableChart) state.charts.ownerPayableChart.destroy();
     const p = dashboardChartPalette();
+    if (state.charts.ownerPayableChart) {
+        state.charts.ownerPayableChart.data.labels = months;
+        state.charts.ownerPayableChart.data.datasets[0].data = ownerPayable;
+        state.charts.ownerPayableChart.data.datasets[1].data = paidToOwner;
+        state.charts.ownerPayableChart.data.datasets[0].backgroundColor = p.butter;
+        state.charts.ownerPayableChart.data.datasets[1].borderColor = p.coral;
+        state.charts.ownerPayableChart.data.datasets[1].backgroundColor = p.coral;
+        if (state.charts.ownerPayableChart.options.plugins?.legend?.labels) {
+            state.charts.ownerPayableChart.options.plugins.legend.labels.color = p.text;
+        }
+        state.charts.ownerPayableChart.options.scales.x.ticks.color = p.text;
+        state.charts.ownerPayableChart.options.scales.x.grid.color = p.grid;
+        state.charts.ownerPayableChart.options.scales.y.ticks.color = p.text;
+        state.charts.ownerPayableChart.options.scales.y.grid.color = p.grid;
+        state.charts.ownerPayableChart.update('none');
+        return;
+    }
+
     state.charts.ownerPayableChart = new Chart(canvas.getContext('2d'), {
         type: 'bar',
         data: {
@@ -3000,10 +3039,6 @@ export function updateAirlineChart() {
 
     const ctx = canvas.getContext('2d');
 
-    if (state.charts.airlineChart) {
-        state.charts.airlineChart.destroy();
-    }
-
     if (labels.length === 0) {
         labels.push("No Data");
         data.push(1);
@@ -3021,6 +3056,18 @@ export function updateAirlineChart() {
         '#f8c9cb',
         '#9fca6b'
     ];
+
+    if (state.charts.airlineChart) {
+        state.charts.airlineChart.data.labels = labels;
+        state.charts.airlineChart.data.datasets[0].data = data;
+        state.charts.airlineChart.data.datasets[0].backgroundColor = labels[0] === "No Data" ? ['#e2e8f0'] : colors.slice(0, labels.length);
+        state.charts.airlineChart.data.datasets[0].borderColor = palette.surface;
+        if (state.charts.airlineChart.options.plugins?.legend?.labels) {
+            state.charts.airlineChart.options.plugins.legend.labels.color = textColor;
+        }
+        state.charts.airlineChart.update('none');
+        return;
+    }
 
     state.charts.airlineChart = new Chart(ctx, {
         type: 'doughnut',
@@ -3139,10 +3186,6 @@ export function updateComparisonChart() {
         bucket.profit += Number(h.commission || 0);
     });
 
-    if (state.charts.comparisonChart) {
-        state.charts.comparisonChart.destroy();
-    }
-
     const computed = getComputedStyle(document.body);
     const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#24242b';
     const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || 'rgba(36,36,43,0.10)';
@@ -3223,6 +3266,13 @@ export function updateComparisonChart() {
             yAxisID: 'y1',
             tension: 0.3
         });
+    }
+
+    if (state.charts.comparisonChart) {
+        state.charts.comparisonChart.data.labels = buckets.map(bucket => bucket.label);
+        state.charts.comparisonChart.data.datasets = datasets;
+        state.charts.comparisonChart.update('none');
+        return;
     }
 
     const chartConfig = {

@@ -1,17 +1,295 @@
-/* Plain surfaces: no backdrop sampling or GPU glass effects anywhere in the app. */
+/* ==========================================================================
+   Ocean Travel — Solid Theme Tokens & Unified Component Layer
+   1. Clean Light / Dark Mode with shared CSS variable tokens
+   2. Centrally unified Button, Input, Card, Badge, Table, Modal components
+   3. GPU-friendly transitions (120-160ms buttons, 160-220ms panels/modals)
+   4. No glass / backdrop filters
+   5. Full prefers-reduced-motion preservation
+   ========================================================================== */
+
+/* 1. Global Zero-Glass Policy (pure solid surfaces) */
 *, *::before, *::after {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
 }
+
+/* 2. Global Core Theme Surfaces & Contrast */
+body {
+    background-color: var(--bg) !important;
+    color: var(--text-primary) !important;
+}
+
 body #main-header,
 body #sidebar,
 body #home-view .dashboard-period-controls,
 body #sellForm > #section-payment {
-    background: #fff !important;
+    background: #ffffff !important;
 }
+
 body.dark-theme #main-header,
 body.dark-theme #sidebar,
 body.dark-theme #home-view .dashboard-period-controls,
 body.dark-theme #sellForm > #section-payment {
-    background: #1e293b !important;
+    background: var(--surface) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 3. Unified Buttons (hover/press 120–160ms, transform & opacity focused) */
+button,
+.btn,
+.nav-btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-service,
+.manage-action-btn,
+.settle-row-btn {
+    transition: transform 140ms cubic-bezier(0.2, 0, 0, 1),
+                background-color 140ms ease,
+                border-color 140ms ease,
+                color 140ms ease,
+                box-shadow 140ms ease !important;
+    will-change: transform;
+}
+
+button:active,
+.btn:active,
+.nav-btn:active,
+.btn-primary:active,
+.btn-secondary:active,
+.manage-action-btn:active {
+    transform: scale(0.975) !important;
+    transition-duration: 120ms !important;
+}
+
+/* Primary buttons */
+.btn-primary,
+.manage-action-btn.primary,
+#home-view .btn-primary {
+    background-color: var(--primary-accent) !important;
+    border-color: var(--primary-accent) !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.manage-action-btn.primary:hover {
+    background-color: var(--primary-accent-dark) !important;
+    border-color: var(--primary-accent-dark) !important;
+    color: #ffffff !important;
+}
+
+/* Secondary buttons */
+.btn-secondary,
+.btn-service.btn-secondary {
+    background-color: var(--surface-2) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-secondary:hover,
+.btn-service.btn-secondary:hover {
+    background-color: var(--surface-3, var(--border-color)) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Dark mode button contrast */
+body.dark-theme .btn-secondary,
+body.dark-theme .btn-service.btn-secondary,
+body.dark-theme .btn-clear {
+    background-color: var(--surface-2) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* 4. Unified Inputs, Selects & Textareas (no invisible text in dark mode) */
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select,
+textarea {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-sm, 8px) !important;
+    transition: border-color 140ms ease, box-shadow 140ms ease !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus,
+select:focus,
+textarea:focus {
+    border-color: var(--primary-accent) !important;
+    outline: 2px solid var(--primary-accent) !important;
+    outline-offset: 1px !important;
+}
+
+body.dark-theme input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+body.dark-theme select,
+body.dark-theme textarea {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme input::placeholder,
+body.dark-theme textarea::placeholder {
+    color: var(--text-faint) !important;
+}
+
+/* 5. Unified Cards & Panels */
+.dashboard-card,
+.form-container,
+.results-section,
+.booking-kpi-card,
+.manage-kpi,
+.pax-panel,
+.manage-pnr-dashboard {
+    background: var(--surface) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg, 12px) !important;
+    box-shadow: var(--shadow-sm) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .dashboard-card,
+body.dark-theme .form-container,
+body.dark-theme .results-section,
+body.dark-theme .booking-kpi-card,
+body.dark-theme .manage-kpi,
+body.dark-theme .pax-panel,
+body.dark-theme .manage-pnr-dashboard {
+    background: var(--surface) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* 6. Unified Modals & Popups (160–220ms, opacity + transform, guaranteed readable text) */
+.modal,
+.modal-overlay,
+#invoiceOptionModal,
+#airAsiaModal,
+#hotelModal,
+#bookingModal,
+#pnrDetailModal {
+    transition: opacity 180ms ease !important;
+}
+
+.modal-content,
+.modal-box,
+.pnr-detail-modal-container,
+.dialog-content {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 16px !important;
+    box-shadow: var(--shadow-lg) !important;
+    transform-origin: center center;
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Guarantee text contrast inside all modals (prevents disappearing text in dark mode) */
+.modal-content :is(h1, h2, h3, h4, h5, p, label, .modal-title),
+.modal-box :is(h1, h2, h3, h4, h5, p, label, .modal-title),
+.pnr-detail-modal-container :is(h1, h2, h3, h4, p, label) {
+    color: var(--text-primary) !important;
+}
+
+.modal-content :is(.text-muted, .form-hint, .section-subtitle, small),
+.modal-box :is(.text-muted, .form-hint, .section-subtitle, small) {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-theme .modal-content,
+body.dark-theme .modal-box,
+body.dark-theme .pnr-detail-modal-container,
+body.dark-theme .dialog-content {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 7. Unified Tables */
+table,
+.table {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+}
+
+th {
+    background-color: var(--surface-2) !important;
+    color: var(--text-secondary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+td {
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+tbody tr:hover td {
+    background-color: var(--surface-2) !important;
+}
+
+body.dark-theme th {
+    background-color: var(--surface-2) !important;
+    color: var(--text-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme td {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme tbody tr:hover td {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* 8. Unified Status Badges & Chips */
+.badge,
+.status-badge,
+.tag {
+    border-radius: var(--radius-pill, 999px) !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.badge-success,
+.status-paid,
+.status-confirmed,
+.status-verified {
+    background-color: var(--success-soft) !important;
+    color: var(--success) !important;
+    border: 1px solid rgba(22, 163, 74, 0.25) !important;
+}
+
+.badge-warning,
+.status-pending,
+.status-partial {
+    background-color: var(--warning-soft) !important;
+    color: var(--warning) !important;
+    border: 1px solid rgba(217, 119, 6, 0.25) !important;
+}
+
+.badge-danger,
+.status-unpaid,
+.status-cancelled {
+    background-color: var(--danger-soft) !important;
+    color: var(--danger) !important;
+    border: 1px solid rgba(220, 38, 38, 0.25) !important;
+}
+
+/* 9. Panels & Tab Transitions (160–220ms, transform & opacity) */
+.view {
+    transition: opacity 180ms ease, transform 180ms ease !important;
+}
+
+/* 10. Motion Accessibility (Strict Reduced Motion) */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
