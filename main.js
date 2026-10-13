@@ -2220,133 +2220,235 @@ function getFeeRowDateChangeText(t, allRows = []) {
 
     const totalUnpaid = allRows.filter(t => !isTicketPaid(t)).reduce((s, t) => s + ticketSalesAmount(t), 0);
     const totalAmount = allRows.reduce((s, t) => s + ticketSalesAmount(t), 0);
+    const totalReceived = Math.max(0, totalAmount - totalUnpaid);
+    const isLargePax = uniquePassengers.length >= 4;
+
+    // Separate Booking / Ticket Status
+    const allPnrTickets = (state.allTickets || []).filter(t =>
+        String(t.booking_reference || '').trim().toUpperCase() === searchPnr
+    );
+    const baseTickets = allPnrTickets.length ? allPnrTickets : allRows;
+    const canceledCount = baseTickets.filter(t => isCanceledTicket(t)).length;
+    let bookingStatusHtml = '';
+    if (canceledCount === baseTickets.length && baseTickets.length > 0) {
+        bookingStatusHtml = `<span class="pnr-status-badge pnr-status-booking-canceled" title="Booking status: Canceled"><i class="fa-solid fa-ban"></i> Canceled</span>`;
+    } else if (canceledCount > 0) {
+        bookingStatusHtml = `<span class="pnr-status-badge pnr-status-booking-partial" title="Booking status: Partially Canceled"><i class="fa-solid fa-triangle-exclamation"></i> Partial Cancel</span>`;
+    } else {
+        bookingStatusHtml = `<span class="pnr-status-badge pnr-status-booking-confirmed" title="Booking status: Confirmed"><i class="fa-solid fa-circle-check"></i> Confirmed</span>`;
+    }
+
+    // Separate Payment Status
+    let paymentStatusHtml = '';
+    if (totalUnpaid === 0 && totalAmount > 0) {
+        paymentStatusHtml = `<span class="pnr-status-badge pnr-status-payment-paid" title="Payment status: Fully Paid"><i class="fa-solid fa-circle-check"></i> Paid</span>`;
+    } else if (totalUnpaid > 0 && totalReceived > 0) {
+        paymentStatusHtml = `<span class="pnr-status-badge pnr-status-payment-partial" title="Payment status: Partially Paid"><i class="fa-solid fa-clock"></i> Partial</span>`;
+    } else if (totalAmount === 0) {
+        paymentStatusHtml = `<span class="pnr-status-badge pnr-status-payment-paid" title="Payment status: Paid"><i class="fa-solid fa-circle-check"></i> Paid</span>`;
+    } else {
+        paymentStatusHtml = `<span class="pnr-status-badge pnr-status-payment-unpaid" title="Payment status: Unpaid"><i class="fa-solid fa-circle-exclamation"></i> Unpaid</span>`;
+    }
 
     const content = `
         <div class="trip-detail-modal-container">
+            <!-- Toolbar -->
             <div class="pnr-dialog-toolbar">
-                <span>Booking details</span>
-                <button type="button" id="tripPlanTopCloseBtn" aria-label="Close booking details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <div class="pnr-toolbar-title-group">
+                    <span class="pnr-toolbar-title">Booking Details</span>
+                    ${isLargePax ? `<span class="pnr-toolbar-badge">${uniquePassengers.length} Passengers</span>` : ''}
+                </div>
+                <div class="pnr-toolbar-actions-group">
+                    ${isLargePax ? `
+                    <button type="button" class="pnr-toolbar-jump-btn" id="tripPlanJumpManageTopBtn" title="Open full management page">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Full Detail
+                    </button>` : ''}
+                    <button type="button" id="tripPlanTopCloseBtn" class="pnr-close-circle-btn" aria-label="Close booking details">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
-            <!-- Ticket Header Card -->
-            <div class="trip-ticket-header">
-                <div class="ticket-route-section">
-                    <div class="route-point">
-                        <span class="airport-code">${dashboardEscapeHtml(lead.departure || 'N/A')}</span>
+
+            <!-- 1. Top Section: PNR, Route, Airline, Statuses -->
+            <div class="pnr-modal-top-card">
+                <div class="pnr-top-flight-bar">
+                    <div class="pnr-route-pill">
+                        <span class="pnr-route-code" title="${dashboardEscapeHtml(lead.departure || 'Departure')}">${dashboardEscapeHtml(lead.departure || 'N/A')}</span>
+                        <div class="pnr-route-arrow-flow" aria-hidden="true">
+                            <span class="pnr-flow-line"></span>
+                            <i class="fa-solid fa-plane pnr-flow-icon"></i>
+                            <span class="pnr-flow-line"></span>
+                        </div>
+                        <span class="pnr-route-code" title="${dashboardEscapeHtml(lead.destination || 'Destination')}">${dashboardEscapeHtml(lead.destination || 'N/A')}</span>
                     </div>
-                    <div class="route-line-connector">
-                        <span class="route-line-dashed"></span>
-                        <i class="fa-solid fa-plane route-plane-icon"></i>
+                    <div class="pnr-airline-box">
+                        ${renderAirlineName(lead.airline || 'Airline', { size: 'sm' })}
                     </div>
-                    <div class="route-point">
-                        <span class="airport-code">${dashboardEscapeHtml(lead.destination || 'N/A')}</span>
+                </div>
+
+                <div class="pnr-top-code-status-grid">
+                    <div class="pnr-code-cell">
+                        <span class="pnr-mini-label">Booking Reference (PNR)</span>
+                        <div class="pnr-value-row">
+                            <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
+                            <button type="button" class="pnr-icon-action-btn" id="tripPnrCopyBtn" title="Copy PNR to clipboard" aria-label="Copy PNR">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                            <button type="button" class="pnr-phonetic-btn" id="tripPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
+                                <i class="fa-solid fa-spell-check"></i>
+                            </button>
+                        </div>
+                        ${renderPhoneticExpansionHtml(pnr, 'tripPnrPhoneticPanel')}
+                    </div>
+
+                    <div class="pnr-status-cell">
+                        <span class="pnr-mini-label">Statuses</span>
+                        <div class="pnr-dual-status-cluster">
+                            <div class="pnr-status-pair">
+                                <span class="pnr-status-caption">Booking</span>
+                                ${bookingStatusHtml}
+                            </div>
+                            <div class="pnr-status-pair">
+                                <span class="pnr-status-caption">Payment</span>
+                                ${paymentStatusHtml}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- PNR & Airline Section -->
-            <div class="trip-pnr-card-premium">
-                <div class="pnr-card-left">
-                    <span class="pnr-label-premium">Booking Reference (PNR)</span>
-                    <div class="pnr-value-row">
-                        <strong class="pnr-value-large">${dashboardEscapeHtml(pnr)}</strong>
-                        <button type="button" class="pnr-phonetic-btn" id="tripPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
-                            <i class="fa-solid fa-spell-check"></i>
-                        </button>
+            <!-- 2. Middle Section: Travel/Issued Dates & Contact Account -->
+            <div class="pnr-modal-middle-card">
+                <div class="pnr-meta-grid">
+                    <div class="pnr-meta-cell">
+                        <span class="pnr-meta-label"><i class="fa-regular fa-calendar"></i> Travel Date</span>
+                        <strong class="pnr-meta-val">${dashboardEscapeHtml(lead.departing_on || 'N/A')}</strong>
                     </div>
-                    ${renderPhoneticExpansionHtml(pnr, 'tripPnrPhoneticPanel')}
-                    ${(accountName || safeAccountLink) ? `
-                    <div class="pnr-account-premium" title="${dashboardEscapeHtml(accountName || accountLink)}">
-                        <i class="fa-solid fa-at" aria-hidden="true"></i>
-                        <span class="pnr-account-label">Social media account</span>
-                        <strong class="pnr-account-value">${dashboardEscapeHtml(accountName || 'Client')}</strong>
-                        ${safeAccountLink && socialMeta ? `
-                        <a href="${dashboardEscapeHtml(safeAccountLink)}"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="pnr-social-link-btn"
-                           title="Open ${dashboardEscapeHtml(socialMeta.label)}: ${dashboardEscapeHtml(accountLink)}"
-                           style="--platform-color: ${socialMeta.color}; --platform-bg: ${socialMeta.badgeBg};"
-                           onclick="event.stopPropagation();"
-                           aria-label="Open ${dashboardEscapeHtml(socialMeta.label)}">
-                            <i class="${socialMeta.icon}" aria-hidden="true"></i>
-                            <span class="pnr-social-link-label">${dashboardEscapeHtml(socialMeta.label)}</span>
-                            <i class="fa-solid fa-arrow-up-right-from-square pnr-social-link-arrow" aria-hidden="true"></i>
-                        </a>` : (socialMeta && accountType ? `
-                        <span class="pnr-social-platform-pill" style="--platform-color: ${socialMeta.color}; --platform-bg: ${socialMeta.badgeBg};">
-                            <i class="${socialMeta.icon}" aria-hidden="true"></i>
-                            <span>${dashboardEscapeHtml(socialMeta.label)}</span>
-                        </span>` : '')}
-                    </div>` : ''}
-                </div>
-                <div class="pnr-card-right">
-                    ${renderAirlineName(lead.airline || 'Airline', { size: 'sm' })}
-                </div>
-            </div>
-
-            <!-- Overview Card -->
-            <div class="trip-detail-card">
-                <div class="card-title"><i class="fa-solid fa-calendar-days"></i> Schedule & Overview</div>
-                <div class="overview-flat-grid">
-                    <div class="flat-grid-item">
-                        <span class="item-label">Travel Date</span>
-                        <strong class="item-value"><i class="fa-regular fa-clock"></i> ${dashboardEscapeHtml(lead.departing_on || 'N/A')}</strong>
+                    <div class="pnr-meta-cell">
+                        <span class="pnr-meta-label"><i class="fa-regular fa-calendar-check"></i> Issued Date${issuedDates.length > 1 ? 's' : ''}</span>
+                        <strong class="pnr-meta-val">${dashboardEscapeHtml(issuedDates.join(', ') || 'N/A')}</strong>
                     </div>
-                    <div class="flat-grid-item">
-                        <span class="item-label">Issued Date${issuedDates.length > 1 ? 's' : ''}</span>
-                        <strong class="item-value"><i class="fa-regular fa-calendar-check"></i> ${dashboardEscapeHtml(issuedDates.join(', ') || 'N/A')}</strong>
-                    </div>
-                    <div class="flat-grid-item">
-                        <span class="item-label">Passengers</span>
-                        <strong class="item-value"><i class="fa-solid fa-users"></i> ${uniquePassengers.length} Traveller${uniquePassengers.length > 1 ? 's' : ''}</strong>
+                    <div class="pnr-meta-cell pnr-meta-contact-cell">
+                        <span class="pnr-meta-label"><i class="fa-solid fa-address-book"></i> Contact Account</span>
+                        <div class="pnr-contact-row">
+                            <strong class="pnr-contact-client-name" title="${dashboardEscapeHtml(accountName || accountLink)}">${dashboardEscapeHtml(accountName || 'Client')}</strong>
+                            ${safeAccountLink && socialMeta ? `
+                            <a href="${dashboardEscapeHtml(safeAccountLink)}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="pnr-social-link-btn"
+                               title="Open ${dashboardEscapeHtml(socialMeta.label)}: ${dashboardEscapeHtml(accountLink)}"
+                               style="--platform-color: ${socialMeta.color}; --platform-bg: ${socialMeta.badgeBg};"
+                               onclick="event.stopPropagation();"
+                               aria-label="Open ${dashboardEscapeHtml(socialMeta.label)}">
+                                <i class="${socialMeta.icon}" aria-hidden="true"></i>
+                                <span class="pnr-social-link-label">${dashboardEscapeHtml(socialMeta.label)}</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square pnr-social-link-arrow" aria-hidden="true"></i>
+                            </a>` : (socialMeta && accountType ? `
+                            <span class="pnr-social-platform-pill" style="--platform-color: ${socialMeta.color}; --platform-bg: ${socialMeta.badgeBg};">
+                                <i class="${socialMeta.icon}" aria-hidden="true"></i>
+                                <span>${dashboardEscapeHtml(socialMeta.label)}</span>
+                            </span>` : '')}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Passengers Card -->
-            <div class="trip-detail-card">
-                <div class="card-title"><i class="fa-solid fa-user-check"></i> Passenger Roster</div>
-                <div class="passengers-list-premium">
-                    ${passengerList || '<div class="empty-list-msg">No passenger tickets found.</div>'}
+            <!-- 3. Passenger List -->
+            <div class="pnr-modal-roster-card">
+                <div class="pnr-roster-header-bar">
+                    <span class="pnr-roster-title"><i class="fa-solid fa-user-check"></i> Passenger List</span>
+                    <span class="pnr-roster-pax-count">${uniquePassengers.length} ${uniquePassengers.length === 1 ? 'Passenger' : 'Passengers'}</span>
                 </div>
-            </div>
-
-            <!-- Fees & Changes Card (if any) -->
-            ${feeList ? `
-            <div class="trip-detail-card">
-                <div class="card-title"><i class="fa-solid fa-tags"></i> Add-ons & Adjustments</div>
-                <div class="passengers-list-premium">
-                    ${feeList}
-                </div>
-            </div>
-            ` : ''}
-
-            <!-- Financial Summary Card -->
-            <div class="trip-detail-card premium-summary-card">
-                <div class="card-title"><i class="fa-solid fa-vault"></i> Settlement Details</div>
-                <div class="financial-summary-grid-premium">
-                    <div class="fin-summary-item-premium total-amount">
-                        <span class="fin-label-premium">Booking Total</span>
-                        <strong class="fin-val-premium">${formatDashboardAmount(totalAmount)} <span class="curr-premium">MMK</span></strong>
+                <div class="pnr-roster-body ${isLargePax ? 'pnr-scrollable-roster' : ''}">
+                    <div class="passengers-list-premium">
+                        ${passengerList || '<div class="empty-list-msg">No passenger tickets found.</div>'}
                     </div>
-                    <div class="fin-summary-item-premium balance-due">
-                        <span class="fin-label-premium">Outstanding Balance</span>
-                        <strong class="fin-val-premium ${totalUnpaid > 0 ? 'unpaid-highlight' : 'paid-highlight'}">
-                            ${formatDashboardAmount(totalUnpaid)} <span class="curr-premium">MMK</span>
+                    ${feeList ? `
+                    <div class="pnr-roster-addons-wrap">
+                        <div class="pnr-addon-label"><i class="fa-solid fa-tags"></i> Add-ons & Adjustments</div>
+                        <div class="passengers-list-premium">
+                            ${feeList}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <!-- 4. Bottom Section: Total, Received, Outstanding & Primary Actions -->
+            <div class="pnr-modal-bottom-card">
+                <div class="pnr-settlement-row">
+                    <div class="pnr-settlement-cell">
+                        <span class="pnr-settlement-label">Total Booking</span>
+                        <strong class="pnr-settlement-val">${formatDashboardAmount(totalAmount)} <span class="pnr-settlement-curr">MMK</span></strong>
+                    </div>
+                    <div class="pnr-settlement-cell">
+                        <span class="pnr-settlement-label">Received</span>
+                        <strong class="pnr-settlement-val ${totalReceived > 0 ? 'pnr-val-received' : ''}">${formatDashboardAmount(totalReceived)} <span class="pnr-settlement-curr">MMK</span></strong>
+                    </div>
+                    <div class="pnr-settlement-cell">
+                        <span class="pnr-settlement-label">Outstanding</span>
+                        <strong class="pnr-settlement-val ${totalUnpaid > 0 ? 'pnr-val-outstanding' : 'pnr-val-cleared'}">
+                            ${formatDashboardAmount(totalUnpaid)} <span class="pnr-settlement-curr">MMK</span>
                         </strong>
                     </div>
                 </div>
-            </div>
 
-            <!-- Footer Action -->
-            <div class="form-actions pnr-dialog-footer">
-                <button type="button" class="btn btn-secondary" id="tripPlanCloseBtn">Done</button>
+                <div class="pnr-modal-footer-actions">
+                    <button type="button" class="btn btn-secondary pnr-footer-btn-copy" id="tripPnrCopyBtnBottom">
+                        <i class="fa-regular fa-copy"></i> Copy PNR
+                    </button>
+                    <div class="pnr-footer-action-right">
+                        <button type="button" class="btn btn-secondary" id="tripPlanCloseBtn">Done</button>
+                        <button type="button" class="btn btn-primary pnr-footer-btn-manage" id="tripPlanManageActionBtn">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Full Detail
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     `;
-    openModal(content, 'solid-modal pnr-detail-dialog');
+
+    const modalDialogClass = isLargePax
+        ? 'solid-modal pnr-detail-dialog pnr-side-panel'
+        : 'solid-modal pnr-detail-dialog';
+
+    openModal(content, modalDialogClass);
     wirePhoneticToggle('tripPnrPhoneticToggle', 'tripPnrPhoneticPanel');
-    document.getElementById('tripPlanTopCloseBtn').addEventListener('click', closeModal);
-    document.getElementById('tripPlanCloseBtn').addEventListener('click', closeModal);
+
+    const handleCopyPnr = async () => {
+        try {
+            await navigator.clipboard.writeText(searchPnr);
+            showToast(`PNR ${searchPnr} copied to clipboard!`, 'success');
+        } catch (e) {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = searchPnr;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast(`PNR ${searchPnr} copied to clipboard!`, 'success');
+            } catch (fallbackErr) {
+                showToast(`PNR: ${searchPnr}`, 'info');
+            }
+        }
+    };
+
+    const handleJumpManage = () => {
+        closeModal();
+        showView('manage');
+        findTicketForManage(searchPnr);
+    };
+
+    document.getElementById('tripPlanTopCloseBtn')?.addEventListener('click', closeModal);
+    document.getElementById('tripPlanCloseBtn')?.addEventListener('click', closeModal);
+    document.getElementById('tripPnrCopyBtn')?.addEventListener('click', handleCopyPnr);
+    document.getElementById('tripPnrCopyBtnBottom')?.addEventListener('click', handleCopyPnr);
+    document.getElementById('tripPlanManageActionBtn')?.addEventListener('click', handleJumpManage);
+    document.getElementById('tripPlanJumpManageTopBtn')?.addEventListener('click', handleJumpManage);
 
     document.querySelectorAll('.clickable-client-link').forEach(link => {
         link.addEventListener('click', async (ev) => {

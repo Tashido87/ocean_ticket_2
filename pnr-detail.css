@@ -3,81 +3,628 @@
     width: min(640px, calc(100vw - 24px));
     max-width: 640px;
     max-height: calc(100dvh - 32px);
-    padding: 24px;
-    border-radius: 24px;
+    padding: 22px 24px;
+    border-radius: 20px;
     overflow-y: auto;
     scrollbar-width: thin;
-}
-.pnr-detail-dialog .trip-detail-modal-container { font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif; }
-.pnr-detail-dialog .pnr-dialog-toolbar { display: flex; align-items: center; justify-content: space-between; margin: -6px 0 16px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
-.pnr-detail-dialog .pnr-dialog-toolbar button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--surface-2, #f3f4f6); color: var(--text-primary); cursor: pointer; }
-.pnr-detail-dialog button:focus-visible, .pnr-detail-dialog a:focus-visible { outline: 3px solid #e46b75; outline-offset: 3px; }
-.pnr-detail-dialog .trip-ticket-header { padding: 24px; margin-bottom: 16px; border-radius: 18px; background: linear-gradient(115deg, #a91f35, #802e47); box-shadow: none; }
-.pnr-detail-dialog .ticket-route-section { display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); gap: 16px; width: 100%; }
-.pnr-detail-dialog .route-point:last-child { text-align: right; }
-.pnr-detail-dialog .route-point .airport-code { font-size: clamp(19px, 3.8vw, 27px); font-weight: 650; line-height: 1.3; letter-spacing: -0.6px; overflow-wrap: anywhere; }
-.pnr-detail-dialog .route-line-connector { width: 48px; }
-.pnr-detail-dialog .route-plane-icon { animation: none; transform: none; font-size: 16px; }
-.pnr-detail-dialog .trip-pnr-card-premium { padding: 4px 0 20px; margin-bottom: 20px; border: 0; border-bottom: 1px solid var(--border-color, #e7e7ec); border-radius: 0; background: transparent; gap: 16px; }
-.pnr-detail-dialog .pnr-value-large { font-size: 23px; letter-spacing: 1.4px; }
-.pnr-detail-dialog .pnr-label-premium, .pnr-detail-dialog .item-label, .pnr-detail-dialog .fin-label-premium { font-size: 11px; letter-spacing: .05em; font-weight: 600; }
-.pnr-detail-dialog .pnr-account-premium { flex-wrap: wrap; gap: 5px 8px; margin-top: 8px; }
-.pnr-detail-dialog .pnr-account-value { white-space: normal; overflow-wrap: anywhere; font-weight: 600; }
-.pnr-detail-dialog .trip-detail-card { padding: 0; margin-bottom: 24px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-.pnr-detail-dialog .trip-detail-card .card-title { font-size: 13px; text-transform: none; letter-spacing: 0; color: var(--text-primary); margin-bottom: 14px; font-weight: 650; }
-.pnr-detail-dialog .overview-flat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 16px; border-radius: 14px; background: var(--surface-2, #f6f6f9); }
-.pnr-detail-dialog .flat-grid-item { min-width: 0; gap: 7px; }
-.pnr-detail-dialog .flat-grid-item .item-value { display: block; font-size: 13px; line-height: 1.6; font-weight: 600; overflow-wrap: anywhere; }
-.pnr-detail-dialog .flat-grid-item .item-value i { display: none; }
-.pnr-detail-dialog .passengers-list-premium { gap: 0; }
-.pnr-detail-dialog .pax-row-premium { padding: 14px 0; gap: 12px; border: 0; border-bottom: 1px solid var(--border-color, #e7e7ec); border-radius: 0; background: transparent; box-shadow: none; }
-.pnr-detail-dialog .pax-row-premium:last-child { border-bottom: 0; }
-.pnr-detail-dialog .pax-row-premium:hover { transform: none; box-shadow: none; }
-.pnr-detail-dialog .pax-avatar { display: none; }
-.pnr-detail-dialog .pax-name-premium { font-size: 13px; line-height: 1.5; font-weight: 600; overflow-wrap: anywhere; }
-.pnr-detail-dialog .pax-ticket-premium { white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
-.pnr-detail-dialog .pax-finance-premium { flex-shrink: 0; gap: 6px; }
-.pnr-detail-dialog .pax-amount-premium { font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
-.pnr-detail-dialog .pax-status-badge-premium { font-size: 10px; letter-spacing: .02em; padding: 3px 7px; }
-.pnr-detail-dialog .premium-summary-card { padding: 18px; border-radius: 16px; background: var(--surface-2, #f6f6f9); border: 1px solid var(--border-color, #e7e7ec); }
-.pnr-detail-dialog .financial-summary-grid-premium { gap: 18px; }
-.pnr-detail-dialog .fin-val-premium { font-size: 21px; letter-spacing: -.5px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.pnr-detail-dialog .curr-premium { font-size: 10px; letter-spacing: 0; }
-.pnr-detail-dialog .pnr-dialog-footer { margin: 0; display: flex; justify-content: flex-end; }
-.pnr-detail-dialog #tripPlanCloseBtn { min-height: 44px; min-width: 110px; border-radius: 12px; padding: 10px 24px; font-size: 14px; font-weight: 600; }
-@media (max-width: 480px) {
-    #modal .modal-content.pnr-detail-dialog { padding: 16px; border-radius: 18px; }
-    .pnr-detail-dialog .trip-ticket-header { padding: 18px 14px; }
-    .pnr-detail-dialog .ticket-route-section { grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); gap: 8px; }
-    .pnr-detail-dialog .route-line-connector { width: 30px; }
-    .pnr-detail-dialog .overview-flat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .pnr-detail-dialog .trip-pnr-card-premium { align-items: flex-start; flex-wrap: wrap; }
-    .pnr-detail-dialog .pax-row-premium { flex-wrap: wrap; }
-    .pnr-detail-dialog .pax-details-premium { flex-basis: 50%; }
-    .pnr-detail-dialog .fin-val-premium { font-size: 18px; }
+    box-sizing: border-box;
 }
 
-/* --- Phonetic PNR Expander --- */
-.pnr-value-row {
+#modal .modal-content.pnr-detail-dialog.pnr-side-panel {
+    width: min(720px, calc(100vw - 24px));
+    max-width: 720px;
+}
+
+.pnr-detail-dialog .trip-detail-modal-container {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", Padauk, Pyidaungsu, sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Toolbar */
+.pnr-detail-dialog .pnr-dialog-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: -4px 0 6px;
+    padding-bottom: 2px;
+}
+
+.pnr-detail-dialog .pnr-toolbar-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pnr-detail-dialog .pnr-toolbar-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+}
+
+.pnr-detail-dialog .pnr-toolbar-badge {
+    font-size: 11px;
+    font-weight: 650;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: rgba(185, 28, 28, 0.1);
+    color: var(--brand, #b91c1c);
+    border: 1px solid rgba(185, 28, 28, 0.2);
+}
+
+.pnr-detail-dialog .pnr-toolbar-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pnr-detail-dialog .pnr-toolbar-jump-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 650;
+    background: var(--surface-2, #f3f4f6);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color, #e5e7eb);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pnr-detail-dialog .pnr-toolbar-jump-btn:hover {
+    background: var(--brand, #b91c1c);
+    color: #ffffff;
+    border-color: var(--brand, #b91c1c);
+}
+
+.pnr-detail-dialog .pnr-close-circle-btn {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--surface-2, #f3f4f6);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background 0.15s ease;
+}
+
+.pnr-detail-dialog .pnr-close-circle-btn:hover {
+    background: var(--border-color, #e5e7eb);
+}
+
+.pnr-detail-dialog button:focus-visible,
+.pnr-detail-dialog a:focus-visible {
+    outline: 2px solid var(--brand, #b91c1c);
+    outline-offset: 2px;
+}
+
+/* 1. Top Section: PNR, Route, Airline, Status */
+.pnr-detail-dialog .pnr-modal-top-card {
+    background: var(--surface-2, #f6f7f9);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pnr-detail-dialog .pnr-top-flight-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--border-color, #e2e8f0);
+}
+
+.pnr-detail-dialog .pnr-route-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    padding: 5px 14px;
+    border-radius: 9999px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.pnr-detail-dialog .pnr-route-code {
+    font-size: 17px;
+    font-weight: 750;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+}
+
+.pnr-detail-dialog .pnr-route-arrow-flow {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--brand, #b91c1c);
+    font-size: 12px;
+}
+
+.pnr-detail-dialog .pnr-flow-line {
+    width: 12px;
+    height: 1.5px;
+    background: currentColor;
+    opacity: 0.45;
+}
+
+.pnr-detail-dialog .pnr-flow-icon {
+    font-size: 12px;
+}
+
+.pnr-detail-dialog .pnr-airline-box {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.pnr-detail-dialog .pnr-top-code-status-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.pnr-detail-dialog .pnr-code-cell,
+.pnr-detail-dialog .pnr-status-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.pnr-detail-dialog .pnr-mini-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 650;
+    color: var(--text-muted, #64748b);
+}
+
+.pnr-detail-dialog .pnr-value-row {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    margin-top: 2px;
 }
 
+.pnr-detail-dialog .pnr-value-large {
+    font-size: 23px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.pnr-detail-dialog .pnr-icon-action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #cbd5e1);
+    background: var(--surface, #ffffff);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pnr-detail-dialog .pnr-icon-action-btn:hover {
+    background: var(--brand, #b91c1c);
+    color: #ffffff;
+    border-color: var(--brand, #b91c1c);
+}
+
+/* Statuses - strictly separate ticket/booking and payment badges */
+.pnr-detail-dialog .pnr-dual-status-cluster {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+.pnr-detail-dialog .pnr-status-pair {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.pnr-detail-dialog .pnr-status-caption {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 650;
+    color: var(--text-muted, #64748b);
+}
+
+.pnr-detail-dialog .pnr-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 650;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.pnr-detail-dialog .pnr-status-booking-confirmed {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.pnr-detail-dialog .pnr-status-booking-partial {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pnr-detail-dialog .pnr-status-booking-canceled {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.pnr-detail-dialog .pnr-status-payment-paid {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.pnr-detail-dialog .pnr-status-payment-partial {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pnr-detail-dialog .pnr-status-payment-unpaid {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* 2. Middle Section: Travel/Issued Dates & Contact Account */
+.pnr-detail-dialog .pnr-modal-middle-card {
+    background: var(--surface-2, #f6f7f9);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 14px;
+    padding: 14px 18px;
+}
+
+.pnr-detail-dialog .pnr-meta-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 14px;
+    align-items: start;
+}
+
+.pnr-detail-dialog .pnr-meta-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.pnr-detail-dialog .pnr-meta-label {
+    font-size: 11px;
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted, #64748b);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pnr-detail-dialog .pnr-meta-val {
+    font-size: 13.5px;
+    font-weight: 650;
+    color: var(--text-primary);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.pnr-detail-dialog .pnr-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+.pnr-detail-dialog .pnr-contact-client-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+/* 3. Passenger List */
+.pnr-detail-dialog .pnr-modal-roster-card {
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 14px;
+    padding: 16px 18px;
+}
+
+.pnr-detail-dialog .pnr-roster-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.pnr-detail-dialog .pnr-roster-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pnr-detail-dialog .pnr-roster-pax-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+}
+
+.pnr-detail-dialog .pnr-roster-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pnr-detail-dialog .pnr-scrollable-roster {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+}
+
+.pnr-detail-dialog .pnr-roster-addons-wrap {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color, #e2e8f0);
+}
+
+.pnr-detail-dialog .pnr-addon-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pnr-detail-dialog .passengers-list-premium {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.pnr-detail-dialog .pax-row-premium {
+    padding: 12px 0;
+    gap: 12px;
+    border: 0;
+    border-bottom: 1px solid var(--border-color, #e7e7ec);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+}
+
+.pnr-detail-dialog .pax-row-premium:last-child {
+    border-bottom: 0;
+}
+
+.pnr-detail-dialog .pax-avatar {
+    display: none;
+}
+
+.pnr-detail-dialog .pax-details-premium {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pnr-detail-dialog .pax-name-premium {
+    font-size: 13.5px;
+    line-height: 1.45;
+    font-weight: 650;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.pnr-detail-dialog a.pax-name-premium:hover {
+    color: var(--brand, #b91c1c);
+    text-decoration: underline !important;
+}
+
+.pnr-detail-dialog .pax-ticket-premium {
+    font-size: 12px;
+    color: var(--text-muted, #64748b);
+    overflow-wrap: anywhere;
+}
+
+.pnr-detail-dialog .pax-finance-premium {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.pnr-detail-dialog .pax-amount-premium {
+    font-size: 13px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.pnr-detail-dialog .pax-status-badge-premium {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    padding: 2.5px 7px;
+    border-radius: 9999px;
+}
+
+.pnr-detail-dialog .pax-status-badge-premium.paid {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+}
+
+.pnr-detail-dialog .pax-status-badge-premium.unpaid {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+/* 4. Bottom Section: Total, Received, Outstanding & Primary Actions */
+.pnr-detail-dialog .pnr-modal-bottom-card {
+    background: var(--surface-2, #f6f7f9);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pnr-detail-dialog .pnr-settlement-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.pnr-detail-dialog .pnr-settlement-cell {
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pnr-detail-dialog .pnr-settlement-label {
+    font-size: 11px;
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted, #64748b);
+}
+
+.pnr-detail-dialog .pnr-settlement-val {
+    font-size: 17px;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.pnr-detail-dialog .pnr-settlement-curr {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+}
+
+.pnr-detail-dialog .pnr-val-received {
+    color: #059669 !important;
+}
+
+.pnr-detail-dialog .pnr-val-outstanding {
+    color: #dc2626 !important;
+}
+
+.pnr-detail-dialog .pnr-val-cleared {
+    color: #059669 !important;
+}
+
+.pnr-detail-dialog .pnr-modal-footer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pnr-detail-dialog .pnr-footer-action-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pnr-detail-dialog .pnr-footer-btn-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.pnr-detail-dialog #tripPlanCloseBtn {
+    min-height: 40px;
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.pnr-detail-dialog .pnr-footer-btn-manage {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+/* Phonetic Expander */
 .pnr-phonetic-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
     border: 1px solid rgba(220, 38, 38, 0.25);
     background: rgba(220, 38, 38, 0.08);
     color: #dc2626;
     font-size: 13px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.15s ease;
     padding: 0;
     line-height: 1;
     flex-shrink: 0;
@@ -87,8 +634,7 @@
     background: #dc2626;
     color: #ffffff;
     border-color: #dc2626;
-    transform: scale(1.08);
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+    transform: scale(1.05);
 }
 
 .pnr-phonetic-btn.is-active {
@@ -96,19 +642,6 @@
     color: #ffffff;
     border-color: #dc2626;
     box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
-}
-
-body.dark-theme .pnr-phonetic-btn {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.35);
-    color: #f87171;
-}
-
-body.dark-theme .pnr-phonetic-btn:hover,
-body.dark-theme .pnr-phonetic-btn.is-active {
-    background: #dc2626;
-    color: #ffffff;
-    border-color: #ef4444;
 }
 
 .pnr-phonetic-panel {
@@ -121,14 +654,7 @@ body.dark-theme .pnr-phonetic-btn.is-active {
     background: #fff5f5;
     border: 1px solid rgba(220, 38, 38, 0.2);
     border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.04);
     animation: pnrPhoneticFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-body.dark-theme .pnr-phonetic-panel {
-    background: rgba(220, 38, 38, 0.08);
-    border-color: rgba(239, 68, 68, 0.25);
-    box-shadow: none;
 }
 
 @keyframes pnrPhoneticFadeIn {
@@ -159,13 +685,15 @@ body.dark-theme .pnr-phonetic-panel {
     line-height: 1.3;
 }
 
-.pnr-phonetic-chip.is-alpha {
+.pnr-phonetic-chip.is-alpha,
+.pnr-phonetic-chip.is-digit {
     background: #ffffff;
     border: 1px solid rgba(220, 38, 38, 0.25);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.pnr-phonetic-chip.is-alpha .chip-char {
+.pnr-phonetic-chip.is-alpha .chip-char,
+.pnr-phonetic-chip.is-digit .chip-char {
     font-family: monospace;
     font-weight: 800;
     font-size: 13px;
@@ -178,42 +706,7 @@ body.dark-theme .pnr-phonetic-panel {
     font-size: 12px;
 }
 
-body.dark-theme .pnr-phonetic-chip.is-alpha {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(239, 68, 68, 0.35);
-}
-
-body.dark-theme .pnr-phonetic-chip.is-alpha .chip-char {
-    color: #f87171;
-}
-
-body.dark-theme .pnr-phonetic-chip.is-alpha .chip-word {
-    color: #f1f5f9;
-}
-
-.pnr-phonetic-chip.is-digit {
-    background: #ffffff;
-    border: 1px solid rgba(220, 38, 38, 0.25);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.pnr-phonetic-chip.is-digit .chip-char {
-    font-family: monospace;
-    font-weight: 800;
-    font-size: 13px;
-    color: #dc2626;
-}
-
-body.dark-theme .pnr-phonetic-chip.is-digit {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(239, 68, 68, 0.35);
-}
-
-body.dark-theme .pnr-phonetic-chip.is-digit .chip-char {
-    color: #f87171;
-}
-
-/* Clickable Social Media Link Button in PNR Details */
+/* Social link button & pill */
 .pnr-social-link-btn {
     display: inline-flex;
     align-items: center;
@@ -227,18 +720,16 @@ body.dark-theme .pnr-phonetic-chip.is-digit .chip-char {
     font-weight: 650;
     line-height: 1.25;
     text-decoration: none;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.15s ease;
     cursor: pointer;
     vertical-align: middle;
-    margin-left: 2px;
 }
 
 .pnr-social-link-btn:hover {
     background: var(--platform-color, #0084FF);
     color: #ffffff !important;
     transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .pnr-social-link-btn:active {
@@ -254,12 +745,6 @@ body.dark-theme .pnr-phonetic-chip.is-digit .chip-char {
 .pnr-social-link-btn .pnr-social-link-arrow {
     font-size: 9.5px !important;
     opacity: 0.8;
-    transition: transform 0.2s ease;
-}
-
-.pnr-social-link-btn:hover .pnr-social-link-arrow {
-    opacity: 1;
-    transform: translate(1px, -1px);
 }
 
 .pnr-social-platform-pill {
@@ -273,7 +758,6 @@ body.dark-theme .pnr-phonetic-chip.is-digit .chip-char {
     font-size: 11px;
     font-weight: 600;
     line-height: 1.25;
-    margin-left: 2px;
 }
 
 .pnr-social-platform-pill i {
@@ -281,12 +765,137 @@ body.dark-theme .pnr-phonetic-chip.is-digit .chip-char {
     color: inherit !important;
 }
 
-body.dark-theme .pnr-social-link-btn {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+/* Dark Theme Overrides */
+body.dark-theme #modal .modal-content.pnr-detail-dialog {
+    background: var(--surface, #1e222b);
+    color: var(--text-primary, #f1f5f9);
 }
 
-body.dark-theme .pnr-social-link-btn:hover {
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+body.dark-theme .pnr-detail-dialog .pnr-modal-top-card,
+body.dark-theme .pnr-detail-dialog .pnr-modal-middle-card,
+body.dark-theme .pnr-detail-dialog .pnr-modal-bottom-card {
+    background: var(--surface-2, #161922);
+    border-color: var(--border-color, #2d3343);
 }
 
+body.dark-theme .pnr-detail-dialog .pnr-modal-roster-card {
+    background: var(--surface, #1e222b);
+    border-color: var(--border-color, #2d3343);
+}
 
+body.dark-theme .pnr-detail-dialog .pnr-top-flight-bar {
+    border-bottom-color: var(--border-color, #2d3343);
+}
+
+body.dark-theme .pnr-detail-dialog .pnr-route-pill {
+    background: var(--surface, #1e222b);
+    border-color: var(--border-color, #2d3343);
+}
+
+body.dark-theme .pnr-detail-dialog .pnr-settlement-cell {
+    background: var(--surface, #1e222b);
+    border-color: var(--border-color, #2d3343);
+}
+
+body.dark-theme .pnr-detail-dialog .pnr-close-circle-btn,
+body.dark-theme .pnr-detail-dialog .pnr-toolbar-jump-btn {
+    background: var(--surface-2, #161922);
+    border-color: var(--border-color, #2d3343);
+    color: var(--text-primary);
+}
+
+body.dark-theme .pnr-detail-dialog .pnr-icon-action-btn {
+    background: var(--surface, #1e222b);
+    border-color: var(--border-color, #2d3343);
+    color: var(--text-primary);
+}
+
+body.dark-theme .pnr-phonetic-btn {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}
+
+body.dark-theme .pnr-phonetic-btn:hover,
+body.dark-theme .pnr-phonetic-btn.is-active {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+body.dark-theme .pnr-phonetic-panel {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+body.dark-theme .pnr-phonetic-chip.is-alpha,
+body.dark-theme .pnr-phonetic-chip.is-digit {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+body.dark-theme .pnr-phonetic-chip.is-alpha .chip-char,
+body.dark-theme .pnr-phonetic-chip.is-digit .chip-char {
+    color: #f87171;
+}
+
+body.dark-theme .pnr-phonetic-chip.is-alpha .chip-word {
+    color: #f1f5f9;
+}
+
+body.dark-theme .pnr-detail-dialog .pax-row-premium {
+    border-bottom-color: var(--border-color, #2d3343);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    #modal .modal-content.pnr-detail-dialog {
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .pnr-detail-dialog .pnr-top-code-status-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .pnr-detail-dialog .pnr-meta-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .pnr-detail-dialog .pnr-meta-contact-cell {
+        grid-column: 1 / -1;
+    }
+
+    .pnr-detail-dialog .pnr-settlement-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .pnr-detail-dialog .pnr-modal-footer-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pnr-detail-dialog .pnr-footer-action-right {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .pnr-detail-dialog .pnr-footer-btn-copy {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    .pnr-detail-dialog .pnr-meta-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pnr-detail-dialog .pnr-top-flight-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
