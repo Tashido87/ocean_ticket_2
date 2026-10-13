@@ -290,6 +290,42 @@ export async function addHistory(data) {
     return docRef.id;
 }
 
+/**
+ * Atomically updates a single ticket and writes an audit log in the same transaction/batch.
+ */
+export async function updateTicketWithAudit(ticketId, updateData, auditData) {
+    const batch = writeBatch(db);
+    const ticketRef = doc(db, 'tickets', ticketId);
+    batch.update(ticketRef, {
+        ...updateData,
+        updatedAt: serverTimestamp()
+    });
+    if (auditData) {
+        const historyRef = doc(historyCol);
+        batch.set(historyRef, {
+            ...auditData,
+            createdAt: serverTimestamp()
+        });
+    }
+    await batch.commit();
+}
+
+/**
+ * Atomically batch-updates multiple tickets and writes multiple audit logs in a single batch.
+ */
+export async function batchUpdateWithAudit(ticketUpdates = [], auditEntries = []) {
+    const batch = writeBatch(db);
+    (ticketUpdates || []).forEach(({ id, data }) => {
+        const docRef = doc(db, 'tickets', id);
+        batch.update(docRef, { ...data, updatedAt: serverTimestamp() });
+    });
+    (auditEntries || []).forEach(entry => {
+        const historyRef = doc(historyCol);
+        batch.set(historyRef, { ...entry, createdAt: serverTimestamp() });
+    });
+    await batch.commit();
+}
+
 // --- GENERIC ---
 
 export async function deleteDocument(collectionName, docId) {

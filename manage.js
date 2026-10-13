@@ -10,7 +10,9 @@ import {
     updateTicket,
     addTicket,
     addTickets,
-    batchUpdateTickets
+    batchUpdateTickets,
+    updateTicketWithAudit,
+    batchUpdateWithAudit
 } from './db.js';
 import {
     showToast,
@@ -34,7 +36,8 @@ import {
 } from './ui.js';
 import {
     saveHistory,
-    displayHistory
+    displayHistory,
+    createAuditPayload
 } from './history.js';
 
 function getTimestampMs(ts) {
@@ -722,6 +725,7 @@ function openFinancialModal(docId) {
                 ticketsToUpdate = [ticket];
             }
 
+            const ticketsToUpdateList = [];
             for (const t of ticketsToUpdate) {
                 const singleUpdate = {};
                 const isSameSector = t.departure === ticket.departure && t.destination === ticket.destination;
@@ -741,11 +745,42 @@ function openFinancialModal(docId) {
                 }
                 
                 if (Object.keys(singleUpdate).length > 0) {
-                    await updateTicket(t.id, singleUpdate);
+                    ticketsToUpdateList.push({ id: t.id, data: singleUpdate });
                 }
             }
 
-            await saveHistory(ticket, `FINANCIAL & DATE UPDATE: ${changes.join('; ')}.${reason ? ` Reason: ${reason}` : ''}`);
+            const structuredChanges = [];
+            if (updateData.base_fare !== (Number(ticket.base_fare) || 0)) {
+                structuredChanges.push({ field: 'base_fare', from: Number(ticket.base_fare) || 0, to: updateData.base_fare });
+            }
+            if (updateData.net_amount !== (Number(ticket.net_amount) || 0)) {
+                structuredChanges.push({ field: 'net_amount', from: Number(ticket.net_amount) || 0, to: updateData.net_amount });
+            }
+            if (updateData.commission !== (Number(ticket.commission) || 0)) {
+                structuredChanges.push({ field: 'commission', from: Number(ticket.commission) || 0, to: updateData.commission });
+            }
+            if (dateChanged) {
+                structuredChanges.push({ field: 'departing_on', from: ticket.departing_on || '—', to: newDateVal || newDateFormatted });
+            }
+            if (updateData.financial_status !== defaultFinancialStatus) {
+                structuredChanges.push({ field: 'financial_status', from: defaultFinancialStatus, to: updateData.financial_status });
+            }
+
+            const auditPayload = createAuditPayload(ticket, `FINANCIAL & DATE UPDATE: ${changes.join('; ')}.${reason ? ` Reason: ${reason}` : ''}`, {
+                action: 'FINANCIAL_UPDATE',
+                changes: structuredChanges,
+                financial: true
+            });
+
+            if (ticketsToUpdateList.length > 0) {
+                await batchUpdateWithAudit(ticketsToUpdateList, [auditPayload]);
+            } else {
+                await saveHistory(ticket, `FINANCIAL & DATE UPDATE: ${changes.join('; ')}.${reason ? ` Reason: ${reason}` : ''}`, {
+                    action: 'FINANCIAL_UPDATE',
+                    changes: structuredChanges,
+                    financial: true
+                });
+            }
             
             if (dateChangeFee > 0 || dateChangeComm > 0 || dateChangeExtra > 0) {
                 const today = formatDateForSheet(new Date());
@@ -889,10 +924,20 @@ function openPaymentModal(docId) {
                 ticketsToUpdate = [ticket];
             }
 
-            for (const t of ticketsToUpdate) {
-                await updateTicket(t.id, updateData);
-                await saveHistory(t, `PAYMENT UPDATE: ${paid ? `Paid via ${updateData.payment_method || '—'} on ${updateData.paid_date}` : 'Marked unpaid'}`);
-            }
+            const paymentChanges = [
+                { field: 'paid', from: Boolean(ticket.paid), to: Boolean(paid) },
+                { field: 'payment_method', from: ticket.payment_method || '—', to: updateData.payment_method || '—' },
+                { field: 'paid_date', from: ticket.paid_date || '—', to: updateData.paid_date || '—' }
+            ];
+
+            const auditPayload = createAuditPayload(ticket, `PAYMENT UPDATE: ${paid ? `Paid via ${updateData.payment_method || '—'} on ${updateData.paid_date}` : 'Marked unpaid'}`, {
+                action: 'PAYMENT_UPDATE',
+                changes: paymentChanges,
+                financial: true
+            });
+
+            const updates = ticketsToUpdate.map(t => ({ id: t.id, data: updateData }));
+            await batchUpdateWithAudit(updates, [auditPayload]);
 
             showToast('Payment updated.', 'success');
             closeModal();
@@ -1657,6 +1702,7 @@ async function handleUpdateTicket(e) {
         showToast('Updating tickets...', 'info');
 
         // 1. UPDATE SELECTED TICKET(S)
+        const ticketUpdatesList = [];
         for (const ticket of ticketsToUpdate) {
             const rowPaid = hasNewFees ? ticket.paid : (paidChanged ? finalPaid : ticket.paid);
             const rowMethod = hasNewFees ? ticket.payment_method : (methodChanged ? finalPaymentMethod : ticket.payment_method);
@@ -1672,7 +1718,7 @@ async function handleUpdateTicket(e) {
             if (paidDateChanged || hasNewFees) updateData.paid_date = rowPaidDate;
 
             if (Object.keys(updateData).length > 0) {
-                await updateTicket(ticket.id, updateData);
+                ticketUpdatesList.push({ id: ticket.id, data: updateData });
             }
         }
 
@@ -1714,7 +1760,32 @@ async function handleUpdateTicket(e) {
             }]);
         }
 
-        await saveHistory(masterTicket, `MODIFIED: ${historyDetails.join('; ')}`);
+        const structuredChanges = [];
+        if (dateChanged) structuredChanges.push({ field: 'departing_on', from: masterTicket.departing_on || '—', to: newTravelDateVal });
+        if (baseFareChanged) structuredChanges.push({ field: 'base_fare', from: masterTicket.base_fare, to: newBaseFare });
+        if (netAmountChanged) structuredChanges.push({ field: 'net_amount', from: masterTicket.net_amount, to: newNetAmount });
+        if (commissionChanged) structuredChanges.push({ field: 'commission', from: masterTicket.commission, to: newCommission });
+        if (paidChanged) structuredChanges.push({ field: 'paid', from: originalPaid, to: finalPaid });
+        if (methodChanged) structuredChanges.push({ field: 'payment_method', from: originalMethod || '—', to: finalPaymentMethod || '—' });
+        if (paidDateChanged) structuredChanges.push({ field: 'paid_date', from: originalPaidDate || '—', to: finalPaidDate || '—' });
+        if (dateChangeFees > 0) structuredChanges.push({ field: 'date_change_fees', from: 0, to: dateChangeFees });
+        if (extraFare > 0) structuredChanges.push({ field: 'extra_fare', from: 0, to: extraFare });
+
+        const auditPayload = createAuditPayload(masterTicket, `MODIFIED: ${historyDetails.join('; ')}`, {
+            action: 'TICKET_MODIFIED',
+            changes: structuredChanges,
+            financial: Boolean(baseFareChanged || netAmountChanged || commissionChanged || dateChangeFees > 0 || extraFare > 0 || paidChanged)
+        });
+
+        if (ticketUpdatesList.length > 0) {
+            await batchUpdateWithAudit(ticketUpdatesList, [auditPayload]);
+        } else {
+            await saveHistory(masterTicket, `MODIFIED: ${historyDetails.join('; ')}`, {
+                action: 'TICKET_MODIFIED',
+                changes: structuredChanges,
+                financial: Boolean(baseFareChanged || netAmountChanged || commissionChanged || dateChangeFees > 0 || extraFare > 0 || paidChanged)
+            });
+        }
 
         showToast('Updated successfully!', 'success');
         closeModal();
@@ -1788,8 +1859,10 @@ async function handleCancelTicket(docId, type, details = {}) {
         try {
             showToast('Processing cancellation...', 'info');
             
+            let cancelUpdateData = {};
+            let structuredChanges = [];
             if (type === 'refund') {
-                await updateTicket(docId, {
+                cancelUpdateData = {
                     status: 'cancelled',
                     cancellation_type: 'Full Refund',
                     cancelled_at: new Date().toISOString(),
@@ -1805,10 +1878,16 @@ async function handleCancelTicket(docId, type, details = {}) {
                     date_change: 0,
                     paid: true,
                     remarks: `Full Refund on ${dateStr}`
-                });
+                };
                 historyDetails = "CANCELED: Full Refund processed.";
+                structuredChanges = [
+                    { field: 'status', from: ticket.status || 'confirmed', to: 'cancelled' },
+                    { field: 'cancellation_type', from: '—', to: 'Full Refund' },
+                    { field: 'base_fare', from: ticket.base_fare || 0, to: 0 },
+                    { field: 'net_amount', from: ticket.net_amount || 0, to: 0 }
+                ];
             } else {
-                await updateTicket(docId, {
+                cancelUpdateData = {
                     status: 'cancelled',
                     cancellation_type: 'Partial Cancellation',
                     cancelled_at: new Date().toISOString(),
@@ -1826,11 +1905,23 @@ async function handleCancelTicket(docId, type, details = {}) {
                     refund_transaction_id: details.transactionId,
                     refund_date: dateStr,
                     remarks: `Canceled on ${dateStr} with ${details.refundAmount.toLocaleString()} refund`
-                });
+                };
                 historyDetails = `CANCELED: Partial. Refunded: ${details.refundAmount.toLocaleString()} MMK.`;
+                structuredChanges = [
+                    { field: 'status', from: ticket.status || 'confirmed', to: 'cancelled' },
+                    { field: 'cancellation_type', from: '—', to: 'Partial Cancellation' },
+                    { field: 'refund_amount', from: 0, to: details.refundAmount },
+                    { field: 'net_amount', from: ticket.net_amount || 0, to: details.cancellationFee }
+                ];
             }
             
-            await saveHistory(ticket, historyDetails);
+            const auditPayload = createAuditPayload(ticket, historyDetails, {
+                action: 'CANCELLATION',
+                changes: structuredChanges,
+                financial: true
+            });
+
+            await updateTicketWithAudit(docId, cancelUpdateData, auditPayload);
             
             showToast('Ticket canceled successfully!', 'success');
             closeModal();

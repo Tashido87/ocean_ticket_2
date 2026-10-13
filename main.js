@@ -1212,6 +1212,9 @@ function setupEventListeners() {
         return { iconClass: 'generic', icon: 'fa-file-lines' };
     }
 
+    let docFetchState = 'idle'; // 'loading' | 'success' | 'empty' | 'error' | 'offline'
+    let docErrorMessage = '';
+
     function renderDocuments() {
         const grid = document.getElementById('documentsGrid');
         const countEl = document.getElementById('docCount');
@@ -1219,6 +1222,42 @@ function setupEventListeners() {
 
         const isDetail = docView === 'detail';
         grid.classList.toggle('is-detail', isDetail);
+
+        if (docFetchState === 'loading') {
+            if (countEl) countEl.textContent = 'Loading…';
+            grid.innerHTML = '<div class="documents-loading" role="status"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading documents…</div>';
+            return;
+        }
+
+        if (docFetchState === 'offline') {
+            if (countEl) countEl.textContent = 'Offline';
+            grid.innerHTML = `
+                <div class="documents-state documents-offline" role="alert">
+                    <i class="fa-solid fa-wifi-slash"></i>
+                    <p><strong>Offline Mode</strong><br>You are currently offline. Check your internet connection to view or upload documents.</p>
+                    <button type="button" class="btn btn-secondary btn-sm btn-retry" id="docRetryOfflineBtn">
+                        <i class="fa-solid fa-rotate-right"></i> Retry
+                    </button>
+                </div>
+            `;
+            document.getElementById('docRetryOfflineBtn')?.addEventListener('click', refreshDocuments);
+            return;
+        }
+
+        if (docFetchState === 'error') {
+            if (countEl) countEl.textContent = 'Error';
+            grid.innerHTML = `
+                <div class="documents-state documents-error" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p><strong>Unable to load documents</strong><br>${escapeHtml(docErrorMessage || 'Failed to fetch files from storage.')}</p>
+                    <button type="button" class="btn btn-secondary btn-sm btn-retry" id="docRetryBtn">
+                        <i class="fa-solid fa-rotate-right"></i> Retry
+                    </button>
+                </div>
+            `;
+            document.getElementById('docRetryBtn')?.addEventListener('click', refreshDocuments);
+            return;
+        }
 
         if (countEl) {
             countEl.textContent = `${docCache.length} document${docCache.length === 1 ? '' : 's'}`;
@@ -1291,11 +1330,36 @@ function setupEventListeners() {
     }
 
     async function refreshDocuments() {
-        const grid = document.getElementById('documentsGrid');
-        if (grid) grid.innerHTML = '<div class="documents-loading"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading documents…</div>';
-        docCache = await getAllDocuments();
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            docFetchState = 'offline';
+            renderDocuments();
+            return;
+        }
+
+        docFetchState = 'loading';
+        renderDocuments();
+
+        try {
+            docCache = await getAllDocuments();
+            docFetchState = 'success';
+        } catch (err) {
+            console.error('Failed to load documents:', err);
+            if (err?.isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+                docFetchState = 'offline';
+            } else {
+                docFetchState = 'error';
+                docErrorMessage = err.message || 'Unable to retrieve documents';
+            }
+        }
         renderDocuments();
     }
+
+    // Auto-retry when connection restores
+    window.addEventListener('online', () => {
+        if (docFetchState === 'offline' || docFetchState === 'error') {
+            refreshDocuments();
+        }
+    });
 
     // Initial load
     refreshDocuments();

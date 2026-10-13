@@ -60,6 +60,13 @@ function getExt(name) {
  * @returns {Promise<Array>}
  */
 export async function listFirebaseDocuments() {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        const offlineErr = new Error('You are currently offline. Please check your internet connection.');
+        offlineErr.code = 'offline';
+        offlineErr.isOffline = true;
+        throw offlineErr;
+    }
+
     try {
         const dirRef = storageRef(storage, FIREBASE_DOC_PATH);
         const result = await listAll(dirRef);
@@ -85,8 +92,11 @@ export async function listFirebaseDocuments() {
         docs.sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0));
         return docs;
     } catch (err) {
-        console.warn('Firebase listAll failed:', err);
-        return [];
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            err.isOffline = true;
+        }
+        console.error('Firebase listAll failed:', err);
+        throw err;
     }
 }
 

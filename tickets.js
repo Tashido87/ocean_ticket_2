@@ -5,13 +5,13 @@
  */
 
 import { state } from './state.js';
-import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation, updateBooking } from './db.js';
+import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation, updateBooking, updateTicketWithAudit, batchUpdateWithAudit, addHistory } from './db.js';
 import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
 import { updateDashboardData } from './main.js';
 import { buildClientList } from './clients.js';
-import { saveHistory } from './history.js';
+import { saveHistory, createAuditPayload } from './history.js';
 import { togglePrivateReportButton } from './reports.js';
 import { CITIES } from './config.js';
 // The import from 'manage.js' is now handled dynamically below.
@@ -501,12 +501,16 @@ async function saveFieldUpdate(id, isHotel, field, value, isGrouped = false) {
                 id: singleId,
                 data: { [field]: perTicketValue }
             }));
-            await batchUpdateTickets(updates);
-            
-            await saveHistory(
+            const auditPayload = createAuditPayload(
                 firstTicket || { name: 'Group Update', booking_reference: '—' },
-                `Inline group ${field.replace('_', ' ')} update to total ${numericVal.toLocaleString()} MMK (${perTicketValue.toLocaleString()} MMK per client)`
+                `Inline group ${field.replace('_', ' ')} update to total ${numericVal.toLocaleString()} MMK (${perTicketValue.toLocaleString()} MMK per client)`,
+                {
+                    action: 'INLINE_FINANCIAL_UPDATE',
+                    changes: [{ field, from: 'previous', to: perTicketValue }],
+                    financial: true
+                }
             );
+            await batchUpdateWithAudit(updates, [auditPayload]);
         } catch (err) {
             showToast(`Failed to update group ${field.replace('_', ' ')}: ` + err.message, 'error');
         }
@@ -529,16 +533,22 @@ async function saveFieldUpdate(id, isHotel, field, value, isGrouped = false) {
         
         try {
             const updateData = { [field]: numericVal };
+            const auditPayload = createAuditPayload(
+                itemObj || { name: 'Unknown', booking_reference: '—' },
+                `Inline ${field.replace('_', ' ')} update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`,
+                {
+                    action: 'INLINE_FINANCIAL_UPDATE',
+                    changes: [{ field, from: 'previous', to: numericVal }],
+                    financial: true
+                }
+            );
+
             if (isHotel) {
                 await updateHotelReservation(id, updateData);
+                await addHistory(auditPayload);
             } else {
-                await updateTicket(id, updateData);
+                await updateTicketWithAudit(id, updateData, auditPayload);
             }
-            
-            await saveHistory(
-                itemObj || { name: 'Unknown', booking_reference: '—' },
-                `Inline ${field.replace('_', ' ')} update for ${isHotel ? 'Hotel' : 'Ticket'} to ${numericVal.toLocaleString()} MMK`
-            );
         } catch (err) {
             showToast(`Failed to update ${field.replace('_', ' ')}: ` + err.message, 'error');
         }

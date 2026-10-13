@@ -177,6 +177,10 @@ export function showView(viewName) {
     }
 }
 
+let lastFocusedElementBeforeModal = null;
+let modalKeydownHandler = null;
+let modalInertElements = [];
+
 /**
  * Opens the main modal with specified content.
  * @param {string} content The HTML content to display in the modal.
@@ -184,6 +188,11 @@ export function showView(viewName) {
  */
 export function openModal(content, sizeClass = '') {
     const modal = document.getElementById('modal');
+    if (!modal) return;
+
+    // 1. Save trigger element for focus return
+    lastFocusedElementBeforeModal = document.activeElement;
+
     const modalBody = document.getElementById('modalBody');
     modalBody.innerHTML = content;
     const modalContent = modal.querySelector('.modal-content');
@@ -197,8 +206,99 @@ export function openModal(content, sizeClass = '') {
         modalContent.className = 'modal-content glass-card'; // Reset classes
         classes.forEach(cls => modalContent.classList.add(cls));
     }
+
+    // 2. Dialog Semantics & Accessible Title
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    const heading = modal.querySelector('h1, h2, h3, h4, h5, .modal-title, .dialog-title');
+    if (heading) {
+        if (!heading.id) {
+            heading.id = 'modal-heading-' + Math.random().toString(36).slice(2, 9);
+        }
+        modal.setAttribute('aria-labelledby', heading.id);
+        modal.removeAttribute('aria-label');
+    } else {
+        modal.removeAttribute('aria-labelledby');
+        modal.setAttribute('aria-label', 'Dialog Window');
+    }
+
+    // 3. Background Inert & aria-hidden to prevent background navigation
+    modalInertElements = [];
+    Array.from(document.body.children).forEach(child => {
+        if (child !== modal && !child.classList.contains('modal') && child.tagName !== 'SCRIPT' && child.id !== 'toast') {
+            if (!child.hasAttribute('inert')) {
+                child.setAttribute('inert', '');
+                child.setAttribute('aria-hidden', 'true');
+                modalInertElements.push(child);
+            }
+        }
+    });
+
     modal.classList.add('show');
     document.body.classList.add('modal-open');
+
+    // 4. Focus Management & Focus Trap
+    const getFocusableElements = () => {
+        return Array.from(modal.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter(el => {
+            const style = window.getComputedStyle(el);
+            return style.display !== 'none' && style.visibility !== 'hidden';
+        });
+    };
+
+    // Set initial focus
+    requestAnimationFrame(() => {
+        const focusables = getFocusableElements();
+        const autoFocusEl = modal.querySelector('[autofocus]');
+        if (autoFocusEl && typeof autoFocusEl.focus === 'function') {
+            autoFocusEl.focus();
+        } else if (focusables.length > 0) {
+            focusables[0].focus();
+        } else if (modalContent) {
+            modalContent.setAttribute('tabindex', '-1');
+            modalContent.focus();
+        }
+    });
+
+    // 5. Keyboard listener for Escape & Focus Trap
+    if (modalKeydownHandler) {
+        document.removeEventListener('keydown', modalKeydownHandler);
+    }
+    modalKeydownHandler = (e) => {
+        if (!modal.classList.contains('show')) return;
+
+        if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeModal();
+            return;
+        }
+
+        if (e.key === 'Tab') {
+            const focusables = getFocusableElements();
+            if (focusables.length === 0) {
+                e.preventDefault();
+                return;
+            }
+
+            const firstEl = focusables[0];
+            const lastEl = focusables[focusables.length - 1];
+
+            if (e.shiftKey) {
+                if (document.activeElement === firstEl || !modal.contains(document.activeElement)) {
+                    e.preventDefault();
+                    lastEl.focus();
+                }
+            } else {
+                if (document.activeElement === lastEl || !modal.contains(document.activeElement)) {
+                    e.preventDefault();
+                    firstEl.focus();
+                }
+            }
+        }
+    };
+    document.addEventListener('keydown', modalKeydownHandler);
 }
 
 /**
@@ -206,10 +306,37 @@ export function openModal(content, sizeClass = '') {
  */
 export function closeModal() {
     const modal = document.getElementById('modal');
+    if (!modal) return;
+
     modal.classList.remove('show');
     modal.classList.remove('solid-modal-open');
+    modal.removeAttribute('role');
+    modal.removeAttribute('aria-modal');
+    modal.removeAttribute('aria-labelledby');
+    modal.removeAttribute('aria-label');
     document.getElementById('modalBody').innerHTML = '';
     document.body.classList.remove('modal-open');
+
+    // Restore background elements
+    modalInertElements.forEach(el => {
+        el.removeAttribute('inert');
+        el.removeAttribute('aria-hidden');
+    });
+    modalInertElements = [];
+
+    // Remove keydown listener
+    if (modalKeydownHandler) {
+        document.removeEventListener('keydown', modalKeydownHandler);
+        modalKeydownHandler = null;
+    }
+
+    // Restore focus to element that triggered the modal
+    if (lastFocusedElementBeforeModal && typeof lastFocusedElementBeforeModal.focus === 'function') {
+        try {
+            lastFocusedElementBeforeModal.focus();
+        } catch (_) {}
+    }
+    lastFocusedElementBeforeModal = null;
 }
 
 /**
