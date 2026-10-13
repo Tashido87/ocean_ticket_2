@@ -1,12 +1,12 @@
-const CACHE_NAME = 'ocean-travel-v52';
+const CACHE_NAME = 'ocean-travel-v53';
 const CORE_ASSETS = [
     './',
     './index.html',
     './manifest.json',
     './ocean-travel-logo.png',
-    './app-styles.min.css?v=6',
+    './app-styles.min.css?v=7',
     './document-libraries.js',
-    './main.js?v=119',
+    './main.js?v=120',
     './utils.js',
     './state.js',
     './db.js',

@@ -32,11 +32,27 @@ function normalizePassengerName(name) {
 
 
 /**
- * Adds subtle Notion-like entrance animations to key blocks within a view.
+ * Adds subtle entrance animations to key blocks within a view.
  * Uses CSS class `.animate-in` with a stagger delay variable.
  */
+let activeIntroTimer = null;
+let activeViewTimer = null;
+
 function runIntroAnimations(viewEl) {
     if (!viewEl) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    if (activeIntroTimer) {
+        clearTimeout(activeIntroTimer);
+        activeIntroTimer = null;
+    }
+
+    // Only run staggered entrance once per view so repeated tab switching stays instant
+    if (viewEl.dataset.hasAnimated === 'true') {
+        return;
+    }
+    viewEl.dataset.hasAnimated = 'true';
+
     const selector = [
         '.info-grid > .glass-card',
         '.actions-grid > .glass-card',
@@ -55,17 +71,19 @@ function runIntroAnimations(viewEl) {
         items.push(...viewEl.querySelectorAll('.glass-card'));
     }
 
-    items.slice(0, 20).forEach((el, idx) => {
-        el.classList.remove('animate-in');
-        el.style.setProperty('--stagger-delay', `${Math.min(idx, 14) * 35}ms`);
-        // force reflow so re-adding class re-triggers animation
-        void el.offsetWidth;
+    const limited = items.slice(0, 12);
+    limited.forEach((el, idx) => {
+        el.style.setProperty('--stagger-delay', `${Math.min(idx, 8) * 25}ms`);
         el.classList.add('animate-in');
     });
 
-    window.setTimeout(() => {
-        items.forEach(el => el.classList.remove('animate-in'));
-    }, 1200);
+    activeIntroTimer = setTimeout(() => {
+        limited.forEach(el => {
+            el.classList.remove('animate-in');
+            el.style.removeProperty('--stagger-delay');
+        });
+        activeIntroTimer = null;
+    }, 350);
 }
 
 /**
@@ -77,6 +95,11 @@ export function showView(viewName) {
     const views = document.querySelectorAll('.view');
     const targetView = document.getElementById(`${viewName}-view`);
     if (!targetView) return;
+
+    if (activeViewTimer) {
+        clearTimeout(activeViewTimer);
+        activeViewTimer = null;
+    }
 
     navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
 
@@ -102,7 +125,7 @@ export function showView(viewName) {
     window.scrollTo({ top: 0, behavior: 'instant' });
 
     // Double-check cleanup timeout
-    setTimeout(() => {
+    activeViewTimer = setTimeout(() => {
         views.forEach(view => {
             if (view !== targetView) {
                 view.classList.remove('active', 'view-leave', 'view-enter');
@@ -110,9 +133,10 @@ export function showView(viewName) {
             }
         });
         targetView.classList.remove('view-enter');
-    }, 250);
+        activeViewTimer = null;
+    }, 200);
 
-    // Stagger entrance animations for key blocks
+    // Stagger entrance animations for key blocks (lightweight, non-blocking)
     runIntroAnimations(targetView);
 
     // Update URL hash for routing (skip if triggered by popstate)
@@ -138,12 +162,12 @@ export function showView(viewName) {
             const returnBlock = document.getElementById('returnFlightBlock');
             if (returnBlock) returnBlock.classList.remove('is-customized');
             resetPassengerForms();
+            populateFlightLocations();
+        } else {
+            updateToggleLabels();
+            updateSellRoutePreview();
+            applyTripTypeToUI();
         }
-
-        populateFlightLocations();
-        updateToggleLabels();
-        updateSellRoutePreview();
-        applyTripTypeToUI();
         setupSellClientAutoSuggest();
     } else {
         state.bookingToUpdate = null;
@@ -153,20 +177,31 @@ export function showView(viewName) {
     }
     if (viewName === 'settle') {
         hideNewSettlementForm();
-        displaySettlements();
-        updateSettlementDashboard();
+        const settleBody = document.getElementById('settlementTableBody');
+        if (state.settlementsDirty || !settleBody || !settleBody.children.length) {
+            state.settlementsDirty = false;
+            displaySettlements();
+            updateSettlementDashboard();
+        }
     }
     if (viewName === 'manage') {
-        clearManageResults();
+        const historyBody = document.getElementById('modificationHistoryBody');
+        if (!historyBody || !historyBody.children.length) {
+            clearManageResults();
+        }
     }
     if (viewName === 'clients') {
-        renderClientsView();
+        const clientBody = document.getElementById('clientListTableBody');
+        if (state.clientsDirty || !clientBody || !clientBody.children.length) {
+            state.clientsDirty = false;
+            renderClientsView();
+        }
     }
 
     // Services View Setup
     if (viewName === 'services') {
         const dateInput = document.getElementById('invoice_date');
-        // Requirement (8): Auto-set today's date if empty
+        // Auto-set today's date if empty
         if (dateInput && !dateInput.value) {
             const today = new Date();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -584,38 +619,44 @@ function handleCustomLocationVisibility() {
     const destSelect = document.getElementById('destination');
     const depInputGroup = document.getElementById('custom_departure_group');
     const destInputGroup = document.getElementById('custom_destination_group');
+    if (!depSelect || !destSelect) return;
 
-    // Remove existing listeners to avoid duplicates if called multiple times
-    const newDepSelect = depSelect.cloneNode(true);
-    depSelect.parentNode.replaceChild(newDepSelect, depSelect);
-    
-    const newDestSelect = destSelect.cloneNode(true);
-    destSelect.parentNode.replaceChild(newDestSelect, destSelect);
+    if (depSelect.dataset.customVisibilityBound !== 'true') {
+        depSelect.dataset.customVisibilityBound = 'true';
+        depSelect.addEventListener('change', (e) => {
+            if (depInputGroup) {
+                depInputGroup.style.display = e.target.value === 'CUSTOM' ? 'block' : 'none';
+            }
+            handleRouteValidation(e);
+            updateSellRoutePreview();
+        });
+    }
 
-    newDepSelect.addEventListener('change', (e) => {
-        if (depInputGroup) {
-            depInputGroup.style.display = e.target.value === 'CUSTOM' ? 'block' : 'none';
-        }
-        handleRouteValidation(e);
-        updateSellRoutePreview();
-    });
-
-    newDestSelect.addEventListener('change', (e) => {
-        if (destInputGroup) {
-             destInputGroup.style.display = e.target.value === 'CUSTOM' ? 'block' : 'none';
-        }
-        handleRouteValidation(e);
-        updateSellRoutePreview();
-    });
+    if (destSelect.dataset.customVisibilityBound !== 'true') {
+        destSelect.dataset.customVisibilityBound = 'true';
+        destSelect.addEventListener('change', (e) => {
+            if (destInputGroup) {
+                destInputGroup.style.display = e.target.value === 'CUSTOM' ? 'block' : 'none';
+            }
+            handleRouteValidation(e);
+            updateSellRoutePreview();
+        });
+    }
 
     const customDep = document.getElementById('custom_departure');
     const customDest = document.getElementById('custom_destination');
-    if (customDep) customDep.oninput = updateSellRoutePreview;
-    if (customDest) customDest.oninput = updateSellRoutePreview;
+    if (customDep && !customDep.dataset.bound) {
+        customDep.dataset.bound = 'true';
+        customDep.oninput = updateSellRoutePreview;
+    }
+    if (customDest && !customDest.dataset.bound) {
+        customDest.dataset.bound = 'true';
+        customDest.oninput = updateSellRoutePreview;
+    }
     
     // Initial check
-    if(depInputGroup) depInputGroup.style.display = newDepSelect.value === 'CUSTOM' ? 'block' : 'none';
-    if(destInputGroup) destInputGroup.style.display = newDestSelect.value === 'CUSTOM' ? 'block' : 'none';
+    if (depInputGroup) depInputGroup.style.display = depSelect.value === 'CUSTOM' ? 'block' : 'none';
+    if (destInputGroup) destInputGroup.style.display = destSelect.value === 'CUSTOM' ? 'block' : 'none';
     updateSellRoutePreview();
 
     // Keep return-leg location dropdowns in sync with the active flight type

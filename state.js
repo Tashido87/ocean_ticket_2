@@ -44,6 +44,7 @@ export const state = {
     bookingsDirty: false,
     settlementsDirty: false,
     hotelsDirty: false,
+    clientsDirty: false,
     historyListenerAttached: false
 };
 

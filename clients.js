@@ -140,6 +140,7 @@ export function buildClientList() {
     });
 
     state.allClients = Object.values(clients);
+    state.clientsDirty = true;
     // Sort logic removed from here as it will be handled directly in renderClientsView
 }
 
@@ -148,6 +149,7 @@ export function buildClientList() {
  * @param {number} [page] The page number to render.
  */
 export function renderClientsView(page) {
+    state.clientsDirty = false;
     const container = document.getElementById('clients-view');
     if (!container) return;
 

@@ -645,11 +645,15 @@ async function migrateSelfTicketCommissions() {
     // Intentionally empty
 }
 
+let lastHandledHash = null;
+
 /**
  * Handle URL hash routing for all views.
  */
 function handleHashRoute() {
-    const hash = window.location.hash;
+    const hash = window.location.hash || '#/home';
+    if (hash === lastHandledHash) return;
+    lastHandledHash = hash;
     const viewMatch = hash.match(/^#\/(\w+)/);
     if (viewMatch) {
         const viewName = viewMatch[1];
@@ -668,20 +672,9 @@ function handleHashRoute() {
  * Handle browser back/forward buttons (popstate).
  */
 function handlePopState(e) {
-    const hash = window.location.hash;
-    const viewMatch = hash.match(/^#\/(\w+)/);
-    if (viewMatch) {
-        window._skipHashUpdate = true;
-        showView(viewMatch[1]);
-        if (viewMatch[1] === 'search') initSearchView();
-        if (viewMatch[1] === 'hotel') {
-            hideHotelReservationForm();
-            renderHotelReservations();
-        }
-    } else {
-        window._skipHashUpdate = true;
-        showView('home');
-    }
+    const hash = window.location.hash || '#/home';
+    if (hash === lastHandledHash) return;
+    handleHashRoute();
 }
 
 /**

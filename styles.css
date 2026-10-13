@@ -6308,13 +6308,13 @@ body.material-theme .modal.show .modal-content {
 
 /* Staggered entrance helper (JS sets --stagger-delay) */
 .animate-in {
-    animation: riseIn var(--duration-slow) var(--ease-spring) both;
+    animation: riseIn var(--duration) var(--ease-spring) both;
     animation-delay: var(--stagger-delay, 0ms);
-    will-change: transform, opacity, filter;
+    will-change: transform, opacity;
 }
 
 @keyframes riseIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
