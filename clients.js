@@ -52,14 +52,32 @@ export function buildClientList() {
         const accountType = ticket.account_type && ticket.account_type !== 'undefined' ? ticket.account_type : '';
         const accountLink = ticket.account_link && ticket.account_link !== 'undefined' ? ticket.account_link : '';
         
-        const clientKey = `${baseName}|${phone}|${accountName}`;
-        const lowerRemarks = ticket.remarks?.toLowerCase() || '';
         const ticketNrc = looksLikeNrc(ticket.nrc_no) ? ticket.nrc_no : (looksLikeNrc(ticket.id_no) ? ticket.id_no : '');
         const ticketPassport = ticket.passport_no
             || (looksLikePassport(ticket.nrc_no) ? ticket.nrc_no : '')
             || (looksLikePassport(ticket.id_no) ? ticket.id_no : '');
+        const docIdentifier = (ticketPassport || ticketNrc || '').toUpperCase().trim();
+
+        // Never rely on name alone as unique identifier
+        let clientKey = ticket.client_key || '';
+        if (!clientKey) {
+            if (docIdentifier) {
+                clientKey = `${baseName}|${docIdentifier}|${phone}`;
+            } else if (phone) {
+                clientKey = `${baseName}|${phone}|${accountName}`;
+            } else if (accountName) {
+                clientKey = `${baseName}||${accountName}`;
+            } else {
+                clientKey = `${baseName}|TICKET-${ticket.id || ticket.booking_reference || 'ANON'}`;
+            }
+        }
+
+        const lowerRemarks = ticket.remarks?.toLowerCase() || '';
         if (!clients[clientKey]) {
+            const hash = Math.abs(clientKey.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0));
+            const clientId = 'CLT-202501-' + String(hash).slice(-4).padStart(4, '0');
             clients[clientKey] = {
+                client_id: clientId,
                 client_key: clientKey,
                 name: baseName,
                 phone: phone,

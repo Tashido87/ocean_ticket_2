@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-v50';
+const CACHE_NAME = 'ocean-travel-v51';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -6,7 +6,7 @@ const CORE_ASSETS = [
     './ocean-travel-logo.png',
     './app-styles.min.css?v=6',
     './document-libraries.js',
-    './main.js?v=117',
+    './main.js?v=118',
     './utils.js',
     './state.js',
     './db.js',
@@ -16,7 +16,7 @@ const CORE_ASSETS = [
     './settlement.js',
     './clients.js',
     './reports.js',
-    './search.js?v=26'
+    './search.js?v=27'
 ];
 
 self.addEventListener('install', (event) => {

@@ -7,7 +7,7 @@
 // Core Modules
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
-import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, batchUpdateTickets } from './db.js';
+import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, batchUpdateTickets, batchUpdateWithAudit } from './db.js';
 import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta, formatDateForSheet } from './utils.js';
 
 // Feature Modules
@@ -16,7 +16,7 @@ import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBoo
 import {  } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
 import { buildClientList, loadFeaturedClients } from './clients.js';
-import { initGlobalSearch, initSearchView } from './search.js?v=26';
+import { initGlobalSearch, initSearchView } from './search.js?v=27';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=28';
@@ -197,63 +197,208 @@ document.addEventListener('show', (e) => {
     }
 }, true);
 
-let ticketsSanitized = false;
+/**
+ * Scans tickets with missing contact info and finds POTENTIAL candidate matches.
+ * Does NOT auto-write to database! All matches require human verification.
+ */
+export function findPotentialTicketMatches(tickets = state.allTickets || []) {
+    const candidateMatches = [];
+    if (!Array.isArray(tickets) || !tickets.length) return candidateMatches;
 
-async function sanitizeTickets(tickets) {
-    if (ticketsSanitized) return;
-    ticketsSanitized = true;
-
-    const updates = [];
-    for (const ticket of tickets) {
+    tickets.forEach(ticket => {
         const nameCleaned = String(ticket.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
-        if (!nameCleaned) continue;
-        
-        const hasBadPhone = !ticket.phone || ticket.phone === 'undefined';
-        if (hasBadPhone) {
-            const goodTicket = tickets.find(t => {
-                const n = String(t.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
-                return n.toLowerCase() === nameCleaned.toLowerCase() && t.phone && t.phone !== 'undefined';
-            });
-            
-            if (goodTicket) {
-                const updateData = {};
-                if (!ticket.phone || ticket.phone === 'undefined') {
-                    updateData.phone = goodTicket.phone;
-                }
-                if (!ticket.id_no && goodTicket.id_no) {
-                    updateData.id_no = goodTicket.id_no;
-                }
-                if (!ticket.gender && goodTicket.gender) {
-                    updateData.gender = goodTicket.gender;
-                }
-                if ((!ticket.account_name || ticket.account_name === 'undefined') && goodTicket.account_name) {
-                    updateData.account_name = goodTicket.account_name;
-                }
-                if ((!ticket.account_type || ticket.account_type === 'undefined') && goodTicket.account_type) {
-                    updateData.account_type = goodTicket.account_type;
-                }
-                if ((!ticket.account_link || ticket.account_link === 'undefined') && goodTicket.account_link) {
-                    updateData.account_link = goodTicket.account_link;
-                }
-                
-                if (Object.keys(updateData).length > 0) {
-                    updates.push({ id: ticket.id, data: updateData });
-                }
+        if (!nameCleaned) return;
+
+        const hasBadPhone = !ticket.phone || ticket.phone === 'undefined' || ticket.phone === '—' || ticket.phone === 'N/A';
+        if (!hasBadPhone) return;
+
+        // Search for potential candidate tickets that have contact details
+        const candidate = tickets.find(t => {
+            if (t.id === ticket.id) return false;
+            const n = String(t.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
+            const phoneValid = t.phone && t.phone !== 'undefined' && t.phone !== '—' && t.phone !== 'N/A';
+            return n.toLowerCase() === nameCleaned.toLowerCase() && phoneValid;
+        });
+
+        if (candidate) {
+            const proposedData = {};
+            if (candidate.phone && (!ticket.phone || ticket.phone === 'undefined')) {
+                proposedData.phone = candidate.phone;
+            }
+            if (candidate.id_no && !ticket.id_no) {
+                proposedData.id_no = candidate.id_no;
+            }
+            if (candidate.gender && !ticket.gender) {
+                proposedData.gender = candidate.gender;
+            }
+            if (candidate.account_name && (!ticket.account_name || ticket.account_name === 'undefined')) {
+                proposedData.account_name = candidate.account_name;
+            }
+            if (candidate.account_type && (!ticket.account_type || ticket.account_type === 'undefined')) {
+                proposedData.account_type = candidate.account_type;
+            }
+            if (candidate.account_link && (!ticket.account_link || ticket.account_link === 'undefined')) {
+                proposedData.account_link = candidate.account_link;
+            }
+
+            if (Object.keys(proposedData).length > 0) {
+                candidateMatches.push({
+                    targetTicket: ticket,
+                    candidateTicket: candidate,
+                    passengerName: nameCleaned,
+                    proposedData
+                });
             }
         }
+    });
+
+    return candidateMatches;
+}
+
+/**
+ * Interactive review modal for human verification of potential ticket matches.
+ * Never silently mutates Firestore; records before/after and user in audit history.
+ */
+export function reviewPotentialMatches() {
+    const matches = findPotentialTicketMatches(state.allTickets || []);
+    if (!matches.length) {
+        showToast('No potential customer matches requiring review.', 'info');
+        return;
     }
 
-    if (updates.length > 0) {
-        console.log(`[Sanitizer] Found ${updates.length} tickets to heal. Starting batch update...`);
-        try {
-            await batchUpdateTickets(updates);
-            console.log(`[Sanitizer] Successfully healed ${updates.length} tickets.`);
-        } catch (e) {
-            console.error('[Sanitizer] Failed to run batch update:', e);
-            ticketsSanitized = false;
-        }
-    }
+    const modalContent = `
+        <div class="solid-modal-box potential-matches-dialog" style="max-width: 680px; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-user-check" style="color: var(--brand, #b91c1c);"></i>
+                    Review Potential Customer Matches (${matches.length})
+                </h3>
+                <button type="button" class="btn btn-secondary" id="closePotentialMatchesTopBtn" style="width: 36px; height: 36px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: #b45309; line-height: 1.5;">
+                <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i>
+                <strong>သတိပြုရန်:</strong> လူနှစ်ဦးသည် နာမည်တူနိုင်ပါသည်။ အလိုအလျောက် ပြင်ဆင်မပေးဘဲ လူကိုယ်တိုင် အတည်ပြုမှသာ ဖုန်းနှင့် အချက်အလက်များကို ချိတ်ဆက်ပေးပါမည်။
+            </div>
+
+            <div class="potential-matches-list" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 4px;">
+                ${matches.map((item, idx) => {
+                    const t = item.targetTicket;
+                    const c = item.candidateTicket;
+                    return `
+                    <div class="potential-match-card" style="background: var(--surface-2, #f8f9fa); border: 1px solid var(--border-color, #e5e7eb); border-radius: 14px; padding: 14px 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed var(--border-color, #e5e7eb); padding-bottom: 8px;">
+                            <strong style="font-size: 15px; color: var(--text-primary);"><i class="fa-solid fa-user"></i> ${dashboardEscapeHtml(item.passengerName)}</strong>
+                            <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; background: rgba(59, 130, 246, 0.1); color: #2563eb;">Candidate #${idx + 1}</span>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; font-size: 12.5px;">
+                            <div style="background: var(--surface, #ffffff); padding: 10px; border-radius: 10px; border: 1px solid var(--border-color, #e5e7eb);">
+                                <span style="display: block; font-size: 11px; text-transform: uppercase; font-weight: 700; color: #dc2626; margin-bottom: 4px;">Current Ticket (Missing Info)</span>
+                                <div><strong>PNR:</strong> ${dashboardEscapeHtml(t.booking_reference || 'N/A')}</div>
+                                <div><strong>Date:</strong> ${dashboardEscapeHtml(t.departing_on || t.issued_date || 'N/A')}</div>
+                                <div><strong>Phone:</strong> <span style="color: #dc2626; font-style: italic;">(Missing)</span></div>
+                                <div><strong>ID/NRC:</strong> ${dashboardEscapeHtml(t.id_no || 'None')}</div>
+                            </div>
+
+                            <div style="background: var(--surface, #ffffff); padding: 10px; border-radius: 10px; border: 1px solid var(--border-color, #e5e7eb);">
+                                <span style="display: block; font-size: 11px; text-transform: uppercase; font-weight: 700; color: #059669; margin-bottom: 4px;">Proposed Match</span>
+                                <div><strong>From PNR:</strong> ${dashboardEscapeHtml(c.booking_reference || 'N/A')}</div>
+                                <div><strong>Candidate Phone:</strong> <strong style="color: #059669;">${dashboardEscapeHtml(c.phone || 'N/A')}</strong></div>
+                                <div><strong>Candidate ID:</strong> ${dashboardEscapeHtml(c.id_no || 'None')}</div>
+                                <div><strong>Account:</strong> ${dashboardEscapeHtml(c.account_name || 'None')}</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                            <button type="button" class="btn btn-secondary btn-sm dismiss-match-btn" data-index="${idx}">
+                                <i class="fa-solid fa-ban"></i> မသက်ဆိုင်ပါ (Skip)
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm apply-match-btn" data-index="${idx}" style="background: #059669; border-color: #059669; color: #fff;">
+                                <i class="fa-solid fa-circle-check"></i> အတည်ပြုမည် (Confirm)
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 18px; border-top: 1px solid var(--border-color, #e5e7eb); padding-top: 12px;">
+                <button type="button" class="btn btn-secondary" id="closePotentialMatchesBtn">Done</button>
+            </div>
+        </div>
+    `;
+
+    openModal(modalContent, 'solid-modal');
+    document.getElementById('closePotentialMatchesTopBtn')?.addEventListener('click', closeModal);
+    document.getElementById('closePotentialMatchesBtn')?.addEventListener('click', closeModal);
+
+    document.querySelectorAll('.apply-match-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const idx = parseInt(e.currentTarget.dataset.index, 10);
+            const matchItem = matches[idx];
+            if (!matchItem) return;
+
+            const t = matchItem.targetTicket;
+            const c = matchItem.candidateTicket;
+            const user = state.currentUser?.displayName || state.currentUser?.email || 'User';
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Applying...`;
+
+            try {
+                const updateData = { ...matchItem.proposedData };
+                const auditEntry = {
+                    date: formatDateForSheet(new Date()),
+                    name: t.name || '',
+                    pnr: t.booking_reference || '',
+                    details: `[Confirmed Match] Enriched contact data from PNR ${c.booking_reference || 'N/A'}: Phone '${t.phone || 'None'}' -> '${c.phone || ''}', ID '${t.id_no || 'None'}' -> '${c.id_no || 'None'}'. Verified by ${user}.`,
+                    action: 'ENRICH_CUSTOMER_MATCH',
+                    modifiedBy: user,
+                    before: {
+                        phone: t.phone || '',
+                        id_no: t.id_no || '',
+                        gender: t.gender || '',
+                        account_name: t.account_name || ''
+                    },
+                    after: {
+                        phone: updateData.phone || t.phone || '',
+                        id_no: updateData.id_no || t.id_no || '',
+                        gender: updateData.gender || t.gender || '',
+                        account_name: updateData.account_name || t.account_name || ''
+                    }
+                };
+
+                await batchUpdateWithAudit([{ id: t.id, data: updateData }], [auditEntry]);
+                showToast(`Contact info for ${t.name} confirmed and updated with audit log!`, 'success');
+                const card = e.currentTarget.closest('.potential-match-card');
+                if (card) {
+                    card.innerHTML = `<div style="color: #059669; font-weight: 600; padding: 10px;"><i class="fa-solid fa-circle-check"></i> Confirmed & updated by ${dashboardEscapeHtml(user)}.</div>`;
+                }
+            } catch (err) {
+                console.error('Failed to apply match:', err);
+                showToast(`Failed to update ticket: ${err.message || err}`, 'error');
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> အတည်ပြုမည် (Confirm)`;
+            }
+        });
+    });
+
+    document.querySelectorAll('.dismiss-match-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const card = e.currentTarget.closest('.potential-match-card');
+            if (card) {
+                card.remove();
+                showToast('Potential match dismissed (records left untouched).', 'info');
+            }
+        });
+    });
 }
+
+window.reviewPotentialMatches = reviewPotentialMatches;
+window.findPotentialTicketMatches = findPotentialTicketMatches;
 
 /**
  * Main application initialization function. Called after authentication.
@@ -318,7 +463,6 @@ export async function initializeApp() {
                 const isInitial = !initialDataShown;
                 state.allTickets = tickets;
                 revealDashboard();
-                sanitizeTickets(tickets);
                 populateSearchAirlines();
                 if (isViewCurrentlyActive('records')) {
                     state.recordsDirty = false;
@@ -2060,30 +2204,71 @@ export function showTripPlanDetail(pnr) {
     const safeAccountLink = accountLink ? formatSafeAccountLink(accountLink, accountType) : '';
     const socialMeta = (accountType || accountLink) ? getSocialPlatformMeta(accountType, accountLink) : null;
 
-    // Group passenger rows by name to avoid duplicating round-trip legs
+    // Group passenger rows to avoid duplicating round-trip legs for the SAME passenger,
+    // while keeping distinct passengers who share the same name completely separate!
     const passengerMap = new Map();
-    passengerRows.forEach(t => {
+    passengerRows.forEach((t, idx) => {
         const baseName = String(t.name || '').replace(/\s*\(fees\)\s*$/i, '').trim();
-        const key = baseName.toLowerCase();
+        const leg = String(t.leg || '').toLowerCase(); // 'outbound' | 'return'
+        const docId = String(t.id_no || t.nrc_no || t.passport_no || '').trim().toLowerCase();
+
+        // 1. If explicit passenger_id exists, use it as unique identifier
+        let key = t.passenger_id ? `pax:${t.passenger_id}` : '';
+
+        // 2. If docId (NRC or passport) exists, identify by baseName + docId
+        if (!key && docId) {
+            key = `doc:${baseName.toLowerCase()}|${docId}`;
+        }
+
+        // 3. For round-trip bookings without passenger_id or docId:
+        // Match return leg to an unpaired outbound leg entry with the same name
+        if (!key && leg === 'return') {
+            const matchingOutboundKey = [...passengerMap.keys()].find(k => {
+                const item = passengerMap.get(k);
+                return item.baseName.toLowerCase() === baseName.toLowerCase() && !item.hasReturn;
+            });
+            if (matchingOutboundKey) {
+                key = matchingOutboundKey;
+            }
+        }
+
+        // 4. Fallback: preserve distinct identity using ticket id/index so two people with the same name are NOT merged!
+        if (!key) {
+            key = `row:${baseName.toLowerCase()}|${t.id || idx}`;
+        }
+
         if (!passengerMap.has(key)) {
             passengerMap.set(key, {
                 name: t.name || 'Passenger',
                 baseName,
                 amount: 0,
                 allPaid: true,
-                tickets: []
+                tickets: [],
+                hasReturn: leg === 'return',
+                id_no: t.id_no || t.nrc_no || t.passport_no || '',
+                client_key: t.client_key || '',
+                passenger_id: t.passenger_id || ''
             });
         }
         const entry = passengerMap.get(key);
+        if (leg === 'return') entry.hasReturn = true;
         entry.amount += ticketSalesAmount(t);
         if (!isTicketPaid(t)) entry.allPaid = false;
-        entry.tickets.push(t.ticket_number || 'N/A');
+        if (t.ticket_number && t.ticket_number !== 'N/A') {
+            if (!entry.tickets.includes(t.ticket_number)) {
+                entry.tickets.push(t.ticket_number);
+            }
+        }
     });
     const uniquePassengers = [...passengerMap.values()];
 
     const passengerList = uniquePassengers.map(p => {
-        const matchedClient = state.allClients.find(c => String(c.name || '').toLowerCase() === p.baseName.toLowerCase() && !String(c.name || '').includes('(Fees)'));
-        const ck = matchedClient?.client_key || '';
+        const matchedClient = state.allClients?.find(c => {
+            if (p.client_key && c.client_key === p.client_key) return true;
+            if (p.id_no && (c.id_no === p.id_no || c.nrc_no === p.id_no || c.passport_no === p.id_no)) return true;
+            return String(c.name || '').toLowerCase() === p.baseName.toLowerCase() && !String(c.name || '').includes('(Fees)');
+        });
+        const ck = matchedClient?.client_key || p.client_key || '';
         const nameHtml = ck
             ? `<a href="#" class="clickable-client-link pax-name-premium" data-client-key="${dashboardEscapeHtml(ck)}">${dashboardEscapeHtml(p.name)}</a>`
             : `<span class="pax-name-premium">${dashboardEscapeHtml(p.name)}</span>`;

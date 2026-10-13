@@ -1096,9 +1096,13 @@ export async function handleNewBookingSubmit(e) {
             const bookingObjects = [];
             const outboundGroupId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `booking-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-            passengerData.forEach(passenger => {
+            passengerData.forEach((passenger, idx) => {
+                if (!passenger.passenger_id) {
+                    passenger.passenger_id = `PAX-${Date.now()}-${idx + 1}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+                }
                 bookingObjects.push({
                     groupId: outboundGroupId,
+                    passenger_id: passenger.passenger_id,
                     name: `${passenger.gender} ${passenger.name}`,
                     id_no: passenger.nrc_no || passenger.passport_no || '',
                     passport_no: passenger.passport_no || '',
@@ -1128,6 +1132,7 @@ export async function handleNewBookingSubmit(e) {
                 passengerData.forEach(passenger => {
                     bookingObjects.push({
                         groupId: returnGroupId,
+                        passenger_id: passenger.passenger_id,
                         name: `${passenger.gender} ${passenger.name}`,
                         id_no: passenger.nrc_no || passenger.passport_no || '',
                         passport_no: passenger.passport_no || '',

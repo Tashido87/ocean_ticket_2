@@ -1801,6 +1801,7 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
         const row = {
             issued_date: formatDateForSheet(sharedData.issued_date),
             name: p.name,
+            passenger_id: p.passenger_id || '',
             id_no: p.id_no,
             nrc: p.nrc || {},
             nrc_no: p.nrc_no || '',
@@ -1852,7 +1853,10 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
     };
 
     const ticketObjects = [];
-    passengerData.forEach(p => {
+    passengerData.forEach((p, idx) => {
+        if (!p.passenger_id) {
+            p.passenger_id = `PAX-${Date.now()}-${idx + 1}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        }
         // Outbound leg (always present)
         ticketObjects.push(buildRow(p, sharedData, 'outbound', {
             cost_price: p.cost_price,

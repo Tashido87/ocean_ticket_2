@@ -115,10 +115,22 @@ function normalizeName(name) {
 }
 
 function clientKeyFromTicket(ticket) {
+    if (!ticket) return '';
+    if (ticket.client_key) return ticket.client_key;
     const baseName = String(ticket.name || '').replace(/\([^)]+\)\s*$/i, '').trim();
-    const phone = ticket.phone && ticket.phone !== 'undefined' ? ticket.phone : '';
+    const phone = ticket.phone && ticket.phone !== 'undefined' ? ticket.phone.trim() : '';
     const accountName = ticket.account_name && ticket.account_name !== 'undefined' ? ticket.account_name.trim().toUpperCase() : '';
-    return `${baseName}|${phone}|${accountName}`;
+    const docIdentifier = String(ticket.passport_no || ticket.nrc_no || ticket.id_no || '').trim().toUpperCase();
+    if (docIdentifier) {
+        return `${baseName}|${docIdentifier}|${phone}`;
+    }
+    if (phone) {
+        return `${baseName}|${phone}|${accountName}`;
+    }
+    if (accountName) {
+        return `${baseName}||${accountName}`;
+    }
+    return `${baseName}|TICKET-${ticket.id || ticket.booking_reference || 'ANON'}`;
 }
 
 function getClientForTicket(ticket) {
