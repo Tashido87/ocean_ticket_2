@@ -165,6 +165,54 @@ body.dark-theme textarea::placeholder {
     font-size: 14px !important;
 }
 
+/* 4.1 Search Box with Icons: ensure text never overlaps leading search icon or trailing clear icon */
+.global-search-box input,
+#globalSearchInput {
+    padding-left: 2.85rem !important;
+    padding-right: 2.5rem !important;
+    padding-top: 0.55rem !important;
+    padding-bottom: 0.55rem !important;
+    border-radius: 999px !important;
+}
+
+.global-search-box .search-icon {
+    position: absolute !important;
+    left: 0.65rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 2 !important;
+    width: 28px !important;
+    height: 28px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    display: grid !important;
+    place-items: center !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.global-search-clear {
+    position: absolute !important;
+    right: 0.55rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 3 !important;
+    width: 28px !important;
+    height: 28px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--surface-2) !important;
+    color: var(--text-secondary) !important;
+    display: grid !important;
+    place-items: center !important;
+    cursor: pointer !important;
+}
+
+.global-search-clear[hidden] {
+    display: none !important;
+}
+
 /* Mobile form inputs: strictly 16px (no iOS auto-zoom, clear readability) */
 @media (max-width: 768px) {
     input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
