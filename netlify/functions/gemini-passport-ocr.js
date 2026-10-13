@@ -58,32 +58,50 @@ Rules:
 - If a field is not clearly readable, return empty string.
 `;
 
-    const generatePromise = ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: prompt },
+    const candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
+    let response = null;
+    let lastError = null;
+
+    for (const model of candidateModels) {
+      try {
+        const generatePromise = ai.models.generateContent({
+          model,
+          contents: [
             {
-              inlineData: {
-                mimeType: mimeType || 'image/jpeg',
-                data: cleanBase64,
-              },
+              role: 'user',
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: mimeType || 'image/jpeg',
+                    data: cleanBase64,
+                  },
+                },
+              ],
             },
           ],
-        },
-      ],
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0,
-      },
-    });
+          config: {
+            responseMimeType: 'application/json',
+            temperature: 0,
+          },
+        });
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Gemini OCR timed out')), 25000)
-    );
-    const response = await Promise.race([generatePromise, timeoutPromise]);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`Gemini OCR timed out on ${model}`)), 15000)
+        );
+        response = await Promise.race([generatePromise, timeoutPromise]);
+        if (response && response.text) {
+          break;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn(`[gemini-passport-ocr] Model ${model} failed:`, err.message);
+      }
+    }
+
+    if (!response || !response.text) {
+      throw lastError || new Error('All Gemini candidate models failed');
+    }
 
     const text = response.text || '';
     const extracted = safeJsonParse(text);
