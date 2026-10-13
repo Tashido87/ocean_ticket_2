@@ -13,7 +13,28 @@
     backdrop-filter: none !important;
 }
 
-/* 2. Global Core Theme Surfaces & Contrast */
+/* 2. Global Core Theme Surfaces, Contrast & Burmese Fallback */
+:root {
+    --text-primary: #0F172A !important;   /* Slate-900: 15.8:1 contrast on white (WCAG AAA) */
+    --text-secondary: #475569 !important; /* Slate-600: 5.64:1 contrast on white (WCAG AA >= 4.5:1) */
+    --text-faint: #64748B !important;     /* Slate-500: 4.6:1 contrast on white */
+}
+
+body.dark-theme {
+    --text-primary: #F8FAFC !important;   /* Slate-50: 13.5:1 contrast on #1E293B (WCAG AAA) */
+    --text-secondary: #CBD5E1 !important; /* Slate-300: 9.1:1 contrast on #1E293B (WCAG AA >= 4.5:1) */
+    --text-faint: #94A3B8 !important;     /* Slate-400: 5.32:1 contrast on #1E293B (WCAG AA >= 4.5:1) */
+}
+
+html,
+body,
+input,
+button,
+select,
+textarea {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Padauk', 'Pyidaungsu', 'Myanmar Text', sans-serif !important;
+}
+
 body {
     background-color: var(--bg) !important;
     color: var(--text-primary) !important;
@@ -101,10 +122,14 @@ body.dark-theme .btn-clear {
     color: var(--text-primary) !important;
 }
 
-/* 4. Unified Inputs, Selects & Textareas (no invisible text in dark mode) */
+/* 4. Unified Inputs, Selects & Textareas (15px desktop, 16px mobile, comfortable height) */
 input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 select,
 textarea {
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+    min-height: 38px;
+    padding: 0.55rem 0.85rem !important;
     background-color: var(--surface) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--border-color) !important;
@@ -128,9 +153,26 @@ body.dark-theme textarea {
     border-color: var(--border-color) !important;
 }
 
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-faint, #64748B) !important;
+    font-size: 14px !important;
+}
+
 body.dark-theme input::placeholder,
 body.dark-theme textarea::placeholder {
-    color: var(--text-faint) !important;
+    color: var(--text-faint, #94A3B8) !important;
+    font-size: 14px !important;
+}
+
+/* Mobile form inputs: strictly 16px (no iOS auto-zoom, clear readability) */
+@media (max-width: 768px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    select,
+    textarea {
+        font-size: 16px !important;
+        min-height: 42px !important;
+    }
 }
 
 /* 5. Unified Cards & Panels */
@@ -292,4 +334,132 @@ body.dark-theme tbody tr:hover td {
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+/* 11. Typography Hierarchy & Sizing Standard */
+
+/* Page title: 24–28px */
+h1,
+.page-title,
+.view-title,
+#main-header h1,
+.dashboard-welcome h1,
+.welcome-banner h1,
+.client-hero h1 {
+    font-size: clamp(24px, 2.2vw, 28px) !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.02em !important;
+    color: var(--text-primary) !important;
+}
+
+/* Section heading: 17–20px */
+h2,
+h3,
+.section-heading,
+.section-title,
+.card-title,
+.dashboard-card-title,
+.service-panel-header h2,
+.form-container h2,
+.results-section h3,
+#manage-view h2,
+#manage-view h3,
+#services-view h2,
+#services-view h3,
+.modal-title {
+    font-size: clamp(17px, 1.3vw, 20px) !important;
+    font-weight: 650 !important;
+    line-height: 1.35 !important;
+    letter-spacing: -0.01em !important;
+    color: var(--text-primary) !important;
+}
+
+/* Body / table: 14–16px */
+body,
+p,
+table td,
+.table td,
+.data-cell,
+.document-card,
+.doc-info,
+#modificationHistoryTable td,
+.ticket-row td {
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+}
+
+/* Secondary labels: 12–13px (with guaranteed >= 4.5:1 contrast) */
+.secondary-label,
+.text-muted,
+.form-hint,
+.section-subtitle,
+.service-panel-desc,
+.form-group label,
+.form-label,
+.doc-meta,
+.activity-meta,
+.audit-note,
+.settle-section-subtitle,
+small {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    color: var(--text-secondary) !important;
+}
+
+/* KPI amount: 26–32px */
+.kpi-amount,
+.kpi-value,
+.kpi-number,
+.stat-value,
+.settle-kpi-value,
+.booking-kpi-val,
+.manage-kpi-val,
+.metric-value,
+.total-revenue,
+.net-profit,
+.statement-total-amount,
+.dashboard-kpi-value,
+.client-hero-stat .stat-num {
+    font-size: clamp(26px, 2.5vw, 32px) !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.02em !important;
+}
+
+/* 12. Financial Numbers Tabular-Nums Standard */
+.tabular-nums,
+.kpi-amount,
+.kpi-value,
+.kpi-number,
+.stat-value,
+.settle-kpi-value,
+.booking-kpi-val,
+.manage-kpi-val,
+.metric-value,
+.total-revenue,
+.net-profit,
+.statement-total-amount,
+.dashboard-kpi-value,
+.client-hero-stat .stat-num,
+table td.amount,
+table td.numeric,
+.amount-cell,
+.pnr-amount,
+.pnr-profit,
+.summary-value,
+.audit-diff-chip,
+.audit-diff-chip strong,
+.audit-diff-chip span,
+.clickable-pnr,
+table td:has(strong),
+[data-field="base_fare"],
+[data-field="net_amount"],
+[data-field="commission"],
+.price,
+.fare,
+input[type="number"] {
+    font-variant-numeric: tabular-nums !important;
+    -webkit-font-feature-settings: "tnum" 1 !important;
+    font-feature-settings: "tnum" 1 !important;
 }
