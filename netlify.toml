@@ -5,26 +5,45 @@
   publish = "."
   functions = "netlify/functions"
 
-# Prevent browser caching of JS/CSS so code changes take effect immediately
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-[[headers]]
-  for = "/*.mjs"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
+# Cache policy:
+# HTML entry points are always revalidated fresh so code deploys take effect immediately.
 [[headers]]
   for = "/*.html"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# JS & CSS: Use no-cache (revalidate via ETag) so browsers reuse cached files via 304 if unchanged,
+# eliminating hundreds of kilobytes of re-downloads on every reload.
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/*.mjs"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+# Static images and icons: cache aggressively
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, immutable"
+
+[[headers]]
+  for = "/*.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, immutable"
 
 [[redirects]]
   from = "/scratch*.js"

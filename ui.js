@@ -3986,6 +3986,20 @@ export function initializeUISettings() {
         localStorage.setItem('uiCustomSettings', JSON.stringify(currentSettings));
     };
 
+    const ensureFontLoaded = (fontString) => {
+        if (!fontString) return;
+        const match = fontString.match(/'([^']+)'/);
+        const family = match ? match[1] : fontString.split(',')[0].replace(/['"]/g, '').trim();
+        if (!family || family.toLowerCase() === 'inter' || family.startsWith('-apple-system')) return;
+        const fontId = `custom-font-${family.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        if (document.getElementById(fontId)) return;
+        const link = document.createElement('link');
+        link.id = fontId;
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@400;500;600;700&display=swap`;
+        document.head.appendChild(link);
+    };
+
     const applySettings = (settings) => {
         // Update agent cut in global state for calculations
         state.commissionRates.cut = settings.agentCut / 100;
@@ -3996,6 +4010,7 @@ export function initializeUISettings() {
 
         // Apply Font
         if (settings.font) {
+            ensureFontLoaded(settings.font);
             document.documentElement.style.setProperty('--font-main', settings.font);
         }
 

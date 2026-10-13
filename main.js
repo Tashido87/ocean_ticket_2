@@ -307,6 +307,11 @@ export async function initializeApp() {
             }
         }, 70);
 
+        const isViewCurrentlyActive = (viewName) => {
+            const el = document.getElementById(`${viewName}-view`);
+            return !!el && el.classList.contains('active') && el.style.display !== 'none';
+        };
+
         // Set up real-time listeners
         state.unsubscribers.push(
             onTicketsChange((tickets) => {
@@ -315,7 +320,12 @@ export async function initializeApp() {
                 revealDashboard();
                 sanitizeTickets(tickets);
                 populateSearchAirlines();
-                displayInitialTickets(state.currentPage);
+                if (isViewCurrentlyActive('records')) {
+                    state.recordsDirty = false;
+                    displayInitialTickets(state.currentPage);
+                } else {
+                    state.recordsDirty = true;
+                }
 
                 if (isInitial) {
                     updateUnpaidCount();
@@ -337,7 +347,12 @@ export async function initializeApp() {
         state.unsubscribers.push(
             onBookingsChange((bookings) => {
                 state.allBookings = bookings;
-                displayBookings();
+                if (isViewCurrentlyActive('booking')) {
+                    state.bookingsDirty = false;
+                    displayBookings();
+                } else {
+                    state.bookingsDirty = true;
+                }
                 debouncedRefreshHeavyData();
             })
         );
@@ -345,7 +360,12 @@ export async function initializeApp() {
         state.unsubscribers.push(
             onSettlementsChange((settlements) => {
                 state.allSettlements = settlements;
-                displaySettlements();
+                if (isViewCurrentlyActive('settle')) {
+                    state.settlementsDirty = false;
+                    displaySettlements();
+                } else {
+                    state.settlementsDirty = true;
+                }
                 updateDashboardData();
             })
         );
@@ -353,14 +373,24 @@ export async function initializeApp() {
         state.unsubscribers.push(
             onClosedPeriodsChange((periods) => {
                 state.allClosedPeriods = periods;
-                displaySettlements();
+                if (isViewCurrentlyActive('settle')) {
+                    state.settlementsDirty = false;
+                    displaySettlements();
+                } else {
+                    state.settlementsDirty = true;
+                }
             })
         );
 
         state.unsubscribers.push(
             onAdjustmentsChange((adjustments) => {
                 state.allAdjustments = adjustments;
-                displaySettlements();
+                if (isViewCurrentlyActive('settle')) {
+                    state.settlementsDirty = false;
+                    displaySettlements();
+                } else {
+                    state.settlementsDirty = true;
+                }
             })
         );
 
@@ -381,19 +411,39 @@ export async function initializeApp() {
         state.unsubscribers.push(
             onHotelsChange((hotels) => {
                 state.allHotels = hotels;
-                renderHotelReservations();
-                displayInitialTickets(state.currentPage);
+                if (isViewCurrentlyActive('hotel')) {
+                    state.hotelsDirty = false;
+                    renderHotelReservations();
+                } else {
+                    state.hotelsDirty = true;
+                }
+                if (isViewCurrentlyActive('records')) {
+                    state.recordsDirty = false;
+                    displayInitialTickets(state.currentPage);
+                } else {
+                    state.recordsDirty = true;
+                }
                 updateDashboardData();
             })
         );
 
         initSettlementView();
 
-        state.unsubscribers.push(
-            onHistoryChange((history) => {
-                state.history = history;
-            })
-        );
+        // Defer history collection listener until after startup to save bandwidth and initial latency
+        const attachHistoryListener = () => {
+            if (state.historyListenerAttached) return;
+            state.historyListenerAttached = true;
+            state.unsubscribers.push(
+                onHistoryChange((history) => {
+                    state.history = history;
+                })
+            );
+        };
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(attachHistoryListener, { timeout: 3500 });
+        } else {
+            setTimeout(attachHistoryListener, 2500);
+        }
 
         // Start dynamic updates
         if (state.timeUpdateInterval) clearInterval(state.timeUpdateInterval);
@@ -4455,7 +4505,23 @@ async function loadPageFeatures(viewName) {
     featureLoads.set(viewName, task);
     return task;
 }
-document.addEventListener('ocean:viewchange', event => { void loadPageFeatures(event.detail); });
+document.addEventListener('ocean:viewchange', event => {
+    const viewName = event.detail;
+    void loadPageFeatures(viewName);
+    if (viewName === 'records' && state.recordsDirty) {
+        state.recordsDirty = false;
+        displayInitialTickets(state.currentPage);
+    } else if (viewName === 'booking' && state.bookingsDirty) {
+        state.bookingsDirty = false;
+        displayBookings();
+    } else if (viewName === 'settle' && state.settlementsDirty) {
+        state.settlementsDirty = false;
+        displaySettlements();
+    } else if (viewName === 'hotel' && state.hotelsDirty) {
+        state.hotelsDirty = false;
+        if (typeof renderHotelReservations === 'function') renderHotelReservations();
+    }
+});
 window.addEventListener('ocean:document-load-error', event => showToast(event.detail, 'error'));
 window.onload = async () => {
     // Initialize UI components that don't depend on data

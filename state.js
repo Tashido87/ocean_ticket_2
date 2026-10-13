@@ -39,7 +39,12 @@ export const state = {
     },
     timeUpdateInterval: null, // To hold the timer
     unsubscribers: [], // Firestore real-time listener unsubscribe functions
-    recordsEditMode: false // Inline edit mode state for Records
+    recordsEditMode: false, // Inline edit mode state for Records
+    recordsDirty: false,
+    bookingsDirty: false,
+    settlementsDirty: false,
+    hotelsDirty: false,
+    historyListenerAttached: false
 };
 
 // --- AUTHENTICATION STATE ---

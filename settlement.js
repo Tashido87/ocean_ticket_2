@@ -26,6 +26,12 @@ import { loadDocumentLibraries } from './document-libraries.js';
  */
 
 import { state } from './state.js';
+import { storage } from './firebase-config.js';
+import {
+    ref as storageRef,
+    uploadBytes,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import {
     getSettlements,
     addSettlement,
@@ -1413,12 +1419,38 @@ function isDateInLockedPeriod(dateLike) {
     return !!key && state.allClosedPeriods.some(p => p.periodKey === key);
 }
 
-function readProofFile(file) {
-    return new Promise((resolve, reject) => {
-        if (!file) return resolve(null);
-        if (file.size > 750 * 1024) {
-            return reject(new Error('Proof file is too large for inline storage. Use a proof URL for files over 750 KB.'));
+async function readProofFile(file) {
+    if (!file) return null;
+    if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Proof file is too large (max 10 MB).');
+    }
+    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const stamp = Date.now();
+    const path = `settlement_proofs/${stamp}_${cleanName}`;
+
+    // 1. Primary: Upload file to Firebase Storage so settlement records only store reference metadata
+    if (storage) {
+        try {
+            const fileRef = storageRef(storage, path);
+            const snap = await uploadBytes(fileRef, file, { contentType: file.type || 'application/octet-stream' });
+            const downloadUrl = await getDownloadURL(snap.ref);
+            return {
+                proofUrl: downloadUrl,
+                proofStoragePath: path,
+                proofName: file.name,
+                proofType: file.type?.includes('pdf') ? 'pdf' : file.type?.startsWith('image/') ? 'image' : 'other',
+                proofUploadedAt: new Date().toISOString()
+            };
+        } catch (storageErr) {
+            console.warn('Firebase Storage upload failed, attempting fallback:', storageErr);
         }
+    }
+
+    // 2. Fallback: if storage fails or offline, only allow small thumbnails (<= 300 KB)
+    if (file.size > 300 * 1024) {
+        throw new Error('Storage upload failed and file is too large for inline fallback (>300 KB). Please use a proof URL link or try again.');
+    }
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve({
             proofUrl: reader.result,
