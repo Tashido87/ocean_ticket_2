@@ -58,7 +58,7 @@ Rules:
 - If a field is not clearly readable, return empty string.
 `;
 
-    const candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
+    const candidateModels = ['gemini-3.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest'];
     let response = null;
     let lastError = null;
 
