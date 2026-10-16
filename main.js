@@ -3016,7 +3016,7 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
     if (hint) hint.textContent = `${openManualCount + urgentBookingCount} open`;
 
     const bookingHtml = bookingReminders.length
-        ? bookingReminders.slice(0, 5).map(item => `
+        ? bookingReminders.slice(0, 15).map(item => `
             <button type="button" class="dashboard-auto-task ${item.tone}" data-booking-reminder="${dashboardEscapeHtml(item.pnr)}">
                 <span class="task-auto-icon"><i class="fa-solid fa-bell"></i></span>
                 <span class="task-auto-body">
@@ -3029,7 +3029,7 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
         : `<div class="task-empty-line">No active booking deadlines.</div>`;
 
     const manualHtml = manualTasks.length
-        ? manualTasks.slice(0, 8).map(task => {
+        ? manualTasks.slice(0, 20).map(task => {
             const tone = manualTaskTone(task);
             const dueLabel = formatTaskDueLabel(task.dueDate, task.dueTime);
             return `
@@ -3046,18 +3046,17 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
         : `<div class="task-empty-line">No manual tasks yet.</div>`;
 
     container.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
-            <h3 style="margin:0; font-size:1.1rem;"><i class="fa-solid fa-list-check"></i> Tasks & Reminders</h3>
-            <button type="button" class="btn btn-primary btn-sm" id="openTaskModalBtn" style="border-radius:50%; width:32px; height:32px; padding:0; display:flex; align-items:center; justify-content:center;" title="Add Task">
-                <i class="fa-solid fa-plus"></i>
-            </button>
-        </div>
         <div class="task-mini-section">
             <div class="task-mini-title"><span>Booking deadlines</span><small>${bookingReminders.length}</small></div>
             <div class="task-mini-list">${bookingHtml}</div>
         </div>
         <div class="task-mini-section">
-            <div class="task-mini-title"><span>My tasks</span><small>${openManualCount} open</small></div>
+            <div class="task-mini-title">
+                <span>My tasks (${openManualCount} open)</span>
+                <button type="button" class="btn btn-primary btn-sm" id="openTaskModalBtn" style="border-radius:50%; width:26px; height:26px; padding:0; display:inline-flex; align-items:center; justify-content:center;" title="Add Task">
+                    <i class="fa-solid fa-plus" style="font-size:11px;"></i>
+                </button>
+            </div>
             <div class="task-mini-list">${manualHtml}</div>
         </div>
     `;

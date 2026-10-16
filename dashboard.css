@@ -632,11 +632,12 @@ body.dark-theme :is(#home-view, #booking-view, #hotel-view, #manage-view) {
 
 /* Tasks & Reminders Panel */
 #home-view .dashboard-task-list {
-  max-height: 250px !important;
-  overflow-y: auto !important;
+  flex: 1 1 auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 6px !important;
+  gap: 8px !important;
 }
 
 #home-view .task-mini-section {
