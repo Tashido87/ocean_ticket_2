@@ -655,6 +655,20 @@ body.dark-theme :is(#home-view, #booking-view, #hotel-view, #manage-view) {
   margin-bottom: 4px !important;
 }
 
+#home-view #openTaskModalBtn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+}
+
 #home-view .dashboard-auto-task {
   width: 100% !important;
   display: flex !important;

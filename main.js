@@ -3053,8 +3053,8 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
         <div class="task-mini-section">
             <div class="task-mini-title">
                 <span>My tasks (${openManualCount} open)</span>
-                <button type="button" class="btn btn-primary btn-sm" id="openTaskModalBtn" style="border-radius:50%; width:26px; height:26px; padding:0; display:inline-flex; align-items:center; justify-content:center;" title="Add Task">
-                    <i class="fa-solid fa-plus" style="font-size:11px;"></i>
+                <button type="button" class="btn btn-primary btn-sm" id="openTaskModalBtn" style="border-radius:50%; width:28px; height:28px; min-width:28px; min-height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center;" title="Add Task">
+                    <i class="fa-solid fa-plus" style="font-size:12px;"></i>
                 </button>
             </div>
             <div class="task-mini-list">${manualHtml}</div>
