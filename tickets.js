@@ -175,6 +175,205 @@ export function displayInitialTickets(page = 1) {
     displayTickets(sorted, page);
 }
 
+const RECORDS_COL_STORAGE_KEY = 'oceanRecordsColumnVisibility_v1';
+const RECORDS_OPTIONAL_COLUMNS = [
+    'issued_date',
+    'route',
+    'airline',
+    'net_amount',
+    'commission',
+    'extra_fare',
+    'date_change'
+];
+
+function getDefaultColumnVisibility() {
+    const isCompactLaptop = typeof window !== 'undefined' && window.innerWidth <= 1440;
+    return {
+        issued_date: true,
+        route: true,
+        airline: true,
+        net_amount: true,
+        commission: true,
+        extra_fare: !isCompactLaptop,
+        date_change: !isCompactLaptop
+    };
+}
+
+export function getRecordsColumnVisibility() {
+    const defaults = getDefaultColumnVisibility();
+    try {
+        const raw = localStorage.getItem(RECORDS_COL_STORAGE_KEY);
+        if (!raw) return defaults;
+        const parsed = JSON.parse(raw);
+        const result = { ...defaults };
+        RECORDS_OPTIONAL_COLUMNS.forEach(col => {
+            if (typeof parsed[col] === 'boolean') {
+                result[col] = parsed[col];
+            }
+        });
+        return result;
+    } catch {
+        return defaults;
+    }
+}
+
+export function saveRecordsColumnVisibility(visibilityMap) {
+    try {
+        localStorage.setItem(RECORDS_COL_STORAGE_KEY, JSON.stringify(visibilityMap));
+    } catch {}
+}
+
+export function applyRecordsColumnVisibility(visibilityOverride = null) {
+    const container = document.getElementById('resultsBodyContainer');
+    const vis = visibilityOverride || getRecordsColumnVisibility();
+    const editFields = new Set(['net_amount', 'commission', 'extra_fare', 'date_change']);
+
+    let visibleCount = 0;
+    RECORDS_OPTIONAL_COLUMNS.forEach(col => {
+        const isShown = (state.recordsEditMode && editFields.has(col)) ? true : Boolean(vis[col]);
+        if (isShown) visibleCount++;
+        if (container) {
+            container.classList.toggle(`hide-col-${col}`, !isShown);
+        }
+        const checkbox = document.querySelector(`#recordsColumnsToggleList input[data-col-toggle="${col}"]`);
+        if (checkbox) {
+            checkbox.checked = Boolean(vis[col]);
+        }
+    });
+
+    const badge = document.getElementById('recordsColCountBadge');
+    if (badge) {
+        const hiddenCount = RECORDS_OPTIONAL_COLUMNS.length - visibleCount;
+        if (hiddenCount > 0) {
+            badge.textContent = `${visibleCount}/${RECORDS_OPTIONAL_COLUMNS.length}`;
+            badge.style.display = 'inline-flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+export function initRecordsColumnVisibility() {
+    const dropdown = document.getElementById('recordsColumnsDropdown');
+    const dropdownBtn = document.getElementById('recordsColumnsDropdownBtn');
+    const toggleList = document.getElementById('recordsColumnsToggleList');
+    const compactBtn = document.getElementById('recordsColsCompactBtn');
+    const allBtn = document.getElementById('recordsColsAllBtn');
+
+    applyRecordsColumnVisibility();
+
+    if (dropdown && dropdownBtn && !dropdown.dataset.wired) {
+        dropdown.dataset.wired = 'true';
+        dropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.toggle('is-open');
+            dropdownBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('is-open');
+                dropdownBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
+    if (toggleList && !toggleList.dataset.wired) {
+        toggleList.dataset.wired = 'true';
+        toggleList.addEventListener('change', (e) => {
+            const input = e.target.closest('input[data-col-toggle]');
+            if (!input) return;
+            const col = input.dataset.colToggle;
+            const current = getRecordsColumnVisibility();
+            current[col] = input.checked;
+            saveRecordsColumnVisibility(current);
+            applyRecordsColumnVisibility(current);
+        });
+    }
+
+    if (compactBtn && !compactBtn.dataset.wired) {
+        compactBtn.dataset.wired = 'true';
+        compactBtn.addEventListener('click', () => {
+            const compactVis = {
+                issued_date: true,
+                route: true,
+                airline: true,
+                net_amount: false,
+                commission: false,
+                extra_fare: false,
+                date_change: false
+            };
+            saveRecordsColumnVisibility(compactVis);
+            applyRecordsColumnVisibility(compactVis);
+        });
+    }
+
+    if (allBtn && !allBtn.dataset.wired) {
+        allBtn.dataset.wired = 'true';
+        allBtn.addEventListener('click', () => {
+            const allVis = {
+                issued_date: true,
+                route: true,
+                airline: true,
+                net_amount: true,
+                commission: true,
+                extra_fare: true,
+                date_change: true
+            };
+            saveRecordsColumnVisibility(allVis);
+            applyRecordsColumnVisibility(allVis);
+        });
+    }
+}
+
+function computeSingleRecordTotal(t) {
+    if (!t) return 0;
+    if (t._isHotel) {
+        return Number(t.selling_price || t.net_amount) || 0;
+    }
+    return (Number(t.net_amount) || 0) + (Number(t.extra_fare) || 0) + (Number(t.date_change) || 0);
+}
+
+function computeRecordTotal(ticket, isGroup) {
+    if (isGroup && Array.isArray(ticket.tickets)) {
+        return ticket.tickets.reduce((sum, t) => sum + computeSingleRecordTotal(t), 0);
+    }
+    return computeSingleRecordTotal(ticket);
+}
+
+function renderRecordStatusBadge(ticket, isGroup) {
+    if (!isGroup && !ticket._isHotel && isCanceledTicket(ticket)) {
+        return `<span class="records-status-badge status-canceled"><i class="fa-solid fa-ban"></i> Canceled</span>`;
+    }
+    if (isGroup && Array.isArray(ticket.tickets)) {
+        const activeList = ticket.tickets.filter(t => t._isHotel || !isCanceledTicket(t));
+        if (!activeList.length) {
+            return `<span class="records-status-badge status-canceled"><i class="fa-solid fa-ban"></i> Canceled</span>`;
+        }
+        const paidCount = activeList.filter(t =>
+            t._isHotel
+                ? String(t.payment_status || 'Paid').toLowerCase() === 'paid'
+                : isTicketPaid(t)
+        ).length;
+        if (paidCount === activeList.length) {
+            return `<span class="records-status-badge status-paid"><i class="fa-solid fa-check"></i> Paid</span>`;
+        }
+        if (paidCount === 0) {
+            return `<span class="records-status-badge status-unpaid"><i class="fa-solid fa-clock"></i> Unpaid</span>`;
+        }
+        return `<span class="records-status-badge status-partial">${paidCount}/${activeList.length} Paid</span>`;
+    }
+    if (ticket._isHotel) {
+        const isPaidHotel = String(ticket.payment_status || 'Paid').toLowerCase() === 'paid';
+        return isPaidHotel
+            ? `<span class="records-status-badge status-paid"><i class="fa-solid fa-check"></i> Paid</span>`
+            : `<span class="records-status-badge status-unpaid"><i class="fa-solid fa-clock"></i> Unpaid</span>`;
+    }
+    return isTicketPaid(ticket)
+        ? `<span class="records-status-badge status-paid"><i class="fa-solid fa-check"></i> Paid</span>`
+        : `<span class="records-status-badge status-unpaid"><i class="fa-solid fa-clock"></i> Unpaid</span>`;
+}
+
 /**
  * Displays a paginated list of tickets in the results table.
  * @param {Array<Object>} tickets The array of tickets to display.
@@ -186,6 +385,7 @@ export function displayTickets(tickets, page = 1) {
     }
     const container = document.getElementById('resultsBodyContainer');
     container.innerHTML = '';
+    applyRecordsColumnVisibility();
 
     if (tickets.length === 0) {
         renderEmptyState('resultsBodyContainer', 'fa-magnifying-glass', 'No Results Found', 'Your search did not match any tickets. Try adjusting your filters.');
@@ -200,16 +400,18 @@ export function displayTickets(tickets, page = 1) {
     table.innerHTML = `
         <thead>
             <tr>
-                <th>Issued Date</th>
-                <th>Name</th>
-                <th>PNR</th>
-                <th class="route-cell">Route</th>
-                <th>Airline</th>
-                <th class="num-header">Net Amount</th>
-                <th class="num-header">Commission</th>
-                <th class="num-header">Extra Fare</th>
-                <th class="num-header">Date Change</th>
-                <th>Actions</th>
+                <th class="col-issued-date" data-col="issued_date">Issued Date</th>
+                <th class="col-name col-pinned">Passenger</th>
+                <th class="col-pnr col-pinned">PNR</th>
+                <th class="route-cell col-route" data-col="route">Route</th>
+                <th class="col-airline" data-col="airline">Airline</th>
+                <th class="num-header col-net-amount" data-col="net_amount">Net Amount</th>
+                <th class="num-header col-commission" data-col="commission">Commission</th>
+                <th class="num-header col-extra-fare" data-col="extra_fare">Extra Fare</th>
+                <th class="num-header col-date-change" data-col="date_change">Date Change</th>
+                <th class="num-header col-total col-pinned">Total</th>
+                <th class="col-status col-pinned">Status</th>
+                <th class="col-actions col-pinned">Actions</th>
             </tr>
         </thead>
         <tbody id="resultsBody"></tbody>
@@ -309,6 +511,9 @@ export function displayTickets(tickets, page = 1) {
             dateChangeHtml = (ticket.date_change || 0).toLocaleString();
         }
 
+        const totalHtml = computeRecordTotal(ticket, isGroup).toLocaleString();
+        const statusBadgeHtml = renderRecordStatusBadge(ticket, isGroup);
+
         let pnrCellHtml = '—';
         if (isGroup) {
             const groupPnrs = [...new Set((ticket.tickets || [])
@@ -334,16 +539,18 @@ export function displayTickets(tickets, page = 1) {
         }
 
         row.innerHTML = `
-            <td>${formatDateToDMMMY(ticket.issued_date || ticket.dateRange || '')}</td>
-            <td>${nameCell}</td>
-            <td>${pnrCellHtml}</td>
-            <td class="route-cell">${routeText}</td>
-            <td>${airlineText}</td>
-            <td class="num-cell">${netAmountHtml}</td>
-            <td class="num-cell commission-td">${commissionHtml}</td>
-            <td class="num-cell">${extraFareHtml}</td>
-            <td class="num-cell">${dateChangeHtml}</td>
-            <td class="actions-cell">
+            <td class="col-issued-date" data-col="issued_date">${formatDateToDMMMY(ticket.issued_date || ticket.dateRange || '')}</td>
+            <td class="col-name col-pinned" title="${escapeHtml(isGroup ? (ticket.tickets[0]?.name || '') : (ticket.name || ''))}">${nameCell}</td>
+            <td class="col-pnr col-pinned">${pnrCellHtml}</td>
+            <td class="route-cell col-route" data-col="route" title="${routeText}">${routeText}</td>
+            <td class="col-airline" data-col="airline">${airlineText}</td>
+            <td class="num-cell col-net-amount" data-col="net_amount">${netAmountHtml}</td>
+            <td class="num-cell commission-td col-commission" data-col="commission">${commissionHtml}</td>
+            <td class="num-cell col-extra-fare" data-col="extra_fare">${extraFareHtml}</td>
+            <td class="num-cell col-date-change" data-col="date_change">${dateChangeHtml}</td>
+            <td class="num-cell col-total col-pinned">${totalHtml}</td>
+            <td class="col-status col-pinned">${statusBadgeHtml}</td>
+            <td class="actions-cell col-actions col-pinned">
                 <button class="icon-btn icon-btn-table" title="View Details" data-action="view"><i class="fa-solid fa-eye"></i></button>
                 <button class="icon-btn icon-btn-table" title="Edit" data-action="edit"><i class="fa-solid fa-pen-to-square"></i></button>
                 ${isGroup ? '' : '<button class="icon-btn icon-btn-table" title="Delete" data-action="delete"><i class="fa-solid fa-trash-can"></i></button>'}
@@ -392,6 +599,16 @@ export function displayTickets(tickets, page = 1) {
             inputs.forEach((input, index) => {
                 input.addEventListener('focus', function() {
                     window.activeFocusedInputId = this.id;
+                });
+
+                input.addEventListener('input', function() {
+                    const row = this.closest('tr');
+                    const totalCell = row?.querySelector('.col-total');
+                    if (!totalCell) return;
+                    const netVal = Number(row.querySelector('.net-amount-inline-input')?.value) || 0;
+                    const extraVal = Number(row.querySelector('.extra-fare-inline-input')?.value) || 0;
+                    const dcVal = Number(row.querySelector('.date-change-inline-input')?.value) || 0;
+                    totalCell.textContent = (netVal + extraVal + dcVal).toLocaleString();
                 });
 
                 input.addEventListener('blur', function() {

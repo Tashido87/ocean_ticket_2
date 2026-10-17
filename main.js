@@ -11,7 +11,7 @@ import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange
 import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta, formatDateForSheet } from './utils.js';
 
 // Feature Modules
-import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets } from './tickets.js';
+import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets, initRecordsColumnVisibility, applyRecordsColumnVisibility } from './tickets.js';
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import {  } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
@@ -832,12 +832,14 @@ function setupEventListeners() {
     });
     syncGroupToggleState();
 
-    // Reports
+    // Reports & Column Visibility
+    initRecordsColumnVisibility();
     const editModeBtn = document.getElementById('editModeBtn');
     if (editModeBtn) {
         editModeBtn.addEventListener('click', () => {
             state.recordsEditMode = !state.recordsEditMode;
             editModeBtn.classList.toggle('active', state.recordsEditMode);
+            applyRecordsColumnVisibility();
             displayTickets(state.filteredTickets, state.currentPage);
         });
     }

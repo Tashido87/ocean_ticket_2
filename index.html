@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Ocean Travel">
-    <link rel="stylesheet" href="app-styles.min.css?v=1bbab3ef">
+    <link rel="stylesheet" href="app-styles.min.css?v=5184c533">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -264,6 +264,57 @@
                                     <i class="fa-solid fa-file-pen"></i>
                                     <span class="desktop-only">Edit Mode</span>
                                 </button>
+                                <div class="dropdown columns-dropdown" id="recordsColumnsDropdown">
+                                    <button type="button" class="btn btn-secondary dropdown-toggle" id="recordsColumnsDropdownBtn" aria-haspopup="true" aria-expanded="false" title="Customize Visible Columns">
+                                        <i class="fa-solid fa-table-columns"></i>
+                                        <span class="desktop-only">Columns</span>
+                                        <span class="records-col-count-badge" id="recordsColCountBadge" style="display: none;"></span>
+                                        <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+                                    </button>
+                                    <div class="dropdown-menu columns-dropdown-menu" id="recordsColumnsDropdownMenu">
+                                        <div class="columns-dropdown-header">
+                                            <span class="columns-dropdown-title">Visible Columns</span>
+                                            <div class="columns-preset-btns">
+                                                <button type="button" class="columns-preset-btn" id="recordsColsCompactBtn" title="Compact view for smaller laptop screens">Compact</button>
+                                                <button type="button" class="columns-preset-btn" id="recordsColsAllBtn" title="Show all columns">All</button>
+                                            </div>
+                                        </div>
+                                        <div class="columns-pinned-note">
+                                            <i class="fa-solid fa-thumbtack"></i>
+                                            <span>Always shown: <strong>Passenger, PNR, Total, Status, Actions</strong></span>
+                                        </div>
+                                        <div class="columns-toggle-list" id="recordsColumnsToggleList">
+                                            <label class="column-toggle-item">
+                                                <input type="checkbox" data-col-toggle="issued_date" checked>
+                                                <span>Issued Date</span>
+                                            </label>
+                                            <label class="column-toggle-item">
+                                                <input type="checkbox" data-col-toggle="route" checked>
+                                                <span>Route</span>
+                                            </label>
+                                            <label class="column-toggle-item">
+                                                <input type="checkbox" data-col-toggle="airline" checked>
+                                                <span>Airline</span>
+                                            </label>
+                                            <label class="column-toggle-item">
+                                                <input type="checkbox" data-col-toggle="net_amount" checked>
+                                                <span>Net Amount</span>
+                                            </label>
+                                            <label class="column-toggle-item">
+                                                <input type="checkbox" data-col-toggle="commission" checked>
+                                                <span>Commission</span>
+                                            </label>
+                                            <label class="column-toggle-item">
+                                                <input type="checkbox" data-col-toggle="extra_fare" checked>
+                                                <span>Extra Fare</span>
+                                            </label>
+                                            <label class="column-toggle-item">
+                                                <input type="checkbox" data-col-toggle="date_change" checked>
+                                                <span>Date Change</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="dropdown export-dropdown" id="recordsExportDropdown">
                                     <button type="button" class="btn btn-primary dropdown-toggle" id="recordsExportDropdownBtn" aria-haspopup="true" aria-expanded="false">
                                         <i class="fa-solid fa-arrow-up-from-bracket"></i>
@@ -1913,7 +1964,7 @@
     "./hotel.js": "./hotel.js?v=2f4fea86",
     "./invoice-selection.mjs": "./invoice-selection.mjs?v=2d426669",
     "./invoice.js": "./invoice.js?v=8c3cc9bd",
-    "./main.js": "./main.js?v=06584e75",
+    "./main.js": "./main.js?v=5c270bf7",
     "./manage.js": "./manage.js?v=1e9c9c23",
     "./passport-ocr.js": "./passport-ocr.js?v=456777f7",
     "./passport-parser.mjs": "./passport-parser.mjs?v=d0633dfa",
@@ -1922,12 +1973,12 @@
     "./search.js": "./search.js?v=f1f245da",
     "./settlement.js": "./settlement.js?v=5ea3d0fb",
     "./state.js": "./state.js?v=8eca2a3d",
-    "./tickets.js": "./tickets.js?v=1d5b35e3",
+    "./tickets.js": "./tickets.js?v=e9bbd407",
     "./ui.js": "./ui.js?v=7f6cfdf0",
     "./utils.js": "./utils.js?v=e25602cc"
   }
 }
     </script>
-    <script src="main.js?v=06584e75" type="module"></script>
+    <script src="main.js?v=5c270bf7" type="module"></script>
 </body>
 </html>
