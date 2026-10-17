@@ -899,3 +899,181 @@ body.dark-theme .pnr-detail-dialog .pax-row-premium {
         align-items: flex-start;
     }
 }
+
+/* 1-Click Copy Customer Message Bar (PNR Detail Modal & Booking Details Modal) */
+.pnr-customer-msg-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: #F0FAFB;
+    border: 1px solid rgba(13, 110, 119, 0.22);
+}
+
+.pnr-customer-msg-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pnr-customer-msg-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #094F56;
+    letter-spacing: 0.01em;
+}
+
+.pnr-customer-msg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.pnr-customer-msg-badge.intl {
+    background: rgba(13, 110, 119, 0.14);
+    color: #094F56;
+    border: 1px solid rgba(13, 110, 119, 0.28);
+}
+
+.pnr-customer-msg-badge.dom {
+    background: rgba(16, 185, 129, 0.14);
+    color: #065F46;
+    border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.pnr-customer-msg-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pnr-msg-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 11px;
+    border-radius: 8px;
+    border: 1px solid rgba(13, 110, 119, 0.28);
+    background: #FFFFFF;
+    color: #0D6E77;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+}
+
+.pnr-msg-copy-btn:hover {
+    background: rgba(13, 110, 119, 0.08);
+    border-color: #0D6E77;
+    transform: translateY(-1px);
+}
+
+.pnr-msg-copy-btn.primary {
+    background: #0D6E77;
+    border-color: #0D6E77;
+    color: #FFFFFF;
+    box-shadow: 0 2px 6px rgba(13, 110, 119, 0.22);
+}
+
+.pnr-msg-copy-btn.primary:hover {
+    background: #094F56;
+    border-color: #094F56;
+    color: #FFFFFF;
+}
+
+.pnr-msg-copy-btn.icon-only {
+    width: 32px;
+    padding: 0;
+}
+
+.pnr-customer-msg-preview {
+    margin-bottom: 12px;
+}
+
+.pnr-customer-msg-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #CBD5E1;
+    background: #FFFFFF;
+    color: #0F172A;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.booking-action-btn.copy-msg {
+    background: rgba(13, 110, 119, 0.1);
+    border-color: rgba(13, 110, 119, 0.25);
+    color: #094F56;
+}
+
+.booking-action-btn.copy-msg:hover:not(:disabled) {
+    background: #0D6E77;
+    border-color: #0D6E77;
+    color: #FFFFFF;
+}
+
+body.dark-theme .pnr-customer-msg-bar,
+body.material-theme.dark-theme .pnr-customer-msg-bar {
+    background: rgba(13, 110, 119, 0.16);
+    border-color: rgba(45, 212, 191, 0.28);
+}
+
+body.dark-theme .pnr-customer-msg-title,
+body.material-theme.dark-theme .pnr-customer-msg-title {
+    color: #5EEAD4;
+}
+
+body.dark-theme .pnr-customer-msg-badge.intl,
+body.material-theme.dark-theme .pnr-customer-msg-badge.intl {
+    background: rgba(45, 212, 191, 0.18);
+    color: #99F6E4;
+    border-color: rgba(45, 212, 191, 0.32);
+}
+
+body.dark-theme .pnr-customer-msg-badge.dom,
+body.material-theme.dark-theme .pnr-customer-msg-badge.dom {
+    background: rgba(52, 211, 153, 0.18);
+    color: #A7F3D0;
+    border-color: rgba(52, 211, 153, 0.32);
+}
+
+body.dark-theme .pnr-msg-copy-btn:not(.primary),
+body.material-theme.dark-theme .pnr-msg-copy-btn:not(.primary) {
+    background: #0F172A;
+    border-color: #334155;
+    color: #5EEAD4;
+}
+
+body.dark-theme .pnr-customer-msg-textarea,
+body.material-theme.dark-theme .pnr-customer-msg-textarea {
+    background: #0F172A;
+    border-color: #334155;
+    color: #F8FAFC;
+}
+
+body.dark-theme .booking-action-btn.copy-msg,
+body.material-theme.dark-theme .booking-action-btn.copy-msg {
+    background: rgba(45, 212, 191, 0.15);
+    border-color: rgba(45, 212, 191, 0.3);
+    color: #5EEAD4;
+}
+

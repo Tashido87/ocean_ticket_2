@@ -906,3 +906,219 @@ export function parseDateInput(value) {
     return null;
 }
 
+const MYANMAR_DOMESTIC_AIRPORT_CODES = new Set([
+    'BMO', 'VBP', 'TVY', 'HEH', 'HOX', 'KMV', 'KAW', 'KET', 'KHM', 'KYP',
+    'LSH', 'LIW', 'MDL', 'MNU', 'NYW', 'MGZ', 'MYT', 'NYT', 'NYU', 'PBU',
+    'AKY', 'THL', 'SNW', 'RGN', 'VBA', 'VBK', 'BSX', 'VCC', 'MGU', 'MOG', 'SRU'
+]);
+
+const MYANMAR_DOMESTIC_CITY_NAMES = [
+    'bhamo', 'bokpyin', 'dawei', 'heho', 'hommalinn', 'kalemyo', 'kawthaung',
+    'kengtung', 'khamti', 'kyaukpyu', 'lashio', 'loikaw', 'mandalay', 'mawlamyaing',
+    'monywa', 'myeik', 'myitkyina', 'nay pyi taw', 'naypyitaw', 'nyaung u', 'bagan',
+    'putao', 'sittwe', 'tachilek', 'thandwe', 'yangon', 'ann', 'anni sakhan',
+    'bassein', 'pathein', 'coco islands', 'manaung', 'monghsat', 'surbung'
+];
+
+function isMyanmarDomesticPlace(place) {
+    if (!place) return false;
+    const raw = String(place).trim();
+    if (!raw) return false;
+    const codeMatch = raw.match(/\(([A-Z]{3})\)/i) || raw.match(/^([A-Z]{3})$/i);
+    if (codeMatch && MYANMAR_DOMESTIC_AIRPORT_CODES.has(codeMatch[1].toUpperCase())) {
+        return true;
+    }
+    const lower = raw.toLowerCase();
+    return MYANMAR_DOMESTIC_CITY_NAMES.some(city => lower.includes(city));
+}
+
+/**
+ * Determines whether a flight route is International (3 hours check-in) or Domestic (2 hours check-in).
+ * @param {string} departure
+ * @param {string} destination
+ * @param {Array<{departure?: string, destination?: string}>} [legs]
+ * @returns {boolean} true if International, false if Domestic
+ */
+export function isInternationalFlightRoute(departure, destination, legs = []) {
+    if (Array.isArray(legs) && legs.length > 0) {
+        return legs.some(leg => !isMyanmarDomesticPlace(leg.departure) || !isMyanmarDomesticPlace(leg.destination));
+    }
+    if (!departure && !destination) return false;
+    return !isMyanmarDomesticPlace(departure) || !isMyanmarDomesticPlace(destination);
+}
+
+/**
+ * Formats a date string into DD-MMM-YYYY (e.g., 17-Oct-2026) for customer messages.
+ * @param {string|Date} value
+ * @returns {string}
+ */
+export function formatMessageDateReadable(value) {
+    if (!value) return 'N/A';
+    const d = parseDateInput(value);
+    if (!d || isNaN(d.getTime())) return String(value).trim() || 'N/A';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`;
+}
+
+/**
+ * Builds a ready-to-send Customer Message in Burmese ('mm') or English ('en')
+ * for either a Booking Hold ('booking') or an Issued Ticket ('ticket').
+ */
+export function buildCustomerMessage({
+    mode = 'ticket',
+    lang = 'mm',
+    pnr = '',
+    airline = '',
+    departure = '',
+    destination = '',
+    routeText = '',
+    legs = [],
+    travelDate = '',
+    deadlineText = '',
+    passengers = []
+} = {}) {
+    const cleanPnr = String(pnr || '').trim() || 'N/A';
+    const depClean = String(departure || '').trim();
+    const destClean = String(destination || '').trim();
+    const computedRoute = routeText
+        ? String(routeText).trim()
+        : (depClean || destClean ? `${depClean || 'N/A'} → ${destClean || 'N/A'}` : 'N/A');
+    const readableTravelDate = travelDate
+        ? (travelDate.includes('/') && !travelDate.includes(' ') ? formatMessageDateReadable(travelDate) : String(travelDate).trim())
+        : 'N/A';
+    const isIntl = isInternationalFlightRoute(depClean, destClean, legs);
+    const paxLines = Array.isArray(passengers) && passengers.length > 0
+        ? passengers.map((p, idx) => {
+            const name = typeof p === 'string' ? p : String(p?.name || 'Passenger').trim();
+            const extra = typeof p === 'object' && p?.extra ? ` (${p.extra})` : '';
+            const prefix = passengers.length > 1 ? `  ${idx + 1}. ` : '  • ';
+            return `${prefix}${name}${extra}`;
+        }).join('\n')
+        : '  • -';
+
+    if (mode === 'booking') {
+        const dl = String(deadlineText || '').trim() || 'N/A';
+        if (lang === 'en') {
+            return [
+                `Hello & Warm Greetings 🙏`,
+                `Your booking for PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) has been placed on hold.`,
+                ``,
+                `✈️ Booking Summary`,
+                `• Booking Ref (PNR): ${cleanPnr}`,
+                airline ? `• Airline: ${airline}` : null,
+                `• Route: ${computedRoute}`,
+                `• Travel Date: ${readableTravelDate}`,
+                `• Passenger(s):\n${paxLines}`,
+                `• Booking Deadline: ${dl}`,
+                ``,
+                `⏰ Kindly Note — The booking deadline is ${dl}. Please confirm and complete ticket issuance before the deadline to avoid automatic cancellation.`,
+                ``,
+                `Thank you for choosing Ocean Air Ticket! 💙`
+            ].filter(line => line !== null).join('\n');
+        }
+
+        return [
+            `မင်္ဂလာပါခင်ဗျာ 🙏`,
+            `PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) အတွက် booking တင်ပြီးပါပြီခင်ဗျာ။`,
+            ``,
+            `✈️ Booking အချက်အလက်များ`,
+            `• Booking Ref (PNR): ${cleanPnr}`,
+            airline ? `• လေကြောင်းလိုင်း (Airline): ${airline}` : null,
+            `• ခရီးစဉ် (Route): ${computedRoute}`,
+            `• ခရီးသွားမည့်ရက် (Travel Date): ${readableTravelDate}`,
+            `• ခရီးသည် (Passengers):\n${paxLines}`,
+            `• Booking Deadline: ${dl}`,
+            ``,
+            `⏰ သတိပြုရန် — Booking deadline မှာ ${dl} ဖြစ်ပါသဖြင့် သတ်မှတ်ချိန်မတိုင်မီ လက်မှတ်အပြီးသတ်ဖြတ်ရန် အတည်ပြုပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်ခင်ဗျာ။ (သတ်မှတ်ချိန်ကျော်လွန်ပါက Booking အလိုအလျောက် ပျက်ပြယ်သွားပါမည်။)`,
+            ``,
+            `Ocean Air Ticket ကို ရွေးချယ်အားပေးမှုအတွက် အထူးကျေးဇူးတင်ရှိပါသည်ခင်ဗျာ။ 💙`
+        ].filter(line => line !== null).join('\n');
+    }
+
+    // mode === 'ticket' (Issued Ticket)
+    if (lang === 'en') {
+        const checkinLineEn = isIntl
+            ? `• International Flight: Please arrive at the airport check-in counter at least 3 hours before departure (3 hours before departure on international).`
+            : `• Domestic Flight: Please arrive at the airport check-in counter at least 2 hours before departure (2 hours before departure on domestic).`;
+        const docLineEn = isIntl
+            ? `• Please bring your original valid Passport (at least 6 months validity) and required travel documents.`
+            : `• Please bring your original NRC / valid ID or Passport for airport check-in.`;
+
+        return [
+            `Hello & Warm Greetings 🙏`,
+            `Your flight ticket for PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) has been successfully issued.`,
+            ``,
+            `🎫 Ticket Details`,
+            `• Booking Ref (PNR): ${cleanPnr}`,
+            airline ? `• Airline: ${airline}` : null,
+            `• Route: ${computedRoute}`,
+            `• Travel Date: ${readableTravelDate}`,
+            `• Passenger(s):\n${paxLines}`,
+            ``,
+            `🕒 Airport Check-in Reminder`,
+            checkinLineEn,
+            docLineEn,
+            ``,
+            `Wishing you a pleasant and safe journey! Thank you for choosing Ocean Air Ticket. 💙`
+        ].filter(line => line !== null).join('\n');
+    }
+
+    const checkinLineMm = isIntl
+        ? `• ပြည်ပခရီးစဉ် (International Flight) ဖြစ်ပါသဖြင့် ကွင်းချိန်းမှာ လေယာဉ်မထွက်ခွာမီ အနည်းဆုံး (၃) နာရီကြိုတင်၍ (3 hours before departure on international) လေဆိပ်သို့ အရောက်သွားပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်။`
+        : `• ပြည်တွင်းခရီးစဉ် (Domestic Flight) ဖြစ်ပါသဖြင့် ကွင်းချိန်းမှာ လေယာဉ်မထွက်ခွာမီ အနည်းဆုံး (၂) နာရီကြိုတင်၍ (2 hours before departure on domestic) လေဆိပ်သို့ အရောက်သွားပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်။`;
+    const docLineMm = isIntl
+        ? `• လေဆိပ်သို့သွားရာတွင် သက်တမ်း (၆) လအထက်ရှိသော Passport မူရင်းနှင့် လိုအပ်သော ခရီးသွားစာရွက်စာတမ်းများ တစ်ပါတည်း ယူဆောင်သွားပေးပါခင်ဗျာ။`
+        : `• လေဆိပ်သို့သွားရာတွင် မှတ်ပုံတင် (NRC မူရင်း) သို့မဟုတ် Passport မူရင်း တစ်ပါတည်း ယူဆောင်သွားပေးပါခင်ဗျာ။`;
+
+    return [
+        `မင်္ဂလာပါခင်ဗျာ 🙏`,
+        `PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) အတွက် လေယာဉ်လက်မှတ် ဖြတ်ပြီးပါပြီခင်ဗျာ။`,
+        ``,
+        `🎫 လက်မှတ် အချက်အလက်များ`,
+        `• Booking Ref (PNR): ${cleanPnr}`,
+        airline ? `• လေကြောင်းလိုင်း (Airline): ${airline}` : null,
+        `• ခရီးစဉ် (Route): ${computedRoute}`,
+        `• ခရီးသွားမည့်ရက် (Travel Date): ${readableTravelDate}`,
+        `• ခရီးသည် (Passengers):\n${paxLines}`,
+        ``,
+        `🕒 လေဆိပ်ကွင်းချိန်း သတိပေးချက် (Airport Check-in)`,
+        checkinLineMm,
+        docLineMm,
+        ``,
+        `သာယာဖြောင့်ဖြူးသော ခရီးစဉ်ဖြစ်ပါစေကြောင်း Ocean Air Ticket မှ ဆုမွန်ကောင်းတောင်းအပ်ပါသည်ခင်ဗျာ။ 💙`
+    ].filter(line => line !== null).join('\n');
+}
+
+/**
+ * Copies text to clipboard with fallback and returns a boolean indicating success.
+ * @param {string} text
+ * @returns {Promise<boolean>}
+ */
+export async function copyCustomerMessageToClipboard(text) {
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch (_) {
+        // Fall through to textarea fallback
+    }
+    try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+

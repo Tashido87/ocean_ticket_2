@@ -21,7 +21,10 @@ import {
     formatDateForSheet,
     escapeHtml,
     renderPhoneticExpansionHtml,
-    wirePhoneticToggle
+    wirePhoneticToggle,
+    buildCustomerMessage,
+    copyCustomerMessageToClipboard,
+    isInternationalFlightRoute
 } from './utils.js';
 import {
     openModal,
@@ -518,6 +521,7 @@ export function renderBookingPage(page) {
                     <button class="booking-action-btn primary" title="Issue / Sell Ticket" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-ticket"></i> Sell</button>
                     <button class="booking-action-btn success" title="Mark as Issued" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-check"></i> Complete</button>
                     <button class="booking-action-btn" title="Modify Deadline" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-clock-rotate-left"></i> Deadline</button>
+                    <button class="booking-action-btn copy-msg" title="1-Click Copy Customer Message (Click: Myanmar / Shift+Click: English)"><i class="fa-regular fa-comment-dots"></i> Copy Msg</button>
                     <button class="booking-action-btn danger" title="Cancel Booking" ${isActive ? '' : 'disabled'}><i class="fa-solid fa-ban"></i></button>
                 </div>
             </td>
@@ -525,6 +529,26 @@ export function renderBookingPage(page) {
         row.querySelector('[title="Issue / Sell Ticket"]').addEventListener('click', () => sellTicketFromBooking(docIdsStr));
         row.querySelector('[title="Mark as Issued"]').addEventListener('click', () => handleGetTicket(docIdsStr));
         row.querySelector('[title="Modify Deadline"]').addEventListener('click', () => openExtendDeadlineModal(docIdsStr));
+        const copyMsgBtn = row.querySelector('.booking-action-btn.copy-msg');
+        if (copyMsgBtn) {
+            copyMsgBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const lang = (e.shiftKey || e.altKey) ? 'en' : 'mm';
+                const msg = buildBookingGroupCustomerMessage(group, lang);
+                const ok = await copyCustomerMessageToClipboard(msg);
+                if (ok) {
+                    showToast(
+                        lang === 'en'
+                            ? 'Customer message (English) copied!'
+                            : 'Customer ဆီပို့ရန် မြန်မာစာသား ကူးယူပြီးပါပြီ! (Shift+Click for EN)',
+                        'success'
+                    );
+                    const orig = copyMsgBtn.innerHTML;
+                    copyMsgBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+                    setTimeout(() => { copyMsgBtn.innerHTML = orig; }, 1600);
+                }
+            });
+        }
         row.querySelector('[title="Cancel Booking"]').addEventListener('click', () => handleCancelBooking(docIdsStr));
         const pnrLink = row.querySelector('.booking-pnr-link');
         if (pnrLink) {
@@ -802,21 +826,35 @@ function getBookingDeadlineDisplay(bookingGroup) {
     return 'N/A';
 }
 
+function buildBookingGroupCustomerMessage(bookingGroup, lang = 'mm', overrideMode = '') {
+    if (!bookingGroup) return '';
+    const routeText = getBookingRouteDisplay(bookingGroup);
+    const travelDateText = getBookingTravelDateDisplay(bookingGroup);
+    const deadlineText = getBookingDeadlineDisplay(bookingGroup);
+    const mode = overrideMode || (bookingGroup.status === 'issued' ? 'ticket' : 'booking');
+    const passengers = (bookingGroup.passengers || []).map(p => {
+        const passport = getPassengerPassport(p);
+        return {
+            name: p.name || 'Passenger',
+            extra: passport || ''
+        };
+    });
+    return buildCustomerMessage({
+        mode,
+        lang,
+        pnr: bookingGroup.pnr || 'N/A',
+        departure: bookingGroup.departure || '',
+        destination: bookingGroup.destination || '',
+        routeText,
+        legs: bookingGroup.legs || [],
+        travelDate: travelDateText,
+        deadlineText,
+        passengers
+    });
+}
+
 async function copyBookingDetailsToClipboard(text) {
-    if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        return;
-    }
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    document.execCommand('copy');
-    textArea.remove();
+    return copyCustomerMessageToClipboard(text);
 }
 
 /**
@@ -843,12 +881,15 @@ export function showBookingDetails(docIdsStr) {
         const routeText = getBookingRouteDisplay(bookingGroup);
         const travelDateText = getBookingTravelDateDisplay(bookingGroup);
         const deadlineText = getBookingDeadlineDisplay(bookingGroup);
+        const isIntl = isInternationalFlightRoute(bookingGroup.departure, bookingGroup.destination, bookingGroup.legs || []);
+        const defaultMsgMm = buildBookingGroupCustomerMessage(bookingGroup, 'mm');
+        const defaultMsgEn = buildBookingGroupCustomerMessage(bookingGroup, 'en');
 
         const content = `
             <h3>Booking Request Details</h3>
             <div style="margin-bottom: 0.75rem;">
                 <div class="pnr-value-row">
-                    <span><strong>PNR Code:</strong> <span style="font-family: monospace; font-weight: 700; font-size: 1.15rem; color: var(--primary, #DC2626);">${escapeHtml(bookingGroup.pnr || 'N/A')}</span></span>
+                    <span><strong>PNR Code:</strong> <span style="font-family: monospace; font-weight: 700; font-size: 1.15rem; color: var(--primary, #0D6E77);">${escapeHtml(bookingGroup.pnr || 'N/A')}</span></span>
                     ${bookingGroup.pnr ? `
                         <button type="button" class="pnr-phonetic-btn" id="bookingPnrPhoneticToggle" title="Spell PNR phonetically" aria-expanded="false" aria-label="Spell PNR phonetically">
                             <i class="fa-solid fa-spell-check"></i>
@@ -863,21 +904,46 @@ export function showBookingDetails(docIdsStr) {
                 <ul style="list-style: none; padding-left: 0; margin-bottom: 0;">${passengerListHtml}</ul>
             </div>
 
-            <hr style="border-color: rgba(255,255,255,0.2); margin: 0.85rem 0;">
+            <hr style="border-color: rgba(148,163,184,0.22); margin: 0.85rem 0;">
 
             <p><strong>Route:</strong> ${escapeHtml(routeText)}</p>
             <p><strong>Travel Date:</strong> ${escapeHtml(travelDateText)}</p>
             <p><strong>Booking Deadline:</strong> ${escapeHtml(deadlineText)}</p>
 
-            <hr style="border-color: rgba(255,255,255,0.2); margin: 0.85rem 0;">
+            <hr style="border-color: rgba(148,163,184,0.22); margin: 0.85rem 0;">
 
             <p><strong>Account Name:</strong> ${escapeHtml(bookingGroup.account_name || 'N/A')}</p>
             <p><strong>Account Type:</strong> ${escapeHtml(bookingGroup.account_type || 'N/A')}</p>
             <p><strong>Account Link:</strong> ${makeClickable(bookingGroup.account_link) || 'N/A'}</p>
             <p><strong>Phone:</strong> ${makeClickable(bookingGroup.phone) || 'N/A'}</p>
 
-            <div class="form-actions" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
-                <button type="button" class="btn btn-primary" id="modalCopyBookingBtn"><i class="fa-solid fa-copy"></i> Copy</button>
+            <!-- 1-Click Copy Customer Message Bar -->
+            <div class="pnr-customer-msg-bar" style="margin-top: 1rem;">
+                <div class="pnr-customer-msg-info">
+                    <span class="pnr-customer-msg-title"><i class="fa-regular fa-comment-dots"></i> Customer Message</span>
+                    <span class="pnr-customer-msg-badge ${isIntl ? 'intl' : 'dom'}">
+                        <i class="fa-solid ${isIntl ? 'fa-earth-asia' : 'fa-plane-up'}"></i>
+                        ${bookingGroup.status === 'issued' ? (isIntl ? 'Ticket Issued • 3h Check-in' : 'Ticket Issued • 2h Check-in') : 'Booking Hold + Deadline'}
+                    </span>
+                </div>
+                <div class="pnr-customer-msg-actions">
+                    <button type="button" class="pnr-msg-copy-btn primary" id="bookingCopyMsgMmBtn" title="1-Click Copy Myanmar Message for Customer">
+                        <i class="fa-solid fa-copy"></i> Copy Message (MM)
+                    </button>
+                    <button type="button" class="pnr-msg-copy-btn" id="bookingCopyMsgEnBtn" title="1-Click Copy English Message for Customer">
+                        <i class="fa-regular fa-copy"></i> Copy (EN)
+                    </button>
+                    <button type="button" class="pnr-msg-copy-btn icon-only" id="bookingToggleMsgPreviewBtn" title="Preview / Customize Customer Message" aria-expanded="false">
+                        <i class="fa-regular fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="pnr-customer-msg-preview" id="bookingCustomerMsgPreviewWrap" hidden>
+                <textarea id="bookingCustomerMsgTextarea" rows="7" class="pnr-customer-msg-textarea">${escapeHtml(defaultMsgMm)}</textarea>
+            </div>
+
+            <div class="form-actions" style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary" id="modalCopyBookingBtn"><i class="fa-regular fa-clipboard"></i> Copy Raw Info</button>
                 <button type="button" class="btn btn-secondary" id="modalCloseBtn">Close</button>
             </div>
         `;
@@ -886,6 +952,42 @@ export function showBookingDetails(docIdsStr) {
             wirePhoneticToggle('bookingPnrPhoneticToggle', 'bookingPnrPhoneticPanel');
         }
         document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+
+        let activeBookingMsgLang = 'mm';
+        const previewWrap = document.getElementById('bookingCustomerMsgPreviewWrap');
+        const previewTextarea = document.getElementById('bookingCustomerMsgTextarea');
+        const copyMsgMmBtn = document.getElementById('bookingCopyMsgMmBtn');
+        const copyMsgEnBtn = document.getElementById('bookingCopyMsgEnBtn');
+        const togglePreviewBtn = document.getElementById('bookingToggleMsgPreviewBtn');
+
+        const handleCopyBookingCustomerMsg = async (lang, btnEl) => {
+            const defaultText = lang === 'en' ? defaultMsgEn : defaultMsgMm;
+            const textToCopy = (previewWrap && !previewWrap.hidden && previewTextarea && activeBookingMsgLang === lang)
+                ? previewTextarea.value
+                : defaultText;
+            if (previewTextarea && activeBookingMsgLang !== lang) {
+                previewTextarea.value = defaultText;
+            }
+            activeBookingMsgLang = lang;
+            const ok = await copyCustomerMessageToClipboard(textToCopy);
+            if (ok) {
+                showToast(lang === 'en' ? 'Customer message (English) copied!' : 'Customer ဆီပို့ရန် မြန်မာစာသား ကူးယူပြီးပါပြီ!', 'success');
+                if (btnEl) {
+                    const origHtml = btnEl.innerHTML;
+                    btnEl.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    setTimeout(() => { btnEl.innerHTML = origHtml; }, 1800);
+                }
+            }
+        };
+
+        copyMsgMmBtn?.addEventListener('click', () => handleCopyBookingCustomerMsg('mm', copyMsgMmBtn));
+        copyMsgEnBtn?.addEventListener('click', () => handleCopyBookingCustomerMsg('en', copyMsgEnBtn));
+        togglePreviewBtn?.addEventListener('click', () => {
+            if (!previewWrap) return;
+            const nextHidden = !previewWrap.hidden;
+            previewWrap.hidden = nextHidden;
+            togglePreviewBtn.setAttribute('aria-expanded', String(!nextHidden));
+        });
 
         const copyBtn = document.getElementById('modalCopyBookingBtn');
         if (copyBtn) {
@@ -917,7 +1019,7 @@ Booking Deadline: ${deadlineText}`;
                     copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
                     setTimeout(() => {
                         const btn = document.getElementById('modalCopyBookingBtn');
-                        if (btn) btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy';
+                        if (btn) btn.innerHTML = '<i class="fa-regular fa-clipboard"></i> Copy Raw Info';
                     }, 1500);
                 } catch (err) {
                     console.error('Failed to copy: ', err);

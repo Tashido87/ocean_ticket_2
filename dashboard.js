@@ -21,11 +21,15 @@ import {
     wirePhoneticToggle,
     formatSafeAccountLink,
     getSocialPlatformMeta,
-    formatDateForSheet
+    formatDateForSheet,
+    buildCustomerMessage,
+    copyCustomerMessageToClipboard,
+    isInternationalFlightRoute
 } from "./utils.js";
 import { updateUnpaidCount, displayTickets } from "./tickets.js";
 import { getSettlementSummary } from "./settlement.js";
 import { loadFeaturedClients, getExpiringPassportClients, viewClientHistory } from "./clients.js";
+import { findTicketForManage } from "./manage.js";
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from "./invoice.js";
 import { selectPassengerTickets } from "./invoice-selection.mjs";
 import {
@@ -886,6 +890,32 @@ function getFeeRowDateChangeText(t, allRows = []) {
         paymentStatusHtml = `<span class="pnr-status-badge pnr-status-payment-unpaid" title="Payment status: Unpaid"><i class="fa-solid fa-circle-exclamation"></i> Unpaid</span>`;
     }
 
+    const isIntlFlight = isInternationalFlightRoute(lead.departure, lead.destination);
+    const msgPassengers = uniquePassengers.map(p => ({
+        name: p.name || 'Passenger',
+        extra: p.ticketNumber && p.ticketNumber !== 'Issued' ? `Ticket: ${p.ticketNumber}` : ''
+    }));
+    const customerMsgMm = buildCustomerMessage({
+        mode: 'ticket',
+        lang: 'mm',
+        pnr: searchPnr,
+        airline: lead.airline || '',
+        departure: lead.departure || '',
+        destination: lead.destination || '',
+        travelDate: lead.departing_on || '',
+        passengers: msgPassengers
+    });
+    const customerMsgEn = buildCustomerMessage({
+        mode: 'ticket',
+        lang: 'en',
+        pnr: searchPnr,
+        airline: lead.airline || '',
+        departure: lead.departure || '',
+        destination: lead.destination || '',
+        travelDate: lead.departing_on || '',
+        passengers: msgPassengers
+    });
+
     const content = `
         <div class="trip-detail-modal-container">
             <!-- Toolbar -->
@@ -1011,7 +1041,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
                 </div>
             </div>
 
-            <!-- 4. Bottom Section: Total, Received, Outstanding & Primary Actions -->
+            <!-- 4. Bottom Section: Total, Received, Outstanding, 1-Click Customer Message & Primary Actions -->
             <div class="pnr-modal-bottom-card">
                 <div class="pnr-settlement-row">
                     <div class="pnr-settlement-cell">
@@ -1028,6 +1058,31 @@ function getFeeRowDateChangeText(t, allRows = []) {
                             ${formatDashboardAmount(totalUnpaid)} <span class="pnr-settlement-curr">MMK</span>
                         </strong>
                     </div>
+                </div>
+
+                <!-- 1-Click Copy Customer Message Bar -->
+                <div class="pnr-customer-msg-bar">
+                    <div class="pnr-customer-msg-info">
+                        <span class="pnr-customer-msg-title"><i class="fa-regular fa-comment-dots"></i> Customer Message</span>
+                        <span class="pnr-customer-msg-badge ${isIntlFlight ? 'intl' : 'dom'}">
+                            <i class="fa-solid ${isIntlFlight ? 'fa-earth-asia' : 'fa-plane-up'}"></i>
+                            ${isIntlFlight ? 'International • 3h Check-in' : 'Domestic • 2h Check-in'}
+                        </span>
+                    </div>
+                    <div class="pnr-customer-msg-actions">
+                        <button type="button" class="pnr-msg-copy-btn primary" id="tripCopyMsgMmBtn" title="1-Click Copy Myanmar Message for Customer">
+                            <i class="fa-solid fa-copy"></i> Copy Message (MM)
+                        </button>
+                        <button type="button" class="pnr-msg-copy-btn" id="tripCopyMsgEnBtn" title="1-Click Copy English Message for Customer">
+                            <i class="fa-regular fa-copy"></i> Copy (EN)
+                        </button>
+                        <button type="button" class="pnr-msg-copy-btn icon-only" id="tripToggleMsgPreviewBtn" title="Preview / Customize Customer Message" aria-expanded="false">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="pnr-customer-msg-preview" id="tripCustomerMsgPreviewWrap" hidden>
+                    <textarea id="tripCustomerMsgTextarea" rows="7" class="pnr-customer-msg-textarea">${dashboardEscapeHtml(customerMsgMm)}</textarea>
                 </div>
 
                 <div class="pnr-modal-footer-actions">
@@ -1051,6 +1106,42 @@ function getFeeRowDateChangeText(t, allRows = []) {
 
     openModal(content, modalDialogClass);
     wirePhoneticToggle('tripPnrPhoneticToggle', 'tripPnrPhoneticPanel');
+
+    let activeMsgLang = 'mm';
+    const previewWrap = document.getElementById('tripCustomerMsgPreviewWrap');
+    const previewTextarea = document.getElementById('tripCustomerMsgTextarea');
+    const copyMsgMmBtn = document.getElementById('tripCopyMsgMmBtn');
+    const copyMsgEnBtn = document.getElementById('tripCopyMsgEnBtn');
+    const togglePreviewBtn = document.getElementById('tripToggleMsgPreviewBtn');
+
+    const handleCopyCustomerMsg = async (lang, btnEl) => {
+        const defaultText = lang === 'en' ? customerMsgEn : customerMsgMm;
+        const textToCopy = (previewWrap && !previewWrap.hidden && previewTextarea && activeMsgLang === lang)
+            ? previewTextarea.value
+            : defaultText;
+        if (previewTextarea && activeMsgLang !== lang) {
+            previewTextarea.value = defaultText;
+        }
+        activeMsgLang = lang;
+        const ok = await copyCustomerMessageToClipboard(textToCopy);
+        if (ok) {
+            showToast(lang === 'en' ? 'Customer message (English) copied!' : 'Customer ဆီပို့ရန် မြန်မာစာသား ကူးယူပြီးပါပြီ!', 'success');
+            if (btnEl) {
+                const origHtml = btnEl.innerHTML;
+                btnEl.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                setTimeout(() => { btnEl.innerHTML = origHtml; }, 1800);
+            }
+        }
+    };
+
+    copyMsgMmBtn?.addEventListener('click', () => handleCopyCustomerMsg('mm', copyMsgMmBtn));
+    copyMsgEnBtn?.addEventListener('click', () => handleCopyCustomerMsg('en', copyMsgEnBtn));
+    togglePreviewBtn?.addEventListener('click', () => {
+        if (!previewWrap) return;
+        const nextHidden = !previewWrap.hidden;
+        previewWrap.hidden = nextHidden;
+        togglePreviewBtn.setAttribute('aria-expanded', String(!nextHidden));
+    });
 
     const handleCopyPnr = async () => {
         try {
