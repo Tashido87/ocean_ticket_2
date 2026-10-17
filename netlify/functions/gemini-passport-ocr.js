@@ -1,9 +1,163 @@
+const crypto = require('node:crypto');
 const { GoogleGenAI } = require('@google/genai');
+
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'ocean-ticket-bf235';
+const GOOGLE_CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+const MAX_BASE64_LENGTH = 8 * 1024 * 1024; // 8 MB max base64 payload
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+
+let cachedCerts = null;
+let cachedCertsExpiresAt = 0;
+const rateLimitBuckets = new Map();
+
+async function getFirebasePublicCerts() {
+  const now = Date.now();
+  if (cachedCerts && now < cachedCertsExpiresAt) {
+    return cachedCerts;
+  }
+  const res = await fetch(GOOGLE_CERTS_URL);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch Firebase public certs (${res.status})`);
+  }
+  const cacheControl = res.headers.get('cache-control') || '';
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+  const ttlMs = maxAgeMatch ? Number(maxAgeMatch[1]) * 1000 : 3600 * 1000;
+  cachedCerts = await res.json();
+  cachedCertsExpiresAt = now + ttlMs;
+  return cachedCerts;
+}
+
+function decodeBase64UrlJson(segment) {
+  const jsonStr = Buffer.from(segment, 'base64url').toString('utf8');
+  return JSON.parse(jsonStr);
+}
+
+async function verifyFirebaseIdToken(idToken) {
+  if (!idToken || typeof idToken !== 'string') {
+    throw new Error('Missing Firebase ID token');
+  }
+  const parts = idToken.split('.');
+  if (parts.length !== 3) {
+    throw new Error('Malformed Firebase ID token');
+  }
+
+  const [rawHeader, rawPayload, rawSignature] = parts;
+  const header = decodeBase64UrlJson(rawHeader);
+  const payload = decodeBase64UrlJson(rawPayload);
+
+  if (header.alg !== 'RS256' || !header.kid) {
+    throw new Error('Invalid token algorithm or key ID');
+  }
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const expectedIssuer = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
+  if (payload.aud !== FIREBASE_PROJECT_ID) {
+    throw new Error('Invalid token audience');
+  }
+  if (payload.iss !== expectedIssuer) {
+    throw new Error('Invalid token issuer');
+  }
+  if (!payload.sub || typeof payload.sub !== 'string') {
+    throw new Error('Invalid token subject');
+  }
+  if (typeof payload.exp !== 'number' || payload.exp <= nowSec) {
+    throw new Error('Firebase ID token has expired');
+  }
+  if (typeof payload.iat !== 'number' || payload.iat > nowSec + 60) {
+    throw new Error('Invalid token issued-at time');
+  }
+
+  const certs = await getFirebasePublicCerts();
+  const cert = certs[header.kid];
+  if (!cert) {
+    throw new Error('Signing certificate not found for token');
+  }
+
+  const verifier = crypto.createVerify('RSA-SHA256');
+  verifier.update(`${rawHeader}.${rawPayload}`);
+  verifier.end();
+
+  const signatureValid = verifier.verify(cert, Buffer.from(rawSignature, 'base64url'));
+  if (!signatureValid) {
+    throw new Error('Invalid Firebase ID token signature');
+  }
+
+  return payload;
+}
+
+function isAllowedOrigin(headers = {}) {
+  const origin = String(headers.origin || headers.Origin || headers.referer || headers.Referer || '').trim();
+  if (!origin) return true; // Checked further by Firebase ID Token
+  try {
+    const url = new URL(origin);
+    const host = url.hostname.toLowerCase();
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host.endsWith('.netlify.app') ||
+      host.endsWith('.web.app') ||
+      host.endsWith('.firebaseapp.com')
+    ) {
+      return true;
+    }
+    const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL;
+    if (siteUrl) {
+      const allowedHost = new URL(siteUrl).hostname.toLowerCase();
+      if (host === allowedHost) return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+function checkRateLimit(key) {
+  const now = Date.now();
+  const bucket = rateLimitBuckets.get(key);
+  if (!bucket || now - bucket.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitBuckets.set(key, { windowStart: now, count: 1 });
+    return true;
+  }
+  bucket.count += 1;
+  return bucket.count <= RATE_LIMIT_MAX_REQUESTS;
+}
 
 exports.handler = async function (event) {
   try {
     if (event.httpMethod !== 'POST') {
       return json(405, { ok: false, error: 'Method not allowed' });
+    }
+
+    const headers = event.headers || {};
+    if (!isAllowedOrigin(headers)) {
+      return json(403, { ok: false, error: 'Forbidden origin' });
+    }
+
+    // Verify Firebase Auth Bearer token (or configured internal secret)
+    const authHeader = String(headers.authorization || headers.Authorization || '').trim();
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    const internalSecret = process.env.OCR_API_SECRET;
+    const providedSecret = headers['x-ocr-secret'] || headers['X-OCR-Secret'];
+
+    let verifiedUser = null;
+    if (bearerMatch) {
+      try {
+        verifiedUser = await verifyFirebaseIdToken(bearerMatch[1].trim());
+      } catch (authErr) {
+        console.warn('[gemini-passport-ocr] Auth verification failed:', authErr.message);
+        return json(401, { ok: false, error: 'Unauthorized: Invalid or expired Firebase Auth token' });
+      }
+    } else if (internalSecret && providedSecret === internalSecret) {
+      verifiedUser = { sub: 'internal-secret' };
+    } else {
+      return json(401, { ok: false, error: 'Unauthorized: Firebase Auth Bearer token required' });
+    }
+
+    const clientIp = headers['x-nf-client-connection-ip'] || headers['x-forwarded-for'] || 'unknown';
+    const rateKey = verifiedUser?.sub || clientIp;
+    if (!checkRateLimit(rateKey)) {
+      return json(429, { ok: false, error: 'Too many OCR requests. Please wait a moment and try again.' });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -20,6 +174,9 @@ exports.handler = async function (event) {
     }
 
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    if (cleanBase64.length > MAX_BASE64_LENGTH) {
+      return json(413, { ok: false, error: 'Image payload too large' });
+    }
 
     const ai = new GoogleGenAI({ apiKey });
 

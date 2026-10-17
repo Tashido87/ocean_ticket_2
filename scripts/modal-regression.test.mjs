@@ -51,7 +51,7 @@ test('replacing a dialog retains background ownership and restores original aria
     assert.equal(app.hasAttribute('inert'), false);
 });
 test('dashboard ignores hidden updates and coalesces visible updates per frame', () => {
-    const main = readFileSync(new URL('../main.js', import.meta.url), 'utf8');
+    const main = readFileSync(new URL('../dashboard.js', import.meta.url), 'utf8');
     const source = main.slice(main.indexOf('let dashboardRenderFrame'), main.indexOf('function renderDashboardData()')).replace('export function', 'function');
     let active = false, renders = 0; const frames = [];
     const context = vm.createContext({ document: { getElementById: () => ({ classList: { contains: () => active } }) }, requestAnimationFrame: cb => frames.push(cb), renderDashboardData: () => renders++ });

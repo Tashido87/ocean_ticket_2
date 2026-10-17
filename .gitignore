@@ -25,3 +25,8 @@ npm-debug.log*
 # Editor
 .vscode/
 .idea/
+
+# Scratch / temporary files
+scratch*
+check_amounts.js
+

@@ -3109,15 +3109,22 @@ export async function scanPassportWithGemini(file, passengerIndex = 0) {
 
     const imageBase64 = await resizeImageToBase64(file);
 
-    // 1) Try Netlify function
+    // 1) Try Netlify function (authenticated with Firebase ID token)
     try {
         console.log('[Gemini request] sending to /.netlify/functions/gemini-passport-ocr');
+        const { auth } = await import("./firebase-config.js");
+        const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : '';
+
         const controller = new AbortController();
         const abortTimer = setTimeout(() => controller.abort(), 18000);
 
         const response = await fetch('/.netlify/functions/gemini-passport-ocr', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Ocean-Client': 'ocean-ticket-web',
+                ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+            },
             signal: controller.signal,
             body: JSON.stringify({ imageBase64, mimeType: 'image/jpeg' }),
         });

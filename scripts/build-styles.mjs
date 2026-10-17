@@ -22,6 +22,7 @@ export const jsModules = [
     'booking.js',
     'clients.js',
     'config.js',
+    'dashboard.js',
     'db.js',
     'document-libraries.js',
     'documents.js',
@@ -47,6 +48,7 @@ export const jsModules = [
 const corePrecacheModules = [
     'document-libraries.js',
     'main.js',
+    'dashboard.js',
     'auth.js',
     'firebase-config.js',
     'utils.js',

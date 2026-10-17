@@ -21,12 +21,12 @@ test('page tools load on demand, initialize once, and allow retry after failure'
         initializeAirAsiaGenerator() { calls.air++; },
         initializeChinaHotelGenerator() { calls.agoda++; },
         async importModule(path) {
-            if (path.includes('hotel.js?')) return hotel;
+            if (path.includes('hotel.js')) return hotel;
             if (fail) throw new Error('Network offline');
             return {};
         }
     });
-    const names = ['extractTextFromPdf', 'parseItineraryText', 'renderAirAsiaTicketHtml', 'downloadAirAsiaPdf', 'downloadAirAsiaImage', 'shareAirAsiaTicket', 'formatCheckedBaggageLine', 'renderAgodaHotelHtml', 'downloadAgodaPdf', 'downloadAgodaImage', 'shareAgodaBooking', 'generateRandomBookingId', 'generateRandomMemberId', 'formatAgodaDate', 'calculateDefaultCancellationDate', 'DESTINATION_PRESETS', 'parseHotelConfirmationPdf'];
+    const names = ['extractTextFromPdf', 'parseItineraryText', 'renderAirAsiaTicketHtml', 'downloadAirAsiaPdf', 'downloadAirAsiaImage', 'shareAirAsiaTicket', 'formatCheckedBaggageLine', 'renderAgodaHotelHtml', 'downloadAgodaPdf', 'downloadAgodaImage', 'shareAgodaBooking', 'generateRandomBookingId', 'generateRandomMemberId', 'generateRandomBookingRefNo', 'formatAgodaDate', 'calculateDefaultCancellationDate', 'DESTINATION_PRESETS', 'parseHotelConfirmationPdf'];
     vm.runInContext(`let hotelModule; let ${names.join(',')};\n${source.replaceAll('import(', 'importModule(')}`, context);
     await context.loadPageFeatures('home');
     assert.equal(calls.hotel, 0);
