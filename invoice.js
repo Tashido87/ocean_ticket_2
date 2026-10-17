@@ -5,7 +5,7 @@ import { loadDocumentLibraries } from './document-libraries.js';
  */
 
 import { formatDateToDMMMY, parseSheetDate, showToast, isFeeEntryRow, isTicketPaid } from './utils.js';
-import { selectPassengerTickets, receiptPaymentLabels } from './invoice-selection.mjs?v=2';
+import { selectPassengerTickets, receiptPaymentLabels } from './invoice-selection.mjs';
 import { state } from './state.js';
 
 const INVOICE_THEME = {

@@ -11,16 +11,16 @@ import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange
 import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta, formatDateForSheet } from './utils.js';
 
 // Feature Modules
-import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets } from './tickets.js?v=10';
+import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets } from './tickets.js';
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import {  } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
 import { buildClientList, loadFeaturedClients } from './clients.js';
-import { initGlobalSearch, initSearchView } from './search.js?v=27';
+import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
-import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js?v=28';
-import { selectPassengerTickets } from './invoice-selection.mjs?v=2';
+import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from './invoice.js';
+import { selectPassengerTickets } from './invoice-selection.mjs';
 let hotelModule;
 const renderHotelReservations = () => hotelModule?.renderHotelReservations();
 const hideHotelReservationForm = () => hotelModule?.hideHotelReservationForm();
@@ -4885,7 +4885,7 @@ async function loadPageFeatures(viewName) {
     notice.textContent = 'Loading page tools…';
     view.before(notice);
     const task = (async () => {
-        if (!hotelModule) hotelModule = await import('./hotel.js?v=23');
+        if (!hotelModule) hotelModule = await import('./hotel.js');
         if (!hotelPageReady) {
             hotelModule.initHotelService();
             hotelModule.initHotelReservationSystem();
@@ -4894,7 +4894,7 @@ async function loadPageFeatures(viewName) {
         }
         if (viewName === 'services' && !servicesPageReady) {
             const [air, agoda] = await Promise.all([
-                import('./airasia-converter.js?v=34'), import('./agoda-hotel-converter.js?v=24')
+                import('./airasia-converter.js'), import('./agoda-hotel-converter.js')
             ]);
             ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } = air);
             ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
@@ -4954,9 +4954,30 @@ window.onload = async () => {
     initializePaymentMethodEnhancements();
     initializeSellFormEnhancements();
 
-    // Register PWA Service Worker
+    // Register PWA Service Worker with updateViaCache: 'none' so deploys take effect immediately
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        navigator.serviceWorker.register('./sw.js').catch(err => {
+        let refreshing = false;
+        const hadController = Boolean(navigator.serviceWorker.controller);
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!hadController || refreshing) return;
+            refreshing = true;
+            showToast('App updated to the latest version.', 'info');
+        });
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
+            reg.update().catch(() => {});
+            if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
+            });
+        }).catch(err => {
             console.debug('ServiceWorker registration omitted:', err);
         });
     }

@@ -17,6 +17,11 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
 # JS & CSS: Use no-cache (revalidate via ETag) so browsers reuse cached files via 304 if unchanged,
 # eliminating hundreds of kilobytes of re-downloads on every reload.
 [[headers]]

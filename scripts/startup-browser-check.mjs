@@ -16,7 +16,7 @@ const server = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (url.pathname === '/empty') { res.end('<!doctype html><body><div id="hotel-view"></div><div id="services-view"></div></body>'); return; }
     if (url.pathname === '/new' || url.pathname === '/old') {
-        res.end(url.pathname === '/old' ? fixture.replace('<link rel="stylesheet" href="app-styles.min.css?v=1">', cssFiles.map(f => `<link rel="stylesheet" href="/${f}">`).join('')) : fixture);
+        res.end(url.pathname === '/old' ? fixture.replace(/<link rel="stylesheet" href="app-styles\.min\.css(?:\?v=[^"]*)?">/, cssFiles.map(f => `<link rel="stylesheet" href="/${f}">`).join('')) : fixture);
         return;
     }
     const allowed = [...cssFiles, 'app-styles.min.css', 'document-libraries.js'];
