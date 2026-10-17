@@ -179,6 +179,42 @@ function ticketGrossAmount(t) {
     return (Number(t.net_amount) || 0) + (Number(t.date_change) || 0) + (Number(t.extra_fare) || 0) + (Number(t.sub_agent_fare) || 0);
 }
 
+function ticketUnsettledAgentFare(t) {
+    if (!t || isCanceledTicket(t) || t.sub_agent_settled) return 0;
+    return Math.max(0, Number(t.sub_agent_fare) || 0);
+}
+
+function getAccountUnsettledAgentFare(accountName, fallbackTickets = []) {
+    const normAcc = String(accountName || '').trim().toLowerCase();
+    const seen = new Set();
+    let total = 0;
+
+    if (normAcc && normAcc !== 'undefined') {
+        (state.allTickets || []).forEach(t => {
+            if (isCanceledTicket(t)) return;
+            const tAcc = String(t.account_name || '').trim().toLowerCase();
+            if (tAcc === normAcc) {
+                const key = t.id || `${t.booking_reference}|${t.name}|${t.departing_on}|${t.leg || ''}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    total += ticketUnsettledAgentFare(t);
+                }
+            }
+        });
+    }
+
+    (fallbackTickets || []).forEach(t => {
+        if (!t || isCanceledTicket(t)) return;
+        const key = t.id || `${t.booking_reference}|${t.name}|${t.departing_on}|${t.leg || ''}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            total += ticketUnsettledAgentFare(t);
+        }
+    });
+
+    return total;
+}
+
 function ticketProfitAmount(t) {
     if (t.source === 'self' && !(Number(t.commission) > 0)) {
         return (Number(t.base_fare) || 0) + (Number(t.extra_fare) || 0) - (Number(t.cost_price) || 0);
@@ -332,7 +368,7 @@ function getUpcomingTripGroups(days = 14) {
         const group = groups.get(key);
         group.passengers += 1;
         if (isTicketPaid(ticket)) group.paidPassengers += 1;
-        else group.unpaidAmount += ticketGrossAmount(ticket);
+        else group.unpaidAmount += Math.max(0, ticketGrossAmount(ticket) - ticketUnsettledAgentFare(ticket));
     });
 
     return [...groups.values()].sort((a, b) => a.date - b.date);
@@ -359,17 +395,32 @@ function groupUnpaidTickets(rows) {
     // For each PNR, compute total unpaid amount across ALL rows (passenger + fees)
     pnrGroups.forEach(({ displayPnr, tickets }, pnrKey) => {
         let unpaidAmount = 0;
+        let paidAmount = 0;
+        let agentFareAmount = 0;
         let hasFeeUnpaid = false;
 
         tickets.forEach(t => {
             const isFee = isFeeEntryRow(t);
+            const gross = ticketGrossAmount(t);
+            const agentFare = ticketUnsettledAgentFare(t);
+            const netReceivable = Math.max(0, gross - agentFare);
             let itemUnpaid = 0;
+            let itemPaid = 0;
 
-            if (t.outstanding_amount !== undefined && Number(t.outstanding_amount) >= 0) {
-                itemUnpaid = Number(t.outstanding_amount);
-            } else if (!isTicketPaid(t)) {
-                itemUnpaid = ticketGrossAmount(t);
+            if (isTicketPaid(t)) {
+                itemPaid = gross;
+                itemUnpaid = 0;
+            } else if (t.outstanding_amount !== undefined && Number(t.outstanding_amount) >= 0) {
+                const rawOut = Number(t.outstanding_amount);
+                itemPaid = Math.max(0, gross - rawOut);
+                itemUnpaid = Math.max(0, netReceivable - itemPaid);
+            } else {
+                itemPaid = 0;
+                itemUnpaid = netReceivable;
             }
+
+            agentFareAmount += agentFare;
+            paidAmount += itemPaid;
 
             if (itemUnpaid > 0) {
                 unpaidAmount += itemUnpaid;
@@ -419,7 +470,6 @@ function groupUnpaidTickets(rows) {
                                 passengerTicket;
 
             const totalGross = tickets.reduce((sum, t) => sum + ticketGrossAmount(t), 0);
-            const paidAmount = Math.max(0, totalGross - unpaidAmount);
             const cleanSocial = (accountName && accountName.toLowerCase() !== 'undefined') ? accountName : '';
             const accountDisplayLabel = cleanSocial || clientLabel;
             const accountGroupKey = accountDisplayLabel.trim().toLowerCase();
@@ -442,6 +492,7 @@ function groupUnpaidTickets(rows) {
                 issuedDate: parseSheetDate(passengerTicket.issued_date),
                 amount: unpaidAmount,
                 totalGross,
+                agentFareAmount,
                 paidAmount,
                 tickets: nonFeeTickets.length || tickets.length,
                 ticketRows: tickets,
@@ -1290,6 +1341,7 @@ function consolidateUnpaidByAccount(groups) {
                 pnrList: [],
                 clientsSet: new Set(),
                 totalGross: 0,
+                agentFareAmount: 0,
                 paidAmount: 0,
                 unpaidAmount: 0,
                 ticketCount: 0,
@@ -1301,6 +1353,7 @@ function consolidateUnpaidByAccount(groups) {
         entry.pnrList.push(g.pnr);
         if (g.client) entry.clientsSet.add(g.client);
         entry.totalGross += Number(g.totalGross) || Number(g.amount) || 0;
+        entry.agentFareAmount += Number(g.agentFareAmount) || 0;
         entry.paidAmount += Number(g.paidAmount) || 0;
         entry.unpaidAmount += Number(g.amount) || 0;
         entry.ticketCount += Number(g.tickets) || 1;
@@ -1310,6 +1363,19 @@ function consolidateUnpaidByAccount(groups) {
             }
         }
     });
+
+    accountMap.forEach(entry => {
+        const groupTickets = entry.pnrGroups.flatMap(g => g.ticketRows || []);
+        const totalAccountUnsettledAgentFare = getAccountUnsettledAgentFare(
+            entry.socialAccount || entry.accountDisplayLabel,
+            groupTickets
+        );
+        if (totalAccountUnsettledAgentFare > entry.agentFareAmount) {
+            entry.agentFareAmount = totalAccountUnsettledAgentFare;
+        }
+        entry.unpaidAmount = Math.max(0, entry.totalGross - entry.agentFareAmount - entry.paidAmount);
+    });
+
     return [...accountMap.values()].sort((a, b) => {
         if (b.pnrGroups.length !== a.pnrGroups.length) return b.pnrGroups.length - a.pnrGroups.length;
         return b.unpaidAmount - a.unpaidAmount;
@@ -1389,6 +1455,7 @@ function renderDashboardUnpaidTickets(groups) {
                     </td>
                     <td class="num">
                         <div style="font-size:0.75rem; color:var(--dash-text-muted);">Total: ${formatDashboardAmount(acc.totalGross)}</div>
+                        ${acc.agentFareAmount > 0 ? `<div style="font-size:0.75rem; color:#D97706;">Agent Fare: -${formatDashboardAmount(acc.agentFareAmount)}</div>` : ''}
                         <div style="font-size:0.75rem; color:#059669;">Paid: ${formatDashboardAmount(acc.paidAmount)}</div>
                     </td>
                     <td class="num"><strong>${formatDashboardAmount(acc.unpaidAmount)} MMK</strong></td>
@@ -1558,6 +1625,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
 
     let scopeMode = accountMatchedGroups.length > 1 ? 'account' : 'all'; // 'account' | 'single'
     let customExtraPaid = null; // null means use computed paidAmount from tickets
+    let customExtraAgentFare = null; // null means use computed unsettled sub_agent_fare
 
     const leadGroup = initialGroups[0];
     const customerDisplayName = leadGroup.accountDisplayLabel || leadGroup.socialAccount || leadGroup.client || 'Customer';
@@ -1581,6 +1649,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             if (rows.length > 0) {
                 rows.forEach(t => {
                     const gross = ticketGrossAmount(t);
+                    const agentFare = ticketUnsettledAgentFare(t);
                     const paid = isTicketPaid(t)
                         ? gross
                         : (t.outstanding_amount !== undefined && Number(t.outstanding_amount) >= 0
@@ -1597,6 +1666,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                         route: (t.departure && t.destination) ? `${compactPlace(t.departure)} → ${compactPlace(t.destination)}` : group.route,
                         travelDate: String(t.departing_on || group.travelDateStr || '').trim() || '-',
                         gross,
+                        agentFare,
                         paid,
                         due
                     });
@@ -1611,6 +1681,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                     route: group.route,
                     travelDate: group.travelDateStr || '-',
                     gross: group.totalGross || group.amount,
+                    agentFare: group.agentFareAmount || 0,
                     paid: group.paidAmount || 0,
                     due: group.amount
                 });
@@ -1619,18 +1690,31 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         return items;
     };
 
-    const computeSummary = (items) => {
+    const computeSummary = (items, groupsToUse = getActiveGroups()) => {
         const totalGross = items.reduce((s, item) => s + item.gross, 0);
         const defaultPaid = items.reduce((s, item) => s + item.paid, 0);
-        const effectivePaid = customExtraPaid !== null ? Math.max(0, Number(customExtraPaid) || 0) : defaultPaid;
-        const balanceDue = Math.max(0, totalGross - effectivePaid);
-        return { totalGross, defaultPaid, effectivePaid, balanceDue };
+        const itemsAgentFare = items.reduce((s, item) => s + (item.agentFare || 0), 0);
+        const groupTicketRows = (groupsToUse || []).flatMap(g => g.ticketRows || []);
+        const defaultAgentFare = scopeMode === 'single'
+            ? itemsAgentFare
+            : Math.max(
+                itemsAgentFare,
+                getAccountUnsettledAgentFare(leadGroup.socialAccount || customerDisplayName, groupTicketRows)
+            );
+        const effectiveAgentFare = customExtraAgentFare !== null
+            ? Math.max(0, Number(customExtraAgentFare) || 0)
+            : defaultAgentFare;
+        const effectivePaid = customExtraPaid !== null
+            ? Math.max(0, Number(customExtraPaid) || 0)
+            : defaultPaid;
+        const balanceDue = Math.max(0, totalGross - effectiveAgentFare - effectivePaid);
+        return { totalGross, defaultAgentFare, effectiveAgentFare, defaultPaid, effectivePaid, balanceDue };
     };
 
     const buildCardInnerHtml = () => {
         const groupsToUse = getActiveGroups();
         const items = buildLineItems(groupsToUse);
-        const { totalGross, effectivePaid, balanceDue } = computeSummary(items);
+        const { totalGross, effectiveAgentFare, effectivePaid, balanceDue } = computeSummary(items, groupsToUse);
 
         const rowsHtml = items.map((item, idx) => `
             <tr>
@@ -1725,6 +1809,12 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                         <span>Total Amount (စုစုပေါင်း)</span>
                         <strong>MMK ${formatDashboardAmount(totalGross)}</strong>
                     </div>
+                    ${effectiveAgentFare > 0 ? `
+                    <div class="prc-total-line agent-fare">
+                        <span>Agent Fare (အေးဂျင့်ခ)</span>
+                        <strong>- MMK ${formatDashboardAmount(effectiveAgentFare)}</strong>
+                    </div>
+                    ` : ''}
                     <div class="prc-total-line paid">
                         <span>Paid / Received (ပေးချေပြီး)</span>
                         <strong>- MMK ${formatDashboardAmount(effectivePaid)}</strong>
@@ -1751,7 +1841,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
     const buildReminderTextMm = () => {
         const groupsToUse = getActiveGroups();
         const items = buildLineItems(groupsToUse);
-        const { totalGross, effectivePaid, balanceDue } = computeSummary(items);
+        const { totalGross, effectiveAgentFare, effectivePaid, balanceDue } = computeSummary(items, groupsToUse);
         const lines = items.map((item, idx) =>
             `  ${idx + 1}. PNR: ${item.pnr} | ${item.passenger} (${item.route}, ${item.travelDate}) — ${formatDashboardAmount(item.gross)} MMK`
         ).join('\n');
@@ -1765,6 +1855,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             ``,
             `💰 ငွေစာရင်းချုပ်`,
             `• စုစုပေါင်း ကျသင့်ငွေ (Total): ${formatDashboardAmount(totalGross)} MMK`,
+            ...(effectiveAgentFare > 0 ? [`• အေးဂျင့်ခ နှုတ်ငွေ (Agent Fare): -${formatDashboardAmount(effectiveAgentFare)} MMK`] : []),
             `• ပေးချေပြီးငွေ (Paid): ${formatDashboardAmount(effectivePaid)} MMK`,
             `• ပေးချေရန် ကျန်ငွေ (Balance Due): ${formatDashboardAmount(balanceDue)} MMK`,
             ``,
@@ -1778,8 +1869,9 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         ].join('\n');
     };
 
-    const initialItems = buildLineItems(getActiveGroups());
-    const initialSummary = computeSummary(initialItems);
+    const initialGroupsToUse = getActiveGroups();
+    const initialItems = buildLineItems(initialGroupsToUse);
+    const initialSummary = computeSummary(initialItems, initialGroupsToUse);
 
     const modalHtml = `
         <div class="prc-modal-wrapper">
@@ -1803,9 +1895,15 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             </div>
 
             <div class="prc-controls-bar">
-                <div class="prc-paid-input-group">
-                    <label for="prcCustomPaidInput">ပေးပြီးသားငွေ (Paid / Deposit MMK):</label>
-                    <input type="number" id="prcCustomPaidInput" min="0" step="1000" value="${initialSummary.effectivePaid}" placeholder="0">
+                <div class="prc-inputs-row">
+                    <div class="prc-paid-input-group">
+                        <label for="prcCustomAgentFareInput">အေးဂျင့်ခ (Agent Fare MMK):</label>
+                        <input type="number" id="prcCustomAgentFareInput" min="0" step="1000" value="${initialSummary.effectiveAgentFare}" placeholder="0">
+                    </div>
+                    <div class="prc-paid-input-group">
+                        <label for="prcCustomPaidInput">ပေးပြီးသားငွေ (Paid / Deposit MMK):</label>
+                        <input type="number" id="prcCustomPaidInput" min="0" step="1000" value="${initialSummary.effectivePaid}" placeholder="0">
+                    </div>
                 </div>
                 <div class="prc-export-actions">
                     <button type="button" class="btn btn-secondary prc-action-btn" id="prcCopyTextBtn">
@@ -1843,12 +1941,25 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             btn.classList.add('active');
             scopeMode = btn.dataset.prcScope || 'account';
             customExtraPaid = null;
-            const newSummary = computeSummary(buildLineItems(getActiveGroups()));
+            customExtraAgentFare = null;
+            const activeGrps = getActiveGroups();
+            const newSummary = computeSummary(buildLineItems(activeGrps), activeGrps);
+            const agentInput = document.getElementById('prcCustomAgentFareInput');
+            if (agentInput) agentInput.value = newSummary.effectiveAgentFare;
             const paidInput = document.getElementById('prcCustomPaidInput');
             if (paidInput) paidInput.value = newSummary.effectivePaid;
             refreshCardView();
         });
     });
+
+    const agentFareInput = document.getElementById('prcCustomAgentFareInput');
+    if (agentFareInput) {
+        agentFareInput.addEventListener('input', (e) => {
+            const raw = e.target.value;
+            customExtraAgentFare = raw === '' ? 0 : Math.max(0, Number(raw) || 0);
+            refreshCardView();
+        });
+    }
 
     const paidInput = document.getElementById('prcCustomPaidInput');
     if (paidInput) {

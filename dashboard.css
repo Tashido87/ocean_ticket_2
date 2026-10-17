@@ -1004,22 +1004,29 @@ body.dark-theme #home-view .passport-vip-badge.is-frequent {
   border-radius: 12px;
 }
 
+.prc-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
 .prc-paid-input-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .prc-paid-input-group label {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: #334155;
   margin: 0;
 }
 
 .prc-paid-input-group input {
-  width: 135px;
+  width: 115px;
   height: 32px;
   padding: 4px 10px;
   border-radius: 8px;
@@ -1359,6 +1366,10 @@ body.dark-theme #home-view .passport-vip-badge.is-frequent {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   color: #0F172A;
+}
+
+.prc-total-line.agent-fare strong {
+  color: #D97706;
 }
 
 .prc-total-line.paid strong {
