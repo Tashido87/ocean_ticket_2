@@ -198,8 +198,8 @@ export function getSocialPlatformMeta(accountType = '', rawLink = '') {
     return {
         icon: 'fa-solid fa-arrow-up-right-from-square',
         label: accountType || 'Social Link',
-        color: 'var(--brand, #B91C1C)',
-        badgeBg: 'rgba(185, 28, 28, 0.12)'
+        color: 'var(--primary, #0D6E77)',
+        badgeBg: 'rgba(13, 110, 119, 0.12)'
     };
 }
 

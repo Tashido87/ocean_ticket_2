@@ -49,9 +49,9 @@
     font-weight: 650;
     padding: 2px 8px;
     border-radius: 9999px;
-    background: rgba(185, 28, 28, 0.1);
-    color: var(--brand, #b91c1c);
-    border: 1px solid rgba(185, 28, 28, 0.2);
+    background: rgba(13, 110, 119, 0.1);
+    color: var(--primary, #0D6E77);
+    border: 1px solid rgba(13, 110, 119, 0.2);
 }
 
 .pnr-detail-dialog .pnr-toolbar-actions-group {
@@ -76,9 +76,9 @@
 }
 
 .pnr-detail-dialog .pnr-toolbar-jump-btn:hover {
-    background: var(--brand, #b91c1c);
+    background: var(--primary, #0D6E77);
     color: #ffffff;
-    border-color: var(--brand, #b91c1c);
+    border-color: var(--primary, #0D6E77);
 }
 
 .pnr-detail-dialog .pnr-close-circle-btn {
@@ -102,7 +102,7 @@
 
 .pnr-detail-dialog button:focus-visible,
 .pnr-detail-dialog a:focus-visible {
-    outline: 2px solid var(--brand, #b91c1c);
+    outline: 2px solid var(--primary, #0D6E77);
     outline-offset: 2px;
 }
 
@@ -149,7 +149,7 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    color: var(--brand, #b91c1c);
+    color: var(--primary, #0D6E77);
     font-size: 12px;
 }
 
@@ -227,9 +227,9 @@
 }
 
 .pnr-detail-dialog .pnr-icon-action-btn:hover {
-    background: var(--brand, #b91c1c);
+    background: var(--primary, #0D6E77);
     color: #ffffff;
-    border-color: var(--brand, #b91c1c);
+    border-color: var(--primary, #0D6E77);
 }
 
 /* Statuses - strictly separate ticket/booking and payment badges */
@@ -462,7 +462,7 @@
 }
 
 .pnr-detail-dialog a.pax-name-premium:hover {
-    color: var(--brand, #b91c1c);
+    color: var(--primary, #0D6E77);
     text-decoration: underline !important;
 }
 
@@ -556,15 +556,15 @@
 }
 
 .pnr-detail-dialog .pnr-val-received {
-    color: #059669 !important;
+    color: #059669;
 }
 
 .pnr-detail-dialog .pnr-val-outstanding {
-    color: #dc2626 !important;
+    color: #dc2626;
 }
 
 .pnr-detail-dialog .pnr-val-cleared {
-    color: #059669 !important;
+    color: #059669;
 }
 
 .pnr-detail-dialog .pnr-modal-footer-actions {
@@ -727,7 +727,7 @@
 
 .pnr-social-link-btn:hover {
     background: var(--platform-color, #0084FF);
-    color: #ffffff !important;
+    color: #ffffff;
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
@@ -743,7 +743,7 @@
 }
 
 .pnr-social-link-btn .pnr-social-link-arrow {
-    font-size: 9.5px !important;
+    font-size: 9.5px;
     opacity: 0.8;
 }
 

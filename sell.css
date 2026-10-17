@@ -343,10 +343,10 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 /* Member ID optional panel */
 .pax-panel-member {
-    border: 1.5px dashed rgba(185, 28, 28, 0.25);
+    border: 1.5px dashed rgba(13, 110, 119, 0.25);
     border-radius: 10px;
     padding: 0.85rem 1rem;
-    background: rgba(185, 28, 28, 0.02);
+    background: rgba(13, 110, 119, 0.02);
 }
 
 .member-id-header {
@@ -359,7 +359,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .member-id-optional {
     font-size: 0.68rem;
     font-weight: 500;
-    color: var(--primary-accent, #B91C1C);
+    color: var(--primary-accent, #0D6E77);
     opacity: 0.7;
     text-transform: none;
     letter-spacing: 0;
@@ -373,9 +373,9 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     padding: 0.3rem 0.85rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--primary-accent, #B91C1C);
+    color: var(--primary-accent, #0D6E77);
     background: transparent;
-    border: 1.5px solid var(--primary-accent, #B91C1C);
+    border: 1.5px solid var(--primary-accent, #0D6E77);
     border-radius: 999px;
     cursor: pointer;
     white-space: nowrap;
@@ -383,7 +383,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .member-id-toggle-btn:hover {
-    background: var(--primary-accent, #B91C1C);
+    background: var(--primary-accent, #0D6E77);
     color: #fff;
 }
 
@@ -436,9 +436,9 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     padding: 0.35rem 0.9rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--primary-accent, #B91C1C);
+    color: var(--primary-accent, #0D6E77);
     background: transparent;
-    border: 1.5px dashed var(--primary-accent, #B91C1C);
+    border: 1.5px dashed var(--primary-accent, #0D6E77);
     border-radius: 8px;
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
@@ -446,7 +446,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 .member-id-add-more:hover {
-    background: rgba(185, 28, 28, 0.08);
+    background: rgba(13, 110, 119, 0.08);
     opacity: 1;
 }
 
@@ -502,7 +502,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .gender-segment input:checked + label {
     background: var(--primary-accent);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(185, 28, 28, 0.3);
+    box-shadow: 0 1px 2px rgba(13, 110, 119, 0.3);
 }
 
 .gender-segment label:hover {
@@ -606,7 +606,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 .nrc-input:focus-within {
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 110, 119, 0.12);
 }
 
 .nrc-input input {
@@ -675,7 +675,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .passport-photo-zone:hover,
 .passport-photo-zone.is-dragover {
     border-color: var(--primary-accent);
-    background: rgba(185, 28, 28, 0.03);
+    background: rgba(13, 110, 119, 0.03);
 }
 
 .passport-photo-zone .pz-icon {
@@ -752,7 +752,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 .pz-ocr-status.is-scanning {
     opacity: 1;
-    color: var(--primary-accent, #B91C1C);
+    color: var(--primary-accent, #0D6E77);
     animation: ocrPulse 1.5s ease-in-out infinite;
 }
 
@@ -1164,7 +1164,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .trip-type-segment input:checked + label {
     background: var(--primary-accent);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(185, 28, 28, 0.3);
+    box-shadow: 0 1px 2px rgba(13, 110, 119, 0.3);
 }
 
 .trip-type-segment label:hover {
@@ -1179,8 +1179,8 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 .return-flight-block {
     margin-top: 1.25rem;
     padding: 1.25rem;
-    background: rgba(185, 28, 28, 0.04);
-    border: 1px solid rgba(185, 28, 28, 0.14);
+    background: rgba(13, 110, 119, 0.04);
+    border: 1px solid rgba(13, 110, 119, 0.14);
     border-radius: 10px;
     animation: returnSlideDown 0.3s ease;
 }
@@ -1201,7 +1201,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: rgba(185, 28, 28, 0.12);
+    background: rgba(13, 110, 119, 0.12);
     color: var(--primary-accent);
     display: inline-flex;
     align-items: center;
@@ -1290,7 +1290,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     font-size: 0.72rem;
     font-weight: 700;
     color: inherit;
-    background: rgba(185, 28, 28, 0.08);
+    background: rgba(13, 110, 119, 0.08);
     padding: 0.1rem 0.5rem;
     border-radius: 999px;
     font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
@@ -1310,7 +1310,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 /* Subtotal lines (per leg) */
 .pricing-totals.is-grand {
     margin-top: 0.5rem;
-    background: rgba(185, 28, 28, 0.06);
+    background: rgba(13, 110, 119, 0.06);
 }
 
 .pricing-totals.is-grand .value {
@@ -1420,19 +1420,19 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: linear-gradient(135deg, rgba(185, 28, 28, 0.14), rgba(60, 60, 60, 0.10));
-    color: #B91C1C;
+    background: linear-gradient(135deg, rgba(13, 110, 119, 0.14), rgba(60, 60, 60, 0.10));
+    color: #0D6E77;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 1rem;
     flex-shrink: 0;
-    box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 119, 0.12);
 }
 
 #sell-view #section-client .sell-section-header .section-icon {
     background: linear-gradient(135deg, rgba(60, 60, 60, 0.14), rgba(31, 138, 101, 0.10));
-    color: #B91C1C;
+    color: #0D6E77;
     box-shadow: inset 0 0 0 1px rgba(60, 60, 60, 0.12);
 }
 
@@ -1476,7 +1476,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 #sell-view .form-group select:focus,
 #sell-view .form-group textarea:focus {
     border-color: var(--primary-accent);
-    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+    box-shadow: 0 0 0 3px rgba(13, 110, 119, 0.12);
     transform: none;
 }
 
@@ -1504,7 +1504,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 
 /* Hide the legacy switch entirely — text labels are the only control now */
 #sell-view .flight-type-toggle .switch {
-    display: none !important;
+    display: none;
 }
 
 #sell-view .flight-type-toggle #domestic-label,
@@ -1571,8 +1571,8 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 #sell-view .pax-card-header .pax-avatar {
     width: 38px;
     height: 38px;
-    background: linear-gradient(135deg, rgba(185, 28, 28, 0.14), rgba(60, 60, 60, 0.10));
-    box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.12);
+    background: linear-gradient(135deg, rgba(13, 110, 119, 0.14), rgba(60, 60, 60, 0.10));
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 119, 0.12);
     font-size: 0.85rem;
 }
 
@@ -1644,7 +1644,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 #sell-view .pax-panel-title::after {
-    background: linear-gradient(90deg, rgba(185, 28, 28, 0.12), transparent);
+    background: linear-gradient(90deg, rgba(13, 110, 119, 0.12), transparent);
 }
 
 /* Compact gender + tabs */
@@ -1657,7 +1657,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 #sell-view .gender-segment input:checked + label {
     color: #fff;
     background: var(--primary-accent);
-    box-shadow: 0 1px 2px rgba(185, 28, 28, 0.3);
+    box-shadow: 0 1px 2px rgba(13, 110, 119, 0.3);
 }
 
 #sell-view .doc-tab,
@@ -1672,7 +1672,7 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 #sell-view .pricing-totals {
-    display: none !important;
+    display: none;
 }
 
 /* Leg subtotal pill on each tab also hidden when totals removed */
@@ -1689,107 +1689,107 @@ body.material-theme.dark-theme .passport-expiry-warning.is-expired {
 }
 
 #sell-view .return-flight-icon {
-    background: linear-gradient(135deg, rgba(60, 60, 60, 0.14), rgba(185, 28, 28, 0.10));
-    color: #B91C1C;
+    background: linear-gradient(135deg, rgba(60, 60, 60, 0.14), rgba(13, 110, 119, 0.10));
+    color: #0D6E77;
     box-shadow: inset 0 0 0 1px rgba(60, 60, 60, 0.12);
 }
 
 /* ---------- Summary bar — In-Flow inside Section 4 Payment & Review ---------- */
 .sticky-summary-bar {
-    position: static !important;
-    top: auto !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: auto !important;
-    width: 100% !important;
-    height: auto !important;
-    max-width: none !important;
-    padding: 0.5rem 0 0 0 !important;
-    background: transparent !important;
+    position: static;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+    height: auto;
+    max-width: none;
+    padding: 0.5rem 0 0 0;
+    background: transparent;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    z-index: auto !important;
-    display: block !important;
-    overflow: visible !important;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    z-index: auto;
+    display: block;
+    overflow: visible;
 }
 
 body.sidebar-collapsed .sticky-summary-bar,
 body.material-theme.sidebar-collapsed .sticky-summary-bar {
-    left: auto !important;
+    left: auto;
 }
 
 .sticky-summary-bar::before {
-    display: none !important;
-    content: none !important;
+    display: none;
+    content: none;
 }
 
 .sticky-summary-inner {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 1.5rem !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
-    flex-wrap: wrap !important;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    max-width: 100%;
+    margin: 0 auto;
+    flex-wrap: wrap;
 }
 
 /* Stats row */
 .sticky-summary-bar .summary-stats {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 1.5rem !important;
-    flex: 0 0 auto !important;
-    padding: 0 !important;
-    border: none !important;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    flex: 0 0 auto;
+    padding: 0;
+    border: none;
 }
 
 .sticky-summary-bar .summary-stat {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
 }
 
 .sticky-summary-bar .summary-stat .stat-label {
-    font-size: 0.7rem !important;
-    font-weight: 600 !important;
-    color: #64748B !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .sticky-summary-bar .summary-stat .stat-value {
     font-size: 1.05rem !important;
     font-weight: 700 !important;
-    color: #0F172A !important;
+    color: #0F172A;
     font-family: 'JetBrains Mono', monospace !important;
 }
 
 .sticky-summary-bar .summary-stat .stat-value.is-positive {
-    color: #0D6E77 !important;
+    color: #0D6E77;
 }
 
 /* Payment controls row */
 .sticky-summary-bar .summary-payment-controls {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-    flex: 1 1 auto !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    border: none !important;
-    flex-wrap: nowrap !important;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    flex-wrap: nowrap;
 }
 
 .sticky-summary-bar .summary-payment-controls .paid-toggle {
-    align-self: center !important;
-    margin: 0 !important;
+    align-self: center;
+    margin: 0;
 }
 
 /* ========== Beautiful Paid Toggle Switch ========== */
@@ -1854,18 +1854,18 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 
 /* Active / checked state */
 .paid-switch input:checked + .paid-slider {
-    background: linear-gradient(135deg, var(--primary-accent, #B91C1C), var(--secondary-accent, #3C3C3C));
-    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15);
+    background: linear-gradient(135deg, var(--primary-accent, #0D6E77), var(--secondary-accent, #3C3C3C));
+    box-shadow: 0 0 0 3px rgba(13, 110, 119, 0.15);
 }
 
 .paid-switch input:checked + .paid-slider::before {
     transform: translateX(20px);
-    box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
+    box-shadow: 0 2px 6px rgba(13, 110, 119, 0.35);
 }
 
 .paid-switch input:checked + .paid-slider::after {
     transform: translateX(20px);
-    color: var(--primary-accent, #B91C1C);
+    color: var(--primary-accent, #0D6E77);
 }
 
 /* Hover effect */
@@ -1874,12 +1874,12 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 }
 
 .paid-switch input:checked + .paid-slider:hover {
-    box-shadow: 0 0 0 4px rgba(185, 28, 28, 0.12);
+    box-shadow: 0 0 0 4px rgba(13, 110, 119, 0.12);
 }
 
 /* Focus ring for accessibility */
 .paid-switch input:focus-visible + .paid-slider {
-    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.3);
+    box-shadow: 0 0 0 3px rgba(13, 110, 119, 0.3);
 }
 
 /* Label text */
@@ -1892,88 +1892,88 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 }
 
 .paid-toggle:has(input:checked) .paid-label {
-    color: var(--primary-accent, #B91C1C);
+    color: var(--primary-accent, #0D6E77);
 }
 
 .sticky-summary-bar .summary-payment-controls .form-group {
-    margin: 0 !important;
-    width: auto !important;
-    flex: 0 1 auto !important;
+    margin: 0;
+    width: auto;
+    flex: 0 1 auto;
 }
 
 .sticky-summary-bar .summary-payment-controls .form-group input,
 .sticky-summary-bar .summary-payment-controls .form-group select {
-    height: 38px !important;
+    height: 38px;
     font-size: 0.85rem !important;
-    padding: 0.4rem 0.75rem !important;
+    padding: 0.4rem 0.75rem;
     border: 1px solid #E2E8F0 !important;
     border-radius: 8px !important;
 }
 
 /* Action buttons row */
 .sticky-summary-bar .summary-actions {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-    flex: 0 0 auto !important;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 0 0 auto;
 }
 
 .sticky-summary-bar .summary-actions .btn {
-    height: 38px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 1.25rem !important;
-    font-size: 0.85rem !important;
-    font-weight: 600 !important;
-    border-radius: 8px !important;
-    white-space: nowrap !important;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    white-space: nowrap;
 }
 
 /* Form container spacing */
 #sell-view .sell-sections,
 #sellForm {
-    padding-right: 0 !important;
-    padding-bottom: 2rem !important;
+    padding-right: 0;
+    padding-bottom: 2rem;
 }
 
 @media (max-width: 900px) {
     .sticky-summary-bar {
-        left: auto !important;
-        padding: 0.5rem 0 0 0 !important;
+        left: auto;
+        padding: 0.5rem 0 0 0;
     }
     .sticky-summary-inner {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 0.75rem !important;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
     }
     .sticky-summary-bar .summary-stats {
-        width: 100% !important;
-        justify-content: space-between !important;
-        gap: 0.75rem !important;
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.75rem;
     }
     .sticky-summary-bar .summary-payment-controls {
-        width: 100% !important;
-        justify-content: space-between !important;
-        flex-wrap: wrap !important;
-        gap: 0.5rem !important;
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
     }
     .sticky-summary-bar .summary-payment-controls .form-group {
-        flex: 1 !important;
-        min-width: 120px !important;
+        flex: 1;
+        min-width: 120px;
     }
     .sticky-summary-bar .summary-actions {
-        width: 100% !important;
-        display: flex !important;
-        gap: 0.5rem !important;
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
     }
     .sticky-summary-bar .summary-actions .btn {
-        flex: 1 !important;
+        flex: 1;
     }
     #sell-view .sell-sections,
     #sellForm {
-        padding-bottom: 2rem !important;
+        padding-bottom: 2rem;
     }
 }
 
@@ -2000,7 +2000,7 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     font-size: 0.95rem;
-    background: linear-gradient(135deg, rgba(60, 60, 60, 0.14), rgba(185, 28, 28, 0.08));
+    background: linear-gradient(135deg, rgba(60, 60, 60, 0.14), rgba(13, 110, 119, 0.08));
     color: var(--sell-teal);
     box-shadow: inset 0 0 0 1px rgba(60, 60, 60, 0.18);
 }
@@ -2033,33 +2033,33 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 /* Submit button — Teal primary */
 #stickySummaryBar .btn-primary,
 #sellForm button[type="submit"].btn-primary {
-    background: #0D6E77 !important;
-    border-color: #0D6E77 !important;
-    box-shadow: 0 2px 8px rgba(13, 110, 119, 0.25) !important;
-    color: #fff !important;
-    font-weight: 600 !important;
+    background: #0D6E77;
+    border-color: #0D6E77;
+    box-shadow: 0 2px 8px rgba(13, 110, 119, 0.25);
+    color: #fff;
+    font-weight: 600;
 }
 
 #stickySummaryBar .btn-primary:hover,
 #sellForm button[type="submit"].btn-primary:hover {
-    background: #09545b !important;
-    border-color: #09545b !important;
-    box-shadow: 0 4px 12px rgba(13, 110, 119, 0.35) !important;
+    background: #09545b;
+    border-color: #09545b;
+    box-shadow: 0 4px 12px rgba(13, 110, 119, 0.35);
     transform: translateY(-1px);
 }
 
 /* Cancel button — clean subtle border */
 #stickySummaryBar #cancelSellBtn {
-    background: #ffffff !important;
+    background: #ffffff;
     border: 1px solid #E2E8F0 !important;
     color: #64748B !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 #stickySummaryBar #cancelSellBtn:hover {
-    background: #F8FAFC !important;
-    color: #0F172A !important;
-    border-color: #CBD5E1 !important;
+    background: #F8FAFC;
+    color: #0F172A;
+    border-color: #CBD5E1;
 }
 
 /* Paid toggle — premium pill container in summary bar */
@@ -2088,46 +2088,46 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 }
 
 #sell-view #addPassengerBtn {
-    background: #0D6E77 !important;
-    color: #fff !important;
-    border-color: #0D6E77 !important;
+    background: #0D6E77;
+    color: #fff;
+    border-color: #0D6E77;
 }
 
 #sell-view #addPassengerBtn:hover {
-    background: #09545b !important;
-    border-color: #09545b !important;
+    background: #09545b;
+    border-color: #09545b;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(13, 110, 119, 0.25);
 }
 
 /* Passenger count badge */
 #sell-view .passenger-count-badge {
-    background: #0D6E77 !important;
-    color: #fff !important;
+    background: #0D6E77;
+    color: #fff;
     box-shadow: 0 1px 3px rgba(13, 110, 119, 0.25);
 }
 
 /* ---------- Sticky action area — paid date and method size match ---------- */
 .summary-payment-controls .form-group input,
 .summary-payment-controls .form-group select {
-    padding: 0.6rem 0.85rem !important;
-    font-size: 0.875rem !important;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.875rem;
 }
 
 /* Keep payment controls compact inside the right order-summary card. */
 #stickySummaryBar .summary-payment-controls,
 #stickySummaryBar .summary-payment-controls .form-group,
 #stickySummaryBar .payment-method-row {
-    flex: 0 0 auto !important;
-    min-height: 0 !important;
+    flex: 0 0 auto;
+    min-height: 0;
 }
 
 #stickySummaryBar .summary-payment-controls .form-group {
-    margin: 0 !important;
+    margin: 0;
 }
 
 #stickySummaryBar .payment-method-row {
-    align-items: stretch !important;
+    align-items: stretch;
 }
 
 #stickySummaryBar #payment_method,
@@ -2135,16 +2135,16 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 #stickySummaryBar .bank-select.show {
     box-sizing: border-box;
     display: block;
-    width: 100% !important;
-    height: auto !important;
-    min-height: auto !important;
-    max-height: none !important;
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    max-height: none;
     padding: 0.6rem 0.85rem !important;
-    line-height: 1.4 !important;
+    line-height: 1.4;
 }
 
 #stickySummaryBar #payment_method {
-    flex: 0 0 auto !important;
+    flex: 0 0 auto;
 }
 
 #stickySummaryBar .bank-select {
@@ -2154,7 +2154,7 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 
 #stickySummaryBar .bank-select.show {
     margin-top: 0.5rem;
-    flex: 0 0 auto !important;
+    flex: 0 0 auto;
 }
 
 /* ---------- Dark theme adjustments ---------- */
@@ -2191,8 +2191,8 @@ body.material-theme.dark-theme #sell-view .sticky-summary-bar {
 
 body.dark-theme #sell-view .sticky-summary-bar::before,
 body.material-theme.dark-theme #sell-view .sticky-summary-bar::before {
-    display: none !important;
-    content: none !important;
+    display: none;
+    content: none;
 }
 
 body.dark-theme #sell-view .sticky-summary-bar .summary-stats,
@@ -2321,7 +2321,7 @@ body.material-theme.dark-theme #sell-view .nrc-input .nrc-sep {
 
 body.dark-theme #sell-view .nrc-input:focus-within,
 body.material-theme.dark-theme #sell-view .nrc-input:focus-within {
-    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.25);
+    box-shadow: 0 0 0 3px rgba(13, 110, 119, 0.25);
 }
 
 /* ---------- Mobile — keep things readable ---------- */

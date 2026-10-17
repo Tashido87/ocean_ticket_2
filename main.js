@@ -270,7 +270,7 @@ export function reviewPotentialMatches() {
         <div class="solid-modal-box potential-matches-dialog" style="max-width: 680px; padding: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h3 style="margin: 0; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-user-check" style="color: var(--brand, #b91c1c);"></i>
+                    <i class="fa-solid fa-user-check" style="color: var(--primary, #0D6E77);"></i>
                     Review Potential Customer Matches (${matches.length})
                 </h3>
                 <button type="button" class="btn btn-secondary" id="closePotentialMatchesTopBtn" style="width: 36px; height: 36px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">

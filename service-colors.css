@@ -27,11 +27,11 @@ body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPa
     border: 1px solid var(--service-edge) !important;
 }
 body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) :is(.airasia-upload-zone, .service-quick-config) {
-    background: var(--service-tint) !important;
-    border-color: var(--service-edge) !important;
+    background: var(--service-tint);
+    border-color: var(--service-edge);
 }
 body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) :is(.service-dropzone-icon, .service-quick-hint i) {
-    color: var(--service-accent) !important;
+    color: var(--service-accent);
 }
 body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) .btn-generate,
 body #services-view #invoicePanel .format-segment input:checked + label {
@@ -41,19 +41,19 @@ body #services-view #invoicePanel .format-segment input:checked + label {
     box-shadow: 0 2px 5px rgb(15 23 42 / 10%) !important;
 }
 body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) .btn-generate:hover {
-    background: var(--service-hover) !important;
-    border-color: var(--service-hover) !important;
+    background: var(--service-hover);
+    border-color: var(--service-hover);
 }
 body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) :is(input, select, button):focus-visible {
-    outline: 2px solid var(--service-accent) !important;
+    outline: 2px solid var(--service-accent);
     outline-offset: 3px;
 }
 body #services-view :is(#invoicePanel, #chinaHotelPanel, #hotelPanel, #airAsiaPanel) .airasia-upload-zone:hover {
-    border-color: var(--service-accent) !important;
+    border-color: var(--service-accent);
 }
 body.dark-theme #services-view #invoicePanel { --service-tint: #163536; --service-edge: #2E6465; }
 body.dark-theme #services-view :is(#chinaHotelPanel, #hotelPanel) { --service-tint: #30263F; --service-edge: #655080; }
 body.dark-theme #services-view #airAsiaPanel { --service-tint: #392C22; --service-edge: #875A39; }
-body.dark-theme #services-view #invoicePanel :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #6DD6CD !important; }
-body.dark-theme #services-view :is(#chinaHotelPanel, #hotelPanel) :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #C6ADFA !important; }
-body.dark-theme #services-view #airAsiaPanel :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #F9B778 !important; }
+body.dark-theme #services-view #invoicePanel :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #6DD6CD; }
+body.dark-theme #services-view :is(#chinaHotelPanel, #hotelPanel) :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #C6ADFA; }
+body.dark-theme #services-view #airAsiaPanel :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #F9B778; }

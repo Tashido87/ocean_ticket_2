@@ -19,7 +19,7 @@
     letter-spacing: -.015em !important;
     line-height: 1.2 !important;
     color: var(--dash-text) !important;
-    text-align: left !important;
+    text-align: left;
 }
 :is(#booking-view, #hotel-view, #manage-view) :is(h3, h4, .manage-ticket-toolbar) {
     font-size: 14px !important;
@@ -80,7 +80,7 @@
 }
 :is(#booking-view, #hotel-view, #manage-view) .manage-kpi.positive > strong { color: var(--dash-mint) !important; }
 :is(#booking-view, #hotel-view, #manage-view) .manage-kpi.warning > strong { color: var(--dash-amber) !important; }
-:is(#booking-view, #hotel-view, #manage-view) th { background: var(--dash-surface-subtle) !important; }
+:is(#booking-view, #hotel-view, #manage-view) th { background: var(--dash-surface-subtle); }
 :is(#booking-view, #hotel-view, #manage-view) td {
     font-size: 12px !important;
     color: var(--dash-text) !important;

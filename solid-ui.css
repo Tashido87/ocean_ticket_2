@@ -36,15 +36,15 @@ textarea {
 }
 
 body {
-    background-color: var(--bg) !important;
-    color: var(--text-primary) !important;
+    background-color: var(--bg);
+    color: var(--text-primary);
 }
 
 body #main-header,
 body #sidebar,
 body #home-view .dashboard-period-controls,
 body #sellForm > #section-payment {
-    background: #ffffff !important;
+    background: #ffffff;
 }
 
 body.dark-theme #main-header,
@@ -69,7 +69,7 @@ button,
                 background-color 140ms ease,
                 border-color 140ms ease,
                 color 140ms ease,
-                box-shadow 140ms ease !important;
+                box-shadow 140ms ease;
     will-change: transform;
 }
 
@@ -79,8 +79,8 @@ button:active,
 .btn-primary:active,
 .btn-secondary:active,
 .manage-action-btn:active {
-    transform: scale(0.975) !important;
-    transition-duration: 120ms !important;
+    transform: scale(0.975);
+    transition-duration: 120ms;
 }
 
 /* Primary buttons */
@@ -94,32 +94,32 @@ button:active,
 
 .btn-primary:hover,
 .manage-action-btn.primary:hover {
-    background-color: var(--primary-accent-dark) !important;
-    border-color: var(--primary-accent-dark) !important;
-    color: #ffffff !important;
+    background-color: var(--primary-accent-dark);
+    border-color: var(--primary-accent-dark);
+    color: #ffffff;
 }
 
 /* Secondary buttons */
 .btn-secondary,
 .btn-service.btn-secondary {
-    background-color: var(--surface-2) !important;
-    border-color: var(--border-color) !important;
-    color: var(--text-primary) !important;
+    background-color: var(--surface-2);
+    border-color: var(--border-color);
+    color: var(--text-primary);
 }
 
 .btn-secondary:hover,
 .btn-service.btn-secondary:hover {
-    background-color: var(--surface-3, var(--border-color)) !important;
-    color: var(--text-primary) !important;
+    background-color: var(--surface-3, var(--border-color));
+    color: var(--text-primary);
 }
 
 /* Dark mode button contrast */
 body.dark-theme .btn-secondary,
 body.dark-theme .btn-service.btn-secondary,
 body.dark-theme .btn-clear {
-    background-color: var(--surface-2) !important;
-    border-color: var(--border-color) !important;
-    color: var(--text-primary) !important;
+    background-color: var(--surface-2);
+    border-color: var(--border-color);
+    color: var(--text-primary);
 }
 
 /* 4. Unified Inputs, Selects & Textareas (15px desktop, 16px mobile, comfortable height) */
@@ -140,9 +140,9 @@ textarea {
 input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus,
 select:focus,
 textarea:focus {
-    border-color: var(--primary-accent) !important;
-    outline: 2px solid var(--primary-accent) !important;
-    outline-offset: 1px !important;
+    border-color: var(--primary-accent);
+    outline: 2px solid var(--primary-accent);
+    outline-offset: 1px;
 }
 
 body.dark-theme input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
@@ -155,14 +155,14 @@ body.dark-theme textarea {
 
 input::placeholder,
 textarea::placeholder {
-    color: var(--text-faint, #64748B) !important;
-    font-size: 14px !important;
+    color: var(--text-faint, #64748B);
+    font-size: 14px;
 }
 
 body.dark-theme input::placeholder,
 body.dark-theme textarea::placeholder {
-    color: var(--text-faint, #94A3B8) !important;
-    font-size: 14px !important;
+    color: var(--text-faint, #94A3B8);
+    font-size: 14px;
 }
 
 /* 4.1 Search Box with Icons: ensure text never overlaps leading search icon or trailing clear icon */
@@ -176,20 +176,20 @@ body.dark-theme textarea::placeholder {
 }
 
 .global-search-box .search-icon {
-    position: absolute !important;
-    left: 0.65rem !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    z-index: 2 !important;
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
     width: 28px !important;
     height: 28px !important;
-    border: 0 !important;
-    background: transparent !important;
-    color: var(--text-secondary) !important;
-    display: grid !important;
-    place-items: center !important;
-    pointer-events: auto !important;
-    cursor: pointer !important;
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    display: grid;
+    place-items: center;
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .global-search-clear {
@@ -205,7 +205,7 @@ body.dark-theme textarea::placeholder {
     background: var(--surface-2) !important;
     color: var(--text-secondary) !important;
     display: grid !important;
-    place-items: center !important;
+    place-items: center;
     cursor: pointer !important;
 }
 
@@ -218,8 +218,8 @@ body.dark-theme textarea::placeholder {
     input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
     select,
     textarea {
-        font-size: 16px !important;
-        min-height: 42px !important;
+        font-size: 16px;
+        min-height: 42px;
     }
 }
 
@@ -245,9 +245,9 @@ body.dark-theme .booking-kpi-card,
 body.dark-theme .manage-kpi,
 body.dark-theme .pax-panel,
 body.dark-theme .manage-pnr-dashboard {
-    background: var(--surface) !important;
-    border-color: var(--border-color) !important;
-    color: var(--text-primary) !important;
+    background: var(--surface);
+    border-color: var(--border-color);
+    color: var(--text-primary);
 }
 
 /* 6. Unified Modals & Popups (160–220ms, opacity + transform, guaranteed readable text) */
@@ -258,7 +258,7 @@ body.dark-theme .manage-pnr-dashboard {
 #hotelModal,
 #bookingModal,
 #pnrDetailModal {
-    transition: opacity 180ms ease !important;
+    transition: opacity 180ms ease;
 }
 
 .modal-content,
@@ -279,12 +279,12 @@ body.dark-theme .manage-pnr-dashboard {
 .modal-content :is(h1, h2, h3, h4, h5, p, label, .modal-title),
 .modal-box :is(h1, h2, h3, h4, h5, p, label, .modal-title),
 .pnr-detail-modal-container :is(h1, h2, h3, h4, p, label) {
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
 }
 
 .modal-content :is(.text-muted, .form-hint, .section-subtitle, small),
 .modal-box :is(.text-muted, .form-hint, .section-subtitle, small) {
-    color: var(--text-secondary) !important;
+    color: var(--text-secondary);
 }
 
 body.dark-theme .modal-content,
@@ -299,14 +299,14 @@ body.dark-theme .dialog-content {
 /* 7. Unified Tables */
 table,
 .table {
-    background-color: var(--surface) !important;
-    color: var(--text-primary) !important;
+    background-color: var(--surface);
+    color: var(--text-primary);
 }
 
 th {
-    background-color: var(--surface-2) !important;
-    color: var(--text-secondary) !important;
-    border-bottom: 1px solid var(--border-color) !important;
+    background-color: var(--surface-2);
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
 }
 
 td {
@@ -319,9 +319,9 @@ tbody tr:hover td {
 }
 
 body.dark-theme th {
-    background-color: var(--surface-2) !important;
-    color: var(--text-secondary) !important;
-    border-color: var(--border-color) !important;
+    background-color: var(--surface-2);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
 }
 
 body.dark-theme td {
@@ -348,39 +348,39 @@ body.dark-theme tbody tr:hover td {
 .status-paid,
 .status-confirmed,
 .status-verified {
-    background-color: var(--success-soft) !important;
-    color: var(--success) !important;
-    border: 1px solid rgba(22, 163, 74, 0.25) !important;
+    background-color: var(--success-soft);
+    color: var(--success);
+    border: 1px solid rgba(22, 163, 74, 0.25);
 }
 
 .badge-warning,
 .status-pending,
 .status-partial {
-    background-color: var(--warning-soft) !important;
-    color: var(--warning) !important;
-    border: 1px solid rgba(217, 119, 6, 0.25) !important;
+    background-color: var(--warning-soft);
+    color: var(--warning);
+    border: 1px solid rgba(217, 119, 6, 0.25);
 }
 
 .badge-danger,
 .status-unpaid,
 .status-cancelled {
-    background-color: var(--danger-soft) !important;
-    color: var(--danger) !important;
-    border: 1px solid rgba(220, 38, 38, 0.25) !important;
+    background-color: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid rgba(220, 38, 38, 0.25);
 }
 
 /* 9. Panels & Tab Transitions (160–220ms, transform & opacity) */
 .view {
-    transition: opacity 180ms ease, transform 180ms ease !important;
+    transition: opacity 180ms ease, transform 180ms ease;
 }
 
 /* 10. Motion Accessibility (Strict Reduced Motion) */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
+        animation-duration: 0.01ms;
+        animation-iteration-count: 1;
+        transition-duration: 0.01ms;
+        scroll-behavior: auto;
     }
 }
 
@@ -397,8 +397,8 @@ h1,
     font-size: clamp(24px, 2.2vw, 28px) !important;
     font-weight: 700 !important;
     line-height: 1.25 !important;
-    letter-spacing: -0.02em !important;
-    color: var(--text-primary) !important;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
 }
 
 /* Section heading: 17–20px */
@@ -416,11 +416,11 @@ h3,
 #services-view h2,
 #services-view h3,
 .modal-title {
-    font-size: clamp(17px, 1.3vw, 20px) !important;
-    font-weight: 650 !important;
-    line-height: 1.35 !important;
+    font-size: clamp(17px, 1.3vw, 20px);
+    font-weight: 650;
+    line-height: 1.35;
     letter-spacing: -0.01em !important;
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
 }
 
 /* Body / table: 14–16px */
@@ -452,7 +452,7 @@ table td,
 small {
     font-size: 13px !important;
     line-height: 1.4 !important;
-    color: var(--text-secondary) !important;
+    color: var(--text-secondary);
 }
 
 /* KPI amount: 26–32px */
@@ -469,9 +469,9 @@ small {
 .statement-total-amount,
 .dashboard-kpi-value,
 .client-hero-stat .stat-num {
-    font-size: clamp(26px, 2.5vw, 32px) !important;
-    font-weight: 700 !important;
-    line-height: 1.15 !important;
+    font-size: clamp(26px, 2.5vw, 32px);
+    font-weight: 700;
+    line-height: 1.15;
     letter-spacing: -0.02em !important;
 }
 
@@ -507,7 +507,7 @@ table td:has(strong),
 .price,
 .fare,
 input[type="number"] {
-    font-variant-numeric: tabular-nums !important;
-    -webkit-font-feature-settings: "tnum" 1 !important;
-    font-feature-settings: "tnum" 1 !important;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-feature-settings: "tnum" 1;
+    font-feature-settings: "tnum" 1;
 }

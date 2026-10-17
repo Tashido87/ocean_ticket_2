@@ -248,10 +248,10 @@ export function displayTickets(tickets, page = 1) {
 
         const airlineText = isGroup 
             ? (ticket.tickets[0]?._isHotel 
-                ? `<span style="font-weight:600; color:#B91C1C;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
+                ? `<span style="font-weight:600; color:#0D6E77;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
                 : renderAirlineName(ticket.tickets[0]?.airline || ''))
             : (ticket._isHotel 
-                ? `<span style="font-weight:600; color:#B91C1C;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
+                ? `<span style="font-weight:600; color:#0D6E77;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
                 : renderAirlineName(ticket.airline || ''));
 
         let netAmountHtml;
@@ -713,9 +713,9 @@ export function showDetails(docId) {
                 flex-direction: column;
             }
 
-            /* Red gradient header */
+            /* Ocean Teal gradient header */
             .aesthetic-header-banner {
-                background: linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%);
+                background: linear-gradient(135deg, #0D6E77 0%, #06393E 100%);
                 padding: 1.75rem 1.5rem;
                 display: flex;
                 align-items: center;
@@ -808,7 +808,7 @@ export function showDetails(docId) {
             .aesthetic-card .pnr-value {
                 font-size: 1.35rem;
                 font-weight: 800;
-                color: #DC2626;
+                color: #0D6E77;
                 letter-spacing: 0.02em;
                 font-family: monospace;
             }
@@ -870,7 +870,7 @@ export function showDetails(docId) {
                 width: 38px;
                 height: 38px;
                 border-radius: 50%;
-                background: #DC2626;
+                background: #0D6E77;
                 color: #ffffff;
                 font-weight: 700;
                 font-size: 0.9rem;
@@ -995,7 +995,7 @@ export function showDetails(docId) {
             .btn-aesthetic-edit {
                 padding: 0.625rem 1.5rem;
                 border-radius: 9999px;
-                background: #DC2626;
+                background: #0D6E77;
                 border: none;
                 color: #ffffff;
                 font-size: 0.875rem;
@@ -1005,13 +1005,13 @@ export function showDetails(docId) {
                 align-items: center;
                 gap: 0.4rem;
                 transition: all 0.2s ease;
-                box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+                box-shadow: 0 4px 12px rgba(13, 110, 119, 0.2);
                 outline: none;
             }
 
             .btn-aesthetic-edit:hover {
-                background: #b91c1c;
-                box-shadow: 0 4px 16px rgba(220, 38, 38, 0.25);
+                background: #094F56;
+                box-shadow: 0 4px 16px rgba(13, 110, 119, 0.3);
             }
         </style>
 
