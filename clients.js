@@ -11,7 +11,8 @@ import {
     parseSheetDate,
     formatDateToDMMMY,
     renderAirlineName,
-    escapeHtml
+    escapeHtml,
+    isPlaceholderDate
 } from './utils.js';
 import {
     openModal,
@@ -74,6 +75,7 @@ export function buildClientList() {
         }
 
         const lowerRemarks = ticket.remarks?.toLowerCase() || '';
+        const cleanTicketExpiry = (ticket.passport_expiry && !isPlaceholderDate(ticket.passport_expiry)) ? ticket.passport_expiry : '';
         if (!clients[clientKey]) {
             const hash = Math.abs(clientKey.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0));
             const clientId = 'CLT-202501-' + String(hash).slice(-4).padStart(4, '0');
@@ -89,7 +91,7 @@ export function buildClientList() {
                 nrc_no: ticketNrc || '',
                 document_type: ticketPassport ? 'Passport' : 'NRC',
                 passport_no: ticketPassport || '',
-                passport_expiry: ticket.passport_expiry || '',
+                passport_expiry: cleanTicketExpiry,
                 passport_photo_url: ticket.passport_photo_url || '',
                 passport_photo_path: ticket.passport_photo_path || '',
                 dob: ticket.dob || '',
@@ -101,15 +103,27 @@ export function buildClientList() {
                 last_issued: new Date(0)
             };
         }
+        const issuedDate = parseSheetDate(ticket.issued_date);
+        const isNewerIssued = issuedDate && !isNaN(issuedDate.getTime()) && issuedDate >= clients[clientKey].last_issued;
+
         if (!clients[clientKey].account_type && accountType) clients[clientKey].account_type = accountType;
         if (!clients[clientKey].account_link && accountLink) clients[clientKey].account_link = accountLink;
         if (!clients[clientKey].nrc_no && ticketNrc) clients[clientKey].nrc_no = ticketNrc;
         if (!clients[clientKey].id_no && ticket.id_no) clients[clientKey].id_no = ticket.id_no;
-        if (!clients[clientKey].passport_no && ticketPassport) clients[clientKey].passport_no = ticketPassport;
-        if (!clients[clientKey].passport_expiry && ticket.passport_expiry) clients[clientKey].passport_expiry = ticket.passport_expiry;
-        if (!clients[clientKey].passport_photo_url && ticket.passport_photo_url) clients[clientKey].passport_photo_url = ticket.passport_photo_url;
-        if (!clients[clientKey].passport_photo_path && ticket.passport_photo_path) clients[clientKey].passport_photo_path = ticket.passport_photo_path;
-        if (!clients[clientKey].dob && ticket.dob) clients[clientKey].dob = ticket.dob;
+        if (ticketPassport && (!clients[clientKey].passport_no || isNewerIssued)) {
+            clients[clientKey].passport_no = ticketPassport;
+            clients[clientKey].document_type = 'Passport';
+        }
+        if (cleanTicketExpiry) {
+            const curExpDate = clients[clientKey].passport_expiry ? parseSheetDate(clients[clientKey].passport_expiry) : null;
+            const newExpDate = parseSheetDate(cleanTicketExpiry);
+            if (!clients[clientKey].passport_expiry || isNewerIssued || (newExpDate && curExpDate && newExpDate > curExpDate)) {
+                clients[clientKey].passport_expiry = cleanTicketExpiry;
+            }
+        }
+        if (ticket.passport_photo_url && (!clients[clientKey].passport_photo_url || isNewerIssued)) clients[clientKey].passport_photo_url = ticket.passport_photo_url;
+        if (ticket.passport_photo_path && (!clients[clientKey].passport_photo_path || isNewerIssued)) clients[clientKey].passport_photo_path = ticket.passport_photo_path;
+        if (!clients[clientKey].dob && ticket.dob && !isPlaceholderDate(ticket.dob)) clients[clientKey].dob = ticket.dob;
         if ((!clients[clientKey].nationality || clients[clientKey].nationality === 'MMR') && ticket.nationality) clients[clientKey].nationality = ticket.nationality;
         if (!clients[clientKey].frequent_flyer_no && ticket.member_id) clients[clientKey].frequent_flyer_no = ticket.member_id;
         if (!clients[clientKey].member_airline && ticket.member_airline) clients[clientKey].member_airline = ticket.member_airline;
@@ -133,7 +147,6 @@ export function buildClientList() {
             clients[clientKey].last_travel = travelDate;
         }
 
-        const issuedDate = parseSheetDate(ticket.issued_date);
         if (issuedDate > clients[clientKey].last_issued) {
             clients[clientKey].last_issued = issuedDate;
         }
@@ -378,20 +391,18 @@ export function renderClientsView(page) {
 }
 
 /**
- * Computes the status of a passport expiry date string (DD/MM/YYYY).
- * Returns { level: 'expired' | 'soon' | 'ok', formatted, daysAbs?, daysUntil? }
+ * Computes the status of a passport expiry date string.
+ * Returns { level: 'expired' | 'soon' | 'ok', formatted, expiryDate, daysDiff, daysAbs?, daysUntil? }
  * 'soon' = expires within 6 months from today.
  */
-function computePassportExpiryStatus(expiryStr) {
+export function computePassportExpiryStatus(expiryStr) {
     const raw = String(expiryStr || '').trim();
-    const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!match) return { level: 'ok' };
+    if (!raw || isPlaceholderDate(raw)) return { level: 'ok' };
 
-    const dd = Number(match[1]);
-    const mm = Number(match[2]);
-    const yyyy = Number(match[3]);
-    const expiry = new Date(yyyy, mm - 1, dd);
-    if (isNaN(expiry.getTime())) return { level: 'ok' };
+    const expiry = parseSheetDate(raw);
+    if (!expiry || isNaN(expiry.getTime()) || expiry.getTime() <= 0 || expiry.getFullYear() <= 1970) {
+        return { level: 'ok' };
+    }
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -399,9 +410,49 @@ function computePassportExpiryStatus(expiryStr) {
     const daysDiff = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
     const formatted = expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    if (expiry < today) return { level: 'expired', formatted, daysAbs: Math.abs(daysDiff) };
-    if (expiry < sixMonthsFromNow) return { level: 'soon', formatted, daysUntil: daysDiff };
-    return { level: 'ok', formatted };
+    if (expiry < today) return { level: 'expired', formatted, expiryDate: expiry, daysDiff, daysAbs: Math.abs(daysDiff) };
+    if (expiry < sixMonthsFromNow) return { level: 'soon', formatted, expiryDate: expiry, daysDiff, daysUntil: daysDiff };
+    return { level: 'ok', formatted, expiryDate: expiry, daysDiff };
+}
+
+/**
+ * Returns all clients whose passports are expired or expiring within the next 6 months,
+ * enriched with VIP status (featured client or >= 3 tickets) and sorted with VIPs and earliest expiry first.
+ */
+export function getExpiringPassportClients() {
+    const featuredSet = new Set(state.featuredClients || []);
+    const results = [];
+
+    (state.allClients || []).forEach(client => {
+        if (!client || !client.passport_expiry) return;
+        const status = computePassportExpiryStatus(client.passport_expiry);
+        if (status.level !== 'expired' && status.level !== 'soon') return;
+        // Skip very old expired passports (> 180 days ago) unless the client is a VIP/Featured client
+        const isFeatured = featuredSet.has(client.client_key) || featuredSet.has(client.name);
+        const isFrequent = (Number(client.ticket_count) || 0) >= 3;
+        const isVip = isFeatured || isFrequent;
+        if (status.level === 'expired' && status.daysAbs > 180 && !isVip) return;
+
+        results.push({
+            client,
+            status,
+            isFeatured,
+            isFrequent,
+            isVip
+        });
+    });
+
+    // Sort: Expiring soon (upcoming 6 months) first or VIPs first, ordered by earliest expiry
+    results.sort((a, b) => {
+        if (a.isVip !== b.isVip) return a.isVip ? -1 : 1;
+        // Within same VIP tier, show upcoming expiring (< 6 months) before already-expired, then by closest expiry date
+        const aUpcoming = a.status.level === 'soon' ? 0 : 1;
+        const bUpcoming = b.status.level === 'soon' ? 0 : 1;
+        if (aUpcoming !== bUpcoming) return aUpcoming - bUpcoming;
+        return a.status.daysDiff - b.status.daysDiff;
+    });
+
+    return results;
 }
 
 /**

@@ -2266,6 +2266,7 @@ export function setupPnrAutoParser() {
             });
         }
 
+        checkAllPassengersPassportExpiry();
         updateSellRoutePreview();
         closeModalFunc();
         showToast('Itinerary details successfully applied to form!', 'success');
@@ -2274,11 +2275,27 @@ export function setupPnrAutoParser() {
     openBtn.dataset.bound = 'true';
 }
 
+export function checkAllPassengersPassportExpiry() {
+    document.querySelectorAll('#passenger-forms-container .passenger-form').forEach(formEl => {
+        checkPassportExpiryWarning(formEl);
+    });
+}
+
 export function initializeSellFormEnhancements() {
     setupSellClientAutoSuggest();
     setupPnrDuplicateChecker();
     setupMobileSellStepper();
     setupPnrAutoParser();
+
+    // --- Re-evaluate passport 6-month validity whenever travel/return dates change ---
+    ['departing_on', 'return_date'].forEach(id => {
+        const dateEl = document.getElementById(id);
+        if (!dateEl || dateEl.dataset.passportExpiryBound === 'true') return;
+        ['change', 'input', 'changeDate'].forEach(evt => {
+            dateEl.addEventListener(evt, () => checkAllPassengersPassportExpiry());
+        });
+        dateEl.dataset.passportExpiryBound = 'true';
+    });
 
     // --- Bulletproof: delegated handler for passenger card collapse/expand ---
     // Survives any re-render and works for cards added later.
@@ -2316,7 +2333,10 @@ export function initializeSellFormEnhancements() {
     ['trip_type_oneway', 'trip_type_round'].forEach(id => {
         const radio = document.getElementById(id);
         if (!radio || radio.dataset.tripTypeBound === 'true') return;
-        radio.addEventListener('change', () => applyTripTypeToUI());
+        radio.addEventListener('change', () => {
+            applyTripTypeToUI();
+            checkAllPassengersPassportExpiry();
+        });
         radio.dataset.tripTypeBound = 'true';
     });
 
@@ -2833,6 +2853,7 @@ function _attachPaxBehaviour(formEl, opts = {}) {
         } catch (_) {}
         dobInput.addEventListener('change', () => updateAgeBadge(formEl));
         dobInput.addEventListener('input', () => updateAgeBadge(formEl));
+        dobInput.addEventListener('changeDate', () => updateAgeBadge(formEl));
     }
 
 
@@ -2879,11 +2900,13 @@ function _attachPaxBehaviour(formEl, opts = {}) {
                 new window.Datepicker(expiryInput, { format: 'dd/mm/yyyy', autohide: true });
             }
         } catch (_) {}
-        expiryInput.addEventListener('change', () => {
+        const onExpiryUpdate = () => {
             updatePaxStatus(formEl);
             checkPassportExpiryWarning(formEl);
-        });
-        expiryInput.addEventListener('input', () => checkPassportExpiryWarning(formEl));
+        };
+        expiryInput.addEventListener('change', onExpiryUpdate);
+        expiryInput.addEventListener('input', onExpiryUpdate);
+        expiryInput.addEventListener('changeDate', onExpiryUpdate);
         // Initial check (in case the form is pre-populated)
         checkPassportExpiryWarning(formEl);
     }
@@ -3499,8 +3522,9 @@ function updatePaxStatus(formEl) {
 }
 
 /**
- * Checks the passenger's passport expiry date and shows a warning banner
- * if it is expired or within 6 months of expiry.
+ * Checks the passenger's passport expiry date against both Today and the
+ * selected Travel/Return Date (#departing_on / #return_date), and immediately
+ * displays a prominent Red Warning Banner if expired or < 6 months validity.
  */
 function checkPassportExpiryWarning(formEl) {
     if (!formEl) return;
@@ -3508,46 +3532,114 @@ function checkPassportExpiryWarning(formEl) {
     const expiryInput = formEl.querySelector('.passenger-passport-expiry');
     if (!banner || !expiryInput) return;
 
-    const raw = (expiryInput.value || '').trim();
-    const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!match) {
+    const clearWarning = () => {
         banner.hidden = true;
         banner.textContent = '';
         banner.className = 'passport-expiry-warning';
+        formEl.classList.remove('has-passport-warning');
+        expiryInput.classList.remove('input-passport-danger');
+    };
+
+    const raw = (expiryInput.value || '').trim();
+    if (!raw || isPlaceholderDate(raw)) {
+        clearWarning();
         return;
     }
 
-    const mm = Number(match[1]);
-    const dd = Number(match[2]);
-    const yyyy = Number(match[3]);
-    const expiry = new Date(yyyy, mm - 1, dd);
-    if (isNaN(expiry.getTime())) {
-        banner.hidden = true;
+    const expiry = parseSheetDate(raw);
+    if (!expiry || isNaN(expiry.getTime()) || expiry.getTime() <= 0 || expiry.getFullYear() <= 1970) {
+        clearWarning();
         return;
     }
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const sixMonthsFromNow = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
-    const daysUntilExpiry = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
+    const sixMonthsFromToday = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
+    const daysFromToday = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
 
-    const formatted = expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    // Also check against scheduled Travel Date (#departing_on and #return_date if round-trip)
+    const depRaw = (document.getElementById('departing_on')?.value || '').trim();
+    const retRaw = isRoundTrip() ? (document.getElementById('return_date')?.value || '').trim() : '';
+    const depParsed = depRaw && !isPlaceholderDate(depRaw) ? parseSheetDate(depRaw) : null;
+    const retParsed = retRaw && !isPlaceholderDate(retRaw) ? parseSheetDate(retRaw) : null;
+    const validDep = depParsed && !isNaN(depParsed.getTime()) && depParsed.getTime() > 0 ? new Date(depParsed.getFullYear(), depParsed.getMonth(), depParsed.getDate()) : null;
+    const validRet = retParsed && !isNaN(retParsed.getTime()) && retParsed.getTime() > 0 ? new Date(retParsed.getFullYear(), retParsed.getMonth(), retParsed.getDate()) : null;
+
+    const refTravelDate = (validDep && validRet)
+        ? (validRet > validDep ? validRet : validDep)
+        : (validRet || validDep || null);
+    const isReturnRef = Boolean(validRet && refTravelDate === validRet);
+    const sixMonthsFromTravel = refTravelDate
+        ? new Date(refTravelDate.getFullYear(), refTravelDate.getMonth() + 6, refTravelDate.getDate())
+        : null;
+    const daysFromTravel = refTravelDate
+        ? Math.round((expiry - refTravelDate) / (1000 * 60 * 60 * 24))
+        : null;
+
+    const formattedExpiry = expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const formattedTravel = refTravelDate
+        ? refTravelDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        : '';
+    const travelLabel = isReturnRef ? 'အပြန်ခရီးသွားရက် (Return Date)' : 'ခရီးသွားမည့်ရက် (Travel Date)';
+
+    let warningHtml = '';
 
     if (expiry < today) {
-        // Expired
+        warningHtml = `
+            <i class="fa-solid fa-circle-xmark"></i>
+            <div class="passport-warning-content">
+                <strong>Passport EXPIRED — သက်တမ်းကုန်ဆုံးနေပါသည်!</strong>
+                <span>သက်တမ်းကုန်ရက်: <b>${formattedExpiry}</b> (လွန်ခဲ့သော ${Math.abs(daysFromToday)} ရက်က ကုန်ဆုံးပြီး)။ ခရီးမသွားမီ Passport အသစ် မဖြစ်မနေ လဲလှယ်ရန် လိုအပ်ပါသည်။</span>
+            </div>
+        `;
+    } else if (refTravelDate && expiry < refTravelDate) {
+        warningHtml = `
+            <i class="fa-solid fa-circle-xmark"></i>
+            <div class="passport-warning-content">
+                <strong>CRITICAL — ${travelLabel} (${formattedTravel}) မတိုင်မီ Passport သက်တမ်းကုန်မည်!</strong>
+                <span>သက်တမ်းကုန်ရက်: <b>${formattedExpiry}</b> · ခရီးသွားမည့်ရက်မတိုင်မီ (${Math.abs(daysFromTravel)} ရက်အလိုတွင်) သက်တမ်းကုန်ဆုံးနေပါသဖြင့် လက်မှတ်ဝယ်ယူ၍ မရနိုင်ပါ။</span>
+            </div>
+        `;
+    } else if (refTravelDate && sixMonthsFromTravel && expiry < sixMonthsFromTravel) {
+        const approxMonths = Math.max(0, (daysFromTravel / 30.44)).toFixed(1).replace(/\.0$/, '');
+        warningHtml = `
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div class="passport-warning-content">
+                <strong>သတိပေးချက် — ${travelLabel} (${formattedTravel}) တွင် Passport သက်တမ်း ၆ လအောက် ရောက်နေပါသည်!</strong>
+                <span>သက်တမ်းကုန်ရက်: <b>${formattedExpiry}</b> · ခရီးသွားရက်မှ <b>${daysFromTravel} ရက် (~${approxMonths} လ)</b> သာ ကျန်ရှိပါသည်။ လေကြောင်းလိုင်းအများစုသည် အနည်းဆုံး ၆ လ သက်တမ်း လိုအပ်ပါသည်။</span>
+            </div>
+        `;
+    } else if (expiry < sixMonthsFromToday) {
+        const approxMonths = Math.max(0, (daysFromToday / 30.44)).toFixed(1).replace(/\.0$/, '');
+        warningHtml = `
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div class="passport-warning-content">
+                <strong>သတိပေးချက် — Passport သက်တမ်း ၆ လအောက် ရောက်နေပါသည်!</strong>
+                <span>သက်တမ်းကုန်ရက်: <b>${formattedExpiry}</b> · ယနေ့မှ <b>${daysFromToday} ရက် (~${approxMonths} လ)</b> သာ ကျန်ရှိပါသည်။ လေကြောင်းလိုင်းအများစုသည် အနည်းဆုံး ၆ လ သက်တမ်း လိုအပ်ပါသည်။</span>
+            </div>
+        `;
+    }
+
+    if (warningHtml) {
         banner.hidden = false;
         banner.className = 'passport-expiry-warning is-expired';
-        banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <strong>Passport EXPIRED</strong> on ${formatted} (${Math.abs(daysUntilExpiry)} days ago). A new passport is required before travel.`;
-    } else if (expiry < sixMonthsFromNow) {
-        // Expiring within 6 months
-        banner.hidden = false;
-        banner.className = 'passport-expiry-warning is-soon';
-        banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Passport expires soon</strong> on ${formatted} (in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}). Many airlines require at least 6 months validity \u2014 request a new passport before booking.`;
+        banner.innerHTML = warningHtml;
+        formEl.classList.add('has-passport-warning');
+        expiryInput.classList.add('input-passport-danger');
+
+        // Auto-switch document tab to Passport so the Red Warning Banner is never hidden behind the NRC tab
+        const nrcTab = formEl.querySelector('.doc-tab[data-tab="nrc"]');
+        const passportTab = formEl.querySelector('.doc-tab[data-tab="passport"]');
+        const nrcPanel = formEl.querySelector('.doc-panel[data-panel="nrc"]');
+        const passportPanel = formEl.querySelector('.doc-panel[data-panel="passport"]');
+        if (passportTab && passportPanel && !passportPanel.classList.contains('is-active')) {
+            nrcTab?.classList.remove('is-active');
+            passportTab.classList.add('is-active');
+            nrcPanel?.classList.remove('is-active');
+            passportPanel.classList.add('is-active');
+        }
     } else {
-        // Plenty of validity left
-        banner.hidden = true;
-        banner.textContent = '';
-        banner.className = 'passport-expiry-warning';
+        clearWarning();
     }
 }
 

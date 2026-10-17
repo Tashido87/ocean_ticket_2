@@ -1599,19 +1599,17 @@ function passportExpiryBadge(client) {
     if (status.level === 'expired') {
         return `<span class="tag-cancelled text-xs font-semibold px-2.5 py-1 rounded-full border border-red-200" style="margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-circle-xmark"></i> Expired ${status.daysAbs} days ago</span>`;
     }
-    return `<span class="tag-pending text-xs font-semibold px-2.5 py-1 rounded-full border border-yellow-200" style="margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-triangle-exclamation"></i> Expires in ${status.daysUntil} days</span>`;
+    return `<span class="tag-cancelled text-xs font-semibold px-2.5 py-1 rounded-full border border-red-200" style="margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-triangle-exclamation"></i> Expires in ${status.daysUntil} days (&lt; 6M)</span>`;
 }
 
 function computePassportExpiryStatus(expiryStr) {
     const raw = String(expiryStr || '').trim();
-    const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!match) return { level: 'ok' };
+    if (!raw || isPlaceholderDate(raw)) return { level: 'ok' };
 
-    const dd = Number(match[1]);
-    const mm = Number(match[2]);
-    const yyyy = Number(match[3]);
-    const expiry = new Date(yyyy, mm - 1, dd);
-    if (isNaN(expiry.getTime())) return { level: 'ok' };
+    const expiry = parseSheetDate(raw);
+    if (!expiry || isNaN(expiry.getTime()) || expiry.getTime() <= 0 || expiry.getFullYear() <= 1970) {
+        return { level: 'ok' };
+    }
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());

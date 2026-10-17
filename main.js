@@ -15,7 +15,7 @@ import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handl
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
 import {  } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
-import { buildClientList, loadFeaturedClients } from './clients.js';
+import { buildClientList, loadFeaturedClients, getExpiringPassportClients, viewClientHistory } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
 import { findTicketForManage, clearManageResults } from './manage.js';
 import { exportToPdf, exportPrivateReportToPdf, togglePrivateReportButton, exportSelectedToExcel } from './reports.js';
@@ -2978,6 +2978,9 @@ function openTaskModal() {
     });
 }
 
+let dashboardPassportFilter = 'all';
+let dashboardPassportShowAll = false;
+
 function wireDashboardTaskInteractions(container) {
     const addBtn = container.querySelector('#openTaskModalBtn');
     if (addBtn) {
@@ -3001,6 +3004,29 @@ function wireDashboardTaskInteractions(container) {
             openBookingFromReminder(button.dataset.bookingReminder);
         });
     });
+
+    container.querySelectorAll('[data-passport-client]').forEach(button => {
+        button.addEventListener('click', () => {
+            const clientKey = button.dataset.passportClient;
+            if (clientKey) viewClientHistory(clientKey);
+        });
+    });
+
+    container.querySelectorAll('[data-passport-filter]').forEach(button => {
+        button.addEventListener('click', () => {
+            dashboardPassportFilter = button.dataset.passportFilter || 'all';
+            dashboardPassportShowAll = false;
+            updateDashboardData();
+        });
+    });
+
+    const toggleAllBtn = container.querySelector('#toggleAllExpiringPassportsBtn');
+    if (toggleAllBtn) {
+        toggleAllBtn.addEventListener('click', () => {
+            dashboardPassportShowAll = !dashboardPassportShowAll;
+            updateDashboardData();
+        });
+    }
 }
 
 function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups, financialPendingCount, upcomingTrips }) {
@@ -3009,13 +3035,24 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
     if (!container) return;
 
     const bookingReminders = getBookingDeadlineReminderRows(activeBookings);
+    const expiringPassports = getExpiringPassportClients();
+    const vipExpiringCount = expiringPassports.filter(item => item.isVip).length;
+    const filteredPassports = dashboardPassportFilter === 'vip'
+        ? expiringPassports.filter(item => item.isVip)
+        : expiringPassports;
+
     const manualTasks = [...(state.dashboardTasks || [])]
         .map(normalizeDashboardTask)
         .filter(task => task.source === 'manual' && task.title)
         .sort((a, b) => Number(a.done) - Number(b.done) || getManualTaskSortValue(a) - getManualTaskSortValue(b) || taskTimestampValue(b.createdAt) - taskTimestampValue(a.createdAt));
     const openManualCount = manualTasks.filter(task => !task.done).length;
     const urgentBookingCount = bookingReminders.filter(item => ['danger', 'warning'].includes(item.tone)).length;
-    if (hint) hint.textContent = `${openManualCount + urgentBookingCount} open`;
+    if (hint) {
+        const totalOpen = openManualCount + urgentBookingCount + expiringPassports.length;
+        hint.textContent = expiringPassports.length > 0
+            ? `${totalOpen} open · ${expiringPassports.length} passport${expiringPassports.length === 1 ? '' : 's'}`
+            : `${totalOpen} open`;
+    }
 
     const bookingHtml = bookingReminders.length
         ? bookingReminders.slice(0, 15).map(item => `
@@ -3029,6 +3066,36 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
             </button>
         `).join('')
         : `<div class="task-empty-line">No active booking deadlines.</div>`;
+
+    const visiblePassports = dashboardPassportShowAll ? filteredPassports : filteredPassports.slice(0, 8);
+    const passportHtml = visiblePassports.length
+        ? visiblePassports.map(({ client, status, isFeatured, isFrequent, isVip }) => {
+            const vipBadge = isFeatured
+                ? `<span class="passport-vip-badge is-featured" title="Featured VIP Client"><i class="fa-solid fa-star"></i> VIP</span>`
+                : isFrequent
+                ? `<span class="passport-vip-badge is-frequent" title="Repeat Client (${client.ticket_count} tickets)">VIP · ${client.ticket_count}</span>`
+                : '';
+            const contactText = client.phone || client.account_name || 'No contact';
+            const passportNoText = client.passport_no ? client.passport_no.toUpperCase() : 'Passport';
+            const badgeText = status.level === 'expired'
+                ? `Expired ${status.daysAbs}d ago`
+                : `In ${status.daysUntil}d`;
+            return `
+                <button type="button" class="dashboard-auto-task passport-expiry-task danger ${isVip ? 'is-vip-client' : ''}" data-passport-client="${dashboardEscapeHtml(client.client_key)}">
+                    <span class="task-auto-icon passport-alert-icon"><i class="fa-solid fa-passport"></i></span>
+                    <span class="task-auto-body">
+                        <strong>${dashboardEscapeHtml(client.name || 'Client')} ${vipBadge}</strong>
+                        <small>${dashboardEscapeHtml(passportNoText)} · Exp: <b>${dashboardEscapeHtml(status.formatted)}</b> · ${dashboardEscapeHtml(contactText)}</small>
+                    </span>
+                    <span class="dashboard-status danger">${dashboardEscapeHtml(badgeText)}</span>
+                </button>
+            `;
+        }).join('') + (filteredPassports.length > 8 ? `
+            <button type="button" class="passport-show-more-btn" id="toggleAllExpiringPassportsBtn">
+                ${dashboardPassportShowAll ? 'Show fewer' : `Show all ${filteredPassports.length} expiring passports`}
+            </button>
+        ` : '')
+        : `<div class="task-empty-line">${dashboardPassportFilter === 'vip' ? 'No VIP passports expiring within 6 months.' : 'No client passports expiring within 6 months.'}</div>`;
 
     const manualHtml = manualTasks.length
         ? manualTasks.slice(0, 20).map(task => {
@@ -3051,6 +3118,16 @@ function renderDashboardTasksReminders({ activeBookings, dueToday, unpaidGroups,
         <div class="task-mini-section">
             <div class="task-mini-title"><span>Booking deadlines</span><small>${bookingReminders.length}</small></div>
             <div class="task-mini-list">${bookingHtml}</div>
+        </div>
+        <div class="task-mini-section passport-expiry-mini-section">
+            <div class="task-mini-title">
+                <span><i class="fa-solid fa-passport" style="color:var(--dash-coral); margin-right:4px;"></i> Expiring Passports (&lt; 6 Months)</span>
+                <div class="passport-filter-pills">
+                    <button type="button" class="passport-filter-pill ${dashboardPassportFilter === 'all' ? 'active' : ''}" data-passport-filter="all">All (${expiringPassports.length})</button>
+                    <button type="button" class="passport-filter-pill ${dashboardPassportFilter === 'vip' ? 'active' : ''}" data-passport-filter="vip"><i class="fa-solid fa-star"></i> VIP (${vipExpiringCount})</button>
+                </div>
+            </div>
+            <div class="task-mini-list">${passportHtml}</div>
         </div>
         <div class="task-mini-section">
             <div class="task-mini-title">

@@ -273,48 +273,82 @@
 /* ---------- Passport expiry warning banner ---------- */
 .passport-expiry-warning {
     margin-top: 0.85rem;
-    padding: 0.7rem 0.9rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    line-height: 1.4;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    line-height: 1.45;
     display: flex;
-    align-items: center;
-    gap: 0.55rem;
+    align-items: flex-start;
+    gap: 0.7rem;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
 }
 
 .passport-expiry-warning[hidden] {
     display: none;
 }
 
-.passport-expiry-warning.is-soon {
-    background: rgba(234, 162, 33, 0.10);
-    border: 1px solid rgba(234, 162, 33, 0.32);
-    color: #b46a00;
+.passport-expiry-warning .passport-warning-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
 }
 
+.passport-expiry-warning .passport-warning-content strong {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: inherit;
+}
+
+.passport-expiry-warning .passport-warning-content span {
+    font-size: 0.8rem;
+    opacity: 0.94;
+}
+
+.passport-expiry-warning.is-soon,
 .passport-expiry-warning.is-expired {
-    background: rgba(207, 45, 86, 0.10);
-    border: 1px solid rgba(207, 45, 86, 0.32);
-    color: #b1264a;
+    background: rgba(220, 38, 38, 0.10);
+    border: 1.5px solid rgba(220, 38, 38, 0.42);
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
 }
 
 .passport-expiry-warning i {
-    font-size: 1rem;
+    font-size: 1.15rem;
     flex-shrink: 0;
+    margin-top: 0.12rem;
+    color: #dc2626;
+}
+
+.passenger-passport-expiry.input-passport-danger {
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.04);
+    color: #991b1b;
+    font-weight: 600;
+}
+
+.passenger-form.has-passport-warning {
+    border-color: rgba(220, 38, 38, 0.45);
 }
 
 body.dark-theme .passport-expiry-warning.is-soon,
-body.material-theme.dark-theme .passport-expiry-warning.is-soon {
-    background: rgba(234, 162, 33, 0.16);
-    border-color: rgba(234, 162, 33, 0.45);
-    color: #ffb750;
-}
-
+body.material-theme.dark-theme .passport-expiry-warning.is-soon,
 body.dark-theme .passport-expiry-warning.is-expired,
 body.material-theme.dark-theme .passport-expiry-warning.is-expired {
-    background: rgba(207, 45, 86, 0.18);
-    border-color: rgba(207, 45, 86, 0.45);
-    color: #ff7a9a;
+    background: rgba(220, 38, 38, 0.18);
+    border-color: rgba(248, 113, 113, 0.5);
+    border-left-color: #ef4444;
+    color: #fca5a5;
+}
+
+body.dark-theme .passport-expiry-warning i,
+body.material-theme.dark-theme .passport-expiry-warning i {
+    color: #f87171;
+}
+
+body.dark-theme .passenger-passport-expiry.input-passport-danger {
+    border-color: #ef4444;
+    background: rgba(220, 38, 38, 0.14);
+    color: #fca5a5;
 }
 
 /* Card body (panels) */
