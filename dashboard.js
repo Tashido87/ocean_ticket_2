@@ -181,6 +181,7 @@ function ticketGrossAmount(t) {
 
 function ticketUnsettledAgentFare(t) {
     if (!t || isCanceledTicket(t) || t.sub_agent_settled) return 0;
+    if (isTicketPaid(t) && !t.sub_agent_manually_unsettled) return 0;
     return Math.max(0, Number(t.sub_agent_fare) || 0);
 }
 

@@ -886,6 +886,13 @@ function renderHeader(results) {
     summary.textContent = `${results.best.length} best matches · ${results.related.length} related matches`;
 }
 
+function isSubAgentSettled(t) {
+    if (!t) return false;
+    if (t.sub_agent_settled === true) return true;
+    if (t.sub_agent_manually_unsettled === true) return false;
+    return isTicketPaid(t);
+}
+
 function renderSubAgentCard(accountName) {
     if (!accountName) return '';
     const norm = normalize(accountName);
@@ -894,9 +901,9 @@ function renderSubAgentCard(accountName) {
 
     const subAgentTickets = accountTickets.filter(t => Number(t.sub_agent_fare || 0) > 0);
     const totalSubAgent = accountTickets.reduce((sum, t) => sum + (Number(t.sub_agent_fare) || 0), 0);
-    const unsettledTickets = subAgentTickets.filter(t => !t.sub_agent_settled);
+    const unsettledTickets = subAgentTickets.filter(t => !isSubAgentSettled(t));
     const unsettledSubAgent = unsettledTickets.reduce((sum, t) => sum + (Number(t.sub_agent_fare) || 0), 0);
-    const settledTickets = subAgentTickets.filter(t => t.sub_agent_settled);
+    const settledTickets = subAgentTickets.filter(t => isSubAgentSettled(t));
     const settledSubAgent = settledTickets.reduce((sum, t) => sum + (Number(t.sub_agent_fare) || 0), 0);
 
     return `
@@ -949,7 +956,7 @@ export function openSettleSubAgentModal(accountName, singleTicketId = null) {
     const accountTickets = state.allTickets.filter(t => normalize(t.account_name) === norm && !isCanceled(t));
     const targetTickets = singleTicketId 
         ? accountTickets.filter(t => t.id === singleTicketId)
-        : accountTickets.filter(t => Number(t.sub_agent_fare) > 0 && !t.sub_agent_settled);
+        : accountTickets.filter(t => Number(t.sub_agent_fare) > 0 && !isSubAgentSettled(t));
 
     if (!targetTickets.length) {
         showToast('No unsettled sub-agent fares found for this account.', 'info');
@@ -1075,6 +1082,7 @@ export function openSettleSubAgentModal(accountName, singleTicketId = null) {
             id,
             data: {
                 sub_agent_settled: true,
+                sub_agent_manually_unsettled: false,
                 sub_agent_settled_at: new Date().toISOString(),
                 sub_agent_settled_date: settleDate,
                 sub_agent_settlement_method: settleMethod,
@@ -1101,6 +1109,7 @@ async function unsettleSubAgentTicket(ticketId) {
     try {
         await updateTicket(ticketId, {
             sub_agent_settled: false,
+            sub_agent_manually_unsettled: true,
             sub_agent_settled_at: null,
             sub_agent_settled_date: '',
             sub_agent_settlement_method: '',
@@ -1212,12 +1221,15 @@ function renderRow(result, hasSubAgent = false) {
     const t = result.data;
     const clientKey = getTicketClientKey(t);
     const subFare = Number(t.sub_agent_fare || 0);
+    const subSettled = isSubAgentSettled(t);
+    const subSettleDate = t.sub_agent_settled_date || t.paid_date || t.issued_date || '—';
+    const subSettleMethod = t.sub_agent_settlement_method || t.payment_method || 'Deducted from Ticket Fare';
     const subAgentCol = hasSubAgent ? `
         <td>
             ${subFare > 0 ? `
-                <div class="subagent-fare-badge ${t.sub_agent_settled ? 'is-settled' : 'is-unsettled'}" title="${t.sub_agent_settled ? `Settled on ${t.sub_agent_settled_date || '—'} via ${t.sub_agent_settlement_method || '—'}` : 'Unsettled sub-agent fare'}">
+                <div class="subagent-fare-badge ${subSettled ? 'is-settled' : 'is-unsettled'}" title="${subSettled ? `Settled on ${subSettleDate} via ${subSettleMethod}` : 'Unsettled sub-agent fare'}">
                     <span class="subagent-amt">${subFare.toLocaleString()} MMK</span>
-                    <span class="subagent-tag-status">${t.sub_agent_settled ? `<i class="fa-solid fa-circle-check"></i> Paid` : `<i class="fa-solid fa-clock"></i> Unpaid`}</span>
+                    <span class="subagent-tag-status">${subSettled ? `<i class="fa-solid fa-circle-check"></i> Paid` : `<i class="fa-solid fa-clock"></i> Unpaid`}</span>
                 </div>
             ` : '<span class="text-slate-muted">—</span>'}
         </td>
@@ -1255,7 +1267,7 @@ function clientActions(clientKey) {
 function ticketActions(canSell, canSettle, ticket = null) {
     const subFare = Number(ticket?.sub_agent_fare || 0);
     const hasSubAgent = subFare > 0;
-    const isSubSettled = Boolean(ticket?.sub_agent_settled);
+    const isSubSettled = isSubAgentSettled(ticket);
 
     return `
         <div class="search-row-actions">

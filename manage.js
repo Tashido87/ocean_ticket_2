@@ -1533,10 +1533,18 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
             const ticketTotalAmt = (ticket.net_amount || 0) + (ticket.extra_fare || 0) + (ticket.sub_agent_fare || 0) + (ticket.date_change || 0);
             
             if (payAmount >= ticketTotalAmt) {
+                const subAgentFields = Number(ticket.sub_agent_fare) > 0 ? {
+                    sub_agent_settled: true,
+                    sub_agent_manually_unsettled: false,
+                    sub_agent_settled_at: new Date().toISOString(),
+                    sub_agent_settled_date: payDate,
+                    sub_agent_settlement_method: payMethod || 'Deducted from Ticket Fare'
+                } : {};
                 updates.push(updateTicket(ticket.id, {
                     paid: true,
                     payment_method: payMethod,
-                    paid_date: payDate
+                    paid_date: payDate,
+                    ...subAgentFields
                 }));
                 payAmount -= ticketTotalAmt;
             } else {
@@ -1716,6 +1724,21 @@ async function handleUpdateTicket(e) {
             if (paidChanged || hasNewFees) updateData.paid = rowPaid;
             if (methodChanged || hasNewFees) updateData.payment_method = rowMethod;
             if (paidDateChanged || hasNewFees) updateData.paid_date = rowPaidDate;
+
+            if ((paidChanged || paidDateChanged || methodChanged) && !hasNewFees && Number(ticket.sub_agent_fare) > 0) {
+                if (rowPaid) {
+                    updateData.sub_agent_settled = true;
+                    updateData.sub_agent_manually_unsettled = false;
+                    updateData.sub_agent_settled_at = new Date().toISOString();
+                    updateData.sub_agent_settled_date = rowPaidDate || formatDateForSheet(new Date());
+                    updateData.sub_agent_settlement_method = rowMethod || 'Deducted from Ticket Fare';
+                } else if (paidChanged && !rowPaid) {
+                    updateData.sub_agent_settled = false;
+                    updateData.sub_agent_settled_at = null;
+                    updateData.sub_agent_settled_date = '';
+                    updateData.sub_agent_settlement_method = '';
+                }
+            }
 
             if (Object.keys(updateData).length > 0) {
                 ticketUpdatesList.push({ id: ticket.id, data: updateData });

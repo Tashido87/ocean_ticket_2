@@ -410,10 +410,40 @@ export async function initializeApp() {
             return !!el && el.classList.contains('active') && el.style.display !== 'none';
         };
 
+        const syncedSubAgentTicketIds = new Set();
+
         // Set up real-time listeners
         state.unsubscribers.push(
             onTicketsChange((tickets) => {
                 const isInitial = !initialDataShown;
+                const autoSettleUpdates = [];
+                (tickets || []).forEach(t => {
+                    if (!t || isCanceledTicket(t)) return;
+                    if (Number(t.sub_agent_fare) > 0 && isTicketPaid(t) && !t.sub_agent_settled && !t.sub_agent_manually_unsettled) {
+                        const settleDate = t.paid_date || t.issued_date || '';
+                        const settleMethod = t.payment_method || 'Deducted from Ticket Fare';
+                        t.sub_agent_settled = true;
+                        t.sub_agent_settled_date = settleDate;
+                        t.sub_agent_settlement_method = settleMethod;
+                        if (t.id && !syncedSubAgentTicketIds.has(t.id)) {
+                            syncedSubAgentTicketIds.add(t.id);
+                            autoSettleUpdates.push({
+                                id: t.id,
+                                data: {
+                                    sub_agent_settled: true,
+                                    sub_agent_settled_at: new Date().toISOString(),
+                                    sub_agent_settled_date: settleDate,
+                                    sub_agent_settlement_method: settleMethod,
+                                    sub_agent_settlement_note: 'Auto-settled with ticket payment'
+                                }
+                            });
+                        }
+                    }
+                });
+                if (autoSettleUpdates.length > 0) {
+                    batchUpdateTickets(autoSettleUpdates).catch(err => console.warn('Auto-settle sub-agent fares sync warning:', err));
+                }
+
                 state.allTickets = tickets;
                 revealDashboard();
                 populateSearchAirlines();
