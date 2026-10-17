@@ -1513,56 +1513,30 @@ function renderDashboardUnpaidTickets(groups) {
     }
 }
 
-const CUSTOM_QR_KBZ_KEY = 'oceanPaymentQr_kbz';
-const CUSTOM_QR_WAVE_KEY = 'oceanPaymentQr_wave';
-
-function getStoredPaymentQr(storageKey) {
-    try {
-        return localStorage.getItem(storageKey) || '';
-    } catch (_) {
-        return '';
+const REMINDER_BANK_CARDS = [
+    {
+        bank: 'KBZ',
+        items: [
+            { label: 'KBZ Pay', account: '09740862500' },
+            { label: 'Special Account', account: '02051102000725501' },
+            { label: 'Normal Account', account: '18230199926109801' }
+        ]
+    },
+    {
+        bank: 'AYA',
+        items: [
+            { label: 'AYA Pay', account: '09740862500' },
+            { label: 'Banking', account: '40039173610' }
+        ]
+    },
+    {
+        bank: 'UAB Bank',
+        items: [
+            { label: 'UAB Pay', account: '09740862500' },
+            { label: 'UAB Banking', account: '20010588572' }
+        ]
     }
-}
-
-function setStoredPaymentQr(storageKey, dataUrl) {
-    try {
-        if (dataUrl) localStorage.setItem(storageKey, dataUrl);
-        else localStorage.removeItem(storageKey);
-    } catch (err) {
-        console.warn('Could not save QR image in localStorage:', err);
-    }
-}
-
-function renderDefaultQrSvg(label, accentColor = '#0D6E77') {
-    // Deterministic crisp QR-style pattern SVG so the card always has a scannable-looking placeholder until custom QR is uploaded
-    return `
-        <svg viewBox="0 0 120 120" width="96" height="96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${dashboardEscapeHtml(label)} QR">
-            <rect width="120" height="120" rx="8" fill="#FFFFFF"/>
-            <!-- Finder patterns -->
-            <rect x="10" y="10" width="28" height="28" rx="4" fill="none" stroke="${accentColor}" stroke-width="4"/>
-            <rect x="18" y="18" width="12" height="12" rx="2" fill="${accentColor}"/>
-            <rect x="82" y="10" width="28" height="28" rx="4" fill="none" stroke="${accentColor}" stroke-width="4"/>
-            <rect x="90" y="18" width="12" height="12" rx="2" fill="${accentColor}"/>
-            <rect x="10" y="82" width="28" height="28" rx="4" fill="none" stroke="${accentColor}" stroke-width="4"/>
-            <rect x="18" y="90" width="12" height="12" rx="2" fill="${accentColor}"/>
-            <!-- Data modules -->
-            <g fill="#0F172A">
-                <rect x="46" y="12" width="6" height="6"/><rect x="58" y="12" width="6" height="6"/><rect x="70" y="12" width="6" height="6"/>
-                <rect x="46" y="24" width="6" height="6"/><rect x="64" y="24" width="6" height="6"/>
-                <rect x="52" y="34" width="6" height="6"/><rect x="70" y="34" width="6" height="6"/>
-                <rect x="12" y="46" width="6" height="6"/><rect x="24" y="46" width="6" height="6"/><rect x="44" y="46" width="6" height="6"/><rect x="68" y="46" width="6" height="6"/><rect x="86" y="46" width="6" height="6"/><rect x="102" y="46" width="6" height="6"/>
-                <rect x="18" y="58" width="6" height="6"/><rect x="34" y="58" width="6" height="6"/><rect x="82" y="58" width="6" height="6"/><rect x="96" y="58" width="6" height="6"/>
-                <rect x="12" y="70" width="6" height="6"/><rect x="28" y="70" width="6" height="6"/><rect x="46" y="70" width="6" height="6"/><rect x="74" y="70" width="6" height="6"/><rect x="90" y="70" width="6" height="6"/><rect x="102" y="70" width="6" height="6"/>
-                <rect x="46" y="84" width="6" height="6"/><rect x="58" y="84" width="6" height="6"/><rect x="76" y="84" width="6" height="6"/><rect x="94" y="84" width="6" height="6"/>
-                <rect x="46" y="96" width="6" height="6"/><rect x="64" y="96" width="6" height="6"/><rect x="82" y="96" width="6" height="6"/><rect x="102" y="96" width="6" height="6"/>
-                <rect x="54" y="104" width="6" height="6"/><rect x="72" y="104" width="6" height="6"/><rect x="88" y="104" width="6" height="6"/>
-            </g>
-            <!-- Center badge -->
-            <rect x="46" y="48" width="28" height="22" rx="4" fill="${accentColor}"/>
-            <text x="60" y="62" text-anchor="middle" fill="#FFFFFF" font-size="7.5" font-weight="800" font-family="sans-serif">${dashboardEscapeHtml(label)}</text>
-        </svg>
-    `;
-}
+];
 
 export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {}) {
     const allUnpaidGroups = groupUnpaidTickets(state.allTickets || []);
@@ -1657,21 +1631,19 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         const groupsToUse = getActiveGroups();
         const items = buildLineItems(groupsToUse);
         const { totalGross, effectivePaid, balanceDue } = computeSummary(items);
-        const kbzQrDataUrl = getStoredPaymentQr(CUSTOM_QR_KBZ_KEY);
-        const waveQrDataUrl = getStoredPaymentQr(CUSTOM_QR_WAVE_KEY);
 
         const rowsHtml = items.map((item, idx) => `
             <tr>
                 <td class="prc-col-idx">${idx + 1}</td>
-                <td>
+                <td class="prc-col-pnr">
                     <div class="prc-pnr-code">${dashboardEscapeHtml(item.pnr)}</div>
                     <div class="prc-sub-meta">Issued: ${dashboardEscapeHtml(item.issuedDate)}</div>
                 </td>
-                <td>
+                <td class="prc-col-pax">
                     <div class="prc-pax-name">${dashboardEscapeHtml(item.passenger)}</div>
                     ${item.isFee ? `<span class="prc-fee-pill">Date Change / Fee</span>` : ''}
                 </td>
-                <td>
+                <td class="prc-col-route">
                     <div class="prc-route-text">${dashboardEscapeHtml(item.route)}</div>
                     <div class="prc-sub-meta">${item.airline ? `${dashboardEscapeHtml(item.airline)} • ` : ''}Travel: ${dashboardEscapeHtml(item.travelDate)}</div>
                 </td>
@@ -1679,6 +1651,20 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                 <td class="prc-num prc-paid-val">${formatDashboardAmount(item.paid)}</td>
                 <td class="prc-num prc-due-val">${formatDashboardAmount(item.due)}</td>
             </tr>
+        `).join('');
+
+        const bankCardsHtml = REMINDER_BANK_CARDS.map(card => `
+            <div class="prc-inv-bank-card">
+                <div class="prc-inv-bank-header">${dashboardEscapeHtml(card.bank)}</div>
+                <div class="prc-inv-bank-body">
+                    ${card.items.map(item => `
+                        <div class="prc-inv-bank-row">
+                            <span class="prc-inv-bank-label">${dashboardEscapeHtml(item.label)}</span>
+                            <strong class="prc-inv-bank-acc">${dashboardEscapeHtml(item.account)}</strong>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
         `).join('');
 
         return `
@@ -1693,7 +1679,6 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                 </div>
                 <div class="prc-doc-badge-block">
                     <span class="prc-doc-pill">PAYMENT REMINDER</span>
-                    <div class="prc-doc-mm-title">ငွေပေးချေရန် သတိပေးလွှာ / စာရင်းချုပ်</div>
                     <div class="prc-doc-date">Date: ${dashboardEscapeHtml(todayFormatted)}</div>
                 </div>
             </div>
@@ -1716,13 +1701,13 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                 <table class="prc-items-table">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>PNR / ISSUED</th>
-                            <th>PASSENGER</th>
-                            <th>ROUTE & TRAVEL DATE</th>
-                            <th style="text-align:right;">TOTAL (MMK)</th>
-                            <th style="text-align:right;">PAID (MMK)</th>
-                            <th style="text-align:right;">DUE (MMK)</th>
+                            <th class="prc-th-idx">#</th>
+                            <th class="prc-th-pnr">PNR / ISSUED</th>
+                            <th class="prc-th-pax">PASSENGER</th>
+                            <th class="prc-th-route">ROUTE & TRAVEL DATE</th>
+                            <th class="prc-th-num">TOTAL</th>
+                            <th class="prc-th-num">PAID</th>
+                            <th class="prc-th-num">DUE</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1731,83 +1716,33 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                 </table>
             </div>
 
-            <div class="prc-summary-and-payment-grid">
-                <div class="prc-payment-accounts-box">
-                    <div class="prc-box-heading">
-                        <i class="fa-solid fa-building-columns"></i> PAYMENT CHANNELS (Account Name: <strong>Aung Pyae Sone</strong>)
-                    </div>
-                    <div class="prc-bank-list-grid">
-                        <div class="prc-bank-item kbzpay">
-                            <span class="prc-bank-badge">KBZ Pay</span>
-                            <strong>09740862500</strong>
-                        </div>
-                        <div class="prc-bank-item wavepay">
-                            <span class="prc-bank-badge">Wave Pay</span>
-                            <strong>09740862500</strong>
-                        </div>
-                        <div class="prc-bank-item ayapay">
-                            <span class="prc-bank-badge">AYA / UAB Pay</span>
-                            <strong>09740862500</strong>
-                        </div>
-                        <div class="prc-bank-item bank">
-                            <span class="prc-bank-badge">KBZ Special</span>
-                            <strong>02051102000725501</strong>
-                        </div>
-                        <div class="prc-bank-item bank">
-                            <span class="prc-bank-badge">KBZ Normal</span>
-                            <strong>18230199926109801</strong>
-                        </div>
-                        <div class="prc-bank-item bank">
-                            <span class="prc-bank-badge">AYA / UAB Bank</span>
-                            <strong>40039173610 / 20010588572</strong>
-                        </div>
-                    </div>
-
-                    <div class="prc-qr-row">
-                        <div class="prc-qr-card">
-                            <div class="prc-qr-img-wrap">
-                                ${kbzQrDataUrl
-                                    ? `<img src="${kbzQrDataUrl}" alt="KBZPay QR" class="prc-qr-custom-img">`
-                                    : renderDefaultQrSvg('KBZPay', '#0054A6')}
-                            </div>
-                            <div class="prc-qr-caption">
-                                <strong>KBZPay QR</strong>
-                                <span>09740862500</span>
-                            </div>
-                        </div>
-                        <div class="prc-qr-card">
-                            <div class="prc-qr-img-wrap">
-                                ${waveQrDataUrl
-                                    ? `<img src="${waveQrDataUrl}" alt="WavePay QR" class="prc-qr-custom-img">`
-                                    : renderDefaultQrSvg('WavePay', '#D97706')}
-                            </div>
-                            <div class="prc-qr-caption">
-                                <strong>WavePay / Bank QR</strong>
-                                <span>09740862500</span>
-                            </div>
-                        </div>
-                    </div>
+            <div class="prc-totals-section-row">
+                <div class="prc-polite-note">
+                    Thank you for choosing Ocean Travel. Please review your outstanding ticket summary and share the payment screenshot once transferred.
                 </div>
-
                 <div class="prc-totals-box">
                     <div class="prc-total-line">
-                        <span>စုစုပေါင်း ကျသင့်ငွေ (Total Amount)</span>
-                        <strong>${formatDashboardAmount(totalGross)} MMK</strong>
+                        <span>Total Amount (စုစုပေါင်း)</span>
+                        <strong>MMK ${formatDashboardAmount(totalGross)}</strong>
                     </div>
                     <div class="prc-total-line paid">
-                        <span>ပေးချေပြီးငွေ (Paid / Received)</span>
-                        <strong>- ${formatDashboardAmount(effectivePaid)} MMK</strong>
+                        <span>Paid / Received (ပေးချေပြီး)</span>
+                        <strong>- MMK ${formatDashboardAmount(effectivePaid)}</strong>
                     </div>
                     <div class="prc-total-line balance-due">
-                        <div>
-                            <span class="prc-due-mm">ပေးချေရန် ကျန်ငွေ စုစုပေါင်း</span>
-                            <span class="prc-due-en">TOTAL BALANCE DUE</span>
-                        </div>
-                        <strong>${formatDashboardAmount(balanceDue)} <small>MMK</small></strong>
+                        <span class="prc-due-en">BALANCE DUE (ကျန်ငွေ)</span>
+                        <strong>MMK ${formatDashboardAmount(balanceDue)}</strong>
                     </div>
-                    <div class="prc-polite-note">
-                        လူကြီးမင်းတို့၏ မရှင်းလင်းရသေးသော လက်မှတ်စာရင်းအား စစ်ဆေးပေးပါရန်နှင့် ငွေလွှဲပြီးပါက ပြေစာ (Screenshot) လေး ပေးပို့ပေးပါရန် လေးစားစွာ မေတ္တာရပ်ခံအပ်ပါသည်ခင်ဗျာ။ 🙏
-                    </div>
+                </div>
+            </div>
+
+            <div class="prc-inv-payment-section">
+                <div class="prc-inv-payment-head">
+                    <span class="prc-inv-payment-title">PAYMENT METHODS</span>
+                    <span class="prc-inv-account-owner">Account Name: <strong>AUNG PYAE SONE</strong></span>
+                </div>
+                <div class="prc-inv-bank-cards-grid">
+                    ${bankCardsHtml}
                 </div>
             </div>
         `;
@@ -1834,7 +1769,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             `• ပေးချေရန် ကျန်ငွေ (Balance Due): ${formatDashboardAmount(balanceDue)} MMK`,
             ``,
             `🏦 ငွေလွှဲပေးပို့နိုင်သော အကောင့်များ (Aung Pyae Sone)`,
-            `• KBZ Pay / Wave Pay / AYA Pay / UAB Pay: 09740862500`,
+            `• KBZ Pay / AYA Pay / UAB Pay: 09740862500`,
             `• KBZ Special Account: 02051102000725501`,
             `• KBZ Normal Account: 18230199926109801`,
             `• AYA Bank: 40039173610 | UAB Bank: 20010588572`,
@@ -1871,16 +1806,6 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                 <div class="prc-paid-input-group">
                     <label for="prcCustomPaidInput">ပေးပြီးသားငွေ (Paid / Deposit MMK):</label>
                     <input type="number" id="prcCustomPaidInput" min="0" step="1000" value="${initialSummary.effectivePaid}" placeholder="0">
-                </div>
-                <div class="prc-qr-upload-group">
-                    <input type="file" id="prcKbzQrFileInput" accept="image/*" hidden>
-                    <input type="file" id="prcWaveQrFileInput" accept="image/*" hidden>
-                    <button type="button" class="prc-mini-btn" id="prcUploadKbzQrBtn" title="Upload your KBZPay QR image (saved automatically)">
-                        <i class="fa-solid fa-qrcode"></i> KBZPay QR
-                    </button>
-                    <button type="button" class="prc-mini-btn" id="prcUploadWaveQrBtn" title="Upload your WavePay / Bank QR image (saved automatically)">
-                        <i class="fa-solid fa-qrcode"></i> WavePay QR
-                    </button>
                 </div>
                 <div class="prc-export-actions">
                     <button type="button" class="btn btn-secondary prc-action-btn" id="prcCopyTextBtn">
@@ -1933,46 +1858,6 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             refreshCardView();
         });
     }
-
-    const handleQrUpload = (fileInputId, storageKey, label) => {
-        const fileInput = document.getElementById(fileInputId);
-        if (!fileInput) return;
-        fileInput.addEventListener('change', (ev) => {
-            const file = ev.target.files?.[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const maxDim = 320;
-                    const scale = Math.min(1, maxDim / Math.max(img.width || 1, img.height || 1));
-                    canvas.width = Math.round((img.width || 240) * scale);
-                    canvas.height = Math.round((img.height || 240) * scale);
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const compressed = canvas.toDataURL('image/jpeg', 0.88);
-                    setStoredPaymentQr(storageKey, compressed);
-                    refreshCardView();
-                    showToast(`${label} QR saved for all Payment Reminder Cards!`, 'success');
-                };
-                img.src = String(reader.result || '');
-            };
-            reader.readAsDataURL(file);
-        });
-    };
-
-    handleQrUpload('prcKbzQrFileInput', CUSTOM_QR_KBZ_KEY, 'KBZPay');
-    handleQrUpload('prcWaveQrFileInput', CUSTOM_QR_WAVE_KEY, 'WavePay');
-
-    document.getElementById('prcUploadKbzQrBtn')?.addEventListener('click', () => {
-        document.getElementById('prcKbzQrFileInput')?.click();
-    });
-    document.getElementById('prcUploadWaveQrBtn')?.addEventListener('click', () => {
-        document.getElementById('prcWaveQrFileInput')?.click();
-    });
 
     const copyTextBtn = document.getElementById('prcCopyTextBtn');
     copyTextBtn?.addEventListener('click', async () => {
