@@ -3210,37 +3210,69 @@ body.material-theme:not(.dark-theme) .dashboard-custom-range input {
     border-bottom: none;
 }
 
-/* Sticky Right Action Column across Records, Bookings & Hotel tables */
-#resultsTable th.col-actions,
-#resultsTable td.col-actions,
-.booking-table th:last-child,
-.booking-table td:last-child,
-#hotelResTableContainer table th:last-child,
-#hotelResTableContainer table td:last-child {
-    position: sticky;
-    right: 0;
-    border-left: 1px solid #EDF3F5;
-    box-shadow: -6px 0 12px -6px rgba(15, 23, 42, 0.08);
+/* Sticky Right Action Column across Records, Bookings & Hotel tables (Desktop only so mobile viewports are not covered) */
+@media (min-width: 901px) {
+    #resultsTable th.col-actions,
+    #resultsTable td.col-actions,
+    .booking-table th:last-child,
+    .booking-table td:last-child,
+    #hotelResTableContainer table th:last-child,
+    #hotelResTableContainer table td:last-child {
+        position: sticky;
+        right: 0;
+        border-left: 1px solid #EDF3F5;
+        box-shadow: -6px 0 12px -6px rgba(15, 23, 42, 0.08);
+    }
+
+    #resultsTable td.col-actions,
+    .booking-table td:last-child,
+    #hotelResTableContainer table td:last-child {
+        z-index: 6;
+        background: #FFFFFF;
+    }
+
+    #resultsTable tbody tr:hover td.col-actions,
+    .booking-table tbody tr:hover td:last-child,
+    #hotelResTableContainer table tbody tr:hover td:last-child {
+        background: #F8FAFB !important;
+    }
+
+    #resultsTable th.col-actions,
+    .booking-table thead th:last-child,
+    #hotelResTableContainer table thead th:last-child {
+        z-index: 16;
+        background: #F8FAFB !important;
+    }
 }
 
-#resultsTable td.col-actions,
-.booking-table td:last-child,
-#hotelResTableContainer table td:last-child {
-    z-index: 6;
-    background: #FFFFFF;
-}
+@media (max-width: 900px) {
+    #resultsTable th.col-actions,
+    .booking-table th:last-child,
+    #hotelResTableContainer table th:last-child {
+        right: auto !important;
+        border-left: none !important;
+        box-shadow: none !important;
+    }
 
-#resultsTable tbody tr:hover td.col-actions,
-.booking-table tbody tr:hover td:last-child,
-#hotelResTableContainer table tbody tr:hover td:last-child {
-    background: #F8FAFB !important;
-}
+    #resultsTable td.col-actions,
+    .booking-table td:last-child,
+    #hotelResTableContainer table td:last-child {
+        position: static !important;
+        right: auto !important;
+        border-left: none !important;
+        box-shadow: none !important;
+    }
 
-#resultsTable th.col-actions,
-.booking-table thead th:last-child,
-#hotelResTableContainer table thead th:last-child {
-    z-index: 16;
-    background: #F8FAFB !important;
+    .booking-action-row {
+        gap: 0.3rem;
+    }
+
+    .booking-action-btn {
+        min-height: 30px;
+        padding: 0.32rem 0.5rem;
+        font-size: 0.74rem;
+        white-space: nowrap;
+    }
 }
 
 /* Instant Column Visibility Toggle Rules */
