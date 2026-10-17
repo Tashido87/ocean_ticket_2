@@ -32,6 +32,7 @@ import { loadFeaturedClients, getExpiringPassportClients, viewClientHistory } fr
 import { findTicketForManage } from "./manage.js";
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from "./invoice.js";
 import { selectPassengerTickets } from "./invoice-selection.mjs";
+import { loadDocumentLibraries } from "./document-libraries.js";
 import {
     showView,
     initializeDatepickers,
@@ -417,20 +418,44 @@ function groupUnpaidTickets(rows) {
                                 feeTickets.find(t => t.departure && t.destination) ||
                                 passengerTicket;
 
+            const totalGross = tickets.reduce((sum, t) => sum + ticketGrossAmount(t), 0);
+            const paidAmount = Math.max(0, totalGross - unpaidAmount);
+            const cleanSocial = (accountName && accountName.toLowerCase() !== 'undefined') ? accountName : '';
+            const accountDisplayLabel = cleanSocial || clientLabel;
+            const accountGroupKey = accountDisplayLabel.trim().toLowerCase();
+
             groups.set(pnrKey, {
                 pnr: displayPnr,
                 client: clientLabel,
                 rawClient: clientLabel,
-                socialAccount: accountName,
+                socialAccount: cleanSocial,
+                accountDisplayLabel,
+                accountGroupKey,
+                accountType: String(passengerTicket.account_type || tickets.find(t => t.account_type)?.account_type || '').trim(),
+                accountLink: String(passengerTicket.account_link || tickets.find(t => t.account_link)?.account_link || '').trim(),
+                airline: String(passengerTicket.airline || tickets.find(t => t.airline)?.airline || '').trim(),
+                travelDateStr: String(dateTicket.departing_on || '').trim(),
+                issuedDateStr: String(passengerTicket.issued_date || '').trim(),
                 rawPassenger: rawPaxName,
                 route: dashboardRouteLabel(routeTicket),
                 dueDate: parseSheetDate(dateTicket.departing_on),
                 issuedDate: parseSheetDate(passengerTicket.issued_date),
                 amount: unpaidAmount,
+                totalGross,
+                paidAmount,
                 tickets: nonFeeTickets.length || tickets.length,
+                ticketRows: tickets,
                 hasFeeRows: hasFeeUnpaid
             });
         }
+    });
+
+    const accountCounts = new Map();
+    groups.forEach(g => {
+        accountCounts.set(g.accountGroupKey, (accountCounts.get(g.accountGroupKey) || 0) + 1);
+    });
+    groups.forEach(g => {
+        g.accountPnrCount = accountCounts.get(g.accountGroupKey) || 1;
     });
 
     return [...groups.values()].sort((a, b) => {
@@ -1086,9 +1111,16 @@ function getFeeRowDateChangeText(t, allRows = []) {
                 </div>
 
                 <div class="pnr-modal-footer-actions">
-                    <button type="button" class="btn btn-secondary pnr-footer-btn-copy" id="tripPnrCopyBtnBottom">
-                        <i class="fa-regular fa-copy"></i> Copy PNR
-                    </button>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn btn-secondary pnr-footer-btn-copy" id="tripPnrCopyBtnBottom">
+                            <i class="fa-regular fa-copy"></i> Copy PNR
+                        </button>
+                        ${totalUnpaid > 0 ? `
+                        <button type="button" class="btn btn-secondary pnr-footer-btn-reminder" id="tripPlanReminderCardBtn" title="Generate Consolidated Payment Reminder Card (PNG / PDF) for this Account">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> Payment Reminder Card
+                        </button>
+                        ` : ''}
+                    </div>
                     <div class="pnr-footer-action-right">
                         <button type="button" class="btn btn-secondary" id="tripPlanCloseBtn">Done</button>
                         <button type="button" class="btn btn-primary pnr-footer-btn-manage" id="tripPlanManageActionBtn">
@@ -1176,6 +1208,12 @@ function getFeeRowDateChangeText(t, allRows = []) {
     document.getElementById('tripPnrCopyBtnBottom')?.addEventListener('click', handleCopyPnr);
     document.getElementById('tripPlanManageActionBtn')?.addEventListener('click', handleJumpManage);
     document.getElementById('tripPlanJumpManageTopBtn')?.addEventListener('click', handleJumpManage);
+    document.getElementById('tripPlanReminderCardBtn')?.addEventListener('click', () => {
+        const cleanAcc = (accountName && accountName.toLowerCase() !== 'undefined')
+            ? accountName.trim().toLowerCase()
+            : String(lead.name || '').replace(/\s*\(\s*(fees|balance)\s*\)\s*$/i, '').trim().toLowerCase();
+        openPaymentReminderCardModal({ accountKey: cleanAcc, pnr: searchPnr });
+    });
 
     document.querySelectorAll('.clickable-client-link').forEach(link => {
         link.addEventListener('click', async (ev) => {
@@ -1235,6 +1273,48 @@ function renderDashboardTravelSchedule(groups) {
 }
 
 let dashboardUnpaidSearchTerm = '';
+let dashboardUnpaidViewMode = 'pnr'; // 'pnr' | 'account'
+
+function consolidateUnpaidByAccount(groups) {
+    const accountMap = new Map();
+    groups.forEach(g => {
+        const key = g.accountGroupKey || String(g.socialAccount || g.client || g.pnr).toLowerCase();
+        if (!accountMap.has(key)) {
+            accountMap.set(key, {
+                accountGroupKey: key,
+                accountDisplayLabel: g.accountDisplayLabel || g.socialAccount || g.client || 'Customer',
+                socialAccount: g.socialAccount || '',
+                accountType: g.accountType || '',
+                accountLink: g.accountLink || '',
+                pnrGroups: [],
+                pnrList: [],
+                clientsSet: new Set(),
+                totalGross: 0,
+                paidAmount: 0,
+                unpaidAmount: 0,
+                ticketCount: 0,
+                earliestDue: null
+            });
+        }
+        const entry = accountMap.get(key);
+        entry.pnrGroups.push(g);
+        entry.pnrList.push(g.pnr);
+        if (g.client) entry.clientsSet.add(g.client);
+        entry.totalGross += Number(g.totalGross) || Number(g.amount) || 0;
+        entry.paidAmount += Number(g.paidAmount) || 0;
+        entry.unpaidAmount += Number(g.amount) || 0;
+        entry.ticketCount += Number(g.tickets) || 1;
+        if (g.dueDate?.getTime?.()) {
+            if (!entry.earliestDue || g.dueDate < entry.earliestDue) {
+                entry.earliestDue = g.dueDate;
+            }
+        }
+    });
+    return [...accountMap.values()].sort((a, b) => {
+        if (b.pnrGroups.length !== a.pnrGroups.length) return b.pnrGroups.length - a.pnrGroups.length;
+        return b.unpaidAmount - a.unpaidAmount;
+    });
+}
 
 function renderDashboardUnpaidTickets(groups) {
     const container = document.getElementById('dashboardUnpaidTickets');
@@ -1271,20 +1351,101 @@ function renderDashboardUnpaidTickets(groups) {
         )
         : groups;
 
-    const rows = filteredGroups.map(group => {
-        const feeBadge = group.hasFeeRows
-            ? `<span class="unpaid-tag-fee" title="Includes Date Change or Fee Entry">Fee</span>`
-            : '';
-        return `
+    const consolidatedAccounts = consolidateUnpaidByAccount(filteredGroups);
+    const multiTicketAccountCount = consolidateUnpaidByAccount(groups).filter(a => a.pnrGroups.length > 1 || a.ticketCount > 1).length;
+
+    let tableHeadHtml = '';
+    let tableRowsHtml = '';
+
+    if (dashboardUnpaidViewMode === 'account') {
+        tableHeadHtml = `
             <tr>
-                <td><strong><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></strong></td>
-                <td>${dashboardEscapeHtml(group.client)}</td>
-                <td>${dashboardEscapeHtml(group.route)}</td>
-                <td class="num">${formatDashboardAmount(group.amount)} MMK ${feeBadge}</td>
-                <td><button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}" title="View details"><i class="fa-solid fa-eye"></i></button></td>
+                <th>ACCOUNT / CUSTOMER</th>
+                <th>UNPAID PNRS</th>
+                <th>TOTAL / PAID</th>
+                <th>BALANCE DUE</th>
+                <th>ACTION</th>
             </tr>
         `;
-    }).join('');
+        tableRowsHtml = consolidatedAccounts.map(acc => {
+            const pnrBadges = acc.pnrList.slice(0, 4).map(p =>
+                `<a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(p)}">${dashboardEscapeHtml(p)}</a>`
+            ).join(' ');
+            const extraPnrs = acc.pnrList.length > 4 ? ` <small>+${acc.pnrList.length - 4}</small>` : '';
+            const passengerPreview = [...acc.clientsSet].slice(0, 2).join(', ');
+            return `
+                <tr>
+                    <td>
+                        <div class="unpaid-client-primary">${dashboardEscapeHtml(acc.accountDisplayLabel)}</div>
+                        ${passengerPreview && passengerPreview.toLowerCase() !== acc.accountDisplayLabel.toLowerCase()
+                            ? `<div class="unpaid-account-sub"><i class="fa-regular fa-user"></i> ${dashboardEscapeHtml(passengerPreview)}</div>`
+                            : ''}
+                    </td>
+                    <td>
+                        <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+                            ${pnrBadges}${extraPnrs}
+                        </div>
+                        <div class="unpaid-account-sub">${acc.pnrGroups.length} PNR${acc.pnrGroups.length > 1 ? 's' : ''} • ${acc.ticketCount} Ticket${acc.ticketCount > 1 ? 's' : ''}</div>
+                    </td>
+                    <td class="num">
+                        <div style="font-size:0.75rem; color:var(--dash-text-muted);">Total: ${formatDashboardAmount(acc.totalGross)}</div>
+                        <div style="font-size:0.75rem; color:#059669;">Paid: ${formatDashboardAmount(acc.paidAmount)}</div>
+                    </td>
+                    <td class="num"><strong>${formatDashboardAmount(acc.unpaidAmount)} MMK</strong></td>
+                    <td>
+                        <div class="unpaid-row-actions">
+                            <button type="button" class="dashboard-row-action reminder-card-btn primary-pill" data-reminder-account="${dashboardEscapeHtml(acc.accountGroupKey)}" title="1-Click Payment Reminder Card (PNG / PDF)">
+                                <i class="fa-solid fa-file-invoice-dollar"></i> Card
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } else {
+        tableHeadHtml = `
+            <tr>
+                <th>PNR</th>
+                <th>CLIENT / ACCOUNT</th>
+                <th>ROUTE</th>
+                <th>AMOUNT DUE</th>
+                <th>ACTION</th>
+            </tr>
+        `;
+        tableRowsHtml = filteredGroups.map(group => {
+            const feeBadge = group.hasFeeRows
+                ? `<span class="unpaid-tag-fee" title="Includes Date Change or Fee Entry">Fee</span>`
+                : '';
+            const showSocialSub = (group.socialAccount && group.socialAccount.toLowerCase() !== group.client.toLowerCase()) || group.accountPnrCount > 1;
+            const socialSubHtml = showSocialSub
+                ? `<div class="unpaid-account-sub" title="Social Media Account: ${dashboardEscapeHtml(group.accountDisplayLabel)}">
+                    <i class="fa-solid fa-at"></i> ${dashboardEscapeHtml(group.accountDisplayLabel)}
+                    ${group.accountPnrCount > 1 ? `<span class="unpaid-multi-count" title="Same account has ${group.accountPnrCount} unpaid PNRs">${group.accountPnrCount} PNRs</span>` : ''}
+                   </div>`
+                : '';
+            return `
+                <tr>
+                    <td><strong><a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(group.pnr)}">${dashboardEscapeHtml(group.pnr)}</a></strong></td>
+                    <td>
+                        <div class="unpaid-client-primary">${dashboardEscapeHtml(group.client)}</div>
+                        ${socialSubHtml}
+                    </td>
+                    <td>${dashboardEscapeHtml(group.route)}</td>
+                    <td class="num">${formatDashboardAmount(group.amount)} MMK ${feeBadge}</td>
+                    <td>
+                        <div class="unpaid-row-actions">
+                            <button type="button" class="dashboard-row-action reminder-card-btn" data-reminder-account="${dashboardEscapeHtml(group.accountGroupKey)}" data-reminder-pnr="${dashboardEscapeHtml(group.pnr)}" title="Payment Reminder Card (PNG / PDF) for ${dashboardEscapeHtml(group.accountDisplayLabel)}${group.accountPnrCount > 1 ? ` (${group.accountPnrCount} unpaid PNRs)` : ''}">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </button>
+                            <button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}" title="View PNR details">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
 
     container.innerHTML = `
         <div class="unpaid-summary-grid">
@@ -1294,27 +1455,49 @@ function renderDashboardUnpaidTickets(groups) {
             <div><span>Due This Week</span><strong>${dueThisWeek.length}</strong><small>PNR</small></div>
         </div>
         <div class="dashboard-unpaid-toolbar">
-            <input type="text" id="dashboardUnpaidSearch" placeholder="Filter PNR, client, or route..." value="${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}">
+            <input type="text" id="dashboardUnpaidSearch" placeholder="Filter PNR, client, social account, or route..." value="${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}">
+            <div class="unpaid-view-mode-switch" role="group" aria-label="Unpaid view mode">
+                <button type="button" class="unpaid-mode-btn ${dashboardUnpaidViewMode === 'pnr' ? 'active' : ''}" data-unpaid-mode="pnr">
+                    By PNR
+                </button>
+                <button type="button" class="unpaid-mode-btn ${dashboardUnpaidViewMode === 'account' ? 'active' : ''}" data-unpaid-mode="account" title="Group unpaid tickets by Social Media Account Name">
+                    By Account ${multiTicketAccountCount > 0 ? `<span class="unpaid-mode-badge">${multiTicketAccountCount}</span>` : ''}
+                </button>
+            </div>
         </div>
         <div class="dashboard-table-wrap">
             <table class="dashboard-mini-table">
                 <thead>
-                    <tr>
-                        <th>PNR</th>
-                        <th>CLIENT</th>
-                        <th>ROUTE</th>
-                        <th>AMOUNT DUE</th>
-                        <th>ACTION</th>
-                    </tr>
+                    ${tableHeadHtml}
                 </thead>
                 <tbody>
-                    ${rows || `<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--dash-text-muted);">No unpaid tickets matching "${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}"</td></tr>`}
+                    ${tableRowsHtml || `<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--dash-text-muted);">No unpaid tickets matching "${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}"</td></tr>`}
                 </tbody>
             </table>
         </div>
     `;
 
     wireDashboardPnrButtons(container);
+
+    container.querySelectorAll('.unpaid-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const nextMode = btn.dataset.unpaidMode;
+            if (nextMode && nextMode !== dashboardUnpaidViewMode) {
+                dashboardUnpaidViewMode = nextMode;
+                renderDashboardUnpaidTickets(groups);
+            }
+        });
+    });
+
+    container.querySelectorAll('.reminder-card-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const accountKey = btn.dataset.reminderAccount || '';
+            const pnr = btn.dataset.reminderPnr || '';
+            openPaymentReminderCardModal({ accountKey, pnr });
+        });
+    });
 
     const searchInput = document.getElementById('dashboardUnpaidSearch');
     if (searchInput) {
@@ -1329,6 +1512,544 @@ function renderDashboardUnpaidTickets(groups) {
         });
     }
 }
+
+const CUSTOM_QR_KBZ_KEY = 'oceanPaymentQr_kbz';
+const CUSTOM_QR_WAVE_KEY = 'oceanPaymentQr_wave';
+
+function getStoredPaymentQr(storageKey) {
+    try {
+        return localStorage.getItem(storageKey) || '';
+    } catch (_) {
+        return '';
+    }
+}
+
+function setStoredPaymentQr(storageKey, dataUrl) {
+    try {
+        if (dataUrl) localStorage.setItem(storageKey, dataUrl);
+        else localStorage.removeItem(storageKey);
+    } catch (err) {
+        console.warn('Could not save QR image in localStorage:', err);
+    }
+}
+
+function renderDefaultQrSvg(label, accentColor = '#0D6E77') {
+    // Deterministic crisp QR-style pattern SVG so the card always has a scannable-looking placeholder until custom QR is uploaded
+    return `
+        <svg viewBox="0 0 120 120" width="96" height="96" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${dashboardEscapeHtml(label)} QR">
+            <rect width="120" height="120" rx="8" fill="#FFFFFF"/>
+            <!-- Finder patterns -->
+            <rect x="10" y="10" width="28" height="28" rx="4" fill="none" stroke="${accentColor}" stroke-width="4"/>
+            <rect x="18" y="18" width="12" height="12" rx="2" fill="${accentColor}"/>
+            <rect x="82" y="10" width="28" height="28" rx="4" fill="none" stroke="${accentColor}" stroke-width="4"/>
+            <rect x="90" y="18" width="12" height="12" rx="2" fill="${accentColor}"/>
+            <rect x="10" y="82" width="28" height="28" rx="4" fill="none" stroke="${accentColor}" stroke-width="4"/>
+            <rect x="18" y="90" width="12" height="12" rx="2" fill="${accentColor}"/>
+            <!-- Data modules -->
+            <g fill="#0F172A">
+                <rect x="46" y="12" width="6" height="6"/><rect x="58" y="12" width="6" height="6"/><rect x="70" y="12" width="6" height="6"/>
+                <rect x="46" y="24" width="6" height="6"/><rect x="64" y="24" width="6" height="6"/>
+                <rect x="52" y="34" width="6" height="6"/><rect x="70" y="34" width="6" height="6"/>
+                <rect x="12" y="46" width="6" height="6"/><rect x="24" y="46" width="6" height="6"/><rect x="44" y="46" width="6" height="6"/><rect x="68" y="46" width="6" height="6"/><rect x="86" y="46" width="6" height="6"/><rect x="102" y="46" width="6" height="6"/>
+                <rect x="18" y="58" width="6" height="6"/><rect x="34" y="58" width="6" height="6"/><rect x="82" y="58" width="6" height="6"/><rect x="96" y="58" width="6" height="6"/>
+                <rect x="12" y="70" width="6" height="6"/><rect x="28" y="70" width="6" height="6"/><rect x="46" y="70" width="6" height="6"/><rect x="74" y="70" width="6" height="6"/><rect x="90" y="70" width="6" height="6"/><rect x="102" y="70" width="6" height="6"/>
+                <rect x="46" y="84" width="6" height="6"/><rect x="58" y="84" width="6" height="6"/><rect x="76" y="84" width="6" height="6"/><rect x="94" y="84" width="6" height="6"/>
+                <rect x="46" y="96" width="6" height="6"/><rect x="64" y="96" width="6" height="6"/><rect x="82" y="96" width="6" height="6"/><rect x="102" y="96" width="6" height="6"/>
+                <rect x="54" y="104" width="6" height="6"/><rect x="72" y="104" width="6" height="6"/><rect x="88" y="104" width="6" height="6"/>
+            </g>
+            <!-- Center badge -->
+            <rect x="46" y="48" width="28" height="22" rx="4" fill="${accentColor}"/>
+            <text x="60" y="62" text-anchor="middle" fill="#FFFFFF" font-size="7.5" font-weight="800" font-family="sans-serif">${dashboardEscapeHtml(label)}</text>
+        </svg>
+    `;
+}
+
+export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {}) {
+    const allUnpaidGroups = groupUnpaidTickets(state.allTickets || []);
+    const normalizedAccKey = String(accountKey || '').trim().toLowerCase();
+    const normalizedPnr = String(pnr || '').trim().toUpperCase();
+
+    const accountMatchedGroups = normalizedAccKey
+        ? allUnpaidGroups.filter(g => g.accountGroupKey === normalizedAccKey)
+        : [];
+    const singlePnrGroups = normalizedPnr
+        ? allUnpaidGroups.filter(g => String(g.pnr || '').trim().toUpperCase() === normalizedPnr)
+        : [];
+
+    const initialGroups = accountMatchedGroups.length > 0 ? accountMatchedGroups : singlePnrGroups;
+    if (!initialGroups.length) {
+        showToast('No unpaid tickets found for this customer.', 'info');
+        return;
+    }
+
+    let scopeMode = accountMatchedGroups.length > 1 ? 'account' : 'all'; // 'account' | 'single'
+    let customExtraPaid = null; // null means use computed paidAmount from tickets
+
+    const leadGroup = initialGroups[0];
+    const customerDisplayName = leadGroup.accountDisplayLabel || leadGroup.socialAccount || leadGroup.client || 'Customer';
+    const todayFormatted = new Date().toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric'
+    });
+
+    const getActiveGroups = () => {
+        if (scopeMode === 'single' && singlePnrGroups.length > 0) {
+            return singlePnrGroups;
+        }
+        return initialGroups;
+    };
+
+    const buildLineItems = (groupsToUse) => {
+        const items = [];
+        groupsToUse.forEach(group => {
+            const rows = Array.isArray(group.ticketRows) && group.ticketRows.length > 0
+                ? group.ticketRows
+                : [];
+            if (rows.length > 0) {
+                rows.forEach(t => {
+                    const gross = ticketGrossAmount(t);
+                    const paid = isTicketPaid(t)
+                        ? gross
+                        : (t.outstanding_amount !== undefined && Number(t.outstanding_amount) >= 0
+                            ? Math.max(0, gross - Number(t.outstanding_amount))
+                            : 0);
+                    const due = Math.max(0, gross - paid);
+                    const isFee = isFeeEntryRow(t);
+                    items.push({
+                        pnr: group.pnr,
+                        issuedDate: String(t.issued_date || group.issuedDateStr || '').trim() || '-',
+                        passenger: String(t.name || group.client || 'Passenger').trim(),
+                        isFee,
+                        airline: String(t.airline || group.airline || '').trim(),
+                        route: (t.departure && t.destination) ? `${compactPlace(t.departure)} → ${compactPlace(t.destination)}` : group.route,
+                        travelDate: String(t.departing_on || group.travelDateStr || '').trim() || '-',
+                        gross,
+                        paid,
+                        due
+                    });
+                });
+            } else {
+                items.push({
+                    pnr: group.pnr,
+                    issuedDate: group.issuedDateStr || '-',
+                    passenger: group.client,
+                    isFee: group.hasFeeRows,
+                    airline: group.airline || '',
+                    route: group.route,
+                    travelDate: group.travelDateStr || '-',
+                    gross: group.totalGross || group.amount,
+                    paid: group.paidAmount || 0,
+                    due: group.amount
+                });
+            }
+        });
+        return items;
+    };
+
+    const computeSummary = (items) => {
+        const totalGross = items.reduce((s, item) => s + item.gross, 0);
+        const defaultPaid = items.reduce((s, item) => s + item.paid, 0);
+        const effectivePaid = customExtraPaid !== null ? Math.max(0, Number(customExtraPaid) || 0) : defaultPaid;
+        const balanceDue = Math.max(0, totalGross - effectivePaid);
+        return { totalGross, defaultPaid, effectivePaid, balanceDue };
+    };
+
+    const buildCardInnerHtml = () => {
+        const groupsToUse = getActiveGroups();
+        const items = buildLineItems(groupsToUse);
+        const { totalGross, effectivePaid, balanceDue } = computeSummary(items);
+        const kbzQrDataUrl = getStoredPaymentQr(CUSTOM_QR_KBZ_KEY);
+        const waveQrDataUrl = getStoredPaymentQr(CUSTOM_QR_WAVE_KEY);
+
+        const rowsHtml = items.map((item, idx) => `
+            <tr>
+                <td class="prc-col-idx">${idx + 1}</td>
+                <td>
+                    <div class="prc-pnr-code">${dashboardEscapeHtml(item.pnr)}</div>
+                    <div class="prc-sub-meta">Issued: ${dashboardEscapeHtml(item.issuedDate)}</div>
+                </td>
+                <td>
+                    <div class="prc-pax-name">${dashboardEscapeHtml(item.passenger)}</div>
+                    ${item.isFee ? `<span class="prc-fee-pill">Date Change / Fee</span>` : ''}
+                </td>
+                <td>
+                    <div class="prc-route-text">${dashboardEscapeHtml(item.route)}</div>
+                    <div class="prc-sub-meta">${item.airline ? `${dashboardEscapeHtml(item.airline)} • ` : ''}Travel: ${dashboardEscapeHtml(item.travelDate)}</div>
+                </td>
+                <td class="prc-num">${formatDashboardAmount(item.gross)}</td>
+                <td class="prc-num prc-paid-val">${formatDashboardAmount(item.paid)}</td>
+                <td class="prc-num prc-due-val">${formatDashboardAmount(item.due)}</td>
+            </tr>
+        `).join('');
+
+        return `
+            <div class="prc-header-banner">
+                <div class="prc-brand-block">
+                    <img src="./ocean-travel-logo.png" alt="Ocean Travel" class="prc-brand-logo" crossorigin="anonymous" onerror="this.style.display='none'">
+                    <div>
+                        <div class="prc-brand-title">OCEAN TRAVEL</div>
+                        <div class="prc-brand-sub">A3-1, Room 603, Myanma Gone Yi Housing, Upper Pansodan St, Yangon</div>
+                        <div class="prc-brand-sub">Tel: 09964403435, 09740862500 • oceantravel.mm@gmail.com</div>
+                    </div>
+                </div>
+                <div class="prc-doc-badge-block">
+                    <span class="prc-doc-pill">PAYMENT REMINDER</span>
+                    <div class="prc-doc-mm-title">ငွေပေးချေရန် သတိပေးလွှာ / စာရင်းချုပ်</div>
+                    <div class="prc-doc-date">Date: ${dashboardEscapeHtml(todayFormatted)}</div>
+                </div>
+            </div>
+
+            <div class="prc-customer-strip">
+                <div class="prc-customer-left">
+                    <span class="prc-strip-label">CUSTOMER / SOCIAL MEDIA ACCOUNT</span>
+                    <strong class="prc-customer-name">${dashboardEscapeHtml(customerDisplayName)}</strong>
+                    ${leadGroup.accountType ? `<span class="prc-platform-tag">${dashboardEscapeHtml(leadGroup.accountType)}</span>` : ''}
+                </div>
+                <div class="prc-customer-right">
+                    <div class="prc-stat-mini">
+                        <span>Unpaid Bookings</span>
+                        <strong>${groupsToUse.length} PNR${groupsToUse.length > 1 ? 's' : ''} (${items.length} Item${items.length > 1 ? 's' : ''})</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prc-table-container">
+                <table class="prc-items-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>PNR / ISSUED</th>
+                            <th>PASSENGER</th>
+                            <th>ROUTE & TRAVEL DATE</th>
+                            <th style="text-align:right;">TOTAL (MMK)</th>
+                            <th style="text-align:right;">PAID (MMK)</th>
+                            <th style="text-align:right;">DUE (MMK)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="prc-summary-and-payment-grid">
+                <div class="prc-payment-accounts-box">
+                    <div class="prc-box-heading">
+                        <i class="fa-solid fa-building-columns"></i> PAYMENT CHANNELS (Account Name: <strong>Aung Pyae Sone</strong>)
+                    </div>
+                    <div class="prc-bank-list-grid">
+                        <div class="prc-bank-item kbzpay">
+                            <span class="prc-bank-badge">KBZ Pay</span>
+                            <strong>09740862500</strong>
+                        </div>
+                        <div class="prc-bank-item wavepay">
+                            <span class="prc-bank-badge">Wave Pay</span>
+                            <strong>09740862500</strong>
+                        </div>
+                        <div class="prc-bank-item ayapay">
+                            <span class="prc-bank-badge">AYA / UAB Pay</span>
+                            <strong>09740862500</strong>
+                        </div>
+                        <div class="prc-bank-item bank">
+                            <span class="prc-bank-badge">KBZ Special</span>
+                            <strong>02051102000725501</strong>
+                        </div>
+                        <div class="prc-bank-item bank">
+                            <span class="prc-bank-badge">KBZ Normal</span>
+                            <strong>18230199926109801</strong>
+                        </div>
+                        <div class="prc-bank-item bank">
+                            <span class="prc-bank-badge">AYA / UAB Bank</span>
+                            <strong>40039173610 / 20010588572</strong>
+                        </div>
+                    </div>
+
+                    <div class="prc-qr-row">
+                        <div class="prc-qr-card">
+                            <div class="prc-qr-img-wrap">
+                                ${kbzQrDataUrl
+                                    ? `<img src="${kbzQrDataUrl}" alt="KBZPay QR" class="prc-qr-custom-img">`
+                                    : renderDefaultQrSvg('KBZPay', '#0054A6')}
+                            </div>
+                            <div class="prc-qr-caption">
+                                <strong>KBZPay QR</strong>
+                                <span>09740862500</span>
+                            </div>
+                        </div>
+                        <div class="prc-qr-card">
+                            <div class="prc-qr-img-wrap">
+                                ${waveQrDataUrl
+                                    ? `<img src="${waveQrDataUrl}" alt="WavePay QR" class="prc-qr-custom-img">`
+                                    : renderDefaultQrSvg('WavePay', '#D97706')}
+                            </div>
+                            <div class="prc-qr-caption">
+                                <strong>WavePay / Bank QR</strong>
+                                <span>09740862500</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prc-totals-box">
+                    <div class="prc-total-line">
+                        <span>စုစုပေါင်း ကျသင့်ငွေ (Total Amount)</span>
+                        <strong>${formatDashboardAmount(totalGross)} MMK</strong>
+                    </div>
+                    <div class="prc-total-line paid">
+                        <span>ပေးချေပြီးငွေ (Paid / Received)</span>
+                        <strong>- ${formatDashboardAmount(effectivePaid)} MMK</strong>
+                    </div>
+                    <div class="prc-total-line balance-due">
+                        <div>
+                            <span class="prc-due-mm">ပေးချေရန် ကျန်ငွေ စုစုပေါင်း</span>
+                            <span class="prc-due-en">TOTAL BALANCE DUE</span>
+                        </div>
+                        <strong>${formatDashboardAmount(balanceDue)} <small>MMK</small></strong>
+                    </div>
+                    <div class="prc-polite-note">
+                        လူကြီးမင်းတို့၏ မရှင်းလင်းရသေးသော လက်မှတ်စာရင်းအား စစ်ဆေးပေးပါရန်နှင့် ငွေလွှဲပြီးပါက ပြေစာ (Screenshot) လေး ပေးပို့ပေးပါရန် လေးစားစွာ မေတ္တာရပ်ခံအပ်ပါသည်ခင်ဗျာ။ 🙏
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
+    const buildReminderTextMm = () => {
+        const groupsToUse = getActiveGroups();
+        const items = buildLineItems(groupsToUse);
+        const { totalGross, effectivePaid, balanceDue } = computeSummary(items);
+        const lines = items.map((item, idx) =>
+            `  ${idx + 1}. PNR: ${item.pnr} | ${item.passenger} (${item.route}, ${item.travelDate}) — ${formatDashboardAmount(item.gross)} MMK`
+        ).join('\n');
+
+        return [
+            `မင်္ဂလာပါ ${customerDisplayName} ခင်ဗျာ 🙏`,
+            `Ocean Travel မှ လူကြီးမင်း၏ မရှင်းလင်းရသေးသော လေယာဉ်လက်မှတ် စာရင်းချုပ် (Payment Reminder) အား လေးစားစွာ ပေးပို့အပ်ပါသည်ခင်ဗျာ။`,
+            ``,
+            `🎫 လက်မှတ်စာရင်း (${groupsToUse.length} PNR / ${items.length} စောင်)`,
+            lines,
+            ``,
+            `💰 ငွေစာရင်းချုပ်`,
+            `• စုစုပေါင်း ကျသင့်ငွေ (Total): ${formatDashboardAmount(totalGross)} MMK`,
+            `• ပေးချေပြီးငွေ (Paid): ${formatDashboardAmount(effectivePaid)} MMK`,
+            `• ပေးချေရန် ကျန်ငွေ (Balance Due): ${formatDashboardAmount(balanceDue)} MMK`,
+            ``,
+            `🏦 ငွေလွှဲပေးပို့နိုင်သော အကောင့်များ (Aung Pyae Sone)`,
+            `• KBZ Pay / Wave Pay / AYA Pay / UAB Pay: 09740862500`,
+            `• KBZ Special Account: 02051102000725501`,
+            `• KBZ Normal Account: 18230199926109801`,
+            `• AYA Bank: 40039173610 | UAB Bank: 20010588572`,
+            ``,
+            `ငွေလွှဲပြီးပါက ပြေစာ (Screenshot) လေး ပြန်လည်ပေးပို့ပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်ခင်ဗျာ။ အထူးကျေးဇူးတင်ရှိပါသည်ခင်ဗျာ။ 💙`
+        ].join('\n');
+    };
+
+    const initialItems = buildLineItems(getActiveGroups());
+    const initialSummary = computeSummary(initialItems);
+
+    const modalHtml = `
+        <div class="prc-modal-wrapper">
+            <div class="prc-modal-toolbar">
+                <div class="prc-modal-toolbar-left">
+                    <h3 class="prc-modal-title"><i class="fa-solid fa-file-invoice-dollar"></i> Payment Reminder Card</h3>
+                    ${accountMatchedGroups.length > 1 && singlePnrGroups.length > 0 ? `
+                    <div class="prc-scope-switch">
+                        <button type="button" class="prc-scope-btn active" data-prc-scope="account">
+                            All ${accountMatchedGroups.length} PNRs (${dashboardEscapeHtml(customerDisplayName)})
+                        </button>
+                        <button type="button" class="prc-scope-btn" data-prc-scope="single">
+                            Only PNR ${dashboardEscapeHtml(normalizedPnr)}
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+                <button type="button" class="pnr-close-circle-btn" id="prcCloseModalBtn" aria-label="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="prc-controls-bar">
+                <div class="prc-paid-input-group">
+                    <label for="prcCustomPaidInput">ပေးပြီးသားငွေ (Paid / Deposit MMK):</label>
+                    <input type="number" id="prcCustomPaidInput" min="0" step="1000" value="${initialSummary.effectivePaid}" placeholder="0">
+                </div>
+                <div class="prc-qr-upload-group">
+                    <input type="file" id="prcKbzQrFileInput" accept="image/*" hidden>
+                    <input type="file" id="prcWaveQrFileInput" accept="image/*" hidden>
+                    <button type="button" class="prc-mini-btn" id="prcUploadKbzQrBtn" title="Upload your KBZPay QR image (saved automatically)">
+                        <i class="fa-solid fa-qrcode"></i> KBZPay QR
+                    </button>
+                    <button type="button" class="prc-mini-btn" id="prcUploadWaveQrBtn" title="Upload your WavePay / Bank QR image (saved automatically)">
+                        <i class="fa-solid fa-qrcode"></i> WavePay QR
+                    </button>
+                </div>
+                <div class="prc-export-actions">
+                    <button type="button" class="btn btn-secondary prc-action-btn" id="prcCopyTextBtn">
+                        <i class="fa-regular fa-copy"></i> Copy Text (MM)
+                    </button>
+                    <button type="button" class="btn btn-secondary prc-action-btn" id="prcDownloadPdfBtn">
+                        <i class="fa-solid fa-file-pdf"></i> Download PDF
+                    </button>
+                    <button type="button" class="btn btn-primary prc-action-btn" id="prcDownloadPngBtn">
+                        <i class="fa-solid fa-image"></i> Download PNG
+                    </button>
+                </div>
+            </div>
+
+            <div class="prc-preview-scroll-viewport">
+                <div id="paymentReminderCardCanvasTarget" class="payment-reminder-card-sheet">
+                    ${buildCardInnerHtml()}
+                </div>
+            </div>
+        </div>
+    `;
+
+    openModal(modalHtml, 'solid-modal prc-dialog-modal');
+
+    const refreshCardView = () => {
+        const target = document.getElementById('paymentReminderCardCanvasTarget');
+        if (target) target.innerHTML = buildCardInnerHtml();
+    };
+
+    document.getElementById('prcCloseModalBtn')?.addEventListener('click', closeModal);
+
+    document.querySelectorAll('.prc-scope-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.prc-scope-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            scopeMode = btn.dataset.prcScope || 'account';
+            customExtraPaid = null;
+            const newSummary = computeSummary(buildLineItems(getActiveGroups()));
+            const paidInput = document.getElementById('prcCustomPaidInput');
+            if (paidInput) paidInput.value = newSummary.effectivePaid;
+            refreshCardView();
+        });
+    });
+
+    const paidInput = document.getElementById('prcCustomPaidInput');
+    if (paidInput) {
+        paidInput.addEventListener('input', (e) => {
+            const raw = e.target.value;
+            customExtraPaid = raw === '' ? 0 : Math.max(0, Number(raw) || 0);
+            refreshCardView();
+        });
+    }
+
+    const handleQrUpload = (fileInputId, storageKey, label) => {
+        const fileInput = document.getElementById(fileInputId);
+        if (!fileInput) return;
+        fileInput.addEventListener('change', (ev) => {
+            const file = ev.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 320;
+                    const scale = Math.min(1, maxDim / Math.max(img.width || 1, img.height || 1));
+                    canvas.width = Math.round((img.width || 240) * scale);
+                    canvas.height = Math.round((img.height || 240) * scale);
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.88);
+                    setStoredPaymentQr(storageKey, compressed);
+                    refreshCardView();
+                    showToast(`${label} QR saved for all Payment Reminder Cards!`, 'success');
+                };
+                img.src = String(reader.result || '');
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    handleQrUpload('prcKbzQrFileInput', CUSTOM_QR_KBZ_KEY, 'KBZPay');
+    handleQrUpload('prcWaveQrFileInput', CUSTOM_QR_WAVE_KEY, 'WavePay');
+
+    document.getElementById('prcUploadKbzQrBtn')?.addEventListener('click', () => {
+        document.getElementById('prcKbzQrFileInput')?.click();
+    });
+    document.getElementById('prcUploadWaveQrBtn')?.addEventListener('click', () => {
+        document.getElementById('prcWaveQrFileInput')?.click();
+    });
+
+    const copyTextBtn = document.getElementById('prcCopyTextBtn');
+    copyTextBtn?.addEventListener('click', async () => {
+        const text = buildReminderTextMm();
+        const ok = await copyCustomerMessageToClipboard(text);
+        if (ok) {
+            showToast('Payment Reminder စာသား ကူးယူပြီးပါပြီ!', 'success');
+            const orig = copyTextBtn.innerHTML;
+            copyTextBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+            setTimeout(() => { copyTextBtn.innerHTML = orig; }, 1800);
+        }
+    });
+
+    const safeFileSlug = customerDisplayName.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-|-$/g, '') || 'Customer';
+
+    const downloadPngBtn = document.getElementById('prcDownloadPngBtn');
+    downloadPngBtn?.addEventListener('click', async () => {
+        const target = document.getElementById('paymentReminderCardCanvasTarget');
+        if (!target) return;
+        const origHtml = downloadPngBtn.innerHTML;
+        try {
+            downloadPngBtn.disabled = true;
+            downloadPngBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Rendering...';
+            await loadDocumentLibraries('canvas');
+            const canvas = await window.html2canvas(target, {
+                scale: 2.5,
+                useCORS: true,
+                backgroundColor: '#FFFFFF'
+            });
+            const link = document.createElement('a');
+            link.download = `Payment-Reminder-${safeFileSlug}-${new Date().toISOString().slice(0, 10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('Payment Reminder Card (PNG) downloaded!', 'success');
+        } catch (err) {
+            console.error('Failed to export PNG:', err);
+            showToast('Could not generate PNG image.', 'error');
+        } finally {
+            downloadPngBtn.disabled = false;
+            downloadPngBtn.innerHTML = origHtml;
+        }
+    });
+
+    const downloadPdfBtn = document.getElementById('prcDownloadPdfBtn');
+    downloadPdfBtn?.addEventListener('click', async () => {
+        const target = document.getElementById('paymentReminderCardCanvasTarget');
+        if (!target) return;
+        const origHtml = downloadPdfBtn.innerHTML;
+        try {
+            downloadPdfBtn.disabled = true;
+            downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Rendering...';
+            await loadDocumentLibraries('pdf', 'canvas');
+            const canvas = await window.html2canvas(target, {
+                scale: 2.2,
+                useCORS: true,
+                backgroundColor: '#FFFFFF'
+            });
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: canvas.width > canvas.height ? 'l' : 'p',
+                unit: 'pt',
+                format: [canvas.width * 0.75 + 40, canvas.height * 0.75 + 40]
+            });
+            pdf.addImage(imgData, 'JPEG', 20, 20, canvas.width * 0.75, canvas.height * 0.75);
+            pdf.save(`Payment-Reminder-${safeFileSlug}-${new Date().toISOString().slice(0, 10)}.pdf`);
+            showToast('Payment Reminder Card (PDF) downloaded!', 'success');
+        } catch (err) {
+            console.error('Failed to export PDF:', err);
+            showToast('Could not generate PDF document.', 'error');
+        } finally {
+            downloadPdfBtn.disabled = false;
+            downloadPdfBtn.innerHTML = origHtml;
+        }
+    });
+}
+
 
 function getBookingDeadlineReminderRows(activeBookings) {
     const grouped = new Map();
