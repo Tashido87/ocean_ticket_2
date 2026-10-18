@@ -331,7 +331,7 @@ function computeSingleRecordTotal(t) {
     if (t._isHotel) {
         return Number(t.selling_price || t.net_amount) || 0;
     }
-    return (Number(t.net_amount) || 0) + (Number(t.extra_fare) || 0) + (Number(t.date_change) || 0);
+    return (Number(t.net_amount) || 0) + (Number(t.extra_fare) || 0) + (Number(t.sub_agent_fare) || 0) + (Number(t.date_change) || 0);
 }
 
 function computeRecordTotal(ticket, isGroup) {
@@ -339,6 +339,20 @@ function computeRecordTotal(ticket, isGroup) {
         return ticket.tickets.reduce((sum, t) => sum + computeSingleRecordTotal(t), 0);
     }
     return computeSingleRecordTotal(ticket);
+}
+
+/**
+ * Hotel reservations store payment state in `paid` ('paid' | 'partial' | 'unpaid').
+ * Falls back to a legacy `payment_status` field / boolean `paid` for older records.
+ * @returns {'paid'|'partial'|'unpaid'}
+ */
+function getHotelPaymentKey(h) {
+    if (!h) return 'unpaid';
+    const raw = h.paid !== undefined && h.paid !== null && h.paid !== '' ? h.paid : h.payment_status;
+    if (raw === true) return 'paid';
+    const key = String(raw ?? '').trim().toLowerCase();
+    if (key === 'paid' || key === 'partial') return key;
+    return 'unpaid';
 }
 
 function renderRecordStatusBadge(ticket, isGroup) {
@@ -352,7 +366,7 @@ function renderRecordStatusBadge(ticket, isGroup) {
         }
         const paidCount = activeList.filter(t =>
             t._isHotel
-                ? String(t.payment_status || 'Paid').toLowerCase() === 'paid'
+                ? getHotelPaymentKey(t) === 'paid'
                 : isTicketPaid(t)
         ).length;
         if (paidCount === activeList.length) {
@@ -364,10 +378,14 @@ function renderRecordStatusBadge(ticket, isGroup) {
         return `<span class="records-status-badge status-partial">${paidCount}/${activeList.length} Paid</span>`;
     }
     if (ticket._isHotel) {
-        const isPaidHotel = String(ticket.payment_status || 'Paid').toLowerCase() === 'paid';
-        return isPaidHotel
-            ? `<span class="records-status-badge status-paid"><i class="fa-solid fa-check"></i> Paid</span>`
-            : `<span class="records-status-badge status-unpaid"><i class="fa-solid fa-clock"></i> Unpaid</span>`;
+        const hotelKey = getHotelPaymentKey(ticket);
+        if (hotelKey === 'paid') {
+            return `<span class="records-status-badge status-paid"><i class="fa-solid fa-check"></i> Paid</span>`;
+        }
+        if (hotelKey === 'partial') {
+            return `<span class="records-status-badge status-partial">Partial</span>`;
+        }
+        return `<span class="records-status-badge status-unpaid"><i class="fa-solid fa-clock"></i> Unpaid</span>`;
     }
     return isTicketPaid(ticket)
         ? `<span class="records-status-badge status-paid"><i class="fa-solid fa-check"></i> Paid</span>`
@@ -548,7 +566,7 @@ export function displayTickets(tickets, page = 1) {
             <td class="num-cell commission-td col-commission" data-col="commission">${commissionHtml}</td>
             <td class="num-cell col-extra-fare" data-col="extra_fare">${extraFareHtml}</td>
             <td class="num-cell col-date-change" data-col="date_change">${dateChangeHtml}</td>
-            <td class="num-cell col-total col-pinned">${totalHtml}</td>
+            <td class="num-cell col-total col-pinned" data-sub-agent-fare="${isGroup ? (ticket.tickets || []).reduce((s, t) => s + (t._isHotel ? 0 : (Number(t.sub_agent_fare) || 0)), 0) : (ticket._isHotel ? 0 : (Number(ticket.sub_agent_fare) || 0))}">${totalHtml}</td>
             <td class="col-status col-pinned">${statusBadgeHtml}</td>
             <td class="actions-cell col-actions col-pinned">
                 <button class="icon-btn icon-btn-table" title="View Details" data-action="view"><i class="fa-solid fa-eye"></i></button>
@@ -608,7 +626,8 @@ export function displayTickets(tickets, page = 1) {
                     const netVal = Number(row.querySelector('.net-amount-inline-input')?.value) || 0;
                     const extraVal = Number(row.querySelector('.extra-fare-inline-input')?.value) || 0;
                     const dcVal = Number(row.querySelector('.date-change-inline-input')?.value) || 0;
-                    totalCell.textContent = (netVal + extraVal + dcVal).toLocaleString();
+                    const subAgentVal = Number(totalCell.dataset.subAgentFare) || 0;
+                    totalCell.textContent = (netVal + extraVal + subAgentVal + dcVal).toLocaleString();
                 });
 
                 input.addEventListener('blur', function() {
@@ -1464,10 +1483,11 @@ export function showDetails(docId) {
  * @param {Object} hotel The hotel reservation object.
  */
 export function showHotelDetails(hotel) {
-    let statusClass = hotel.paid === 'paid' ? 'confirmed' : 'pending';
-    let statusText = hotel.paid === 'paid' 
+    const hotelKey = getHotelPaymentKey(hotel);
+    let statusClass = hotelKey === 'paid' ? 'confirmed' : (hotelKey === 'partial' ? 'partial' : 'pending');
+    let statusText = hotelKey === 'paid' 
         ? `Paid on ${formatDateToDMMMY(hotel.payment_date) || 'N/A'} via ${hotel.payment_method || 'N/A'}`
-        : 'Unpaid';
+        : (hotelKey === 'partial' ? 'Partially Paid' : 'Unpaid');
 
     let clientKey = '';
     const baseClientName = String(hotel.client_name || '').trim();
@@ -2224,6 +2244,7 @@ function groupTicketsByAccount(tickets, startDateVal, endDateVal) {
             net_amount: sumField('net_amount'),
             commission: sumField('commission'),
             extra_fare: sumField('extra_fare'),
+            sub_agent_fare: sumField('sub_agent_fare'),
             date_change: sumField('date_change')
         });
     });
@@ -2533,7 +2554,7 @@ export function openEditGroupModal(group) {
             </div>
         </div>
         <div class="edit-modal-note">
-            <i class="fa-solid fa-circle-info"></i> Commission and Sub Agent Fare will be divided equally among the ${group.count} tickets.
+            <i class="fa-solid fa-circle-info"></i> Only the totals you change will be divided equally among the ${group.count} tickets. Unchanged fields keep their existing per-ticket values.
         </div>
         <div class="form-actions" style="margin-top:1.25rem;">
             <button class="btn btn-primary" id="editGroupSaveBtn">Save</button>
@@ -2543,29 +2564,54 @@ export function openEditGroupModal(group) {
     openModal(content);
     document.getElementById('editGroupCancelBtn').addEventListener('click', closeModal);
     document.getElementById('editGroupSaveBtn').addEventListener('click', async () => {
-        const totalCommission = Number(document.getElementById('editGroupCommission').value) || 0;
-        const totalExtraFare = Number(document.getElementById('editGroupExtraFare').value) || 0;
-        const totalSubAgentFare = Number(document.getElementById('editGroupSubAgentFare').value) || 0;
-        const totalDateChange = Number(document.getElementById('editGroupDateChange').value) || 0;
+        const ticketRows = (group.tickets || []).filter(t => t && t.id && !t._isHotel);
+        if (!ticketRows.length) {
+            showToast('No editable tickets in this group.', 'info');
+            return;
+        }
 
-        const perCommission = Math.round(totalCommission / group.count);
-        const perExtraFare = Math.round(totalExtraFare / group.count);
-        const perSubAgentFare = Math.round(totalSubAgentFare / group.count);
-        const perDateChange = Math.round(totalDateChange / group.count);
+        const fields = [
+            { key: 'commission', inputId: 'editGroupCommission' },
+            { key: 'extra_fare', inputId: 'editGroupExtraFare' },
+            { key: 'sub_agent_fare', inputId: 'editGroupSubAgentFare' },
+            { key: 'date_change', inputId: 'editGroupDateChange' }
+        ];
 
-        const updates = group.tickets.map(t => ({
-            id: t.id,
-            data: {
-                commission: perCommission,
-                extra_fare: perExtraFare,
-                sub_agent_fare: perSubAgentFare,
-                date_change: perDateChange
-            }
-        }));
+        // Split a total into integer shares that sum exactly to the total.
+        const splitExact = (total, count) => {
+            const base = Math.floor(total / count);
+            const remainder = total - base * count;
+            return Array.from({ length: count }, (_, i) => base + (i < remainder ? 1 : 0));
+        };
 
-        await batchUpdateTickets(updates);
-        showToast('Group updated successfully', 'success');
-        closeModal();
+        const perTicketData = ticketRows.map(() => ({}));
+        fields.forEach(({ key, inputId }) => {
+            const newTotal = Math.round(Number(document.getElementById(inputId).value) || 0);
+            const oldTotal = ticketRows.reduce((sum, t) => sum + (Number(t[key]) || 0), 0);
+            if (newTotal === oldTotal) return;
+            splitExact(newTotal, ticketRows.length).forEach((share, i) => {
+                perTicketData[i][key] = share;
+            });
+        });
+
+        const updates = ticketRows
+            .map((t, i) => ({ id: t.id, data: perTicketData[i] }))
+            .filter(u => Object.keys(u.data).length > 0);
+
+        if (!updates.length) {
+            showToast('No changes were made.', 'info');
+            closeModal();
+            return;
+        }
+
+        try {
+            await batchUpdateTickets(updates);
+            showToast('Group updated successfully', 'success');
+            closeModal();
+        } catch (err) {
+            console.error('Group update failed:', err);
+            showToast(`Failed to update group: ${err.message || err}`, 'error');
+        }
         // Data and UI will update automatically via real-time listeners
     });
 }

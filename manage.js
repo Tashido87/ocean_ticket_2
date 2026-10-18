@@ -1555,35 +1555,55 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
                 const part2_Base = (ticket.base_fare || 0) - part1_Base;
                 const part2_Comm = (ticket.commission || 0) - part1_Comm;
 
+                const originalSubAgent = Number(ticket.sub_agent_fare) || 0;
+                const part1_SubAgent = Math.floor(originalSubAgent * ratio);
+                const part2_SubAgent = originalSubAgent - part1_SubAgent;
+                const part1_Net = payAmount - part1_SubAgent;
+                const part2_Net = remainder - part2_SubAgent;
+
+                const subAgentUpdateFields = originalSubAgent > 0 ? {
+                    sub_agent_fare: part1_SubAgent,
+                    sub_agent_settled: part1_SubAgent > 0,
+                    sub_agent_manually_unsettled: false,
+                    sub_agent_settled_at: part1_SubAgent > 0 ? new Date().toISOString() : null,
+                    sub_agent_settled_date: part1_SubAgent > 0 ? payDate : '',
+                    sub_agent_settlement_method: part1_SubAgent > 0 ? (payMethod || 'Deducted from Ticket Fare') : ''
+                } : {
+                    sub_agent_fare: 0
+                };
+
                 updates.push(updateTicket(ticket.id, {
                     base_fare: part1_Base,
-                    net_amount: payAmount,
+                    net_amount: part1_Net,
                     commission: part1_Comm,
                     paid: true,
                     payment_method: payMethod,
                     paid_date: payDate,
                     payment_note: `Partial payment split from ${ticketTotal(ticket).toLocaleString()} MMK`,
-                    remarks: `Partial Pmt (${payAmount.toLocaleString()}) - ${ticket.remarks}`,
+                    remarks: `Partial Pmt (${payAmount.toLocaleString()}) - ${ticket.remarks || ''}`,
                     extra_fare: 0,
                     date_change: 0,
-                    split_status: 'partial-paid'
+                    split_status: 'partial-paid',
+                    ...subAgentUpdateFields
                 }));
 
                 newRows.push({
                     issued_date: ticket.issued_date,
                     name: `${ticket.name} (Balance)`,
-                    id_no: ticket.id_no,
-                    phone: ticket.phone,
-                    account_name: ticket.account_name,
-                    account_type: ticket.account_type,
-                    account_link: ticket.account_link,
-                    departure: ticket.departure,
-                    destination: ticket.destination,
-                    departing_on: ticket.departing_on,
-                    airline: ticket.airline,
+                    id_no: ticket.id_no || '',
+                    phone: ticket.phone || '',
+                    account_name: ticket.account_name || '',
+                    account_type: ticket.account_type || '',
+                    account_link: ticket.account_link || '',
+                    departure: ticket.departure || '',
+                    destination: ticket.destination || '',
+                    departing_on: ticket.departing_on || '',
+                    airline: ticket.airline || '',
                     base_fare: part2_Base,
                     booking_reference: ticket.booking_reference,
-                    net_amount: remainder,
+                    net_amount: part2_Net,
+                    sub_agent_fare: part2_SubAgent,
+                    sub_agent_settled: false,
                     paid: false,
                     payment_method: '',
                     paid_date: '',
@@ -1593,7 +1613,7 @@ async function handlePartialPayment(e, ticketsToPay, totalDebt) {
                     split_status: 'balance-due',
                     extra_fare: 0,
                     date_change: 0,
-                    gender: ticket.gender
+                    gender: ticket.gender || ''
                 });
 
                 payAmount = 0;

@@ -167,7 +167,7 @@ export async function exportToPdf(isShare = false) {
 
         ticketsToExport = state.allTickets.filter(t => {
             const issuedDate = parseSheetDate(t.issued_date);
-            return issuedDate >= startDate && issuedDate <= endDate && t.source !== 'self';
+            return issuedDate >= startDate && issuedDate <= endDate && t.source !== 'self' && !isCanceledTicket(t);
         });
 
         hotelsToExport = (state.allHotels || []).filter(h => {
@@ -176,8 +176,8 @@ export async function exportToPdf(isShare = false) {
         });
     }
 
-    // Ensure self-purchased tickets are excluded for Agent Report regardless of mode (canceled and fee entries are included)
-    ticketsToExport = ticketsToExport.filter(t => t.source !== 'self');
+    // Ensure self-purchased and canceled tickets are excluded for Agent Report regardless of mode
+    ticketsToExport = ticketsToExport.filter(t => t.source !== 'self' && !isCanceledTicket(t));
     hotelsToExport = hotelsToExport.filter(h => h.source !== 'self');
 
     const itemsToExport = ticketsToExport.map(t => ({
@@ -379,7 +379,7 @@ export async function exportToPdf(isShare = false) {
 
             const ticketsLastMonth = state.allTickets.filter(t => {
                 const ticketDate = parseSheetDate(t.issued_date);
-                return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear && t.source !== 'self';
+                return ticketDate.getMonth() === previousMonth && ticketDate.getFullYear() === previousYear && t.source !== 'self' && !isCanceledTicket(t);
             });
 
             const revenueLastMonth = ticketsLastMonth.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
@@ -403,7 +403,7 @@ export async function exportToPdf(isShare = false) {
             
             const ticketsBefore = state.allTickets.filter(t => {
                 const ticketDate = parseSheetDate(t.issued_date);
-                return ticketDate >= filterStartDate && ticketDate < startDate && t.source !== 'self';
+                return ticketDate >= filterStartDate && ticketDate < startDate && t.source !== 'self' && !isCanceledTicket(t);
             });
             const ticketsRevenueBefore = ticketsBefore.reduce((sum, t) => sum + (t.net_amount || 0) + (t.date_change || 0), 0);
             const ticketsCommissionBefore = ticketsBefore.reduce((sum, t) => sum + (t.commission || 0), 0);
@@ -777,7 +777,7 @@ export async function exportPrivateReportToPdf() {
     // --- Data Aggregation for Comparison ---
     const ticketsThisYear = state.allTickets.filter(t => {
         const ticketDate = parseSheetDate(t.issued_date);
-        return ticketDate.getFullYear() === currentYear;
+        return ticketDate.getFullYear() === currentYear && !isCanceledTicket(t);
     });
 
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

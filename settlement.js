@@ -113,7 +113,9 @@ function isCanceled(t) {
 }
 
 function isExcluded(t) {
-    return t?.source === 'self';
+    // Self-purchased tickets are not owed to the owner; canceled/refunded tickets are excluded
+    // from owner payable (same rule as dashboard.js ticketOwnerPayableAmount).
+    return t?.source === 'self' || isCanceled(t);
 }
 
 function n(v) { return Number(v || 0); }
@@ -332,6 +334,7 @@ export function getOwnerLedgerRows() {
         const issued = parseSheetDate(t.issued_date);
         if (!issued.getTime() || !inRange(issued, start, end)) return;
 
+        const canceled = isCanceled(t);
         const ownerPayable = getTicketOwnerPayable(t);
 
         if (n(t.net_amount) > 0) {
