@@ -6,7 +6,7 @@
 
 import { state } from './state.js';
 import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation, updateBooking, updateTicketWithAudit, batchUpdateWithAudit, addHistory } from './db.js';
-import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta } from './utils.js';
+import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta, compactPlace } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
 import { updateDashboardData } from './main.js';
@@ -798,9 +798,10 @@ function escapeHtml(value) {
 }
 
 function routeShort(ticket) {
-    const dep = (ticket.departure || '').split(' ')[0];
-    const dest = (ticket.destination || '').split(' ')[0];
-    return dep && dest ? `${dep} → ${dest}` : (dep || dest || '—');
+    if (!ticket) return '—';
+    const dep = compactPlace(ticket.departure);
+    const dest = compactPlace(ticket.destination);
+    return dep && dest && dep !== '—' && dest !== '—' ? `${dep} → ${dest}` : (dep || dest || '—');
 }
 
 /**

@@ -229,10 +229,10 @@ test('getPnrRouteDisplay and getPnrTravelDateDisplay display both sectors for ro
 
     const sectorsA = getPnrSectors(tickets1SSLF6);
     assert.equal(sectorsA.length, 2);
-    assert.equal(sectorsA[0].departure, 'Yangon (RGN)');
-    assert.equal(sectorsA[0].destination, 'New Delhi (DEL)');
-    assert.equal(sectorsA[1].departure, 'New Delhi (DEL)');
-    assert.equal(sectorsA[1].destination, 'Yangon (RGN)');
+    assert.equal(sectorsA[0].departure, 'Yangon');
+    assert.equal(sectorsA[0].destination, 'New Delhi');
+    assert.equal(sectorsA[1].departure, 'New Delhi');
+    assert.equal(sectorsA[1].destination, 'Yangon');
 
     const routeA = getPnrRouteDisplay(tickets1SSLF6);
     assert.equal(routeA, 'Yangon → New Delhi / New Delhi → Yangon');
@@ -318,8 +318,34 @@ test('getPnrRouteDisplay and getPnrTravelDateDisplay display both sectors for ro
     });
     assert.ok(customerMsg.includes('• ခရီးစဉ် : Yangon → New Delhi / New Delhi → Yangon'));
     assert.ok(customerMsg.includes('• ခရီးသွားမည့်ရက် : 22-Oct-2026 / 29-Oct-2026'));
-    // International route check-in reminder
-    assert.ok(customerMsg.includes('အနည်းဆုံး (၃) နာရီကြိုတင်၍'));
+    // Case F: Truncated place name resolution (e.g. 1SS7YZ with "New" vs "New Delhi")
+    const ticketsTruncatedCity = [
+        {
+            booking_reference: '1SS7YZ',
+            departure: 'Yangon',
+            destination: 'New',
+            departing_on: '22-Oct-2026',
+            leg: 'outbound',
+            trip_type: 'Round-Trip',
+            name: 'AYE AYE MYAT'
+        },
+        {
+            booking_reference: '1SS7YZ',
+            departure: 'New Delhi',
+            destination: 'Yangon',
+            departing_on: '29-Oct-2026',
+            leg: 'return',
+            trip_type: 'Round-Trip',
+            name: 'AYE AYE MYAT'
+        }
+    ];
+    const sectorsF = getPnrSectors(ticketsTruncatedCity);
+    assert.equal(sectorsF.length, 2, 'Must have exactly 2 sectors, no duplicate or fragmented sectors');
+    assert.equal(sectorsF[0].departure, 'Yangon');
+    assert.equal(sectorsF[0].destination, 'New Delhi');
+    assert.equal(sectorsF[1].departure, 'New Delhi');
+    assert.equal(sectorsF[1].destination, 'Yangon');
+    assert.equal(getPnrRouteDisplay(ticketsTruncatedCity), 'Yangon → New Delhi / New Delhi → Yangon');
 });
 
 

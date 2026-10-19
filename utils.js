@@ -944,6 +944,49 @@ export function compactPlace(value) {
 }
 
 /**
+ * Normalizes city names and repairs truncated fragments (e.g. "New" -> "New Delhi", "Chiang" -> "Chiang Mai").
+ * @param {string} place
+ * @param {Array<Object>} [contextRows=[]]
+ * @returns {string}
+ */
+export function cleanPlaceName(place, contextRows = []) {
+    if (!place) return '';
+    let clean = compactPlace(place);
+    if (!clean || clean === '—') return clean;
+
+    // 1. Check if another row in the same context/PNR has the full version of this place name
+    if (Array.isArray(contextRows) && contextRows.length > 0) {
+        for (const row of contextRows) {
+            for (const cand of [row.departure, row.destination, row.return_departure, row.return_destination]) {
+                const cleanCand = compactPlace(cand);
+                if (cleanCand && cleanCand.length > clean.length) {
+                    if (cleanCand.toLowerCase().startsWith(clean.toLowerCase() + ' ') ||
+                        cleanCand.toLowerCase().startsWith(clean.toLowerCase() + '-')) {
+                        return cleanCand;
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Known international/domestic cities with multi-word names that might have been truncated with split(' ')[0]
+    const KNOWN_MULTIWORD_CITIES = [
+        'New Delhi', 'Chiang Mai', 'Chiang Rai', 'Kuala Lumpur',
+        'Ho Chi Minh City', 'Hong Kong', 'Nay Pyi Taw', 'Da Nang',
+        'Koh Samui', 'Phnom Penh', 'Siem Reap', 'Don Mueang',
+        'Abu Dhabi', 'Kolkata', 'Banda Aceh', 'Phu Quoc', 'Kota Kinabalu'
+    ];
+
+    for (const kmc of KNOWN_MULTIWORD_CITIES) {
+        if (clean.toLowerCase() === kmc.split(' ')[0].toLowerCase()) {
+            return kmc;
+        }
+    }
+
+    return clean;
+}
+
+/**
  * Extracts unique ordered sectors (legs) for a set of tickets under a PNR.
  * Handles:
  * 1. Multiple rows representing separate legs (outbound, return, multi-sector).
@@ -967,9 +1010,11 @@ export function getPnrSectors(tickets) {
     if (candidateRows.length === 0) {
         const anyWithRoute = activeRows.find(t => t.departure || t.destination);
         if (anyWithRoute) {
+            const dep = cleanPlaceName(anyWithRoute.departure, activeRows);
+            const dest = cleanPlaceName(anyWithRoute.destination, activeRows);
             return [{
-                departure: String(anyWithRoute.departure || '').trim(),
-                destination: String(anyWithRoute.destination || '').trim(),
+                departure: dep,
+                destination: dest,
                 departing_on: String(anyWithRoute.departing_on || '').trim(),
                 leg: String(anyWithRoute.leg || '').toLowerCase(),
                 airline: String(anyWithRoute.airline || '').trim()
@@ -978,7 +1023,7 @@ export function getPnrSectors(tickets) {
         return [];
     }
 
-    const normKey = (place) => compactPlace(place).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normKey = (place) => cleanPlaceName(place, candidateRows).toLowerCase().replace(/[^a-z0-9]/g, '');
     const sectorsMap = new Map();
 
     const sortedRows = [...candidateRows].sort((a, b) => {
@@ -997,8 +1042,8 @@ export function getPnrSectors(tickets) {
 
     sortedRows.forEach(t => {
         if (!t.departure && !t.destination) return;
-        const dep = String(t.departure || '').trim();
-        const dest = String(t.destination || '').trim();
+        const dep = cleanPlaceName(t.departure, candidateRows);
+        const dest = cleanPlaceName(t.destination, candidateRows);
         const key = `${normKey(dep)}->${normKey(dest)}`;
 
         if (!sectorsMap.has(key)) {
@@ -1029,12 +1074,15 @@ export function getPnrSectors(tickets) {
 
         if (isRound && dep && dest) {
             const returnKey = `${normKey(dest)}->${normKey(dep)}`;
-            const hasActualReturnRow = candidateRows.some(row =>
-                normKey(row.departure) === normKey(dest) && normKey(row.destination) === normKey(dep)
-            );
+            const hasActualReturnRow = candidateRows.some(row => {
+                const rDep = cleanPlaceName(row.departure, candidateRows);
+                const rDest = cleanPlaceName(row.destination, candidateRows);
+                return normKey(rDep) === normKey(dest) && normKey(rDest) === normKey(dep);
+            });
+
             if (!hasActualReturnRow && !sectorsMap.has(returnKey)) {
-                const retDep = String(t.return_departure || dest).trim();
-                const retDest = String(t.return_destination || dep).trim();
+                const retDep = cleanPlaceName(t.return_departure || dest, candidateRows);
+                const retDest = cleanPlaceName(t.return_destination || dep, candidateRows);
                 const retDate = hasReturnDate || '';
                 const retAirline = String(t.return_airline || t.airline || '').trim();
                 const synthKey = `${normKey(retDep)}->${normKey(retDest)}`;

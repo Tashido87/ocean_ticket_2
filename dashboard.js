@@ -491,6 +491,7 @@ function groupUnpaidTickets(rows) {
                 issuedDateStr: String(passengerTicket.issued_date || '').trim(),
                 rawPassenger: rawPaxName,
                 route: getPnrRouteDisplay(tickets),
+                sectors: getPnrSectors(tickets),
                 dueDate: parseSheetDate(dateTicket.departing_on),
                 issuedDate: parseSheetDate(passengerTicket.issued_date),
                 amount: unpaidAmount,
@@ -1520,7 +1521,15 @@ function renderDashboardUnpaidTickets(groups) {
                         <div class="unpaid-client-primary">${dashboardEscapeHtml(group.client)}</div>
                         ${socialSubHtml}
                     </td>
-                    <td>${dashboardEscapeHtml(group.route)}</td>
+                    <td>
+                        <div class="unpaid-route-stack">
+                            ${(group.sectors && group.sectors.length > 0 ? group.sectors : [{ departure: group.route }]).map((sec, sIdx) => `
+                                <div class="unpaid-route-line${sIdx > 0 ? ' return-line' : ''}" title="${sec.destination ? `${dashboardEscapeHtml(sec.departure)} → ${dashboardEscapeHtml(sec.destination)}` : dashboardEscapeHtml(sec.departure || '')}">
+                                    ${sec.destination ? `${dashboardEscapeHtml(compactPlace(sec.departure))} → ${dashboardEscapeHtml(compactPlace(sec.destination))}` : dashboardEscapeHtml(sec.departure || '—')}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </td>
                     <td class="num">${formatDashboardAmount(group.amount)} MMK ${feeBadge}</td>
                     <td>
                         <div class="unpaid-row-actions">
