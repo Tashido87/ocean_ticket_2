@@ -989,11 +989,10 @@ export function buildCustomerMessage({
         : 'N/A';
     const isIntl = isInternationalFlightRoute(depClean, destClean, legs);
     const paxLines = Array.isArray(passengers) && passengers.length > 0
-        ? passengers.map((p, idx) => {
+        ? passengers.map((p) => {
             const name = typeof p === 'string' ? p : String(p?.name || 'Passenger').trim();
             const extra = typeof p === 'object' && p?.extra ? ` (${p.extra})` : '';
-            const prefix = passengers.length > 1 ? `  ${idx + 1}. ` : '  • ';
-            return `${prefix}${name}${extra}`;
+            return `  • ${name}${extra}`;
         }).join('\n')
         : '  • -';
 
@@ -1001,15 +1000,12 @@ export function buildCustomerMessage({
         const dl = String(deadlineText || '').trim() || 'N/A';
         if (lang === 'en') {
             return [
-                `Hello & Warm Greetings 🙏`,
-                `Your booking for PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) has been placed on hold.`,
+                `PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) booking has been placed on hold.`,
                 ``,
-                `✈️ Booking Summary`,
-                `• Booking Ref (PNR): ${cleanPnr}`,
-                airline ? `• Airline: ${airline}` : null,
-                `• Route: ${computedRoute}`,
-                `• Travel Date: ${readableTravelDate}`,
-                `• Passenger(s):\n${paxLines}`,
+                airline ? `• Airline : ${airline}` : null,
+                `• Route : ${computedRoute}`,
+                `• Travel Date : ${readableTravelDate}`,
+                `• Passenger(s) :\n${paxLines}`,
                 `• Booking Deadline: ${dl}`,
                 ``,
                 `⏰ Kindly Note — The booking deadline is ${dl}. Please confirm and complete ticket issuance before the deadline to avoid automatic cancellation.`,
@@ -1019,15 +1015,12 @@ export function buildCustomerMessage({
         }
 
         return [
-            `မင်္ဂလာပါခင်ဗျာ 🙏`,
             `PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) အတွက် booking တင်ပြီးပါပြီခင်ဗျာ။`,
             ``,
-            `✈️ Booking အချက်အလက်များ`,
-            `• Booking Ref (PNR): ${cleanPnr}`,
-            airline ? `• လေကြောင်းလိုင်း (Airline): ${airline}` : null,
-            `• ခရီးစဉ် (Route): ${computedRoute}`,
-            `• ခရီးသွားမည့်ရက် (Travel Date): ${readableTravelDate}`,
-            `• ခရီးသည် (Passengers):\n${paxLines}`,
+            airline ? `• လေကြောင်းလိုင်း : ${airline}` : null,
+            `• ခရီးစဉ် : ${computedRoute}`,
+            `• ခရီးသွားမည့်ရက် : ${readableTravelDate}`,
+            `• ခရီးသည် :\n${paxLines}`,
             `• Booking Deadline: ${dl}`,
             ``,
             `⏰ သတိပြုရန် — Booking deadline မှာ ${dl} ဖြစ်ပါသဖြင့် သတ်မှတ်ချိန်မတိုင်မီ လက်မှတ်အပြီးသတ်ဖြတ်ရန် အတည်ပြုပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်ခင်ဗျာ။ (သတ်မှတ်ချိန်ကျော်လွန်ပါက Booking အလိုအလျောက် ပျက်ပြယ်သွားပါမည်။)`,
@@ -1042,19 +1035,16 @@ export function buildCustomerMessage({
             ? `• International Flight: Please arrive at the airport check-in counter at least 3 hours before departure (3 hours before departure on international).`
             : `• Domestic Flight: Please arrive at the airport check-in counter at least 2 hours before departure (2 hours before departure on domestic).`;
         const docLineEn = isIntl
-            ? `• Please bring your original valid Passport (at least 6 months validity) and required travel documents.`
-            : `• Please bring your original NRC / valid ID or Passport for airport check-in.`;
+            ? `• Please bring your original NRC and valid Passport (at least 6 months validity) for airport check-in.`
+            : `• Please bring your original NRC (National Registration Card) for airport check-in.`;
 
         return [
-            `Hello & Warm Greetings 🙏`,
-            `Your flight ticket for PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) has been successfully issued.`,
+            `PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) flight ticket has been successfully issued.`,
             ``,
-            `🎫 Ticket Details`,
-            `• Booking Ref (PNR): ${cleanPnr}`,
-            airline ? `• Airline: ${airline}` : null,
-            `• Route: ${computedRoute}`,
-            `• Travel Date: ${readableTravelDate}`,
-            `• Passenger(s):\n${paxLines}`,
+            airline ? `• Airline : ${airline}` : null,
+            `• Route : ${computedRoute}`,
+            `• Travel Date : ${readableTravelDate}`,
+            `• Passenger(s) :\n${paxLines}`,
             ``,
             `🕒 Airport Check-in Reminder`,
             checkinLineEn,
@@ -1068,19 +1058,16 @@ export function buildCustomerMessage({
         ? `• ပြည်ပခရီးစဉ် (International Flight) ဖြစ်ပါသဖြင့် ကွင်းချိန်းမှာ လေယာဉ်မထွက်ခွာမီ အနည်းဆုံး (၃) နာရီကြိုတင်၍ (3 hours before departure on international) လေဆိပ်သို့ အရောက်သွားပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်။`
         : `• ပြည်တွင်းခရီးစဉ် (Domestic Flight) ဖြစ်ပါသဖြင့် ကွင်းချိန်းမှာ လေယာဉ်မထွက်ခွာမီ အနည်းဆုံး (၂) နာရီကြိုတင်၍ (2 hours before departure on domestic) လေဆိပ်သို့ အရောက်သွားပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်။`;
     const docLineMm = isIntl
-        ? `• လေဆိပ်သို့သွားရာတွင် သက်တမ်း (၆) လအထက်ရှိသော Passport မူရင်းနှင့် လိုအပ်သော ခရီးသွားစာရွက်စာတမ်းများ တစ်ပါတည်း ယူဆောင်သွားပေးပါခင်ဗျာ။`
-        : `• လေဆိပ်သို့သွားရာတွင် မှတ်ပုံတင် (NRC မူရင်း) သို့မဟုတ် Passport မူရင်း တစ်ပါတည်း ယူဆောင်သွားပေးပါခင်ဗျာ။`;
+        ? `• လေဆိပ်သို့သွားရာတွင် မှတ်ပုံတင် (NRC မူရင်း) နှင့် Passport မူရင်း (သက်တမ်း ၆ လအထက်) တစ်ပါတည်း ယူဆောင်သွားပေးပါခင်ဗျာ။`
+        : `• လေဆိပ်သို့သွားရာတွင် မှတ်ပုံတင် (NRC မူရင်း) တစ်ပါတည်း ယူဆောင်သွားပေးပါခင်ဗျာ။`;
 
     return [
-        `မင်္ဂလာပါခင်ဗျာ 🙏`,
         `PNR: ${cleanPnr} (${computedRoute}, ${readableTravelDate}) အတွက် လေယာဉ်လက်မှတ် ဖြတ်ပြီးပါပြီခင်ဗျာ။`,
         ``,
-        `🎫 လက်မှတ် အချက်အလက်များ`,
-        `• Booking Ref (PNR): ${cleanPnr}`,
-        airline ? `• လေကြောင်းလိုင်း (Airline): ${airline}` : null,
-        `• ခရီးစဉ် (Route): ${computedRoute}`,
-        `• ခရီးသွားမည့်ရက် (Travel Date): ${readableTravelDate}`,
-        `• ခရီးသည် (Passengers):\n${paxLines}`,
+        airline ? `• လေကြောင်းလိုင်း : ${airline}` : null,
+        `• ခရီးစဉ် : ${computedRoute}`,
+        `• ခရီးသွားမည့်ရက် : ${readableTravelDate}`,
+        `• ခရီးသည် :\n${paxLines}`,
         ``,
         `🕒 လေဆိပ်ကွင်းချိန်း သတိပေးချက် (Airport Check-in)`,
         checkinLineMm,

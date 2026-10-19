@@ -148,6 +148,7 @@ function groupBookings(bookings) {
             acc[key] = {
                 id: booking.id,
                 pnr: booking.pnr,
+                airline: booking.airline || '',
                 phone: booking.phone,
                 account_name: booking.account_name,
                 account_type: booking.account_type,
@@ -164,6 +165,10 @@ function groupBookings(bookings) {
                 legs: [],
                 docIds: []
             };
+        }
+
+        if (booking.airline && !acc[key].airline) {
+            acc[key].airline = booking.airline;
         }
 
         const priorities = ['Normal', 'High', 'VIP'];
@@ -843,6 +848,7 @@ function buildBookingGroupCustomerMessage(bookingGroup, lang = 'mm', overrideMod
         mode,
         lang,
         pnr: bookingGroup.pnr || 'N/A',
+        airline: bookingGroup.airline || '',
         departure: bookingGroup.departure || '',
         destination: bookingGroup.destination || '',
         routeText,

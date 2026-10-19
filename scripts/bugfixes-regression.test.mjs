@@ -135,3 +135,69 @@ test('handlePartialPayment split calculates exact sub_agent_fare and net_amount 
     // Total of both tickets equals original total debt
     assert.equal(part1_Total + part2_Total, ticketTotalAmt);
 });
+
+// Test 5: Customer Message templates (Concise formatting and NRC / Passport rules)
+test('buildCustomerMessage formats concise booking message without redundant headers', async () => {
+    const { buildCustomerMessage } = await import('../utils.js');
+    const msg = buildCustomerMessage({
+        mode: 'booking',
+        lang: 'mm',
+        pnr: '1STD1L',
+        routeText: 'Yangon → Mandalay',
+        travelDate: '22-Oct-2026',
+        deadlineText: '19-Oct-2026 4:30 PM',
+        passengers: [{ name: 'MS WIN MAR SEIN', extra: '9/MAYATA(N)062580' }]
+    });
+
+    assert.ok(msg.startsWith('PNR: 1STD1L (Yangon → Mandalay, 22-Oct-2026) အတွက် booking တင်ပြီးပါပြီခင်ဗျာ။'));
+    assert.ok(!msg.includes('မင်္ဂလာပါ'));
+    assert.ok(!msg.includes('Booking အချက်အလက်များ'));
+    assert.ok(!msg.includes('• Booking Ref (PNR):'));
+    assert.ok(msg.includes('• ခရီးစဉ် : Yangon → Mandalay'));
+    assert.ok(msg.includes('• ခရီးသွားမည့်ရက် : 22-Oct-2026'));
+    assert.ok(msg.includes('• ခရီးသည် :\n  • MS WIN MAR SEIN (9/MAYATA(N)062580)'));
+    assert.ok(msg.includes('• Booking Deadline: 19-Oct-2026 4:30 PM'));
+    assert.ok(msg.includes('Ocean Air Ticket ကို ရွေးချယ်အားပေးမှုအတွက် အထူးကျေးဇူးတင်ရှိပါသည်ခင်ဗျာ။ 💙'));
+});
+
+test('buildCustomerMessage formats domestic ticket with 2h checkin and NRC only', async () => {
+    const { buildCustomerMessage } = await import('../utils.js');
+    const msg = buildCustomerMessage({
+        mode: 'ticket',
+        lang: 'mm',
+        pnr: '1STD1L',
+        airline: 'MAI',
+        departure: 'Yangon (RGN)',
+        destination: 'Mandalay (MDL)',
+        travelDate: '22-Oct-2026',
+        passengers: ['WIN MAR SEIN']
+    });
+
+    assert.ok(msg.startsWith('PNR: 1STD1L (Yangon (RGN) → Mandalay (MDL), 22-Oct-2026) အတွက် လေယာဉ်လက်မှတ် ဖြတ်ပြီးပါပြီခင်ဗျာ။'));
+    assert.ok(msg.includes('• လေကြောင်းလိုင်း : MAI'));
+    assert.ok(msg.includes('• ခရီးစဉ် : Yangon (RGN) → Mandalay (MDL)'));
+    assert.ok(msg.includes('• ခရီးသည် :\n  • WIN MAR SEIN'));
+    assert.ok(msg.includes('အနည်းဆုံး (၂) နာရီကြိုတင်၍'));
+    assert.ok(msg.includes('မှတ်ပုံတင် (NRC မူရင်း) တစ်ပါတည်း ယူဆောင်သွားပေးပါခင်ဗျာ။'));
+    // Should NOT require passport for domestic flight
+    assert.ok(!msg.includes('Passport မူရင်း'));
+});
+
+test('buildCustomerMessage formats international ticket with 3h checkin and BOTH NRC and Passport', async () => {
+    const { buildCustomerMessage } = await import('../utils.js');
+    const msg = buildCustomerMessage({
+        mode: 'ticket',
+        lang: 'mm',
+        pnr: '2INTL9',
+        airline: 'MAI',
+        departure: 'Yangon (RGN)',
+        destination: 'Bangkok (BKK)',
+        travelDate: '25-Oct-2026',
+        passengers: ['AUNG AUNG']
+    });
+
+    assert.ok(msg.includes('အနည်းဆုံး (၃) နာရီကြိုတင်၍'));
+    // Must include BOTH NRC and Passport
+    assert.ok(msg.includes('မှတ်ပုံတင် (NRC မူရင်း) နှင့် Passport မူရင်း'));
+});
+
