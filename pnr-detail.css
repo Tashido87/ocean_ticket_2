@@ -127,6 +127,20 @@
     border-bottom: 1px dashed var(--border-color, #e2e8f0);
 }
 
+.pnr-detail-dialog .pnr-routes-cluster {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pnr-detail-dialog .pnr-sector-divider {
+    color: var(--text-muted, #94a3b8);
+    font-weight: 700;
+    font-size: 16px;
+    padding: 0 2px;
+}
+
 .pnr-detail-dialog .pnr-route-pill {
     display: inline-flex;
     align-items: center;

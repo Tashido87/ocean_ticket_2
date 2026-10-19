@@ -933,6 +933,183 @@ function isMyanmarDomesticPlace(place) {
 }
 
 /**
+ * Extracts clean place name by removing parenthetical codes or details (e.g. "Yangon (RGN)" -> "Yangon").
+ * @param {string} value
+ * @returns {string}
+ */
+export function compactPlace(value) {
+    const text = String(value || '').trim();
+    if (!text) return '—';
+    return text.replace(/\s*\([^)]*\)\s*/g, '').trim() || text;
+}
+
+/**
+ * Extracts unique ordered sectors (legs) for a set of tickets under a PNR.
+ * Handles:
+ * 1. Multiple rows representing separate legs (outbound, return, multi-sector).
+ * 2. Chronological sorting (outbound before return, or sorted by departing date).
+ * 3. Single-row round-trips where trip_type === 'Round-Trip' or return_date is present.
+ * 4. Deduplication of sectors across multiple passengers in the same booking.
+ *
+ * @param {Array<Object>|Object} tickets
+ * @returns {Array<{ departure: string, destination: string, departing_on: string, leg: string, airline: string }>}
+ */
+export function getPnrSectors(tickets) {
+    const rawList = Array.isArray(tickets) ? tickets : (tickets ? [tickets] : []);
+    if (rawList.length === 0) return [];
+
+    // Filter out canceled tickets and fee-only rows when possible
+    const nonCanceled = rawList.filter(t => !isCanceledTicket(t));
+    const activeRows = nonCanceled.length > 0 ? nonCanceled : rawList;
+    const nonFee = activeRows.filter(t => !isFeeEntryRow(t) && t.departure && t.destination);
+    const candidateRows = nonFee.length > 0 ? nonFee : activeRows.filter(t => t.departure && t.destination);
+
+    if (candidateRows.length === 0) {
+        const anyWithRoute = activeRows.find(t => t.departure || t.destination);
+        if (anyWithRoute) {
+            return [{
+                departure: String(anyWithRoute.departure || '').trim(),
+                destination: String(anyWithRoute.destination || '').trim(),
+                departing_on: String(anyWithRoute.departing_on || '').trim(),
+                leg: String(anyWithRoute.leg || '').toLowerCase(),
+                airline: String(anyWithRoute.airline || '').trim()
+            }];
+        }
+        return [];
+    }
+
+    const normKey = (place) => compactPlace(place).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const sectorsMap = new Map();
+
+    const sortedRows = [...candidateRows].sort((a, b) => {
+        const da = parseSheetDate(a.departing_on);
+        const db = parseSheetDate(b.departing_on);
+        const ta = da && !isNaN(da.getTime()) ? da.getTime() : 0;
+        const tb = db && !isNaN(db.getTime()) ? db.getTime() : 0;
+        if (ta !== tb && ta !== 0 && tb !== 0) return ta - tb;
+
+        const la = String(a.leg || '').toLowerCase();
+        const lb = String(b.leg || '').toLowerCase();
+        if (la === 'outbound' && lb === 'return') return -1;
+        if (la === 'return' && lb === 'outbound') return 1;
+        return 0;
+    });
+
+    sortedRows.forEach(t => {
+        if (!t.departure && !t.destination) return;
+        const dep = String(t.departure || '').trim();
+        const dest = String(t.destination || '').trim();
+        const key = `${normKey(dep)}->${normKey(dest)}`;
+
+        if (!sectorsMap.has(key)) {
+            sectorsMap.set(key, {
+                departure: dep,
+                destination: dest,
+                departing_on: String(t.departing_on || '').trim(),
+                leg: String(t.leg || '').toLowerCase(),
+                airline: String(t.airline || '').trim()
+            });
+        } else {
+            const existing = sectorsMap.get(key);
+            if (!existing.departing_on && t.departing_on) {
+                existing.departing_on = String(t.departing_on).trim();
+            }
+            if (!existing.airline && t.airline) {
+                existing.airline = String(t.airline).trim();
+            }
+            if (!existing.leg && t.leg) {
+                existing.leg = String(t.leg).toLowerCase();
+            }
+        }
+
+        const isRound = String(t.trip_type || '').toLowerCase().includes('round') ||
+                        t.is_round_trip === true ||
+                        !!(t.return_date || t.returning_on);
+        const hasReturnDate = String(t.return_date || t.returning_on || '').trim();
+
+        if (isRound && dep && dest) {
+            const returnKey = `${normKey(dest)}->${normKey(dep)}`;
+            const hasActualReturnRow = candidateRows.some(row =>
+                normKey(row.departure) === normKey(dest) && normKey(row.destination) === normKey(dep)
+            );
+            if (!hasActualReturnRow && !sectorsMap.has(returnKey)) {
+                const retDep = String(t.return_departure || dest).trim();
+                const retDest = String(t.return_destination || dep).trim();
+                const retDate = hasReturnDate || '';
+                const retAirline = String(t.return_airline || t.airline || '').trim();
+                const synthKey = `${normKey(retDep)}->${normKey(retDest)}`;
+                if (!sectorsMap.has(synthKey)) {
+                    sectorsMap.set(synthKey, {
+                        departure: retDep,
+                        destination: retDest,
+                        departing_on: retDate,
+                        leg: 'return',
+                        airline: retAirline
+                    });
+                }
+            }
+        }
+    });
+
+    const sectors = [...sectorsMap.values()];
+
+    return sectors.sort((a, b) => {
+        const da = parseSheetDate(a.departing_on);
+        const db = parseSheetDate(b.departing_on);
+        const ta = da && !isNaN(da.getTime()) ? da.getTime() : 0;
+        const tb = db && !isNaN(db.getTime()) ? db.getTime() : 0;
+        if (ta !== tb && ta !== 0 && tb !== 0) return ta - tb;
+        if (a.leg === 'outbound' && b.leg === 'return') return -1;
+        if (a.leg === 'return' && b.leg === 'outbound') return 1;
+        return 0;
+    });
+}
+
+/**
+ * Returns formatted multi-sector or single-sector route string (e.g. "Yangon → New Delhi / New Delhi → Yangon").
+ * @param {Array<Object>|Object} tickets
+ * @returns {string}
+ */
+export function getPnrRouteDisplay(tickets) {
+    const sectors = getPnrSectors(tickets);
+    if (!sectors.length) {
+        const fallback = Array.isArray(tickets) ? tickets[0] : tickets;
+        if (fallback?.departure && fallback?.destination) {
+            return `${compactPlace(fallback.departure)} → ${compactPlace(fallback.destination)}`;
+        }
+        return '—';
+    }
+    return sectors
+        .map(sec => `${compactPlace(sec.departure)} → ${compactPlace(sec.destination)}`)
+        .join(' / ');
+}
+
+/**
+ * Returns formatted travel date string across sectors (e.g. "22-Oct-2026 / 29-Oct-2026").
+ * @param {Array<Object>|Object} tickets
+ * @returns {string}
+ */
+export function getPnrTravelDateDisplay(tickets) {
+    const sectors = getPnrSectors(tickets);
+    if (!sectors.length) {
+        const fallback = Array.isArray(tickets) ? tickets[0] : tickets;
+        return fallback?.departing_on ? String(fallback.departing_on).trim() : '—';
+    }
+
+    const formattedDates = sectors
+        .map(s => {
+            const raw = String(s.departing_on || '').trim();
+            if (!raw) return '';
+            return formatMessageDateReadable(raw) || raw;
+        })
+        .filter(d => d && d !== 'N/A' && d !== '—');
+
+    const uniqueDates = [...new Set(formattedDates)];
+    if (uniqueDates.length === 0) return '—';
+    return uniqueDates.join(' / ');
+}
+
+/**
  * Determines whether a flight route is International (3 hours check-in) or Domestic (2 hours check-in).
  * @param {string} departure
  * @param {string} destination

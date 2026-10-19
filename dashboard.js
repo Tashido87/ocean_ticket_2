@@ -24,7 +24,11 @@ import {
     formatDateForSheet,
     buildCustomerMessage,
     copyCustomerMessageToClipboard,
-    isInternationalFlightRoute
+    isInternationalFlightRoute,
+    compactPlace,
+    getPnrSectors,
+    getPnrRouteDisplay,
+    getPnrTravelDateDisplay
 } from "./utils.js";
 import { updateUnpaidCount, displayTickets } from "./tickets.js";
 import { getSettlementSummary } from "./settlement.js";
@@ -306,13 +310,11 @@ function dashboardEscapeHtml(value) {
     }[ch]));
 }
 
-function compactPlace(value) {
-    const text = String(value || '').trim();
-    if (!text) return '—';
-    return text.replace(/\s*\([^)]*\)\s*/g, '').trim() || text;
-}
-
 function dashboardRouteLabel(record) {
+    if (!record) return '—';
+    if (Array.isArray(record) || record.trip_type === 'Round-Trip' || record.is_round_trip) {
+        return getPnrRouteDisplay(record);
+    }
     return `${compactPlace(record.departure)} → ${compactPlace(record.destination)}`;
 }
 
@@ -485,10 +487,10 @@ function groupUnpaidTickets(rows) {
                 accountType: String(passengerTicket.account_type || tickets.find(t => t.account_type)?.account_type || '').trim(),
                 accountLink: String(passengerTicket.account_link || tickets.find(t => t.account_link)?.account_link || '').trim(),
                 airline: String(passengerTicket.airline || tickets.find(t => t.airline)?.airline || '').trim(),
-                travelDateStr: String(dateTicket.departing_on || '').trim(),
+                travelDateStr: getPnrTravelDateDisplay(tickets) || String(dateTicket.departing_on || '').trim(),
                 issuedDateStr: String(passengerTicket.issued_date || '').trim(),
                 rawPassenger: rawPaxName,
-                route: dashboardRouteLabel(routeTicket),
+                route: getPnrRouteDisplay(tickets),
                 dueDate: parseSheetDate(dateTicket.departing_on),
                 issuedDate: parseSheetDate(passengerTicket.issued_date),
                 amount: unpaidAmount,
@@ -967,7 +969,13 @@ function getFeeRowDateChangeText(t, allRows = []) {
         paymentStatusHtml = `<span class="pnr-status-badge pnr-status-payment-unpaid" title="Payment status: Unpaid"><i class="fa-solid fa-circle-exclamation"></i> Unpaid</span>`;
     }
 
-    const isIntlFlight = isInternationalFlightRoute(lead.departure, lead.destination);
+    const pnrSectors = getPnrSectors(allRows);
+    const pnrRouteDisplay = getPnrRouteDisplay(allRows);
+    const pnrTravelDateDisplay = getPnrTravelDateDisplay(allRows);
+    const uniqueAirlines = [...new Set(allRows.map(t => String(t.airline || '').trim()).filter(Boolean))];
+    const airlinesLabel = uniqueAirlines.join(' / ') || lead.airline || '';
+
+    const isIntlFlight = isInternationalFlightRoute(lead.departure, lead.destination, pnrSectors);
     const msgPassengers = uniquePassengers.map(p => ({
         name: p.name || 'Passenger',
         extra: p.ticketNumber && p.ticketNumber !== 'Issued' ? `Ticket: ${p.ticketNumber}` : ''
@@ -976,22 +984,42 @@ function getFeeRowDateChangeText(t, allRows = []) {
         mode: 'ticket',
         lang: 'mm',
         pnr: searchPnr,
-        airline: lead.airline || '',
+        airline: airlinesLabel,
+        routeText: pnrRouteDisplay,
         departure: lead.departure || '',
         destination: lead.destination || '',
-        travelDate: lead.departing_on || '',
+        travelDate: pnrTravelDateDisplay || lead.departing_on || '',
+        legs: pnrSectors,
         passengers: msgPassengers
     });
     const customerMsgEn = buildCustomerMessage({
         mode: 'ticket',
         lang: 'en',
         pnr: searchPnr,
-        airline: lead.airline || '',
+        airline: airlinesLabel,
+        routeText: pnrRouteDisplay,
         departure: lead.departure || '',
         destination: lead.destination || '',
-        travelDate: lead.departing_on || '',
+        travelDate: pnrTravelDateDisplay || lead.departing_on || '',
+        legs: pnrSectors,
         passengers: msgPassengers
     });
+
+    const sectorsHtml = (pnrSectors.length > 0 ? pnrSectors : [{ departure: lead.departure, destination: lead.destination }]).map(sec => `
+        <div class="pnr-route-pill">
+            <span class="pnr-route-code" title="${dashboardEscapeHtml(sec.departure || 'Departure')}">${dashboardEscapeHtml(compactPlace(sec.departure) || 'N/A')}</span>
+            <div class="pnr-route-arrow-flow" aria-hidden="true">
+                <span class="pnr-flow-line"></span>
+                <i class="fa-solid fa-plane pnr-flow-icon"></i>
+                <span class="pnr-flow-line"></span>
+            </div>
+            <span class="pnr-route-code" title="${dashboardEscapeHtml(sec.destination || 'Destination')}">${dashboardEscapeHtml(compactPlace(sec.destination) || 'N/A')}</span>
+        </div>
+    `).join('<span class="pnr-sector-divider" style="color:var(--dash-text-muted, #94a3b8); font-weight:700; font-size:16px; margin:0 2px;">/</span>');
+
+    const airlinesHtml = uniqueAirlines.length > 0
+        ? uniqueAirlines.map(a => renderAirlineName(a, { size: 'sm' })).join('<span style="color:var(--dash-text-muted, #94a3b8); margin:0 4px;">•</span>')
+        : renderAirlineName(lead.airline || 'Airline', { size: 'sm' });
 
     const content = `
         <div class="trip-detail-modal-container">
@@ -1015,17 +1043,11 @@ function getFeeRowDateChangeText(t, allRows = []) {
             <!-- 1. Top Section: PNR, Route, Airline, Statuses -->
             <div class="pnr-modal-top-card">
                 <div class="pnr-top-flight-bar">
-                    <div class="pnr-route-pill">
-                        <span class="pnr-route-code" title="${dashboardEscapeHtml(lead.departure || 'Departure')}">${dashboardEscapeHtml(lead.departure || 'N/A')}</span>
-                        <div class="pnr-route-arrow-flow" aria-hidden="true">
-                            <span class="pnr-flow-line"></span>
-                            <i class="fa-solid fa-plane pnr-flow-icon"></i>
-                            <span class="pnr-flow-line"></span>
-                        </div>
-                        <span class="pnr-route-code" title="${dashboardEscapeHtml(lead.destination || 'Destination')}">${dashboardEscapeHtml(lead.destination || 'N/A')}</span>
+                    <div class="pnr-routes-cluster" style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        ${sectorsHtml}
                     </div>
                     <div class="pnr-airline-box">
-                        ${renderAirlineName(lead.airline || 'Airline', { size: 'sm' })}
+                        ${airlinesHtml}
                     </div>
                 </div>
 
@@ -1065,7 +1087,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
                 <div class="pnr-meta-grid">
                     <div class="pnr-meta-cell">
                         <span class="pnr-meta-label"><i class="fa-regular fa-calendar"></i> Travel Date</span>
-                        <strong class="pnr-meta-val">${dashboardEscapeHtml(lead.departing_on || 'N/A')}</strong>
+                        <strong class="pnr-meta-val">${dashboardEscapeHtml(pnrTravelDateDisplay || lead.departing_on || 'N/A')}</strong>
                     </div>
                     <div class="pnr-meta-cell">
                         <span class="pnr-meta-label"><i class="fa-regular fa-calendar-check"></i> Issued Date${issuedDates.length > 1 ? 's' : ''}</span>
@@ -1664,8 +1686,8 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                         passenger: String(t.name || group.client || 'Passenger').trim(),
                         isFee,
                         airline: String(t.airline || group.airline || '').trim(),
-                        route: (t.departure && t.destination) ? `${compactPlace(t.departure)} → ${compactPlace(t.destination)}` : group.route,
-                        travelDate: String(t.departing_on || group.travelDateStr || '').trim() || '-',
+                        route: (t.departure && t.destination) ? getPnrRouteDisplay(t) : group.route,
+                        travelDate: (t.departing_on ? formatDashboardDateLabel(t.departing_on) : '') || group.travelDateStr || '-',
                         gross,
                         agentFare,
                         paid,

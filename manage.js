@@ -26,7 +26,9 @@ import {
     isFeeEntryRow,
     isTicketPaid,
     escapeHtml,
-    renderAirlineName
+    renderAirlineName,
+    getPnrRouteDisplay,
+    getPnrTravelDateDisplay
 } from './utils.js';
 import {
     openModal,
@@ -117,9 +119,9 @@ function getPnrSummary(tickets) {
 
     return {
         pnr: first.booking_reference || document.getElementById('managePnr')?.value || '',
-        route: first.departure && first.destination ? `${first.departure.split(' ')[0]} → ${first.destination.split(' ')[0]}` : '—',
+        route: getPnrRouteDisplay(tickets),
         airline: first.airline || '—',
-        travelDate: first.departing_on || '—',
+        travelDate: getPnrTravelDateDisplay(tickets),
         passengers: originals.length,
         fees: fees.length,
         cancelled: tickets.filter(isCanceledTicket).length,

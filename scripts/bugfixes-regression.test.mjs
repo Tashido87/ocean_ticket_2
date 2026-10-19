@@ -201,3 +201,125 @@ test('buildCustomerMessage formats international ticket with 3h checkin and BOTH
     assert.ok(msg.includes('မှတ်ပုံတင် (NRC မူရင်း) နှင့် Passport မူရင်း'));
 });
 
+// Test 7: Round-Trip PNR Sectors and Route Display (1SSLF6, 1SS7YZ)
+test('getPnrRouteDisplay and getPnrTravelDateDisplay display both sectors for round-trip PNRs', async () => {
+    const { getPnrSectors, getPnrRouteDisplay, getPnrTravelDateDisplay, buildCustomerMessage } = await import('../utils.js');
+
+    // Case A: 1SSLF6 (outbound then return in array)
+    const tickets1SSLF6 = [
+        {
+            booking_reference: '1SSLF6',
+            departure: 'Yangon (RGN)',
+            destination: 'New Delhi (DEL)',
+            departing_on: '22-Oct-2026',
+            leg: 'outbound',
+            trip_type: 'Round-Trip',
+            name: 'U TIN MAUNG'
+        },
+        {
+            booking_reference: '1SSLF6',
+            departure: 'New Delhi (DEL)',
+            destination: 'Yangon (RGN)',
+            departing_on: '29-Oct-2026',
+            leg: 'return',
+            trip_type: 'Round-Trip',
+            name: 'U TIN MAUNG'
+        }
+    ];
+
+    const sectorsA = getPnrSectors(tickets1SSLF6);
+    assert.equal(sectorsA.length, 2);
+    assert.equal(sectorsA[0].departure, 'Yangon (RGN)');
+    assert.equal(sectorsA[0].destination, 'New Delhi (DEL)');
+    assert.equal(sectorsA[1].departure, 'New Delhi (DEL)');
+    assert.equal(sectorsA[1].destination, 'Yangon (RGN)');
+
+    const routeA = getPnrRouteDisplay(tickets1SSLF6);
+    assert.equal(routeA, 'Yangon → New Delhi / New Delhi → Yangon');
+
+    const travelDateA = getPnrTravelDateDisplay(tickets1SSLF6);
+    assert.equal(travelDateA, '22-Oct-2026 / 29-Oct-2026');
+
+    // Case B: 1SS7YZ (Firestore returned return leg first)
+    const tickets1SS7YZ = [
+        {
+            booking_reference: '1SS7YZ',
+            departure: 'New Delhi (DEL)',
+            destination: 'Yangon (RGN)',
+            departing_on: '29-Oct-2026',
+            leg: 'return',
+            trip_type: 'Round-Trip',
+            name: 'DAW MYA MYA'
+        },
+        {
+            booking_reference: '1SS7YZ',
+            departure: 'Yangon (RGN)',
+            destination: 'New Delhi (DEL)',
+            departing_on: '22-Oct-2026',
+            leg: 'outbound',
+            trip_type: 'Round-Trip',
+            name: 'DAW MYA MYA'
+        }
+    ];
+
+    // Must sort outbound first chronologically
+    const routeB = getPnrRouteDisplay(tickets1SS7YZ);
+    assert.equal(routeB, 'Yangon → New Delhi / New Delhi → Yangon');
+
+    const travelDateB = getPnrTravelDateDisplay(tickets1SS7YZ);
+    assert.equal(travelDateB, '22-Oct-2026 / 29-Oct-2026');
+
+    // Case C: Multi-passenger round-trip booking (2 pax = 4 ticket rows) deduplicates to 2 unique sectors
+    const ticketsMultiPax = [
+        ...tickets1SSLF6,
+        {
+            booking_reference: '1SSLF6',
+            departure: 'Yangon (RGN)',
+            destination: 'New Delhi (DEL)',
+            departing_on: '22-Oct-2026',
+            leg: 'outbound',
+            trip_type: 'Round-Trip',
+            name: 'DAW AUNG'
+        },
+        {
+            booking_reference: '1SSLF6',
+            departure: 'New Delhi (DEL)',
+            destination: 'Yangon (RGN)',
+            departing_on: '29-Oct-2026',
+            leg: 'return',
+            trip_type: 'Round-Trip',
+            name: 'DAW AUNG'
+        }
+    ];
+    assert.equal(getPnrRouteDisplay(ticketsMultiPax), 'Yangon → New Delhi / New Delhi → Yangon');
+
+    // Case D: Single ticket row with Round-Trip and return_date
+    const singleRowRoundTrip = [{
+        booking_reference: '1SSXYZ',
+        departure: 'Yangon',
+        destination: 'Bangkok',
+        departing_on: '15/11/2026',
+        return_date: '20/11/2026',
+        trip_type: 'Round-Trip'
+    }];
+    assert.equal(getPnrRouteDisplay(singleRowRoundTrip), 'Yangon → Bangkok / Bangkok → Yangon');
+    assert.equal(getPnrTravelDateDisplay(singleRowRoundTrip), '15-Nov-2026 / 20-Nov-2026');
+
+    // Case E: Customer message with round-trip route and travel dates
+    const customerMsg = buildCustomerMessage({
+        mode: 'ticket',
+        lang: 'mm',
+        pnr: '1SSLF6',
+        airline: 'Air India',
+        routeText: routeA,
+        travelDate: travelDateA,
+        legs: sectorsA,
+        passengers: ['U TIN MAUNG']
+    });
+    assert.ok(customerMsg.includes('• ခရီးစဉ် : Yangon → New Delhi / New Delhi → Yangon'));
+    assert.ok(customerMsg.includes('• ခရီးသွားမည့်ရက် : 22-Oct-2026 / 29-Oct-2026'));
+    // International route check-in reminder
+    assert.ok(customerMsg.includes('အနည်းဆုံး (၃) နာရီကြိုတင်၍'));
+});
+
+
