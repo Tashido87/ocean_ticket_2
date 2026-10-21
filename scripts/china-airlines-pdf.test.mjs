@@ -26,7 +26,9 @@ test('renderChinaAirlinesTicketHtml returns valid HTML with authentic layout', (
     assert.match(html, /font-weight:\s*bold;\s*font-style:\s*italic;[^>]*>\s*At check-in, you must show a photo ID\./);
     assert.match(html, /<strong[^>]*>\(1\) OK = confirmed \(2\) NVB = Not valid before \(3\) NVA = Not valid after \(4\)<\/strong>/);
     assert.match(html, /<a href="https:\/\/www\.china-airlines\.com"[^>]*color:\s*#0000ff;\s*text-decoration:\s*underline;[^>]*>General Conditions of Carriage\.<\/a>/);
-    assert.match(html, /Duration : <\/span><strong[^>]*>03:40/);
+    assert.match(html, /<strong[^>]*>Class:\s*<\/strong>\s*<span[^>]*>Economy, Y<\/span>/);
+    assert.match(html, /<strong[^>]*>Booking status \(1\):\s*<\/strong>\s*<span[^>]*>OK<\/span>/);
+    assert.match(html, /<strong[^>]*>Duration:\s*<\/strong>\s*<span[^>]*>03:40<\/span>/);
     assert.match(html, /ECOMMERCE, NO\. 1, Q HOUSE LUMPINI/);
     assert.match(html, /ELECTRONIC TICKET REMARKS/);
     // Ensure check in text is NOT in HTML

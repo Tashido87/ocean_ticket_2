@@ -238,22 +238,23 @@ export function renderChinaAirlinesTicketHtml(data) {
             </div>
 
             <!-- White Metadata Row (3 columns) -->
-            <div style="background:#ffffff; padding:7px 10px 9px 10px; display:grid; grid-template-columns: 1.1fr 1.2fr 0.9fr; gap:10px; font-size:8pt; line-height:1.55; color:#000000;">
+            <div style="background:#ffffff; padding:7px 10px 9px 10px; display:grid; grid-template-columns: 155px 250px 1fr; gap:6px; font-size:8pt; line-height:1.55; color:#000000;">
                 <div>
-                    <div><span style="color:#444444;">Class : </span><strong style="color:#000000;">${cabinClass}</strong></div>
-                    <div><span style="color:#444444;">Seat : </span><strong style="color:#000000;">${seat}</strong></div>
-                    <div><span style="color:#444444;">Booking status (1) : </span><strong style="color:#000000;">${bookingStatus}</strong></div>
-                    <div><span style="color:#444444;">Duration : </span><strong style="color:#000000;">${duration}</strong></div>
+                    <div><strong style="color:#000000; font-weight:bold;">Class: </strong><span style="color:#000000; font-weight:normal;">${cabinClass}</span></div>
+                    <div><strong style="color:#000000; font-weight:bold;">Seat: </strong><span style="color:#000000; font-weight:normal;">${seat}</span></div>
+                    <div><strong style="color:#000000; font-weight:bold;">Baggage (4): </strong><span style="color:#000000; font-weight:normal;">${baggage}</span></div>
+                    <div><strong style="color:#000000; font-weight:bold;">Fare basis: </strong><span style="color:#000000; font-weight:normal;">${fareBasis}</span></div>
                 </div>
                 <div>
-                    <div><span style="color:#444444;">Operated by : </span><strong style="color:#000000;">${operatedBy}</strong></div>
-                    <div><span style="color:#444444;">Marketed by : </span><strong style="color:#000000;">${marketedBy}</strong></div>
-                    <div><span style="color:#444444;">Baggage (4) : </span><strong style="color:#000000;">${baggage}</strong></div>
-                    <div><span style="color:#444444;">Fare basis : </span><strong style="color:#000000;">${fareBasis}</strong></div>
+                    <div><strong style="color:#000000; font-weight:bold;">Operated by: </strong><span style="color:#000000; font-weight:normal;">${operatedBy}</span></div>
+                    <div><strong style="color:#000000; font-weight:bold;">Marketed by: </strong><span style="color:#000000; font-weight:normal;">${marketedBy}</span></div>
+                    <div><strong style="color:#000000; font-weight:bold;">Booking status (1): </strong><span style="color:#000000; font-weight:normal;">${bookingStatus}</span></div>
                 </div>
                 <div>
-                    <div><span style="color:#444444;">NVB (2) : </span><strong style="color:#000000;">${nvb}</strong></div>
-                    <div><span style="color:#444444;">NVA (3) : </span><strong style="color:#000000;">${nva}</strong></div>
+                    <div style="visibility:hidden;">&nbsp;</div>
+                    <div><strong style="color:#000000; font-weight:bold;">NVB (2): </strong><span style="color:#000000; font-weight:normal;">${nvb}</span></div>
+                    <div><strong style="color:#000000; font-weight:bold;">NVA (3): </strong><span style="color:#000000; font-weight:normal;">${nva}</span></div>
+                    <div><strong style="color:#000000; font-weight:bold;">Duration: </strong><span style="color:#000000; font-weight:normal;">${duration}</span></div>
                 </div>
             </div>
         </div>
@@ -563,49 +564,71 @@ export async function generateChinaAirlinesPdfDoc(data) {
         doc.setFontSize(8.0);
         // Column 1
         const c1X = marginX + 5;
-        doc.setTextColor(68, 68, 68); doc.text('Class : ', c1X, tableY + 12.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.cabinClass || f.flightClass || 'Economy, Y', c1X + 35, tableY + 12.0);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Class: ', c1X, tableY + 12.0);
+        let w = doc.getTextWidth('Class: ');
+        doc.setFont('helvetica', 'normal');
+        doc.text(f.cabinClass || f.flightClass || 'Economy, Y', c1X + w, tableY + 12.0);
 
         const seatStr = f.seat || generateRandomSeat(f.cabinClass || f.flightClass);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Seat: ', c1X, tableY + 24.0);
+        w = doc.getTextWidth('Seat: ');
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('Seat : ', c1X, tableY + 24.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(seatStr, c1X + 35, tableY + 24.0);
+        doc.text(seatStr, c1X + w, tableY + 24.0);
 
+        doc.setFont('helvetica', 'bold');
+        doc.text('Baggage (4): ', c1X, tableY + 36.0);
+        w = doc.getTextWidth('Baggage (4): ');
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('Booking status (1) : ', c1X, tableY + 36.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.bookingStatus || 'OK', c1X + 78, tableY + 36.0);
+        doc.text(f.baggage || '2PC', c1X + w, tableY + 36.0);
 
+        doc.setFont('helvetica', 'bold');
+        doc.text('Fare basis: ', c1X, tableY + 48.0);
+        w = doc.getTextWidth('Fare basis: ');
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('Duration : ', c1X, tableY + 48.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.duration || '03:40', c1X + 42, tableY + 48.0);
+        doc.text(f.fareBasis || 'DOTH', c1X + w, tableY + 48.0);
 
         // Column 2
         const c2X = marginX + 160;
+        doc.setFont('helvetica', 'bold');
+        doc.text('Operated by: ', c2X, tableY + 12.0);
+        w = doc.getTextWidth('Operated by: ');
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('Operated by : ', c2X, tableY + 12.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.operatedBy || f.airlineName || 'CHINA AIRLINES LTD.', c2X + 56, tableY + 12.0);
+        doc.text(f.operatedBy || f.airlineName || 'CHINA AIRLINES LTD.', c2X + w, tableY + 12.0);
 
+        doc.setFont('helvetica', 'bold');
+        doc.text('Marketed by: ', c2X, tableY + 24.0);
+        w = doc.getTextWidth('Marketed by: ');
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('Marketed by : ', c2X, tableY + 24.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.marketedBy || f.airlineName || 'CHINA AIRLINES LTD.', c2X + 56, tableY + 24.0);
+        doc.text(f.marketedBy || f.airlineName || 'CHINA AIRLINES LTD.', c2X + w, tableY + 24.0);
 
+        doc.setFont('helvetica', 'bold');
+        doc.text('Booking status (1): ', c2X, tableY + 36.0);
+        w = doc.getTextWidth('Booking status (1): ');
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('Baggage (4) : ', c2X, tableY + 36.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.baggage || '2PC', c2X + 56, tableY + 36.0);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('Fare basis : ', c2X, tableY + 48.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.fareBasis || 'DOTH', c2X + 46, tableY + 48.0);
+        doc.text(f.bookingStatus || 'OK', c2X + w, tableY + 36.0);
 
         // Column 3
         const c3X = marginX + 420;
+        doc.setFont('helvetica', 'bold');
+        doc.text('NVB (2): ', c3X, tableY + 24.0);
+        w = doc.getTextWidth('NVB (2): ');
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('NVB (2) : ', c3X, tableY + 24.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.nvb || f.depDate || f.depDateFormatted || '', c3X + 40, tableY + 24.0);
+        doc.text(f.nvb || f.depDate || f.depDateFormatted || '', c3X + w, tableY + 24.0);
 
+        doc.setFont('helvetica', 'bold');
+        doc.text('NVA (3): ', c3X, tableY + 36.0);
+        w = doc.getTextWidth('NVA (3): ');
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(68, 68, 68); doc.text('NVA (3) : ', c3X, tableY + 36.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.nva || f.depDate || f.depDateFormatted || '', c3X + 40, tableY + 36.0);
+        doc.text(f.nva || f.depDate || f.depDateFormatted || '', c3X + w, tableY + 36.0);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Duration: ', c3X, tableY + 48.0);
+        w = doc.getTextWidth('Duration: ');
+        doc.setFont('helvetica', 'normal');
+        doc.text(f.duration || '03:40', c3X + w, tableY + 48.0);
 
         tableY += metaHeight;
 
