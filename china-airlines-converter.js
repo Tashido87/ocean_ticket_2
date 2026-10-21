@@ -125,7 +125,7 @@ export function createDefaultChinaAirlinesData() {
     const flightDateStr = formatAirlineDate(today);
 
     return {
-        passengerName: 'Khin Sein Ms (ADT)',
+        passengerName: '',
         pnr: generateBookingRef(),
         ticketNo: generateTicketNumber(),
         issueOffice: 'ECOMMERCE, NO. 1, Q HOUSE LUMPINI BUILDING,, ROOM 1103, 11TH FL., SOUTH SATHON RD.,, BANGKOK 10120, THAILAND',
@@ -165,41 +165,42 @@ export function createDefaultChinaAirlinesData() {
  * Render authentic China Airlines Electronic Ticket Receipt HTML
  */
 export function renderChinaAirlinesTicketHtml(data) {
-    const pnr = (data.pnr || '').trim().toUpperCase();
-    const ticketNo = (data.ticketNo || '').trim();
-    const paxName = formatPassengerName(data.passengerName || '');
-    const issueDate = data.issueDate || formatIssueDate(new Date());
+    const pnr = (data.pnr || data.bookingNo || '').trim().toUpperCase();
+    const ticketNo = (data.ticketNo || data.eTicketNo || (data.passengers && data.passengers[0]?.eticket) || '').trim();
+    const rawPax = (data.passengerName || (data.passengers && data.passengers[0]?.name) || '').trim();
+    const paxName = rawPax ? formatPassengerName(rawPax) : '';
+    const issueDate = data.issueDate || data.issuedDate || formatIssueDate(new Date());
     const telephone = data.telephone || '66-2-2108999';
 
     const logoSrc = cachedLogoDataUrl || 'assets/china-airlines-pdf-banner.png';
     const barcodeSrc = cachedBarcodeDataUrl || 'assets/china-airlines-barcode.png';
 
-    const flights = (data.flights && data.flights.length > 0)
+    const rawFlights = (data.flights && data.flights.length > 0)
         ? data.flights
         : createDefaultChinaAirlinesData().flights;
 
-    const flightCardsHtml = flights.map((f, idx) => {
-        const fromText = escapeHtml(f.from || '');
-        const toText = escapeHtml(f.to || '');
+    const flightCardsHtml = rawFlights.map((f, idx) => {
+        const fromText = escapeHtml(f.from || f.depAirport || '');
+        const toText = escapeHtml(f.to || f.arrAirport || '');
         const arrTerminalText = f.arrTerminal ? `<div style="font-size:10pt; font-weight:bold; margin-top:2px; color:#000000;">Terminal: ${escapeHtml(f.arrTerminal)}</div>` : '';
         const depTerminalText = f.depTerminal ? `<div style="font-size:10pt; font-weight:bold; margin-top:2px; color:#000000;">Terminal: ${escapeHtml(f.depTerminal)}</div>` : '';
         const flightNoText = escapeHtml(f.flightNo || 'CI834');
         const depTimeText = escapeHtml(f.depTime || '10:50');
-        const depDateText = escapeHtml(f.depDate || '');
+        const depDateText = escapeHtml(f.depDate || f.depDateFormatted || '');
         const arrTimeText = escapeHtml(f.arrTime || '15:30');
-        const arrDateText = escapeHtml(f.arrDate || '');
+        const arrDateText = escapeHtml(f.arrDate || f.arrDateFormatted || f.depDate || f.depDateFormatted || '');
         const lastCheckIn = escapeHtml(f.lastCheckIn || '');
 
-        const cabinClass = escapeHtml(f.cabinClass || 'Economy, Y');
+        const cabinClass = escapeHtml(f.cabinClass || f.flightClass || 'Economy, Y');
         const seat = escapeHtml(f.seat || '');
         const bookingStatus = escapeHtml(f.bookingStatus || 'OK');
         const duration = escapeHtml(f.duration || '03:40');
-        const operatedBy = escapeHtml(f.operatedBy || 'CHINA AIRLINES LTD.');
-        const marketedBy = escapeHtml(f.marketedBy || 'CHINA AIRLINES LTD.');
+        const operatedBy = escapeHtml(f.operatedBy || f.airlineName || 'CHINA AIRLINES LTD.');
+        const marketedBy = escapeHtml(f.marketedBy || f.airlineName || 'CHINA AIRLINES LTD.');
         const baggage = escapeHtml(f.baggage || '2PC');
         const fareBasis = escapeHtml(f.fareBasis || 'DOTH');
-        const nvb = escapeHtml(f.nvb || f.depDate || '');
-        const nva = escapeHtml(f.nva || f.depDate || '');
+        const nvb = escapeHtml(f.nvb || f.depDate || f.depDateFormatted || '');
+        const nva = escapeHtml(f.nva || f.depDate || f.depDateFormatted || '');
 
         return `
         <div class="ci-flight-block" style="margin-bottom:12px; border-bottom:1.4pt solid #2d73b9;">
@@ -279,8 +280,9 @@ export function renderChinaAirlinesTicketHtml(data) {
 
             <!-- Right Info: Barcode + Issuing Office -->
             <div style="width:235pt; text-align:left;">
-                <div style="height:48pt; margin-bottom:8pt;">
-                    <img src="${barcodeSrc}" alt="Barcode" style="height:46pt; max-width:110pt; object-fit:contain; display:block;">
+                <!-- Barcode left-aligned with Issuing office -->
+                <div style="height:48pt; margin-bottom:8pt; display:flex; justify-content:flex-start; align-items:flex-start;">
+                    <img src="${barcodeSrc}" alt="Barcode" style="height:46pt; width:auto; max-width:110pt; object-fit:contain; object-position:left top; display:block; margin:0; padding:0;">
                 </div>
                 <div style="font-size:10.5pt; line-height:1.32; color:#000000;">
                     <div style="font-weight:bold; margin-bottom:2pt;">Issuing office :</div>
@@ -379,9 +381,10 @@ export async function generateChinaAirlinesPdfDoc(data) {
     }
 
     // 2. Left Column: Passenger, Booking ref, Ticket number
-    const paxName = formatPassengerName(data.passengerName || '');
-    const pnr = (data.pnr || '').trim().toUpperCase();
-    const ticketNo = (data.ticketNo || '').trim();
+    const paxRaw = (data.passengerName || (data.passengers && data.passengers[0]?.name) || '').trim();
+    const paxName = paxRaw ? formatPassengerName(paxRaw) : '';
+    const pnr = (data.pnr || data.bookingNo || '').trim().toUpperCase();
+    const ticketNo = (data.ticketNo || data.eTicketNo || (data.passengers && data.passengers[0]?.eticket) || '').trim();
 
     // Passenger
     doc.setFont('helvetica', 'normal');
@@ -433,7 +436,7 @@ export async function generateChinaAirlinesPdfDoc(data) {
     doc.text('BUILDING,, ROOM 1103, 11TH FL., SOUTH', rightColX, 206.5);
     doc.text('SATHON RD.,, BANGKOK 10120, THAILAND', rightColX, 220.5);
     doc.text(`Telephone : ${data.telephone || '66-2-2108999'}`, rightColX, 234.5);
-    doc.text(`Date: ${data.issueDate || formatIssueDate(new Date())}`, rightColX, 248.5);
+    doc.text(`Date: ${data.issueDate || data.issuedDate || formatIssueDate(new Date())}`, rightColX, 248.5);
 
     // 4. Blue ELECTRONIC TICKET RECEIPT Banner
     const bannerY = 276.0;
@@ -486,15 +489,16 @@ export async function generateChinaAirlinesPdfDoc(data) {
         doc.setTextColor(0, 0, 0);
 
         // From
-        const fromLines = doc.splitTextToSize(f.from || '', 150);
+        const fromLines = doc.splitTextToSize(f.from || f.depAirport || '', 150);
         doc.text(fromLines, marginX + 5, tableY + 15.0);
 
         // To + Terminal
-        const toLines = doc.splitTextToSize(f.to || '', 145);
+        const toLines = doc.splitTextToSize(f.to || f.arrAirport || '', 145);
         doc.text(toLines, marginX + 160, tableY + 15.0);
-        if (f.arrTerminal) {
+        const term = f.arrTerminal || '';
+        if (term) {
             const arrTermY = tableY + 15.0 + (toLines.length * 11.0);
-            doc.text(`Terminal: ${f.arrTerminal}`, marginX + 160, arrTermY);
+            doc.text(`Terminal: ${term}`, marginX + 160, arrTermY);
         }
 
         // Flight
@@ -502,11 +506,11 @@ export async function generateChinaAirlinesPdfDoc(data) {
 
         // Departure
         doc.text(f.depTime || '10:50', marginX + 360, tableY + 15.0);
-        doc.text(f.depDate || '', marginX + 360, tableY + 28.0);
+        doc.text(f.depDate || f.depDateFormatted || '', marginX + 360, tableY + 28.0);
 
         // Arrival
         doc.text(f.arrTime || '15:30', marginX + 430, tableY + 15.0);
-        doc.text(f.arrDate || '', marginX + 430, tableY + 28.0);
+        doc.text(f.arrDate || f.arrDateFormatted || f.depDate || f.depDateFormatted || '', marginX + 430, tableY + 28.0);
 
         tableY += greyHeight;
 
@@ -519,7 +523,7 @@ export async function generateChinaAirlinesPdfDoc(data) {
         // Column 1
         const c1X = marginX + 5;
         doc.setTextColor(68, 68, 68); doc.text('Class : ', c1X, tableY + 12.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.cabinClass || 'Economy, Y', c1X + 35, tableY + 12.0);
+        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.cabinClass || f.flightClass || 'Economy, Y', c1X + 35, tableY + 12.0);
 
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(68, 68, 68); doc.text('Seat : ', c1X, tableY + 24.0);
@@ -537,11 +541,11 @@ export async function generateChinaAirlinesPdfDoc(data) {
         const c2X = marginX + 160;
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(68, 68, 68); doc.text('Operated by : ', c2X, tableY + 12.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.operatedBy || 'CHINA AIRLINES LTD.', c2X + 56, tableY + 12.0);
+        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.operatedBy || f.airlineName || 'CHINA AIRLINES LTD.', c2X + 56, tableY + 12.0);
 
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(68, 68, 68); doc.text('Marketed by : ', c2X, tableY + 24.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.marketedBy || 'CHINA AIRLINES LTD.', c2X + 56, tableY + 24.0);
+        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.marketedBy || f.airlineName || 'CHINA AIRLINES LTD.', c2X + 56, tableY + 24.0);
 
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(68, 68, 68); doc.text('Baggage (4) : ', c2X, tableY + 36.0);
@@ -555,11 +559,11 @@ export async function generateChinaAirlinesPdfDoc(data) {
         const c3X = marginX + 420;
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(68, 68, 68); doc.text('NVB (2) : ', c3X, tableY + 24.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.nvb || f.depDate || '', c3X + 40, tableY + 24.0);
+        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.nvb || f.depDate || f.depDateFormatted || '', c3X + 40, tableY + 24.0);
 
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(68, 68, 68); doc.text('NVA (3) : ', c3X, tableY + 36.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.nva || f.depDate || '', c3X + 40, tableY + 36.0);
+        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.nva || f.depDate || f.depDateFormatted || '', c3X + 40, tableY + 36.0);
 
         tableY += metaHeight;
 
@@ -624,10 +628,15 @@ export async function generateChinaAirlinesPdfDoc(data) {
  */
 export async function downloadChinaAirlinesPdf(data) {
     if (isPdfDownloading) return null;
+    const rawPax = (data.passengerName || (data.passengers && data.passengers[0]?.name) || '').trim();
+    if (!rawPax) {
+        showToast('Please enter passenger name before downloading ticket.', 'warning');
+        return null;
+    }
     isPdfDownloading = true;
     try {
         const pnr = (data.pnr || 'TICKET').trim().toUpperCase();
-        const safePax = (data.passengerName || 'RECEIPT').replace(/[^a-zA-Z0-9]/g, '_');
+        const safePax = rawPax.replace(/[^a-zA-Z0-9]/g, '_');
         const filename = `ChinaAirlines_ETicket_${pnr}_${safePax}.pdf`;
 
         const doc = await generateChinaAirlinesPdfDoc(data);
@@ -647,6 +656,11 @@ export async function downloadChinaAirlinesPdf(data) {
  * Trigger PNG Image Download
  */
 export async function downloadChinaAirlinesImage(data) {
+    const rawPax = (data.passengerName || (data.passengers && data.passengers[0]?.name) || '').trim();
+    if (!rawPax) {
+        showToast('Please enter passenger name before exporting image.', 'warning');
+        return null;
+    }
     await loadDocumentLibraries('canvas');
     if (!window.html2canvas) {
         throw new Error('html2canvas library is not loaded');
@@ -662,7 +676,7 @@ export async function downloadChinaAirlinesImage(data) {
         });
 
         const pnr = (data.pnr || 'TICKET').trim().toUpperCase();
-        const safePax = (data.passengerName || 'RECEIPT').replace(/[^a-zA-Z0-9]/g, '_');
+        const safePax = rawPax.replace(/[^a-zA-Z0-9]/g, '_');
         const filename = `ChinaAirlines_ETicket_${pnr}_${safePax}.png`;
 
         const link = document.createElement('a');

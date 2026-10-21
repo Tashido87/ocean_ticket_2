@@ -1,7 +1,7 @@
 /**
- * China Airlines E-Ticket Itinerary & Travel Schedule Parser
+ * Universal E-Ticket Itinerary & Travel Schedule Parser
  * Extracts flight sectors, dates, times, airports, terminals, flight numbers,
- * duration, passenger names, booking refs, and ticket numbers.
+ * duration, passenger names, booking refs, and detects airline from Trip.com / Agoda schedules.
  */
 
 export const AIRPORT_NAME_MAP = {
@@ -21,6 +21,7 @@ export const AIRPORT_NAME_MAP = {
     CNX: 'CHIANG MAI INTL',
     MDL: 'MANDALAY INTL',
     MNL: 'MANILA NINOY AQUINO INTL',
+    KUL: 'KUALA LUMPUR INTL',
     SFO: 'SAN FRANCISCO INTL',
     LAX: 'LOS ANGELES INTL',
     JFK: 'NEW YORK JOHN F. KENNEDY INTL',
@@ -216,17 +217,62 @@ export function resolveAirportName(codeOrName) {
 }
 
 /**
+ * Detect airline template name from text or flight number
+ */
+export function detectAirlineFromText(text, flightNo = '') {
+    const combined = `${flightNo} ${text}`.toUpperCase();
+    if (/\bCI\s*\d/i.test(combined) || /CHINA\s*AIRLINES/i.test(combined)) {
+        return 'China Airlines';
+    }
+    if (/\b(AK|FD|QZ|Z2|D7|XJ)\s*\d/i.test(combined) || /AIRASIA/i.test(combined)) {
+        return 'AirAsia';
+    }
+    if (/\bVJ\s*\d/i.test(combined) || /VIETJET/i.test(combined)) {
+        return 'VietJet Air';
+    }
+    if (/\bTG\s*\d/i.test(combined) || /THAI\s*AIRWAYS/i.test(combined)) {
+        return 'Thai Airways';
+    }
+    if (/\bSQ\s*\d/i.test(combined) || /SINGAPORE\s*AIR/i.test(combined)) {
+        return 'Singapore Airlines';
+    }
+    if (/\bBR\s*\d/i.test(combined) || /EVA\s*AIR/i.test(combined)) {
+        return 'EVA Air';
+    }
+    if (/\bTR\s*\d/i.test(combined) || /SCOOT/i.test(combined)) {
+        return 'Scoot';
+    }
+    return 'AirAsia';
+}
+
+/**
+ * Get carrier title from flight number
+ */
+export function getAirlineCarrierName(flightNo, defaultName = 'China Airlines') {
+    const fn = (flightNo || '').toUpperCase();
+    if (/^CI/i.test(fn)) return 'CHINA AIRLINES LTD.';
+    if (/^(AK|FD|QZ|Z2|D7)/i.test(fn)) return 'AirAsia';
+    if (/^VJ/i.test(fn)) return 'VietJet Air';
+    if (/^TG/i.test(fn)) return 'Thai Airways International';
+    if (/^SQ/i.test(fn)) return 'Singapore Airlines';
+    if (/^BR/i.test(fn)) return 'EVA Air';
+    if (/^TR/i.test(fn)) return 'Scoot';
+    return defaultName;
+}
+
+/**
  * Parse an itinerary schedule text or OCR output from Trip.com / Agoda
+ * Supports all airlines (China Airlines, AirAsia, VietJet, Thai, SQ, EVA, Scoot)
  */
 export function parseItinerarySchedule(rawText, defaultYear = new Date().getFullYear()) {
     if (!rawText || typeof rawText !== 'string') {
-        return { passengerName: '', pnr: '', ticketNo: '', flights: [] };
+        return { passengerName: '', pnr: '', ticketNo: '', flights: [], detectedAirline: 'China Airlines' };
     }
 
     const text = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const flights = [];
 
-    // Check for passenger name if present in text
+    // Check for passenger name if present in text (default to empty string if not found)
     let passengerName = '';
     const paxMatch = text.match(/(?:Passenger|Guest|Name|Traveler|Pax)(?:\s*Name)?[:\s]+([A-Za-z\s/]+?)(?:\s*\(ADT\)|\n|$)/i);
     if (paxMatch && paxMatch[1].trim().length > 2) {
@@ -248,13 +294,8 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
         ticketNo = `${raw.slice(0, 3)} ${raw.slice(3)}`;
     }
 
-    // Sector parsing strategy:
-    // Look for sector route blocks like:
-    // "Yangon (RGN) — Taipei (TPE) | Tue, Nov 3 | Duration 3h 55m"
-    // or flight blocks with flight number "CI\s*\d{3,4}"
-    
-    // We split into sections by flight number or sector header
-    const flightRegex = /(?:China\s*Airlines\s+)?(CI\s*\d{3,4})/gi;
+    // Universal flight number regex (supports CI, AK, FD, VJ, TG, SQ, BR, TR, etc.)
+    const flightRegex = /(?:China\s*Airlines|AirAsia|VietJet|Thai\s*Airways|Singapore\s*Airlines|EVA\s*Air|Scoot)?\s*([A-Z0-9]{2}\s*\d{3,4})/gi;
     const sectorHeaderRegex = /([A-Za-z\s]+)\s*\(([A-Z]{3})\)\s*[-—=–]\s*([A-Za-z\s]+)\s*\(([A-Z]{3})\)(?:[^\n]*?\|\s*([A-Za-z]{3},\s*[A-Za-z]{3}\s*\d{1,2}))?(?:[^\n]*?Duration\s*([0-9hm\s]+))?/gi;
 
     const sectorMatches = [];
@@ -278,11 +319,10 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
             const chunk = text.slice(current.index, nextIndex);
 
             // Flight number in chunk
-            const fnMatch = chunk.match(/(?:China\s*Airlines\s+)?(CI\s*\d{3,4})/i);
+            const fnMatch = chunk.match(/(?:China\s*Airlines|AirAsia|VietJet|Thai\s*Airways|Singapore\s*Airlines|EVA\s*Air|Scoot)?\s*([A-Z0-9]{2}\s*\d{3,4})/i) || chunk.match(/\b([A-Z0-9]{2}\s*\d{3,4})\b/i);
             const flightNo = fnMatch ? fnMatch[1].replace(/\s+/g, '').toUpperCase() : 'CI7916';
 
             // Times & Terminals
-            // Pattern like: 10:50 RGN Yangon Intl. T1 ... 16:15 TPE Taipei Taiwan Taoyuan Intl. T1
             const timeMatches = [];
             const timeRegex = /(\d{1,2}:\d{2})\s+([A-Z]{3})?([^\n]*?)(?:T(\d+)|Terminal\s*(\d+))?(?:\n|$)/gi;
             let tm;
@@ -336,7 +376,7 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
             if (!depDate) {
                 depDate = formatAirlineDate(new Date());
             }
-            const arrDate = depDate; // Typically same day for regional flights
+            const arrDate = depDate;
 
             // Duration
             let duration = '03:40';
@@ -363,35 +403,42 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
 
             const fromName = AIRPORT_NAME_MAP[current.fromCode] || resolveAirportName(current.fromCity || current.fromCode);
             const toName = AIRPORT_NAME_MAP[current.toCode] || resolveAirportName(current.toCity || current.toCode);
-
             const validity = calculateTicketValidity(depDate, depDate, 'same_day');
+            const carrier = getAirlineCarrierName(flightNo);
 
             flights.push({
                 from: fromName,
+                depAirport: fromName,
                 fromCode: current.fromCode,
                 depTerminal: depTerminal || '1',
                 to: toName,
+                arrAirport: toName,
                 toCode: current.toCode,
                 arrTerminal: arrTerminal || '1',
                 flightNo,
                 depTime,
                 depDate,
+                depDateFormatted: depDate,
                 arrTime,
                 arrDate,
+                arrDateFormatted: arrDate,
                 cabinClass,
+                flightClass: cabinClass,
                 seat: '',
-                operatedBy: 'CHINA AIRLINES LTD.',
-                marketedBy: 'CHINA AIRLINES LTD.',
+                operatedBy: carrier,
+                marketedBy: carrier,
+                airlineName: carrier,
                 bookingStatus: 'OK',
                 baggage: '2PC',
                 fareBasis: 'YOW',
                 nvb: validity.nvb,
                 nva: validity.nva,
-                duration
+                duration,
+                route: `${current.fromCode} - ${current.toCode}`
             });
         }
     } else {
-        // Fallback: look for flight numbers like CI7916 / CI834
+        // Fallback: look for flight numbers
         const ciMatches = [];
         let ciMatch;
         while ((ciMatch = flightRegex.exec(text)) !== null) {
@@ -409,44 +456,54 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
                 const arrTime = times[1] || '15:30';
 
                 const codes = chunk.match(/\b([A-Z]{3})\b/g) || ['RGN', 'TPE'];
-                const filteredCodes = codes.filter(c => c !== 'TPE' || c !== 'RGN');
                 const fromCode = codes[0] || 'RGN';
                 const toCode = codes[1] || 'TPE';
 
                 const curDate = formatAirlineDate(new Date());
                 const validity = calculateTicketValidity(curDate, curDate, 'same_day');
+                const carrier = getAirlineCarrierName(cur.flightNo);
 
                 flights.push({
-                    from: AIRPORT_NAME_MAP[fromCode] || 'YANGON INTL',
+                    from: AIRPORT_NAME_MAP[fromCode] || resolveAirportName(fromCode),
+                    depAirport: AIRPORT_NAME_MAP[fromCode] || resolveAirportName(fromCode),
                     fromCode,
                     depTerminal: '1',
-                    to: AIRPORT_NAME_MAP[toCode] || 'TAIPEI TAIWAN TAOYUAN INTL',
+                    to: AIRPORT_NAME_MAP[toCode] || resolveAirportName(toCode),
+                    arrAirport: AIRPORT_NAME_MAP[toCode] || resolveAirportName(toCode),
                     toCode,
                     arrTerminal: '1',
                     flightNo: cur.flightNo,
                     depTime,
                     depDate: curDate,
+                    depDateFormatted: curDate,
                     arrTime,
                     arrDate: curDate,
+                    arrDateFormatted: curDate,
                     cabinClass: 'Economy, Y',
+                    flightClass: 'Economy, Y',
                     seat: '',
-                    operatedBy: 'CHINA AIRLINES LTD.',
-                    marketedBy: 'CHINA AIRLINES LTD.',
+                    operatedBy: carrier,
+                    marketedBy: carrier,
+                    airlineName: carrier,
                     bookingStatus: 'OK',
                     baggage: '2PC',
                     fareBasis: 'YOW',
                     nvb: validity.nvb,
                     nva: validity.nva,
-                    duration: '03:55'
+                    duration: '03:55',
+                    route: `${fromCode} - ${toCode}`
                 });
             }
         }
     }
 
+    const detectedAirline = detectAirlineFromText(text, flights[0]?.flightNo || '');
+
     return {
-        passengerName,
+        passengerName, // Blank by default if not in schedule
         pnr: pnr || generateBookingRef(),
         ticketNo: ticketNo || generateTicketNumber(),
-        flights
+        flights,
+        detectedAirline
     };
 }

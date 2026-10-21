@@ -1,4 +1,19 @@
 import { loadDocumentLibraries } from './document-libraries.js';
+import {
+    renderChinaAirlinesTicketHtml,
+    generateChinaAirlinesPdfDoc,
+    parseTripScheduleImage,
+    parseItinerarySchedule,
+    formatPassengerName
+} from './china-airlines-converter.js';
+
+export {
+    renderChinaAirlinesTicketHtml,
+    generateChinaAirlinesPdfDoc,
+    parseTripScheduleImage,
+    parseItinerarySchedule,
+    formatPassengerName
+};
 /**
  * AirAsia E-Ticket Itinerary Generator & Converter
  * Converts Trip.com / OTA PDF itineraries into official AirAsia E-Ticket Receipts.
@@ -3644,6 +3659,9 @@ export async function generateScootPdfDoc(data) {
  */
 export async function generateAirAsiaPdfDoc(data) {
     await loadDocumentLibraries('pdf');
+    if (data.airline === 'China Airlines' || /china\s*airlines|\bCI\s*\d/i.test(data.airlineName || '') || /CI\s*\d/i.test(data.flightNo || '')) {
+        return generateChinaAirlinesPdfDoc(data);
+    }
     if (data.airline === 'Scoot' || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '')) {
         return generateScootPdfDoc(data);
     }
@@ -4299,6 +4317,11 @@ export function formatTicketDateShort(dateVal) {
 }
 
 export function buildTicketDownloadFilename(data, ext = 'pdf') {
+    if (data?.airline === 'China Airlines' || /CI\s*\d/i.test(data?.flightNo || '')) {
+        const pnr = (data.pnr || data.bookingNo || 'TICKET').trim().toUpperCase();
+        const rawPax = (data.passengerName || (data.passengers && data.passengers[0]?.name) || 'RECEIPT').replace(/[^a-zA-Z0-9]/g, '_');
+        return `ChinaAirlines_ETicket_${pnr}_${rawPax}.${ext.replace(/^\./, '')}`;
+    }
     const sector = buildSectorCode(data);
     const rawDate = (data?.flights && (data.flights[0]?.depDateFormatted || data.flights[0]?.depDate || data.flights[0]?.date)) ||
                     data?.departureDate || data?.flightDate || data?.date || data?.bookingDate || data?.issuedDate;
@@ -4314,6 +4337,11 @@ export function buildTicketDownloadFilename(data, ext = 'pdf') {
 let isAirAsiaPdfDownloading = false;
 
 export async function downloadAirAsiaPdf(data) {
+    const rawPax = (data.passengerName || (data.passengers && data.passengers[0]?.name) || '').trim();
+    if (!rawPax) {
+        showToast('Please enter passenger name before downloading ticket.', 'warning');
+        return null;
+    }
     if (isAirAsiaPdfDownloading) {
         console.warn('downloadAirAsiaPdf is already in progress, ignoring duplicate trigger.');
         return null;
@@ -5126,6 +5154,9 @@ export function renderScootTicketHtml(data) {
  * Generate preview HTML markup that renders identically to the PDF
  */
 export function renderAirAsiaTicketHtml(data) {
+    if (data.airline === 'China Airlines' || /china\s*airlines|\bCI\s*\d/i.test(data.airlineName || '') || /CI\s*\d/i.test(data.flightNo || '')) {
+        return renderChinaAirlinesTicketHtml(data);
+    }
     if (data.airline === 'Scoot' || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '')) {
         return renderScootTicketHtml(data);
     }
@@ -5339,11 +5370,16 @@ export function renderAirAsiaTicketHtml(data) {
  * Export ticket as image (PNG)
  */
 export async function downloadAirAsiaImage(data) {
+    const rawPax = (data.passengerName || (data.passengers && data.passengers[0]?.name) || '').trim();
+    if (!rawPax) {
+        showToast('Please enter passenger name before exporting image.', 'warning');
+        return null;
+    }
     await loadDocumentLibraries('canvas');
     if (!window.html2canvas) {
         throw new Error('html2canvas library is not loaded');
     }
-    const previewEl = document.getElementById('airAsiaTicketDocument');
+    const previewEl = document.getElementById('chinaAirlinesTicketDocument') || document.getElementById('airAsiaTicketDocument');
     if (!previewEl) return;
 
     const canvas = await window.html2canvas(previewEl, {
