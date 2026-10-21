@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-a81f7359';
+const CACHE_NAME = 'ocean-travel-0777874e';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -30,7 +30,7 @@ const CORE_ASSETS = [
     './passport-ocr.js?v=456777f7',
     './passport-parser.mjs?v=d0633dfa',
     './china-airlines-converter.js?v=0ce75ba0',
-    './china-airlines-parser.mjs?v=1b56b098'
+    './china-airlines-parser.mjs?v=6ddd867a'
 ];
 
 self.addEventListener('install', (event) => {

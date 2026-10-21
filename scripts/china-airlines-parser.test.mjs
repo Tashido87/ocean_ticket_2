@@ -11,12 +11,12 @@ import {
     formatIssueDate
 } from '../china-airlines-parser.mjs';
 
-test('formatPassengerName appends (ADT) if not present', () => {
-    assert.equal(formatPassengerName('Khin Sein Ms'), 'Khin Sein Ms (ADT)');
-    assert.equal(formatPassengerName('KHIN SEIN MS (ADT)'), 'KHIN SEIN MS (ADT)');
-    assert.equal(formatPassengerName('MR JOHN DOE'), 'MR JOHN DOE (ADT)');
-    assert.equal(formatPassengerName('DOE / JOHN MR'), 'DOE / JOHN MR (ADT)');
-    assert.equal(formatPassengerName('WIN MAR SEIN'), 'WIN MAR SEIN (ADT)');
+test('formatPassengerName normalizes name and removes (ADT) if present', () => {
+    assert.equal(formatPassengerName('Khin Sein Ms'), 'Khin Sein Ms');
+    assert.equal(formatPassengerName('KHIN SEIN MS (ADT)'), 'KHIN SEIN MS');
+    assert.equal(formatPassengerName('MR JOHN DOE'), 'MR JOHN DOE');
+    assert.equal(formatPassengerName('DOE / JOHN MR'), 'DOE / JOHN MR');
+    assert.equal(formatPassengerName('WIN MAR SEIN'), 'WIN MAR SEIN');
     assert.equal(formatPassengerName(''), '');
 });
 
@@ -121,7 +121,7 @@ China Airlines CI834 Boeing 777 Economy class
     assert.equal(f.depDate, '25SEP2026');
     assert.equal(f.duration, '03:40');
 
-    // Name is empty initially, user supplies it and gets formatted with (ADT)
+    // Name is empty initially, user supplies it and gets formatted without (ADT)
     const formatted = formatPassengerName('Khin Sein Ms');
-    assert.equal(formatted, 'Khin Sein Ms (ADT)');
+    assert.equal(formatted, 'Khin Sein Ms');
 });

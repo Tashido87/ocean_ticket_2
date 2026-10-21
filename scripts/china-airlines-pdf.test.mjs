@@ -16,7 +16,7 @@ test('renderChinaAirlinesTicketHtml returns valid HTML with authentic layout', (
 
     const html = renderChinaAirlinesTicketHtml(data);
     assert.match(html, /ELECTRONIC TICKET RECEIPT/);
-    assert.match(html, /Khin Sein Ms \(ADT\)/);
+    assert.match(html, /Khin Sein Ms/);
     assert.match(html, /FEYF43/);
     assert.match(html, /297 2425301246/);
     assert.match(html, /CI834/);
@@ -76,7 +76,7 @@ test('generateChinaAirlinesPdfDoc calls jsPDF drawing methods accurately', async
     // Verify key elements were drawn
     const allTexts = drawnTexts.map(t => Array.isArray(t.str) ? t.str.join(' ') : String(t.str)).join(' ');
     assert.match(allTexts, /Passenger/);
-    assert.match(allTexts, /Khin Sein Ms \(ADT\)/);
+    assert.match(allTexts, /Khin Sein Ms/);
     assert.match(allTexts, /Booking ref/);
     assert.match(allTexts, /FEYF43/);
     assert.match(allTexts, /Ticket number/);

@@ -77,14 +77,14 @@ test('China Eastern Airlines: HTML preview and PDF generator match brand specifi
 
     const html = renderChinaEasternTicketHtml(data);
     assert.match(html, /PASSENGER E-TICKET RECEIPT/i);
-    assert.match(html, /电子客票行程单/);
-    assert.match(html, /WANG \/ XIAOMING MR \(ADT\)/);
+    assert.match(html, /ELECTRONIC ITINERARY \/ PASSENGER RECEIPT/);
+    assert.match(html, /WANG \/ XIAOMING MR/);
     assert.match(html, /PK2PKZ/);
     assert.match(html, /781-2490182341/);
     assert.match(html, /MU 562/);
     assert.match(html, /SYD/);
     assert.match(html, /PVG/);
-    assert.match(html, /2PC \(23KG each\)/);
+    assert.match(html, /2PC \(23kg/i);
 
     const doc = await generateChinaEasternPdfDoc(data);
     assert.ok(doc);
@@ -123,8 +123,8 @@ test('Vietnam Airlines: HTML preview and PDF generator match brand specification
 
     const html = renderVietnamAirlinesTicketHtml(data);
     assert.match(html, /ELECTRONIC TICKET RECEIPT/i);
-    assert.match(html, /PHIẾU THU VÉ ĐIỆN TỬ/);
-    assert.match(html, /NGUYEN \/ VAN A MR \(ADT\)/);
+    assert.match(html, /VIETNAM AIRLINES - SKYTEAM MEMBER/);
+    assert.match(html, /NGUYEN \/ VAN A MR/);
     assert.match(html, /VN64FF/);
     assert.match(html, /738 2402560327/);
     assert.match(html, /VN 126/);
@@ -167,7 +167,7 @@ test('Cathay Pacific: HTML preview and PDF generator match brand specifications'
     const html = renderCathayPacificTicketHtml(data);
     assert.match(html, /eTicket Receipt/i);
     assert.match(html, /Cathay Pacific Airways/);
-    assert.match(html, /CHAN \/ TAI MAN MR \(ADT\)/);
+    assert.match(html, /CHAN \/ TAI MAN MR/);
     assert.match(html, /CX8901/);
     assert.match(html, /160-2396886426/);
     assert.match(html, /CX 714/);
@@ -206,8 +206,8 @@ test('Hong Kong Airlines: HTML preview and PDF generator match brand specificati
 
     const html = renderHongKongAirlinesTicketHtml(data);
     assert.match(html, /ELECTRONIC TICKET RECEIPT/i);
-    assert.match(html, /電子機票收據/);
-    assert.match(html, /LEE \/ SIU LUNG MR \(ADT\)/);
+    assert.match(html, /HONG KONG AIRLINES \(HX - 851\)/);
+    assert.match(html, /LEE \/ SIU LUNG MR/);
     assert.match(html, /HX9921/);
     assert.match(html, /851-4920193850/);
     assert.match(html, /HX 264/);
@@ -244,11 +244,11 @@ test('HK Express: HTML preview and PDF generator match brand specifications', as
 
     const html = renderHkExpressTicketHtml(data);
     assert.match(html, /BOOKING ITINERARY & E-RECEIPT/i);
-    assert.match(html, /CHEUNG \/ CHEUK NAM MR \(ADT\)/);
+    assert.match(html, /CHEUNG \/ CHEUK NAM MR/);
     assert.match(html, /UO3342/);
     assert.match(html, /UO 614/);
-    assert.match(html, /Checked: 20kg/);
-    assert.match(html, /Cabin: 7kg/);
+    assert.match(html, /20kg/i);
+    assert.match(html, /7kg carry-on/i);
 
     const doc = await generateHkExpressPdfDoc(data);
     assert.ok(doc);

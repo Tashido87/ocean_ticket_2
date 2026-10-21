@@ -71,19 +71,13 @@ export function splitCityAndAirport(name) {
 }
 
 /**
- * Format passenger name ensuring (ADT) is attached for adults
+ * Format passenger name (ensures no (ADT) is attached anywhere)
  */
 export function formatPassengerName(name) {
     if (!name || typeof name !== 'string') return '';
     const clean = name.trim().replace(/\s+/g, ' ');
     if (!clean) return '';
-    if (/\(ADT\)$/i.test(clean)) {
-        return clean.replace(/\(adt\)$/i, '(ADT)');
-    }
-    if (/\((CHD|INF)\)$/i.test(clean)) {
-        return clean;
-    }
-    return `${clean} (ADT)`;
+    return clean.replace(/\s*\((?:ADT|CHD|INF)\)$/i, '').trim();
 }
 
 /**
