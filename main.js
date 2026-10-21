@@ -2291,7 +2291,7 @@ function initializeAirAsiaGenerator() {
                     duration: f.duration || '',
                     aircraft: f.aircraft || 'Airbus A320neo',
                     flightClass: f.cabinClass || f.flightClass || 'Economy',
-                    seat: f.seat || (typeof generateRandomSeat === 'function' ? generateRandomSeat(f.cabinClass || f.flightClass || 'Economy') : '48K'),
+                    seat: f.seat || (typeof generateRandomSeat === 'function' ? generateRandomSeat() : '12A'),
                     depTime: f.depTime || '',
                     depDateFormatted: f.depDateFormatted || f.depDate || '',
                     depAirport: f.depAirport || f.from || '',
