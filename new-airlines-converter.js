@@ -223,13 +223,13 @@ export function renderChinaEasternTicketHtml(data) {
         <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:20px; border:1px solid #DAE0E9;">
             <thead>
                 <tr style="background:#0B2341; color:#ffffff; text-align:left;">
-                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700;">FLIGHT</th>
-                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700;">DEPARTURE</th>
-                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700;">ARRIVAL</th>
-                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700;">CLASS</th>
-                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; text-align:center;">SEAT</th>
-                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700;">BAGGAGE</th>
-                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; text-align:center;">STATUS</th>
+                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; width:13%;">FLIGHT</th>
+                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; width:18%;">DEPARTURE</th>
+                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; width:18%;">ARRIVAL</th>
+                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; width:18%;">CLASS</th>
+                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; text-align:center; width:8%;">SEAT</th>
+                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; width:15%;">BAGGAGE</th>
+                    <th style="padding:8px 10px; border:1px solid #0B2341; font-weight:700; text-align:center; width:10%;">STATUS</th>
                 </tr>
             </thead>
             <tbody>
@@ -244,17 +244,17 @@ export function renderChinaEasternTicketHtml(data) {
                         <div style="font-weight:700; color:#2D3748; font-size:11.5px;">${escapeHtml(fl.depCity)} (${escapeHtml(fl.fromCode)})</div>
                         <div style="font-size:10px; color:#646E7D; margin-top:2px;">${escapeHtml(fl.depDateFormatted)}</div>
                         <div style="font-weight:700; color:#0B2341; font-size:12px;">${escapeHtml(fl.depTime)}</div>
-                        <div style="font-size:9.5px; color:#646E7D;">${escapeHtml(fl.depTerminal)}</div>
+                        ${fl.depTerminal ? `<div style="font-size:9.5px; color:#646E7D;">T${escapeHtml(fl.depTerminal)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #DAE0E9; vertical-align:top;">
                         <div style="font-weight:700; color:#2D3748; font-size:11.5px;">${escapeHtml(fl.arrCity)} (${escapeHtml(fl.toCode)})</div>
                         <div style="font-size:10px; color:#646E7D; margin-top:2px;">${escapeHtml(fl.arrDateFormatted || fl.depDateFormatted)}</div>
                         <div style="font-weight:700; color:#0B2341; font-size:12px;">${escapeHtml(fl.arrTime)}</div>
-                        <div style="font-size:9.5px; color:#646E7D;">${escapeHtml(fl.arrTerminal)}</div>
+                        ${fl.arrTerminal ? `<div style="font-size:9.5px; color:#646E7D;">T${escapeHtml(fl.arrTerminal)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #DAE0E9; vertical-align:top;">
                         <div style="font-weight:700; color:#2D3748;">${escapeHtml(fl.flightClass || 'Economy (Y)')}</div>
-                        <div style="font-size:9.5px; color:#646E7D; margin-top:2px;">Fare: YOWMU</div>
+                        ${fl.fareBasis ? `<div style="font-size:9.5px; color:#646E7D; margin-top:2px;">Fare: ${escapeHtml(fl.fareBasis)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #DAE0E9; vertical-align:top; text-align:center;">
                         <span style="font-weight:700; color:#0B2341; font-size:11px;">${escapeHtml(fl.seat)}</span>
@@ -444,12 +444,12 @@ export async function generateChinaEasternPdfDoc(data) {
     doc.setFontSize(7.5);
     doc.setTextColor(255, 255, 255);
     doc.text('FLIGHT', marginL + 8, curY + 12);
-    doc.text('DEPARTURE', marginL + 75, curY + 12);
-    doc.text('ARRIVAL', marginL + 185, curY + 12);
-    doc.text('CLASS', marginL + 295, curY + 12);
-    doc.text('SEAT', marginL + 355, curY + 12);
-    doc.text('BAGGAGE', marginL + 400, curY + 12);
-    doc.text('STATUS', marginL + 475, curY + 12);
+    doc.text('DEPARTURE', marginL + 72, curY + 12);
+    doc.text('ARRIVAL', marginL + 164, curY + 12);
+    doc.text('CLASS', marginL + 258, curY + 12);
+    doc.text('SEAT', marginL + 350, curY + 12);
+    doc.text('BAGGAGE', marginL + 390, curY + 12);
+    doc.text('STATUS', marginL + 474, curY + 12);
 
     curY += 18;
 
@@ -476,44 +476,46 @@ export async function generateChinaEasternPdfDoc(data) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_DK);
-        doc.text(`${toSafeAscii(fl.depCity)} (${toSafeAscii(fl.fromCode)})`, marginL + 75, curY + 13);
+        doc.text(`${toSafeAscii(fl.depCity)} (${toSafeAscii(fl.fromCode)})`, marginL + 72, curY + 13);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text(toSafeAscii(fl.depDateFormatted || ''), marginL + 75, curY + 24);
+        doc.text(toSafeAscii(fl.depDateFormatted || ''), marginL + 72, curY + 24);
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...NAVY);
-        doc.text(`${toSafeAscii(fl.depTime)}  ${toSafeAscii(fl.depTerminal || '')}`, marginL + 75, curY + 34);
+        doc.text(`${toSafeAscii(fl.depTime)}${fl.depTerminal ? `  T${toSafeAscii(fl.depTerminal)}` : ''}`, marginL + 72, curY + 34);
 
         // Arrival Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_DK);
-        doc.text(`${toSafeAscii(fl.arrCity)} (${toSafeAscii(fl.toCode)})`, marginL + 185, curY + 13);
+        doc.text(`${toSafeAscii(fl.arrCity)} (${toSafeAscii(fl.toCode)})`, marginL + 164, curY + 13);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text(toSafeAscii(fl.arrDateFormatted || fl.depDateFormatted || ''), marginL + 185, curY + 24);
+        doc.text(toSafeAscii(fl.arrDateFormatted || fl.depDateFormatted || ''), marginL + 164, curY + 24);
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...NAVY);
-        doc.text(`${toSafeAscii(fl.arrTime)}  ${toSafeAscii(fl.arrTerminal || '')}`, marginL + 185, curY + 34);
+        doc.text(`${toSafeAscii(fl.arrTime)}${fl.arrTerminal ? `  T${toSafeAscii(fl.arrTerminal)}` : ''}`, marginL + 164, curY + 34);
 
-        // Class Column
+        // Class Column (Spacious 90pt width - never collides!)
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(fl.flightClass || 'Economy (Y)'), marginL + 295, curY + 15);
+        doc.text(toSafeAscii(fl.flightClass || 'Economy (Y)'), marginL + 258, curY + 15);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(...TEXT_MUT);
-        doc.text('Fare: YOWMU', marginL + 295, curY + 26);
+        if (fl.fareBasis) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(...TEXT_MUT);
+            doc.text(`Fare: ${toSafeAscii(fl.fareBasis)}`, marginL + 258, curY + 26);
+        }
 
         // Seat Column (CLEAN TEXT - NO BUTTON PILL)
         doc.setFont('helvetica', 'bold');
@@ -525,18 +527,18 @@ export async function generateChinaEasternPdfDoc(data) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(checkedBag), marginL + 400, curY + 15);
+        doc.text(toSafeAscii(checkedBag), marginL + 390, curY + 15);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Carry-on: 8kg', marginL + 400, curY + 26);
+        doc.text('Carry-on: 8kg', marginL + 390, curY + 26);
 
         // Status Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(...GREEN);
-        doc.text('OK', marginL + 488, curY + 21);
+        doc.text('OK', marginL + 490, curY + 21, { align: 'center' });
 
         curY += rowH;
     });
@@ -596,7 +598,7 @@ export async function generateChinaEasternPdfDoc(data) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(140, 149, 159);
-    doc.text('China Eastern Airlines Co., Ltd. • Pudong International Airport, Shanghai, China • www.ceair.com', contentW / 2 + marginL, curY, { align: 'center' });
+    doc.text(toSafeAscii('China Eastern Airlines Co., Ltd. - Pudong International Airport, Shanghai, China - www.ceair.com'), contentW / 2 + marginL, curY, { align: 'center' });
 
     return doc;
 }
@@ -662,13 +664,13 @@ export function renderVietnamAirlinesTicketHtml(data) {
         <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:20px; border:1px solid #C3D7DB;">
             <thead>
                 <tr style="background:#004851; color:#ffffff; text-align:left;">
-                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700;">FLIGHT</th>
-                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700;">DEPARTURE</th>
-                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700;">ARRIVAL</th>
-                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700;">CLASS</th>
-                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; text-align:center;">SEAT</th>
-                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700;">BAGGAGE</th>
-                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; text-align:center;">STATUS</th>
+                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; width:13%;">FLIGHT</th>
+                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; width:18%;">DEPARTURE</th>
+                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; width:18%;">ARRIVAL</th>
+                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; width:18%;">CLASS</th>
+                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; text-align:center; width:8%;">SEAT</th>
+                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; width:15%;">BAGGAGE</th>
+                    <th style="padding:8px 10px; border:1px solid #004851; font-weight:700; text-align:center; width:10%;">STATUS</th>
                 </tr>
             </thead>
             <tbody>
@@ -683,17 +685,17 @@ export function renderVietnamAirlinesTicketHtml(data) {
                         <div style="font-weight:700; color:#232D37; font-size:11.5px;">${escapeHtml(fl.depCity)} (${escapeHtml(fl.fromCode)})</div>
                         <div style="font-size:10px; color:#5F6973; margin-top:2px;">${escapeHtml(fl.depDateFormatted)}</div>
                         <div style="font-weight:700; color:#004851; font-size:12px;">${escapeHtml(fl.depTime)}</div>
-                        <div style="font-size:9.5px; color:#5F6973;">${escapeHtml(fl.depTerminal)}</div>
+                        ${fl.depTerminal ? `<div style="font-size:9.5px; color:#5F6973;">T${escapeHtml(fl.depTerminal)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #C3D7DB; vertical-align:top;">
                         <div style="font-weight:700; color:#232D37; font-size:11.5px;">${escapeHtml(fl.arrCity)} (${escapeHtml(fl.toCode)})</div>
                         <div style="font-size:10px; color:#5F6973; margin-top:2px;">${escapeHtml(fl.arrDateFormatted || fl.depDateFormatted)}</div>
                         <div style="font-weight:700; color:#004851; font-size:12px;">${escapeHtml(fl.arrTime)}</div>
-                        <div style="font-size:9.5px; color:#5F6973;">${escapeHtml(fl.arrTerminal)}</div>
+                        ${fl.arrTerminal ? `<div style="font-size:9.5px; color:#5F6973;">T${escapeHtml(fl.arrTerminal)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #C3D7DB; vertical-align:top;">
                         <div style="font-weight:700; color:#232D37;">${escapeHtml(fl.flightClass || 'Economy Classic (K)')}</div>
-                        <div style="font-size:9.5px; color:#5F6973; margin-top:2px;">Fare: KOWVN</div>
+                        ${fl.fareBasis ? `<div style="font-size:9.5px; color:#5F6973; margin-top:2px;">Fare: ${escapeHtml(fl.fareBasis)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #C3D7DB; vertical-align:top; text-align:center;">
                         <span style="font-weight:700; color:#004851; font-size:11px;">${escapeHtml(fl.seat)}</span>
@@ -883,12 +885,12 @@ export async function generateVietnamAirlinesPdfDoc(data) {
     doc.setFontSize(7.5);
     doc.setTextColor(255, 255, 255);
     doc.text('FLIGHT', marginL + 8, curY + 12);
-    doc.text('DEPARTURE', marginL + 75, curY + 12);
-    doc.text('ARRIVAL', marginL + 185, curY + 12);
-    doc.text('CLASS', marginL + 295, curY + 12);
-    doc.text('SEAT', marginL + 355, curY + 12);
-    doc.text('BAGGAGE', marginL + 400, curY + 12);
-    doc.text('STATUS', marginL + 475, curY + 12);
+    doc.text('DEPARTURE', marginL + 72, curY + 12);
+    doc.text('ARRIVAL', marginL + 164, curY + 12);
+    doc.text('CLASS', marginL + 258, curY + 12);
+    doc.text('SEAT', marginL + 350, curY + 12);
+    doc.text('BAGGAGE', marginL + 390, curY + 12);
+    doc.text('STATUS', marginL + 474, curY + 12);
 
     curY += 18;
 
@@ -915,44 +917,46 @@ export async function generateVietnamAirlinesPdfDoc(data) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_DK);
-        doc.text(`${toSafeAscii(fl.depCity)} (${toSafeAscii(fl.fromCode)})`, marginL + 75, curY + 13);
+        doc.text(`${toSafeAscii(fl.depCity)} (${toSafeAscii(fl.fromCode)})`, marginL + 72, curY + 13);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text(toSafeAscii(fl.depDateFormatted || ''), marginL + 75, curY + 24);
+        doc.text(toSafeAscii(fl.depDateFormatted || ''), marginL + 72, curY + 24);
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...TEAL);
-        doc.text(`${toSafeAscii(fl.depTime)}  ${toSafeAscii(fl.depTerminal || '')}`, marginL + 75, curY + 34);
+        doc.text(`${toSafeAscii(fl.depTime)}${fl.depTerminal ? `  T${toSafeAscii(fl.depTerminal)}` : ''}`, marginL + 72, curY + 34);
 
         // Arrival Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_DK);
-        doc.text(`${toSafeAscii(fl.arrCity)} (${toSafeAscii(fl.toCode)})`, marginL + 185, curY + 13);
+        doc.text(`${toSafeAscii(fl.arrCity)} (${toSafeAscii(fl.toCode)})`, marginL + 164, curY + 13);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text(toSafeAscii(fl.arrDateFormatted || fl.depDateFormatted || ''), marginL + 185, curY + 24);
+        doc.text(toSafeAscii(fl.arrDateFormatted || fl.depDateFormatted || ''), marginL + 164, curY + 24);
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...TEAL);
-        doc.text(`${toSafeAscii(fl.arrTime)}  ${toSafeAscii(fl.arrTerminal || '')}`, marginL + 185, curY + 34);
+        doc.text(`${toSafeAscii(fl.arrTime)}${fl.arrTerminal ? `  T${toSafeAscii(fl.arrTerminal)}` : ''}`, marginL + 164, curY + 34);
 
-        // Class Column
+        // Class Column (Spacious 90pt width - never collides!)
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(fl.flightClass || 'Economy (K)'), marginL + 295, curY + 15);
+        doc.text(toSafeAscii(fl.flightClass || 'Economy (K)'), marginL + 258, curY + 15);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(...TEXT_MUT);
-        doc.text('Fare: KOWVN', marginL + 295, curY + 26);
+        if (fl.fareBasis) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(...TEXT_MUT);
+            doc.text(`Fare: ${toSafeAscii(fl.fareBasis)}`, marginL + 258, curY + 26);
+        }
 
         // Seat Column (CLEAN TEXT - NO BUTTON PILL)
         doc.setFont('helvetica', 'bold');
@@ -964,18 +968,18 @@ export async function generateVietnamAirlinesPdfDoc(data) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(checkedBag), marginL + 400, curY + 15);
+        doc.text(toSafeAscii(checkedBag), marginL + 390, curY + 15);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Carry-on: 12kg', marginL + 400, curY + 26);
+        doc.text('Carry-on: 12kg', marginL + 390, curY + 26);
 
         // Status Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(...GREEN);
-        doc.text('OK', marginL + 488, curY + 21);
+        doc.text('OK', marginL + 490, curY + 21, { align: 'center' });
 
         curY += rowH;
     });
@@ -1035,7 +1039,7 @@ export async function generateVietnamAirlinesPdfDoc(data) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(140, 149, 159);
-    doc.text('Vietnam Airlines JSC • 200 Nguyen Son, Long Bien, Hanoi, Vietnam • www.vietnamairlines.com', contentW / 2 + marginL, curY, { align: 'center' });
+    doc.text(toSafeAscii('Vietnam Airlines JSC - 200 Nguyen Son, Long Bien, Hanoi, Vietnam - www.vietnamairlines.com'), contentW / 2 + marginL, curY, { align: 'center' });
 
     return doc;
 }
@@ -1101,23 +1105,23 @@ export function renderCathayPacificTicketHtml(data) {
         <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:20px; border:1px solid #CDDAD8;">
             <thead>
                 <tr style="background:#004C48; color:#ffffff; text-align:left;">
-                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700;">SECTOR</th>
-                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700;">FLIGHT</th>
-                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700;">DATE</th>
-                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700;">DEP / ARR</th>
-                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700;">CLASS</th>
-                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; text-align:center;">SEAT</th>
-                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700;">BAGGAGE</th>
-                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; text-align:center;">STATUS</th>
+                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; width:22%;">SECTOR</th>
+                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; width:11%;">FLIGHT</th>
+                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; width:13%;">DATE</th>
+                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; width:14%;">DEP / ARR</th>
+                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; width:13%;">CLASS</th>
+                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; text-align:center; width:8%;">SEAT</th>
+                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; width:11%;">BAGGAGE</th>
+                    <th style="padding:8px 10px; border:1px solid #004C48; font-weight:700; text-align:center; width:8%;">STATUS</th>
                 </tr>
             </thead>
             <tbody>
                 ${flights.map((fl, idx) => `
                 <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#F7F9F8'};">
                     <td style="padding:8px 10px; border:1px solid #CDDAD8; vertical-align:top;">
-                        <div style="font-weight:700; color:#004C48; font-size:11.5px;">${escapeHtml(fl.depCity)} (${escapeHtml(fl.fromCode)}) TO ${escapeHtml(fl.arrCity)} (${escapeHtml(fl.toCode)})</div>
-                        <div style="font-size:9.5px; color:#666666; margin-top:2px;">${escapeHtml(fl.depTerminal)} TO ${escapeHtml(fl.arrTerminal)}</div>
-                        <div style="font-size:9.5px; color:#666666;">${escapeHtml(fl.aircraft || 'Airbus A350-1000')}</div>
+                        <div style="font-weight:700; color:#004C48; font-size:11.5px;">${escapeHtml(fl.depCity)} (${escapeHtml(fl.fromCode)})</div>
+                        <div style="font-weight:700; color:#004C48; font-size:11.5px; margin-top:2px;">&rarr; ${escapeHtml(fl.arrCity)} (${escapeHtml(fl.toCode)})</div>
+                        <div style="font-size:9.5px; color:#666666; margin-top:3px;">${escapeHtml(fl.aircraft || 'Airbus A350-1000')}</div>
                     </td>
                     <td style="padding:8px 10px; border:1px solid #CDDAD8; vertical-align:top;">
                         <div style="font-weight:800; color:#004C48; font-size:12px;">${escapeHtml(fl.flightNo)}</div>
@@ -1129,10 +1133,11 @@ export function renderCathayPacificTicketHtml(data) {
                     </td>
                     <td style="padding:8px 10px; border:1px solid #CDDAD8; vertical-align:top;">
                         <div style="font-weight:700; color:#004C48; font-size:11.5px;">${escapeHtml(fl.depTime)} - ${escapeHtml(fl.arrTime)}</div>
+                        ${(fl.depTerminal || fl.arrTerminal) ? `<div style="font-size:9.5px; color:#666666; margin-top:2px;">T${escapeHtml(fl.depTerminal || '-')} &rarr; T${escapeHtml(fl.arrTerminal || '-')}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #CDDAD8; vertical-align:top;">
                         <div style="font-weight:700; color:#222222;">${escapeHtml(fl.flightClass || 'Economy (K)')}</div>
-                        <div style="font-size:9.5px; color:#666666; margin-top:2px;">Fare: KR21WEAR</div>
+                        ${fl.fareBasis ? `<div style="font-size:9.5px; color:#666666; margin-top:2px;">Fare: ${escapeHtml(fl.fareBasis)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #CDDAD8; vertical-align:top; text-align:center;">
                         <span style="font-weight:700; color:#004C48; font-size:11px;">${escapeHtml(fl.seat)}</span>
@@ -1322,13 +1327,13 @@ export async function generateCathayPacificPdfDoc(data) {
     doc.setFontSize(7.5);
     doc.setTextColor(255, 255, 255);
     doc.text('SECTOR', marginL + 8, curY + 12);
-    doc.text('FLIGHT', marginL + 155, curY + 12);
-    doc.text('DATE', marginL + 215, curY + 12);
-    doc.text('DEP / ARR', marginL + 295, curY + 12);
-    doc.text('CLASS', marginL + 360, curY + 12);
-    doc.text('SEAT', marginL + 410, curY + 12);
-    doc.text('BAGGAGE', marginL + 445, curY + 12);
-    doc.text('STATUS', marginL + 495, curY + 12);
+    doc.text('FLIGHT', marginL + 120, curY + 12);
+    doc.text('DATE', marginL + 174, curY + 12);
+    doc.text('DEP / ARR', marginL + 238, curY + 12);
+    doc.text('CLASS', marginL + 310, curY + 12);
+    doc.text('SEAT', marginL + 376, curY + 12);
+    doc.text('BAGGAGE', marginL + 414, curY + 12);
+    doc.text('STATUS', marginL + 476, curY + 12);
 
     curY += 18;
 
@@ -1343,75 +1348,85 @@ export async function generateCathayPacificPdfDoc(data) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...JADE);
-        doc.text(`${toSafeAscii(fl.depCity)} (${toSafeAscii(fl.fromCode)}) TO ${toSafeAscii(fl.arrCity)} (${toSafeAscii(fl.toCode)})`, marginL + 8, curY + 13);
+        doc.text(`${toSafeAscii(fl.depCity)} (${toSafeAscii(fl.fromCode)})`, marginL + 8, curY + 13);
+        doc.text(`-> ${toSafeAscii(fl.arrCity)} (${toSafeAscii(fl.toCode)})`, marginL + 8, curY + 23);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text(`${toSafeAscii(fl.depTerminal || '')} TO ${toSafeAscii(fl.arrTerminal || '')}`, marginL + 8, curY + 24);
         doc.text(toSafeAscii(fl.aircraft || 'Airbus A350-1000'), marginL + 8, curY + 34);
 
         // Flight Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(...JADE);
-        doc.text(toSafeAscii(fl.flightNo), marginL + 155, curY + 15);
+        doc.text(toSafeAscii(fl.flightNo), marginL + 120, curY + 15);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Cathay Pacific', marginL + 155, curY + 26);
+        doc.text('Cathay Pacific', marginL + 120, curY + 26);
 
         // Date Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(fl.depDateFormatted || ''), marginL + 215, curY + 15);
+        doc.text(toSafeAscii(fl.depDateFormatted || ''), marginL + 174, curY + 15);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text(toSafeAscii(fl.duration || 'Non-Stop'), marginL + 215, curY + 26);
+        doc.text(toSafeAscii(fl.duration || 'Non-Stop'), marginL + 174, curY + 26);
 
         // Dep / Arr Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...JADE);
-        doc.text(`${toSafeAscii(fl.depTime)} - ${toSafeAscii(fl.arrTime)}`, marginL + 295, curY + 21);
+        doc.text(`${toSafeAscii(fl.depTime)} - ${toSafeAscii(fl.arrTime)}`, marginL + 238, curY + 16);
+
+        const termStr = (fl.depTerminal || fl.arrTerminal) ? `T${toSafeAscii(fl.depTerminal || '-')} -> T${toSafeAscii(fl.arrTerminal || '-')}` : '';
+        if (termStr) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(...TEXT_MUT);
+            doc.text(termStr, marginL + 238, curY + 27);
+        }
 
         // Class Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(fl.flightClass || 'Economy (K)'), marginL + 360, curY + 15);
+        doc.text(toSafeAscii(fl.flightClass || 'Economy (K)'), marginL + 310, curY + 15);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(...TEXT_MUT);
-        doc.text('Fare: KR21WEAR', marginL + 360, curY + 26);
+        if (fl.fareBasis) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(...TEXT_MUT);
+            doc.text(`Fare: ${toSafeAscii(fl.fareBasis)}`, marginL + 310, curY + 26);
+        }
 
         // Seat Column (CLEAN TEXT - NO BUTTON PILL)
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(...JADE);
-        doc.text(toSafeAscii(fl.seat), marginL + 418, curY + 21, { align: 'center' });
+        doc.text(toSafeAscii(fl.seat), marginL + 394, curY + 21, { align: 'center' });
 
         // Baggage Column (COMPACT - NO OVERFLOW)
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(checkedBag), marginL + 445, curY + 15);
+        doc.text(toSafeAscii(checkedBag), marginL + 414, curY + 15);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Cabin: 7kg', marginL + 445, curY + 26);
+        doc.text('Cabin: 7kg', marginL + 414, curY + 26);
 
         // Status Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(...GREEN);
-        doc.text('OK', marginL + 508, curY + 21);
+        doc.text('OK', marginL + 494, curY + 21, { align: 'center' });
 
         curY += rowH;
     });
@@ -1478,7 +1493,7 @@ export async function generateCathayPacificPdfDoc(data) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(140, 149, 159);
-    doc.text('Cathay Pacific Airways Limited • Cathay City, Hong Kong International Airport • www.cathaypacific.com', contentW / 2 + marginL, curY, { align: 'center' });
+    doc.text(toSafeAscii('Cathay Pacific Airways Limited - Cathay City, Hong Kong International Airport - www.cathaypacific.com'), contentW / 2 + marginL, curY, { align: 'center' });
 
     return doc;
 }
@@ -1544,13 +1559,13 @@ export function renderHongKongAirlinesTicketHtml(data) {
         <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:20px; border:1px solid #E2DADB;">
             <thead>
                 <tr style="background:#8A1525; color:#ffffff; text-align:left;">
-                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700;">FLIGHT</th>
-                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700;">DEPARTURE</th>
-                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700;">ARRIVAL</th>
-                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700;">CLASS</th>
-                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; text-align:center;">SEAT</th>
-                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700;">BAGGAGE</th>
-                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; text-align:center;">STATUS</th>
+                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; width:13%;">FLIGHT</th>
+                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; width:18%;">DEPARTURE</th>
+                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; width:18%;">ARRIVAL</th>
+                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; width:18%;">CLASS</th>
+                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; text-align:center; width:8%;">SEAT</th>
+                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; width:15%;">BAGGAGE</th>
+                    <th style="padding:8px 10px; border:1px solid #8A1525; font-weight:700; text-align:center; width:10%;">STATUS</th>
                 </tr>
             </thead>
             <tbody>
@@ -1565,17 +1580,17 @@ export function renderHongKongAirlinesTicketHtml(data) {
                         <div style="font-weight:700; color:#2D3748; font-size:11.5px;">${escapeHtml(fl.depCity)} (${escapeHtml(fl.fromCode)})</div>
                         <div style="font-size:10px; color:#646E7D; margin-top:2px;">${escapeHtml(fl.depDateFormatted)}</div>
                         <div style="font-weight:700; color:#8A1525; font-size:12px;">${escapeHtml(fl.depTime)}</div>
-                        <div style="font-size:9.5px; color:#646E7D;">${escapeHtml(fl.depTerminal)}</div>
+                        ${fl.depTerminal ? `<div style="font-size:9.5px; color:#646E7D;">T${escapeHtml(fl.depTerminal)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #E2DADB; vertical-align:top;">
                         <div style="font-weight:700; color:#2D3748; font-size:11.5px;">${escapeHtml(fl.arrCity)} (${escapeHtml(fl.toCode)})</div>
                         <div style="font-size:10px; color:#646E7D; margin-top:2px;">${escapeHtml(fl.arrDateFormatted || fl.depDateFormatted)}</div>
                         <div style="font-weight:700; color:#8A1525; font-size:12px;">${escapeHtml(fl.arrTime)}</div>
-                        <div style="font-size:9.5px; color:#646E7D;">${escapeHtml(fl.arrTerminal)}</div>
+                        ${fl.arrTerminal ? `<div style="font-size:9.5px; color:#646E7D;">T${escapeHtml(fl.arrTerminal)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #E2DADB; vertical-align:top;">
                         <div style="font-weight:700; color:#2D3748;">${escapeHtml(fl.flightClass || 'Economy (E)')}</div>
-                        <div style="font-size:9.5px; color:#646E7D; margin-top:2px;">Fare: EOWHX</div>
+                        ${fl.fareBasis ? `<div style="font-size:9.5px; color:#646E7D; margin-top:2px;">Fare: ${escapeHtml(fl.fareBasis)}</div>` : ''}
                     </td>
                     <td style="padding:8px 10px; border:1px solid #E2DADB; vertical-align:top; text-align:center;">
                         <span style="font-weight:700; color:#8A1525; font-size:11px;">${escapeHtml(fl.seat)}</span>
@@ -1764,12 +1779,12 @@ export async function generateHongKongAirlinesPdfDoc(data) {
     doc.setFontSize(7.5);
     doc.setTextColor(255, 255, 255);
     doc.text('FLIGHT', marginL + 8, curY + 12);
-    doc.text('DEPARTURE', marginL + 75, curY + 12);
-    doc.text('ARRIVAL', marginL + 185, curY + 12);
-    doc.text('CLASS', marginL + 295, curY + 12);
-    doc.text('SEAT', marginL + 355, curY + 12);
-    doc.text('BAGGAGE', marginL + 400, curY + 12);
-    doc.text('STATUS', marginL + 475, curY + 12);
+    doc.text('DEPARTURE', marginL + 72, curY + 12);
+    doc.text('ARRIVAL', marginL + 164, curY + 12);
+    doc.text('CLASS', marginL + 258, curY + 12);
+    doc.text('SEAT', marginL + 350, curY + 12);
+    doc.text('BAGGAGE', marginL + 390, curY + 12);
+    doc.text('STATUS', marginL + 474, curY + 12);
 
     curY += 18;
 
@@ -1796,44 +1811,46 @@ export async function generateHongKongAirlinesPdfDoc(data) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_DK);
-        doc.text(`${toSafeAscii(fl.depCity)} (${toSafeAscii(fl.fromCode)})`, marginL + 75, curY + 13);
+        doc.text(`${toSafeAscii(fl.depCity)} (${toSafeAscii(fl.fromCode)})`, marginL + 72, curY + 13);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text(toSafeAscii(fl.depDateFormatted || ''), marginL + 75, curY + 24);
+        doc.text(toSafeAscii(fl.depDateFormatted || ''), marginL + 72, curY + 24);
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...BURGUNDY);
-        doc.text(`${toSafeAscii(fl.depTime)}  ${toSafeAscii(fl.depTerminal || '')}`, marginL + 75, curY + 34);
+        doc.text(`${toSafeAscii(fl.depTime)}${fl.depTerminal ? `  T${toSafeAscii(fl.depTerminal)}` : ''}`, marginL + 72, curY + 34);
 
         // Arrival Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...TEXT_DK);
-        doc.text(`${toSafeAscii(fl.arrCity)} (${toSafeAscii(fl.toCode)})`, marginL + 185, curY + 13);
+        doc.text(`${toSafeAscii(fl.arrCity)} (${toSafeAscii(fl.toCode)})`, marginL + 164, curY + 13);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text(toSafeAscii(fl.arrDateFormatted || fl.depDateFormatted || ''), marginL + 185, curY + 24);
+        doc.text(toSafeAscii(fl.arrDateFormatted || fl.depDateFormatted || ''), marginL + 164, curY + 24);
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...BURGUNDY);
-        doc.text(`${toSafeAscii(fl.arrTime)}  ${toSafeAscii(fl.arrTerminal || '')}`, marginL + 185, curY + 34);
+        doc.text(`${toSafeAscii(fl.arrTime)}${fl.arrTerminal ? `  T${toSafeAscii(fl.arrTerminal)}` : ''}`, marginL + 164, curY + 34);
 
-        // Class Column
+        // Class Column (Spacious 90pt width - never collides!)
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(fl.flightClass || 'Economy (E)'), marginL + 295, curY + 15);
+        doc.text(toSafeAscii(fl.flightClass || 'Economy (E)'), marginL + 258, curY + 15);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(...TEXT_MUT);
-        doc.text('Fare: EOWHX', marginL + 295, curY + 26);
+        if (fl.fareBasis) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(6.5);
+            doc.setTextColor(...TEXT_MUT);
+            doc.text(`Fare: ${toSafeAscii(fl.fareBasis)}`, marginL + 258, curY + 26);
+        }
 
         // Seat Column (CLEAN TEXT - NO BUTTON PILL)
         doc.setFont('helvetica', 'bold');
@@ -1845,18 +1862,18 @@ export async function generateHongKongAirlinesPdfDoc(data) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7.5);
         doc.setTextColor(...TEXT_DK);
-        doc.text(toSafeAscii(checkedBag), marginL + 400, curY + 15);
+        doc.text(toSafeAscii(checkedBag), marginL + 390, curY + 15);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Carry-on: 7kg', marginL + 400, curY + 26);
+        doc.text('Carry-on: 7kg', marginL + 390, curY + 26);
 
         // Status Column
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(...GREEN);
-        doc.text('OK', marginL + 488, curY + 21);
+        doc.text('OK', marginL + 490, curY + 21, { align: 'center' });
 
         curY += rowH;
     });
@@ -1916,7 +1933,7 @@ export async function generateHongKongAirlinesPdfDoc(data) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(140, 149, 159);
-    doc.text('Hong Kong Airlines Limited • Tung Chung, Lantau, Hong Kong • www.hongkongairlines.com', contentW / 2 + marginL, curY, { align: 'center' });
+    doc.text(toSafeAscii('Hong Kong Airlines Limited - Tung Chung, Lantau, Hong Kong - www.hongkongairlines.com'), contentW / 2 + marginL, curY, { align: 'center' });
 
     return doc;
 }
@@ -2365,7 +2382,7 @@ export async function generateHkExpressPdfDoc(data) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(140, 149, 159);
-    doc.text('Hong Kong Express Airways Limited • Hong Kong International Airport • www.hkexpress.com', contentW / 2 + marginL, curY, { align: 'center' });
+    doc.text(toSafeAscii('Hong Kong Express Airways Limited - Hong Kong International Airport - www.hkexpress.com'), contentW / 2 + marginL, curY, { align: 'center' });
 
     return doc;
 }
