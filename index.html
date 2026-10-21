@@ -1438,6 +1438,35 @@
                             <div class="service-toast" id="airAsiaToast"></div>
                         </div>
 
+                        <!-- CHINA AIRLINES E-TICKET GENERATOR -->
+                        <div class="service-panel" id="chinaAirlinesPanel">
+                            <div class="service-panel-header">
+                                <span class="service-panel-icon" style="background: rgba(0, 69, 134, 0.12); color: #004586;"><i class="fa-solid fa-plane-up"></i></span>
+                                <div>
+                                    <h2>China Airlines E-Ticket Generator</h2>
+                                    <p class="service-panel-desc">Upload Trip.com / Agoda travel schedule screenshot (One-way, Round trip, Multi-city) or PDF to generate official China Airlines Electronic Ticket Receipt</p>
+                                </div>
+                            </div>
+
+                            <div class="airasia-upload-zone" id="chinaAirlinesDropZone" style="border-color: rgba(0, 69, 134, 0.35);">
+                                <i class="fa-solid fa-cloud-arrow-up service-dropzone-icon" style="color: #004586;"></i>
+                                <div class="service-dropzone-title">Drop Trip.com / Agoda Travel Schedule image / PDF here or click to browse</div>
+                                <div class="service-dropzone-desc">Auto-extracts flights, dates, times, airports, terminals & duration. Auto-generates PNR & Ticket #, formats passenger with (ADT)</div>
+                                <input type="file" id="chinaAirlinesFileInput" accept="image/*,.pdf" style="display: none;">
+                            </div>
+
+                            <div class="service-actions">
+                                <button type="button" class="btn-service btn-generate" id="chinaAirlinesUploadBtn" style="background:#004586; border-color:#004586;">
+                                    <i class="fa-solid fa-image"></i> Upload Schedule Image / PDF
+                                </button>
+                                <button type="button" class="btn-service btn-secondary" id="chinaAirlinesManualBtn">
+                                    <i class="fa-solid fa-pen-to-square"></i> Open E-Ticket Form
+                                </button>
+                            </div>
+
+                            <div class="service-toast" id="chinaAirlinesToast"></div>
+                        </div>
+
 
                         <!-- DOWNLOAD DOCUMENTS -->
                         <div class="service-panel service-panel-wide" id="documentsPanel">
@@ -1945,6 +1974,132 @@
         </div>
     </div>
 
+    <!-- China Airlines E-Ticket Modal -->
+    <div id="chinaAirlinesModal" class="modal">
+        <div class="modal-content glass-card" style="max-width: 1240px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--apple-separator); padding-bottom:12px; margin-bottom:14px;">
+                <h2 style="font-size:1.15rem; margin:0; display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-plane-up" style="color:#004586;"></i>
+                    <span style="font-weight:700; color:var(--apple-text);">China Airlines E-Ticket Receipt</span>
+                    <span style="font-size:12px; background:rgba(0, 69, 134, 0.12); color:#004586; padding:2px 8px; border-radius:12px; font-weight:600;">Official Format</span>
+                </h2>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button type="button" class="btn btn-sm btn-secondary" id="ciModalImportBtn" style="font-size: 11px; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; height: 30px; cursor: pointer; font-weight: 600;">
+                        <i class="fa-solid fa-cloud-arrow-up" style="color:#004586;"></i> Import Schedule
+                    </button>
+                    <input type="file" id="ciModalFileInput" accept="image/*,.pdf" style="display:none;">
+                    <button type="button" class="modal-close" id="chinaAirlinesModalCloseBtn" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--apple-text-secondary);">&times;</button>
+                </div>
+            </div>
+            
+            <div class="modal-body" style="padding:0; overflow:hidden; flex:1;">
+                <div class="airasia-modal-layout">
+                    <!-- Form Column -->
+                    <div class="airasia-form-scroll">
+                        <div style="background: rgba(0, 69, 134, 0.08); border: 1px solid rgba(0, 69, 134, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: var(--apple-text);">
+                            <i class="fa-solid fa-circle-check" style="color:#004586;"></i> Edit receipt details below. PNR, Ticket # &amp; (ADT) are handled automatically. Live preview updates instantly.
+                        </div>
+
+                        <!-- Passenger & Booking Details -->
+                        <div class="airasia-form-section-title" style="color:#004586; border-color:rgba(0,69,134,0.25);">Passenger &amp; Booking</div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group" style="grid-column: 1 / -1;">
+                                <label for="ci_passenger_name">Passenger Name <span style="font-size:10.5px; font-weight:normal; color:var(--apple-blue);">(ADT auto-attached)</span></label>
+                                <input type="text" id="ci_passenger_name" placeholder="e.g. Khin Sein Ms" style="font-weight:600; text-transform:uppercase;">
+                            </div>
+                        </div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <label for="ci_pnr">Booking ref (PNR)</label>
+                                    <button type="button" id="ci_regen_pnr" style="background:none; border:none; color:var(--apple-blue); font-size:11px; cursor:pointer; padding:0;"><i class="fa-solid fa-arrows-rotate"></i> Auto</button>
+                                </div>
+                                <input type="text" id="ci_pnr" placeholder="e.g. FEYF43" style="font-weight:700; text-transform:uppercase;">
+                            </div>
+                            <div class="airasia-form-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <label for="ci_ticket_no">Ticket Number</label>
+                                    <button type="button" id="ci_regen_ticket" style="background:none; border:none; color:var(--apple-blue); font-size:11px; cursor:pointer; padding:0;"><i class="fa-solid fa-arrows-rotate"></i> Auto</button>
+                                </div>
+                                <input type="text" id="ci_ticket_no" placeholder="297 2425301246" style="font-weight:700;">
+                            </div>
+                        </div>
+
+                        <!-- Issuing Office & Validity -->
+                        <div class="airasia-form-section-title" style="color:#004586; border-color:rgba(0,69,134,0.25);">Issuing Office &amp; Validity</div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group">
+                                <label for="ci_issue_date">Issue Date (Date of Ticketing)</label>
+                                <input type="text" id="ci_issue_date" placeholder="e.g. 18JULY2026">
+                            </div>
+                            <div class="airasia-form-group">
+                                <label for="ci_validity_mode">Validity Formula (NVA)</label>
+                                <select id="ci_validity_mode">
+                                    <option value="same_day">Same as Departure Date (Standard / Promo)</option>
+                                    <option value="1_year">1 Year from Issue Date (Flexible / Annual)</option>
+                                    <option value="3_months">3 Months from Departure Date</option>
+                                    <option value="6_months">6 Months from Departure Date</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="airasia-form-row">
+                            <div class="airasia-form-group" style="grid-column: 1 / -1;">
+                                <label for="ci_telephone">Telephone</label>
+                                <input type="text" id="ci_telephone" value="66-2-2108999">
+                            </div>
+                        </div>
+
+                        <!-- Flight Sectors -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10pt;">
+                            <div class="airasia-form-section-title" style="margin-bottom:0; color:#004586; border:none;">Flight Sectors</div>
+                            <button type="button" class="btn btn-sm btn-secondary" id="ci_add_sector_btn" style="font-size:11px; padding:3px 8px; cursor:pointer;">
+                                <i class="fa-solid fa-plus"></i> Add Sector
+                            </button>
+                        </div>
+                        <div id="ci_sectors_container" style="display:flex; flex-direction:column; gap:12px; margin-top:8px;"></div>
+
+                        <!-- Quick Paste text box -->
+                        <details style="margin-top:8px; border:1px dashed var(--apple-separator); border-radius:8px; padding:8px 10px;">
+                            <summary style="font-size:11px; font-weight:600; cursor:pointer; color:var(--apple-text-secondary);">
+                                <i class="fa-solid fa-paste"></i> Or Paste Travel Schedule Text
+                            </summary>
+                            <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+                                <textarea id="ci_paste_text" rows="3" placeholder="Paste Trip.com / Agoda schedule text here..." style="font-size:11px; width:100%;"></textarea>
+                                <button type="button" class="btn btn-sm btn-secondary" id="ci_parse_paste_btn" style="align-self:flex-start; font-size:11px;">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Parse Text
+                                </button>
+                            </div>
+                        </details>
+
+                    </div>
+
+                    <!-- Live Preview Column -->
+                    <div class="airasia-preview-scroll">
+                        <div id="chinaAirlinesPreviewContainer" style="width:100%; display:flex; justify-content:center;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--apple-separator); padding-top:12px; margin-top:14px;">
+                <div style="font-size:12px; color:var(--apple-text-secondary);">
+                    <i class="fa-solid fa-circle-check" style="color:#004586;"></i> Verified China Airlines E-Ticket Receipt layout
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn btn-secondary" id="chinaAirlinesPrintBtn">
+                        <i class="fa-solid fa-print"></i> Print
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="chinaAirlinesDownloadImageBtn">
+                        <i class="fa-solid fa-image"></i> Download Image
+                    </button>
+                    <button type="button" class="btn btn-primary" id="chinaAirlinesDownloadPdfBtn" style="background:#004586; border-color:#004586; color:#ffffff;">
+                        <i class="fa-solid fa-file-pdf"></i> Download PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="toast"><span id="toastMessage"></span></div>
 
     <script type="importmap" id="app-importmap">
@@ -1965,7 +2120,7 @@
     "./hotel.js": "./hotel.js?v=2f4fea86",
     "./invoice-selection.mjs": "./invoice-selection.mjs?v=2d426669",
     "./invoice.js": "./invoice.js?v=8c3cc9bd",
-    "./main.js": "./main.js?v=4509ffe9",
+    "./main.js": "./main.js?v=5b516374",
     "./manage.js": "./manage.js?v=0fff7338",
     "./passport-ocr.js": "./passport-ocr.js?v=456777f7",
     "./passport-parser.mjs": "./passport-parser.mjs?v=d0633dfa",
@@ -1980,6 +2135,6 @@
   }
 }
     </script>
-    <script src="main.js?v=4509ffe9" type="module"></script>
+    <script src="main.js?v=5b516374" type="module"></script>
 </body>
 </html>

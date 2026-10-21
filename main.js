@@ -2781,6 +2781,521 @@ function initializeChinaHotelGenerator() {
     });
 }
 
+// --- CHINA AIRLINES E-TICKET RECEIPT GENERATOR LOGIC ---
+let chinaAirlinesGeneratorInitialized = false;
+let chinaAirlinesModule = null;
+function initializeChinaAirlinesGenerator(chinaAir) {
+    if (chinaAir) chinaAirlinesModule = chinaAir;
+    if (chinaAirlinesGeneratorInitialized) return;
+    chinaAirlinesGeneratorInitialized = true;
+
+    const ca = chinaAirlinesModule;
+    if (!ca) return;
+
+    const dropZone = document.getElementById('chinaAirlinesDropZone');
+    const fileInput = document.getElementById('chinaAirlinesFileInput');
+    const uploadBtn = document.getElementById('chinaAirlinesUploadBtn');
+    const manualBtn = document.getElementById('chinaAirlinesManualBtn');
+    const modal = document.getElementById('chinaAirlinesModal');
+    const closeBtn = document.getElementById('chinaAirlinesModalCloseBtn');
+    const importBtn = document.getElementById('ciModalImportBtn');
+    const importFileInput = document.getElementById('ciModalFileInput');
+    const previewContainer = document.getElementById('chinaAirlinesPreviewContainer');
+    const downloadPdfBtn = document.getElementById('chinaAirlinesDownloadPdfBtn');
+    const downloadImageBtn = document.getElementById('chinaAirlinesDownloadImageBtn');
+    const printBtn = document.getElementById('chinaAirlinesPrintBtn');
+
+    const regenPnrBtn = document.getElementById('ci_regen_pnr');
+    const regenTktBtn = document.getElementById('ci_regen_ticket');
+    const addSectorBtn = document.getElementById('ci_add_sector_btn');
+    const parsePasteBtn = document.getElementById('ci_parse_paste_btn');
+    const validitySelect = document.getElementById('ci_validity_mode');
+
+    let currentCiData = ca.createDefaultChinaAirlinesData();
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function renderSectorCards() {
+        const container = document.getElementById('ci_sectors_container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!currentCiData.flights || currentCiData.flights.length === 0) {
+            currentCiData.flights = [ca.createDefaultChinaAirlinesData().flights[0]];
+        }
+
+        currentCiData.flights.forEach((f, idx) => {
+            const card = document.createElement('div');
+            card.className = 'ci_sector_card';
+            card.dataset.index = idx;
+            card.style.cssText = 'background:var(--apple-bg-secondary); padding:10px 12px; border-radius:8px; border:1px solid var(--apple-separator); display:flex; flex-direction:column; gap:8px;';
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--apple-separator); padding-bottom:6px;">
+                    <span style="font-size:12px; font-weight:700; color:var(--apple-text);">
+                        <i class="fa-solid fa-plane-departure" style="color:#004586; margin-right:4px;"></i> Sector ${idx + 1}
+                    </span>
+                    ${currentCiData.flights.length > 1 ? `
+                    <button type="button" class="btn btn-sm ci_remove_sector_btn" style="padding:1px 6px; font-size:11px; border:none; background:transparent; color:#ff3b30; cursor:pointer;" title="Remove Sector">
+                        <i class="fa-solid fa-trash-can"></i> Remove
+                    </button>` : ''}
+                </div>
+                
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group" style="flex:2;">
+                        <label style="font-size:10.5px;">From Airport</label>
+                        <input type="text" class="ci_from_input" value="${escapeHtml(f.from || '')}" placeholder="BANGKOK SUVARNABHUMI INTL" style="font-weight:600; text-transform:uppercase;">
+                    </div>
+                    <div class="airasia-form-group" style="flex:1;">
+                        <label style="font-size:10.5px;">Dep Terminal</label>
+                        <input type="text" class="ci_dep_term_input" value="${escapeHtml(f.depTerminal || '')}" placeholder="e.g. 1">
+                    </div>
+                </div>
+
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group" style="flex:2;">
+                        <label style="font-size:10.5px;">To Airport</label>
+                        <input type="text" class="ci_to_input" value="${escapeHtml(f.to || '')}" placeholder="TAIPEI TAIWAN TAOYUAN INTL" style="font-weight:600; text-transform:uppercase;">
+                    </div>
+                    <div class="airasia-form-group" style="flex:1;">
+                        <label style="font-size:10.5px;">Arr Terminal</label>
+                        <input type="text" class="ci_arr_term_input" value="${escapeHtml(f.arrTerminal || '')}" placeholder="e.g. 1">
+                    </div>
+                </div>
+
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Flight No.</label>
+                        <input type="text" class="ci_flight_no_input" value="${escapeHtml(f.flightNo || 'CI834')}" placeholder="CI834" style="font-weight:700; text-transform:uppercase;">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Duration</label>
+                        <input type="text" class="ci_duration_input" value="${escapeHtml(f.duration || '03:40')}" placeholder="03:40">
+                    </div>
+                </div>
+
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Dep Date</label>
+                        <input type="text" class="ci_dep_date_input" value="${escapeHtml(f.depDate || '')}" placeholder="25SEP2026">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Dep Time</label>
+                        <input type="text" class="ci_dep_time_input" value="${escapeHtml(f.depTime || '10:50')}" placeholder="10:50">
+                    </div>
+                </div>
+
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Arr Date</label>
+                        <input type="text" class="ci_arr_date_input" value="${escapeHtml(f.arrDate || '')}" placeholder="25SEP2026">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Arr Time</label>
+                        <input type="text" class="ci_arr_time_input" value="${escapeHtml(f.arrTime || '15:30')}" placeholder="15:30">
+                    </div>
+                </div>
+
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Class</label>
+                        <input type="text" class="ci_class_input" value="${escapeHtml(f.cabinClass || 'Economy, Y')}" placeholder="Economy, Y">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Seat</label>
+                        <input type="text" class="ci_seat_input" value="${escapeHtml(f.seat || '')}" placeholder="e.g. 01D">
+                    </div>
+                </div>
+
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Baggage</label>
+                        <input type="text" class="ci_baggage_input" value="${escapeHtml(f.baggage || '2PC')}" placeholder="2PC">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">Fare Basis</label>
+                        <input type="text" class="ci_fare_basis_input" value="${escapeHtml(f.fareBasis || 'DOTH')}" placeholder="DOTH">
+                    </div>
+                </div>
+
+                <div class="airasia-form-row">
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">NVB (2)</label>
+                        <input type="text" class="ci_nvb_input" value="${escapeHtml(f.nvb || f.depDate || '')}" placeholder="25SEP2026">
+                    </div>
+                    <div class="airasia-form-group">
+                        <label style="font-size:10.5px;">NVA (3)</label>
+                        <input type="text" class="ci_nva_input" value="${escapeHtml(f.nva || f.depDate || '')}" placeholder="25SEP2026">
+                    </div>
+                </div>
+            `;
+
+            card.querySelectorAll('input').forEach(inp => {
+                inp.addEventListener('input', updateCiPreview);
+                inp.addEventListener('change', updateCiPreview);
+            });
+
+            const depDateInput = card.querySelector('.ci_dep_date_input');
+            depDateInput?.addEventListener('change', () => {
+                recalculateSectorValidity(card);
+                updateCiPreview();
+            });
+
+            const removeBtn = card.querySelector('.ci_remove_sector_btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    currentCiData.flights.splice(idx, 1);
+                    renderSectorCards();
+                    updateCiPreview();
+                });
+            }
+
+            container.appendChild(card);
+        });
+    }
+
+    function recalculateSectorValidity(card) {
+        const depDate = card.querySelector('.ci_dep_date_input')?.value;
+        const issueDate = document.getElementById('ci_issue_date')?.value;
+        const mode = document.getElementById('ci_validity_mode')?.value || 'same_day';
+        if (depDate) {
+            const { nvb, nva } = ca.calculateTicketValidity(depDate, issueDate, mode);
+            const nvbInput = card.querySelector('.ci_nvb_input');
+            const nvaInput = card.querySelector('.ci_nva_input');
+            if (nvbInput) nvbInput.value = nvb;
+            if (nvaInput) nvaInput.value = nva;
+        }
+    }
+
+    function collectCiFormData() {
+        const paxInp = document.getElementById('ci_passenger_name');
+        const pnrInp = document.getElementById('ci_pnr');
+        const ticketInp = document.getElementById('ci_ticket_no');
+        const issueDateInp = document.getElementById('ci_issue_date');
+        const validityModeInp = document.getElementById('ci_validity_mode');
+        const telephoneInp = document.getElementById('ci_telephone');
+
+        const flights = [];
+        const cards = document.querySelectorAll('.ci_sector_card');
+        cards.forEach(card => {
+            flights.push({
+                from: card.querySelector('.ci_from_input')?.value || '',
+                depTerminal: card.querySelector('.ci_dep_term_input')?.value || '',
+                to: card.querySelector('.ci_to_input')?.value || '',
+                arrTerminal: card.querySelector('.ci_arr_term_input')?.value || '',
+                flightNo: (card.querySelector('.ci_flight_no_input')?.value || 'CI834').toUpperCase(),
+                duration: card.querySelector('.ci_duration_input')?.value || '03:40',
+                depDate: card.querySelector('.ci_dep_date_input')?.value || '',
+                depTime: card.querySelector('.ci_dep_time_input')?.value || '',
+                arrDate: card.querySelector('.ci_arr_date_input')?.value || '',
+                arrTime: card.querySelector('.ci_arr_time_input')?.value || '',
+                cabinClass: card.querySelector('.ci_class_input')?.value || 'Economy, Y',
+                seat: card.querySelector('.ci_seat_input')?.value || '',
+                baggage: card.querySelector('.ci_baggage_input')?.value || '2PC',
+                fareBasis: card.querySelector('.ci_fare_basis_input')?.value || 'DOTH',
+                nvb: card.querySelector('.ci_nvb_input')?.value || '',
+                nva: card.querySelector('.ci_nva_input')?.value || '',
+                operatedBy: 'CHINA AIRLINES LTD.',
+                marketedBy: 'CHINA AIRLINES LTD.',
+                bookingStatus: 'OK'
+            });
+        });
+
+        currentCiData = {
+            passengerName: paxInp ? paxInp.value : '',
+            pnr: pnrInp ? pnrInp.value : '',
+            ticketNo: ticketInp ? ticketInp.value : '',
+            issueDate: issueDateInp ? issueDateInp.value : '',
+            validityMode: validityModeInp ? validityModeInp.value : 'same_day',
+            telephone: telephoneInp ? telephoneInp.value : '66-2-2108999',
+            flights
+        };
+        return currentCiData;
+    }
+
+    function populateModalFields() {
+        const paxInp = document.getElementById('ci_passenger_name');
+        const pnrInp = document.getElementById('ci_pnr');
+        const ticketInp = document.getElementById('ci_ticket_no');
+        const issueDateInp = document.getElementById('ci_issue_date');
+        const validityModeInp = document.getElementById('ci_validity_mode');
+        const telephoneInp = document.getElementById('ci_telephone');
+
+        if (paxInp) paxInp.value = currentCiData.passengerName || '';
+        if (pnrInp) pnrInp.value = currentCiData.pnr || ca.generateBookingRef();
+        if (ticketInp) ticketInp.value = currentCiData.ticketNo || ca.generateTicketNumber();
+        if (issueDateInp) issueDateInp.value = currentCiData.issueDate || ca.formatIssueDate(new Date());
+        if (validityModeInp) validityModeInp.value = currentCiData.validityMode || 'same_day';
+        if (telephoneInp) telephoneInp.value = currentCiData.telephone || '66-2-2108999';
+
+        renderSectorCards();
+    }
+
+    function updateCiPreview() {
+        if (!previewContainer) return;
+        try {
+            const data = collectCiFormData();
+            previewContainer.innerHTML = ca.renderChinaAirlinesTicketHtml(data);
+        } catch (err) {
+            console.error('China Airlines preview update error:', err);
+        }
+    }
+
+    // Modal input listeners
+    const paxInp = document.getElementById('ci_passenger_name');
+    paxInp?.addEventListener('input', updateCiPreview);
+    paxInp?.addEventListener('blur', () => {
+        if (paxInp.value.trim()) {
+            paxInp.value = ca.formatPassengerName(paxInp.value);
+            updateCiPreview();
+        }
+    });
+
+    document.getElementById('ci_pnr')?.addEventListener('input', updateCiPreview);
+    document.getElementById('ci_ticket_no')?.addEventListener('input', updateCiPreview);
+    document.getElementById('ci_telephone')?.addEventListener('input', updateCiPreview);
+
+    document.getElementById('ci_issue_date')?.addEventListener('input', () => {
+        const cards = document.querySelectorAll('.ci_sector_card');
+        cards.forEach(card => recalculateSectorValidity(card));
+        updateCiPreview();
+    });
+
+    validitySelect?.addEventListener('change', () => {
+        const cards = document.querySelectorAll('.ci_sector_card');
+        cards.forEach(card => recalculateSectorValidity(card));
+        updateCiPreview();
+    });
+
+    regenPnrBtn?.addEventListener('click', () => {
+        const pnrEl = document.getElementById('ci_pnr');
+        if (pnrEl) {
+            pnrEl.value = ca.generateBookingRef();
+            updateCiPreview();
+        }
+    });
+
+    regenTktBtn?.addEventListener('click', () => {
+        const tktEl = document.getElementById('ci_ticket_no');
+        if (tktEl) {
+            tktEl.value = ca.generateTicketNumber();
+            updateCiPreview();
+        }
+    });
+
+    addSectorBtn?.addEventListener('click', () => {
+        collectCiFormData();
+        const lastFlight = currentCiData.flights[currentCiData.flights.length - 1];
+        const newFlight = {
+            from: lastFlight ? lastFlight.to : 'TAIPEI TAIWAN TAOYUAN INTL',
+            depTerminal: '1',
+            to: lastFlight ? lastFlight.from : 'YANGON INTL',
+            arrTerminal: '1',
+            flightNo: 'CI7915',
+            duration: '04:20',
+            depDate: lastFlight ? lastFlight.depDate : ca.formatAirlineDate(new Date()),
+            depTime: '07:00',
+            arrDate: lastFlight ? lastFlight.arrDate : ca.formatAirlineDate(new Date()),
+            arrTime: '09:50',
+            cabinClass: 'Economy, Y',
+            seat: '',
+            baggage: '2PC',
+            fareBasis: 'YOW',
+            nvb: lastFlight ? lastFlight.depDate : ca.formatAirlineDate(new Date()),
+            nva: lastFlight ? lastFlight.depDate : ca.formatAirlineDate(new Date()),
+            operatedBy: 'CHINA AIRLINES LTD.',
+            marketedBy: 'CHINA AIRLINES LTD.',
+            bookingStatus: 'OK'
+        };
+        currentCiData.flights.push(newFlight);
+        renderSectorCards();
+        updateCiPreview();
+    });
+
+    // File reading logic
+    async function handleCiFile(file) {
+        if (!file) return;
+        const isPdf = file.name.toLowerCase().endsWith('.pdf');
+        const isImg = /\.(png|jpe?g|webp|bmp|gif)$/i.test(file.name) || (file.type && file.type.startsWith('image/'));
+        if (!isPdf && !isImg) {
+            showToast('Please upload a screenshot/image or PDF travel schedule.', 'error');
+            return;
+        }
+
+        showToast('Reading travel schedule...', 'info');
+        try {
+            let parsed;
+            if (isPdf) {
+                parsed = await ca.parseTripSchedulePdf(file);
+            } else {
+                showToast('Analyzing travel schedule image (OCR)...', 'info');
+                parsed = await ca.parseTripScheduleImage(file);
+            }
+
+            if (parsed.passengerName) currentCiData.passengerName = parsed.passengerName;
+            if (parsed.pnr) currentCiData.pnr = parsed.pnr;
+            if (parsed.ticketNo) currentCiData.ticketNo = parsed.ticketNo;
+            if (parsed.flights && parsed.flights.length > 0) {
+                currentCiData.flights = parsed.flights;
+                showToast(`Extracted ${parsed.flights.length} sector(s) from schedule!`, 'success');
+            } else {
+                showToast('Schedule opened. Check flight details or paste text.', 'warning');
+            }
+
+            populateModalFields();
+            modal.classList.add('show');
+            updateCiPreview();
+        } catch (err) {
+            console.error('Itinerary parse error:', err);
+            showToast(`Error analyzing schedule: ${err.message}`, 'error');
+            populateModalFields();
+            modal.classList.add('show');
+            updateCiPreview();
+        }
+    }
+
+    // Dropzone events
+    dropZone?.addEventListener('click', () => fileInput?.click());
+    fileInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) handleCiFile(file);
+        e.target.value = '';
+    });
+    uploadBtn?.addEventListener('click', () => fileInput?.click());
+
+    dropZone?.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone?.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleCiFile(file);
+    });
+
+    manualBtn?.addEventListener('click', () => {
+        currentCiData = ca.createDefaultChinaAirlinesData();
+        populateModalFields();
+        modal.classList.add('show');
+        updateCiPreview();
+    });
+
+    importBtn?.addEventListener('click', () => importFileInput?.click());
+    importFileInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) handleCiFile(file);
+        e.target.value = '';
+    });
+
+    parsePasteBtn?.addEventListener('click', () => {
+        const text = document.getElementById('ci_paste_text')?.value;
+        if (!text || text.trim().length < 5) {
+            showToast('Please paste travel schedule text first.', 'warning');
+            return;
+        }
+        try {
+            const parsed = ca.parseItinerarySchedule(text);
+            if (parsed.passengerName) currentCiData.passengerName = parsed.passengerName;
+            if (parsed.pnr) currentCiData.pnr = parsed.pnr;
+            if (parsed.ticketNo) currentCiData.ticketNo = parsed.ticketNo;
+            if (parsed.flights && parsed.flights.length > 0) {
+                currentCiData.flights = parsed.flights;
+                showToast(`Parsed ${parsed.flights.length} sector(s) from text!`, 'success');
+            } else {
+                showToast('No flights recognized in pasted text.', 'warning');
+            }
+            populateModalFields();
+            updateCiPreview();
+        } catch (e) {
+            showToast(`Could not parse text: ${e.message}`, 'error');
+        }
+    });
+
+    // Close & Dismiss
+    closeBtn?.addEventListener('click', () => modal.classList.remove('show'));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('show');
+    });
+
+    // Download PDF
+    let isDownloadingPdf = false;
+    downloadPdfBtn?.addEventListener('click', async () => {
+        if (isDownloadingPdf) return;
+        isDownloadingPdf = true;
+        downloadPdfBtn.disabled = true;
+        const oldHtml = downloadPdfBtn.innerHTML;
+        downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+        showToast('Generating China Airlines PDF...', 'info');
+        try {
+            const data = collectCiFormData();
+            await ca.downloadChinaAirlinesPdf(data);
+        } catch (err) {
+            console.error('PDF error:', err);
+            showToast(`PDF generation failed: ${err.message}`, 'error');
+        } finally {
+            isDownloadingPdf = false;
+            downloadPdfBtn.disabled = false;
+            downloadPdfBtn.innerHTML = oldHtml;
+        }
+    });
+
+    // Download Image
+    let isDownloadingImg = false;
+    downloadImageBtn?.addEventListener('click', async () => {
+        if (isDownloadingImg) return;
+        isDownloadingImg = true;
+        downloadImageBtn.disabled = true;
+        const oldHtml = downloadImageBtn.innerHTML;
+        downloadImageBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting Image...';
+        showToast('Exporting high-res PNG image...', 'info');
+        try {
+            const data = collectCiFormData();
+            await ca.downloadChinaAirlinesImage(data);
+        } catch (err) {
+            console.error('Image export error:', err);
+            showToast(`Image export failed: ${err.message}`, 'error');
+        } finally {
+            isDownloadingImg = false;
+            downloadImageBtn.disabled = false;
+            downloadImageBtn.innerHTML = oldHtml;
+        }
+    });
+
+    // Print
+    printBtn?.addEventListener('click', () => {
+        const docEl = document.getElementById('chinaAirlinesTicketDocument');
+        if (!docEl) return;
+        const printWin = window.open('', '_blank');
+        if (!printWin) {
+            window.print();
+            return;
+        }
+        printWin.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>China Airlines Electronic Ticket Receipt</title>
+                <style>
+                    @page { size: A4; margin: 0; }
+                    body { margin: 0; padding: 20px; font-family: Arial, Helvetica, sans-serif; background: #fff; }
+                </style>
+            </head>
+            <body>
+                ${docEl.outerHTML}
+                <script>
+                    window.onload = function() { window.print(); window.close(); }
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWin.document.close();
+    });
+}
+
 // --- APP START ---
 let hotelPageReady = false;
 let servicesPageReady = false;
@@ -2805,13 +3320,18 @@ async function loadPageFeatures(viewName) {
             hotelModule.renderHotelReservations();
         }
         if (viewName === 'services' && !servicesPageReady) {
-            const [air, agoda] = await Promise.all([
-                import('./airasia-converter.js'), import('./agoda-hotel-converter.js')
+            const [air, agoda, chinaAir] = await Promise.all([
+                import('./airasia-converter.js'),
+                import('./agoda-hotel-converter.js'),
+                import('./china-airlines-converter.js')
             ]);
             ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine } = air);
             ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
             initializeAirAsiaGenerator();
             initializeChinaHotelGenerator();
+            if (typeof initializeChinaAirlinesGenerator === 'function') {
+                initializeChinaAirlinesGenerator(chinaAir);
+            }
             servicesPageReady = true;
         }
     })().catch(error => {
