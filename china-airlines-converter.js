@@ -349,7 +349,7 @@ export function renderChinaAirlinesTicketHtml(data) {
                 <div style="position:relative; margin-bottom:2.5pt;">
                     <span style="position:absolute; left:-14pt; font-size:6pt; top:1pt;">&#9632;</span>
                     The following carrier imposed fees and charges collected as tax codes XP/YR/OB on your ticket are non-refundable:
-                    <div style="margin-top:1px;">(1) Change/Reissue fee : XP；(2) Booking Service Charge : YR；(3) Credit Card Surcharge : OB</div>
+                    <div style="margin-top:1px;">(1) Change/Reissue fee : XP; (2) Booking Service Charge : YR; (3) Credit Card Surcharge : OB</div>
                 </div>
             </div>
         </div>
@@ -621,7 +621,7 @@ export async function generateChinaAirlinesPdfDoc(data) {
     doc.text('The following carrier imposed fees and charges collected as tax codes XP/YR/OB on your ticket are non-refundable:', marginX + 30, tableY);
 
     tableY += 11.5;
-    doc.text('(1) Change/Reissue fee : XP；(2) Booking Service Charge : YR；(3) Credit Card Surcharge : OB', marginX + 30, tableY);
+    doc.text('(1) Change/Reissue fee : XP; (2) Booking Service Charge : YR; (3) Credit Card Surcharge : OB', marginX + 30, tableY);
 
     return doc;
 }
