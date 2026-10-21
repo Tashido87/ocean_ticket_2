@@ -59,6 +59,37 @@ export function formatPassengerName(name) {
 }
 
 /**
+ * Generate a realistic commercial aircraft seat number based on cabin class
+ * China Airlines wide-body (A350/B777) & narrow-body (A321neo) layout:
+ * - Economy: rows 40-68, columns A, B, C, D, E, G, H, J, K (e.g. 45A, 49D, 52J, 57E)
+ * - Premium Economy: rows 30-36, columns A, C, D, E, G, H, K
+ * - Business: rows 10-18, columns A, D, G, K
+ */
+export function generateRandomSeat(cabinClass = 'Economy') {
+    const cls = String(cabinClass || '').toLowerCase();
+    if (cls.includes('business')) {
+        const rows = [10, 11, 12, 14, 15, 16, 17, 18];
+        const cols = ['A', 'D', 'G', 'K'];
+        const r = rows[Math.floor(Math.random() * rows.length)];
+        const c = cols[Math.floor(Math.random() * cols.length)];
+        return `${r}${c}`;
+    }
+    if (cls.includes('premium')) {
+        const rows = [30, 31, 32, 33, 34, 35, 36];
+        const cols = ['A', 'C', 'D', 'E', 'G', 'H', 'K'];
+        const r = rows[Math.floor(Math.random() * rows.length)];
+        const c = cols[Math.floor(Math.random() * cols.length)];
+        return `${r}${c}`;
+    }
+    // Economy
+    const rows = [41, 42, 45, 46, 48, 49, 51, 52, 54, 55, 57, 58, 60, 62, 63, 65, 67];
+    const cols = ['A', 'B', 'C', 'D', 'E', 'G', 'H', 'J', 'K'];
+    const r = rows[Math.floor(Math.random() * rows.length)];
+    const c = cols[Math.floor(Math.random() * cols.length)];
+    return `${r}${c}`;
+}
+
+/**
  * Generate 6-character random alphanumeric PNR (Amadeus / Sabre style)
  */
 export function generateBookingRef() {
@@ -424,7 +455,7 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
                 arrDateFormatted: arrDate,
                 cabinClass,
                 flightClass: cabinClass,
-                seat: '',
+                seat: generateRandomSeat(cabinClass),
                 operatedBy: carrier,
                 marketedBy: carrier,
                 airlineName: carrier,
@@ -481,7 +512,7 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
                     arrDateFormatted: curDate,
                     cabinClass: 'Economy, Y',
                     flightClass: 'Economy, Y',
-                    seat: '',
+                    seat: generateRandomSeat('Economy'),
                     operatedBy: carrier,
                     marketedBy: carrier,
                     airlineName: carrier,

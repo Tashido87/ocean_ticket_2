@@ -3,6 +3,7 @@ import { showToast } from './utils.js';
 import {
     AIRPORT_NAME_MAP,
     formatPassengerName,
+    generateRandomSeat,
     generateBookingRef,
     generateTicketNumber,
     formatAirlineDate,
@@ -16,6 +17,7 @@ import {
 export {
     AIRPORT_NAME_MAP,
     formatPassengerName,
+    generateRandomSeat,
     generateBookingRef,
     generateTicketNumber,
     formatAirlineDate,
@@ -146,7 +148,7 @@ export function createDefaultChinaAirlinesData() {
                 arrTime: '15:30',
                 arrDate: flightDateStr,
                 cabinClass: 'THSHBZB, D',
-                seat: '01D',
+                seat: generateRandomSeat('Economy'),
                 operatedBy: 'CHINA AIRLINES LTD.',
                 marketedBy: 'CHINA AIRLINES LTD.',
                 bookingStatus: 'OK',
@@ -192,7 +194,7 @@ export function renderChinaAirlinesTicketHtml(data) {
         const lastCheckIn = escapeHtml(f.lastCheckIn || '');
 
         const cabinClass = escapeHtml(f.cabinClass || f.flightClass || 'Economy, Y');
-        const seat = escapeHtml(f.seat || '');
+        const seat = escapeHtml(f.seat || generateRandomSeat(f.cabinClass || f.flightClass));
         const bookingStatus = escapeHtml(f.bookingStatus || 'OK');
         const duration = escapeHtml(f.duration || '03:40');
         const operatedBy = escapeHtml(f.operatedBy || f.airlineName || 'CHINA AIRLINES LTD.');
@@ -232,7 +234,7 @@ export function renderChinaAirlinesTicketHtml(data) {
             <div style="background:#ffffff; padding:7px 10px 9px 10px; display:grid; grid-template-columns: 1.1fr 1.2fr 0.9fr; gap:10px; font-size:8pt; line-height:1.55; color:#000000;">
                 <div>
                     <div><span style="color:#444444;">Class : </span><strong style="color:#000000;">${cabinClass}</strong></div>
-                    <div><span style="color:#444444;">Seat : </span><strong style="color:#000000;">${seat || '-'}</strong></div>
+                    <div><span style="color:#444444;">Seat : </span><strong style="color:#000000;">${seat}</strong></div>
                     <div><span style="color:#444444;">Booking status (1) : </span><strong style="color:#000000;">${bookingStatus}</strong></div>
                     <div><span style="color:#444444;">Duration : </span><strong style="color:#000000;">${duration}</strong></div>
                 </div>
@@ -419,7 +421,7 @@ export async function generateChinaAirlinesPdfDoc(data) {
     const rightColX = 338.0;
     if (barcodeDataUrl) {
         try {
-            doc.addImage(barcodeDataUrl, 'PNG', rightColX, 117.0, 104.0, 48.0);
+            doc.addImage(barcodeDataUrl, 'PNG', rightColX, 122.0, 101.0, 48.0);
         } catch (e) {
             console.warn('Could not add barcode to PDF:', e);
         }
@@ -525,9 +527,10 @@ export async function generateChinaAirlinesPdfDoc(data) {
         doc.setTextColor(68, 68, 68); doc.text('Class : ', c1X, tableY + 12.0);
         doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.cabinClass || f.flightClass || 'Economy, Y', c1X + 35, tableY + 12.0);
 
+        const seatStr = f.seat || generateRandomSeat(f.cabinClass || f.flightClass);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(68, 68, 68); doc.text('Seat : ', c1X, tableY + 24.0);
-        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(f.seat || '-', c1X + 35, tableY + 24.0);
+        doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text(seatStr, c1X + 35, tableY + 24.0);
 
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(68, 68, 68); doc.text('Booking status (1) : ', c1X, tableY + 36.0);

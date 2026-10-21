@@ -4,7 +4,8 @@ import {
     generateChinaAirlinesPdfDoc,
     parseTripScheduleImage,
     parseItinerarySchedule,
-    formatPassengerName
+    formatPassengerName,
+    generateRandomSeat
 } from './china-airlines-converter.js';
 
 export {
@@ -12,7 +13,8 @@ export {
     generateChinaAirlinesPdfDoc,
     parseTripScheduleImage,
     parseItinerarySchedule,
-    formatPassengerName
+    formatPassengerName,
+    generateRandomSeat
 };
 /**
  * AirAsia E-Ticket Itinerary Generator & Converter

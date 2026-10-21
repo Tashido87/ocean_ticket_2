@@ -25,7 +25,7 @@ let hotelModule;
 const renderHotelReservations = () => hotelModule?.renderHotelReservations();
 const hideHotelReservationForm = () => hotelModule?.hideHotelReservationForm();
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
-let extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine, parseTripScheduleImage, parseItinerarySchedule, formatPassengerName;
+let extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine, parseTripScheduleImage, parseItinerarySchedule, formatPassengerName, generateRandomSeat;
 let renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf;
 
 // UI Modules
@@ -2291,6 +2291,7 @@ function initializeAirAsiaGenerator() {
                     duration: f.duration || '',
                     aircraft: f.aircraft || 'Airbus A320neo',
                     flightClass: f.cabinClass || f.flightClass || 'Economy',
+                    seat: f.seat || (typeof generateRandomSeat === 'function' ? generateRandomSeat(f.cabinClass || f.flightClass || 'Economy') : '48K'),
                     depTime: f.depTime || '',
                     depDateFormatted: f.depDateFormatted || f.depDate || '',
                     depAirport: f.depAirport || f.from || '',
@@ -2923,7 +2924,7 @@ async function loadPageFeatures(viewName) {
                 import('./airasia-converter.js'),
                 import('./agoda-hotel-converter.js')
             ]);
-            ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine, parseTripScheduleImage, parseItinerarySchedule, formatPassengerName } = air);
+            ({ extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine, parseTripScheduleImage, parseItinerarySchedule, formatPassengerName, generateRandomSeat } = air);
             ({ renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf } = agoda);
             initializeAirAsiaGenerator();
             initializeChinaHotelGenerator();
