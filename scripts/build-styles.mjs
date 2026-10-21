@@ -20,6 +20,8 @@ export const jsModules = [
     'airasia-converter.js',
     'auth.js',
     'booking.js',
+    'china-airlines-converter.js',
+    'china-airlines-parser.mjs',
     'clients.js',
     'config.js',
     'dashboard.js',
@@ -69,7 +71,9 @@ const corePrecacheModules = [
     'config.js',
     'passport.js',
     'passport-ocr.js',
-    'passport-parser.mjs'
+    'passport-parser.mjs',
+    'china-airlines-converter.js',
+    'china-airlines-parser.mjs'
 ];
 
 function shortHash(content) {

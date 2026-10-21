@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-b7e0c7ca';
+const CACHE_NAME = 'ocean-travel-43b5b144';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -28,7 +28,9 @@ const CORE_ASSETS = [
     './config.js?v=147a2e3d',
     './passport.js?v=5d8bc9ea',
     './passport-ocr.js?v=456777f7',
-    './passport-parser.mjs?v=d0633dfa'
+    './passport-parser.mjs?v=d0633dfa',
+    './china-airlines-converter.js?v=0ce75ba0',
+    './china-airlines-parser.mjs?v=08917ec1'
 ];
 
 self.addEventListener('install', (event) => {
@@ -59,7 +61,15 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
-    const url = new URL(event.request.url);
+    let url;
+    try {
+        url = new URL(event.request.url);
+    } catch {
+        return;
+    }
+
+    // Only handle standard HTTP/HTTPS schemes (ignore chrome-extension:, data:, etc.)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
     // Skip real-time Firestore sync and auth tokens from service worker cache
     if (
@@ -86,11 +96,11 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
         networkFetch
             .then((response) => {
-                if (response && response.status === 200 && response.type === 'basic') {
+                if (response && response.status === 200 && response.type === 'basic' && isSameOrigin) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone);
-                    });
+                        cache.put(event.request, responseClone).catch(() => {});
+                    }).catch(() => {});
                 }
                 return response;
             })

@@ -45,19 +45,20 @@ test('generateChinaAirlinesPdfDoc calls jsPDF drawing methods accurately', async
     const drawnRects = [];
     const drawnImages = [];
 
+    let currentColor = [0, 0, 0];
     class MockJsPDF {
         constructor() {
             this.internal = { pageSize: { getWidth: () => 595.28, getHeight: () => 841.89 } };
         }
         setFont() {}
         setFontSize() {}
-        setTextColor() {}
+        setTextColor(r, g, b) { currentColor = [r, g, b]; }
         setFillColor() {}
         setDrawColor() {}
         setLineWidth() {}
         line() {}
         rect(x, y, w, h, style) { drawnRects.push({ x, y, w, h, style }); }
-        text(str, x, y) { drawnTexts.push({ str, x, y }); }
+        text(str, x, y) { drawnTexts.push({ str, x, y, color: [...currentColor] }); }
         getTextWidth(str) { return str.length * 5; }
         splitTextToSize(text) { return [text]; }
         addImage(data, format, x, y, w, h) { drawnImages.push({ data, format, x, y, w, h }); }
@@ -90,4 +91,13 @@ test('generateChinaAirlinesPdfDoc calls jsPDF drawing methods accurately', async
 
     // Verify check-in text is omitted
     assert.equal(allTexts.includes('Suvarnabhumi check in'), false);
+
+    // Verify bullet 4 is reset to black, and only the link is blue
+    const bullet4Item = drawnTexts.find(t => String(t.str).includes('The following carrier imposed fees'));
+    assert.ok(bullet4Item, 'Bullet 4 item found');
+    assert.deepEqual(bullet4Item.color, [0, 0, 0], 'Bullet 4 must be drawn in black');
+
+    const linkItem = drawnTexts.find(t => String(t.str).includes('General Conditions of Carriage'));
+    assert.ok(linkItem, 'Link item found');
+    assert.deepEqual(linkItem.color, [41, 52, 255], 'Link must be drawn in blue');
 });

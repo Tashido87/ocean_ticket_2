@@ -695,6 +695,11 @@ export async function generateChinaAirlinesPdfDoc(data) {
     doc.setLineWidth(0.6);
     doc.line(linkX, tableY + 1.2, linkX + linkWidth, tableY + 1.2);
 
+    // Reset colors back to black for subsequent elements
+    doc.setTextColor(0, 0, 0);
+    doc.setFillColor(0, 0, 0);
+    doc.setDrawColor(0, 0, 0);
+
     // Bullet 4
     tableY += 11.5;
     doc.rect(marginX + 20, tableY - 4.5, 3.0, 3.0, 'F');
