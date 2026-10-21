@@ -2108,6 +2108,106 @@ function initializeAirAsiaGenerator() {
             if (firstPax && firstPax.value.trim() && typeof formatPassengerName === 'function') {
                 firstPax.value = formatPassengerName(firstPax.value);
             }
+        } else if (selectedAirline === 'China Eastern') {
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot|eva|china airlines/i.test(f.airlineName)) {
+                    f.airlineName = 'China Eastern Airlines';
+                }
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR|BR|CI)/i.test(f.flightNo)) {
+                    f.flightNo = 'MU 562';
+                }
+                if (!f.aircraft) f.aircraft = 'Airbus A350-900';
+                if (!f.flightClass) f.flightClass = 'Economy (Y)';
+            });
+            renderFlightRows(currentFlights);
+            const container = document.getElementById('aa_passengers_list');
+            const firstPax = container?.querySelector('.aa_pax_name_input');
+            if (firstPax && firstPax.value.trim() && typeof formatPassengerName === 'function') {
+                firstPax.value = formatPassengerName(firstPax.value);
+            }
+            if (bagCheckedEl && (!bagCheckedEl.value || bagCheckedEl.value.includes('kg per person'))) {
+                bagCheckedEl.value = '2PC (23KG each)';
+            }
+        } else if (selectedAirline === 'Vietnam Airlines') {
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot|eva|china/i.test(f.airlineName)) {
+                    f.airlineName = 'Vietnam Airlines';
+                }
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR|BR|CI|MU)/i.test(f.flightNo)) {
+                    f.flightNo = 'VN 126';
+                }
+                if (!f.aircraft) f.aircraft = 'Boeing 787-9';
+                if (!f.flightClass) f.flightClass = 'Economy Classic (K)';
+            });
+            renderFlightRows(currentFlights);
+            const container = document.getElementById('aa_passengers_list');
+            const firstPax = container?.querySelector('.aa_pax_name_input');
+            if (firstPax && firstPax.value.trim() && typeof formatPassengerName === 'function') {
+                firstPax.value = formatPassengerName(firstPax.value);
+            }
+            if (bagCheckedEl && (!bagCheckedEl.value || bagCheckedEl.value.includes('kg per person'))) {
+                bagCheckedEl.value = '1PC (23KG)';
+            }
+        } else if (selectedAirline === 'Cathay Pacific') {
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot|eva|china|vietnam/i.test(f.airlineName)) {
+                    f.airlineName = 'Cathay Pacific';
+                }
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR|BR|CI|MU|VN)/i.test(f.flightNo)) {
+                    f.flightNo = 'CX 714';
+                }
+                if (!f.aircraft) f.aircraft = 'Airbus A350-1000';
+                if (!f.flightClass) f.flightClass = 'Economy (K)';
+            });
+            renderFlightRows(currentFlights);
+            const container = document.getElementById('aa_passengers_list');
+            const firstPax = container?.querySelector('.aa_pax_name_input');
+            if (firstPax && firstPax.value.trim() && typeof formatPassengerName === 'function') {
+                firstPax.value = formatPassengerName(firstPax.value);
+            }
+            if (bagCheckedEl && (!bagCheckedEl.value || bagCheckedEl.value.includes('kg per person'))) {
+                bagCheckedEl.value = '2PC (23KG each)';
+            }
+        } else if (selectedAirline === 'Hong Kong Airlines') {
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot|eva|china|vietnam|cathay/i.test(f.airlineName)) {
+                    f.airlineName = 'Hong Kong Airlines';
+                }
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR|BR|CI|MU|VN|CX)/i.test(f.flightNo)) {
+                    f.flightNo = 'HX 264';
+                }
+                if (!f.aircraft) f.aircraft = 'Airbus A330-300';
+                if (!f.flightClass) f.flightClass = 'Economy (E)';
+            });
+            renderFlightRows(currentFlights);
+            const container = document.getElementById('aa_passengers_list');
+            const firstPax = container?.querySelector('.aa_pax_name_input');
+            if (firstPax && firstPax.value.trim() && typeof formatPassengerName === 'function') {
+                firstPax.value = formatPassengerName(firstPax.value);
+            }
+            if (bagCheckedEl && (!bagCheckedEl.value || bagCheckedEl.value.includes('kg per person'))) {
+                bagCheckedEl.value = '20KG / 1PC';
+            }
+        } else if (selectedAirline === 'HK Express') {
+            currentFlights.forEach(f => {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot|eva|china|vietnam|cathay|hong kong airlines/i.test(f.airlineName)) {
+                    f.airlineName = 'HK Express';
+                }
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR|BR|CI|MU|VN|CX|HX)/i.test(f.flightNo)) {
+                    f.flightNo = 'UO 614';
+                }
+                if (!f.aircraft) f.aircraft = 'Airbus A321neo';
+                if (!f.flightClass) f.flightClass = 'Economy (Fun)';
+            });
+            renderFlightRows(currentFlights);
+            const container = document.getElementById('aa_passengers_list');
+            const firstPax = container?.querySelector('.aa_pax_name_input');
+            if (firstPax && firstPax.value.trim() && typeof formatPassengerName === 'function') {
+                firstPax.value = formatPassengerName(firstPax.value);
+            }
+            if (bagCheckedEl && (!bagCheckedEl.value || bagCheckedEl.value.includes('kg per person'))) {
+                bagCheckedEl.value = 'Checked: 20kg';
+            }
         }
         updatePreview();
     });
@@ -2138,6 +2238,21 @@ function initializeAirAsiaGenerator() {
         } else if (selectedA === 'China Airlines') {
             defaultAirlineName = 'CHINA AIRLINES LTD.';
             defaultFlightNo = 'CI 834';
+        } else if (selectedA === 'China Eastern') {
+            defaultAirlineName = 'China Eastern Airlines';
+            defaultFlightNo = 'MU 562';
+        } else if (selectedA === 'Vietnam Airlines') {
+            defaultAirlineName = 'Vietnam Airlines';
+            defaultFlightNo = 'VN 126';
+        } else if (selectedA === 'Cathay Pacific') {
+            defaultAirlineName = 'Cathay Pacific';
+            defaultFlightNo = 'CX 714';
+        } else if (selectedA === 'Hong Kong Airlines') {
+            defaultAirlineName = 'Hong Kong Airlines';
+            defaultFlightNo = 'HX 264';
+        } else if (selectedA === 'HK Express') {
+            defaultAirlineName = 'HK Express';
+            defaultFlightNo = 'UO 614';
         }
 
         const safeAirlineName = (primaryFlight.airlineName && (

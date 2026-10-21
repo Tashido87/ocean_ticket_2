@@ -111,13 +111,21 @@ export function generateBookingRef() {
 }
 
 /**
- * Generate 13-digit China Airlines ticket number (prefix 297)
+ * Generate 13-digit airline ticket number (defaults to China Airlines prefix 297)
  */
-export function generateTicketNumber() {
+export function generateTicketNumber(airline = 'China Airlines') {
     const min = 2000000000;
     const max = 2999999999;
     const serial = Math.floor(min + Math.random() * (max - min));
-    return `297 ${serial}`;
+    let prefix = '297';
+    if (/China Eastern/i.test(airline)) prefix = '781';
+    else if (/Vietnam/i.test(airline)) prefix = '738';
+    else if (/Cathay/i.test(airline)) prefix = '160';
+    else if (/Hong Kong Airlines/i.test(airline)) prefix = '851';
+    else if (/EVA/i.test(airline)) prefix = '695';
+    else if (/Thai/i.test(airline)) prefix = '217';
+    else if (/Singapore/i.test(airline)) prefix = '618';
+    return `${prefix} ${serial}`;
 }
 
 /**
@@ -261,6 +269,21 @@ export function resolveAirportName(codeOrName) {
  */
 export function detectAirlineFromText(text, flightNo = '') {
     const combined = `${flightNo} ${text}`.toUpperCase();
+    if (/\bMU\s*\d/i.test(combined) || /CHINA\s*EASTERN/i.test(combined)) {
+        return 'China Eastern';
+    }
+    if (/\bVN\s*\d/i.test(combined) || /VIETNAM\s*AIR/i.test(combined)) {
+        return 'Vietnam Airlines';
+    }
+    if (/\bCX\s*\d/i.test(combined) || /CATHAY/i.test(combined)) {
+        return 'Cathay Pacific';
+    }
+    if (/\bHX\s*\d/i.test(combined) || /HONG\s*KONG\s*AIRLINES/i.test(combined)) {
+        return 'Hong Kong Airlines';
+    }
+    if (/\bUO\s*\d/i.test(combined) || /HK\s*EXPRESS/i.test(combined)) {
+        return 'HK Express';
+    }
     if (/\bCI\s*\d/i.test(combined) || /CHINA\s*AIRLINES/i.test(combined)) {
         return 'China Airlines';
     }
@@ -290,6 +313,11 @@ export function detectAirlineFromText(text, flightNo = '') {
  */
 export function getAirlineCarrierName(flightNo, defaultName = 'China Airlines') {
     const fn = (flightNo || '').toUpperCase();
+    if (/^MU/i.test(fn)) return 'CHINA EASTERN AIRLINES';
+    if (/^VN/i.test(fn)) return 'VIETNAM AIRLINES';
+    if (/^CX/i.test(fn)) return 'CATHAY PACIFIC AIRWAYS';
+    if (/^HX/i.test(fn)) return 'HONG KONG AIRLINES';
+    if (/^UO/i.test(fn)) return 'HK EXPRESS';
     if (/^CI/i.test(fn)) return 'CHINA AIRLINES LTD.';
     if (/^(AK|FD|QZ|Z2|D7)/i.test(fn)) return 'AirAsia';
     if (/^VJ/i.test(fn)) return 'VietJet Air';
@@ -542,7 +570,7 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
     return {
         passengerName, // Blank by default if not in schedule
         pnr: pnr || generateBookingRef(),
-        ticketNo: ticketNo || generateTicketNumber(),
+        ticketNo: ticketNo || generateTicketNumber(detectedAirline),
         flights,
         detectedAirline
     };

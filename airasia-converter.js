@@ -7,6 +7,19 @@ import {
     formatPassengerName,
     generateRandomSeat
 } from './china-airlines-converter.js';
+import {
+    renderChinaEasternTicketHtml,
+    generateChinaEasternPdfDoc,
+    renderVietnamAirlinesTicketHtml,
+    generateVietnamAirlinesPdfDoc,
+    renderCathayPacificTicketHtml,
+    generateCathayPacificPdfDoc,
+    renderHongKongAirlinesTicketHtml,
+    generateHongKongAirlinesPdfDoc,
+    renderHkExpressTicketHtml,
+    generateHkExpressPdfDoc,
+    getNewAirlineLogoDataUrl
+} from './new-airlines-converter.js';
 
 export {
     renderChinaAirlinesTicketHtml,
@@ -14,7 +27,18 @@ export {
     parseTripScheduleImage,
     parseItinerarySchedule,
     formatPassengerName,
-    generateRandomSeat
+    generateRandomSeat,
+    renderChinaEasternTicketHtml,
+    generateChinaEasternPdfDoc,
+    renderVietnamAirlinesTicketHtml,
+    generateVietnamAirlinesPdfDoc,
+    renderCathayPacificTicketHtml,
+    generateCathayPacificPdfDoc,
+    renderHongKongAirlinesTicketHtml,
+    generateHongKongAirlinesPdfDoc,
+    renderHkExpressTicketHtml,
+    generateHkExpressPdfDoc,
+    getNewAirlineLogoDataUrl
 };
 /**
  * AirAsia E-Ticket Itinerary Generator & Converter
@@ -34,6 +58,9 @@ let cachedScootLogoDataUrl = null;
  * Preload and cache Airline logo as data URL for jsPDF and HTML preview
  */
 export async function getAirlineLogoDataUrl(airline = 'AirAsia') {
+    if (/China Eastern/i.test(airline || '') || /Vietnam/i.test(airline || '') || /Cathay/i.test(airline || '') || /Hong Kong Airlines/i.test(airline || '') || /HK Express/i.test(airline || '')) {
+        return getNewAirlineLogoDataUrl(airline);
+    }
     const isScoot = (airline === 'Scoot') || /scoot|flyscoot|\bTR\b/i.test(airline || '');
     const isEva = (airline === 'EVA Air') || /eva\s*air|\bBR\b/i.test(airline || '');
     const isThai = (airline === 'Thai Airways') || /thai\s*airways/i.test(airline || '');
@@ -3661,6 +3688,21 @@ export async function generateScootPdfDoc(data) {
  */
 export async function generateAirAsiaPdfDoc(data) {
     await loadDocumentLibraries('pdf');
+    if (data.airline === 'China Eastern' || /china\s*eastern|\bMU\s*\d/i.test(data.airlineName || '') || /MU\s*\d/i.test(data.flightNo || '')) {
+        return generateChinaEasternPdfDoc(data);
+    }
+    if (data.airline === 'Vietnam Airlines' || /vietnam\s*air(?:lines)?|\bVN\s*\d/i.test(data.airlineName || '') || /VN\s*\d/i.test(data.flightNo || '')) {
+        return generateVietnamAirlinesPdfDoc(data);
+    }
+    if (data.airline === 'Cathay Pacific' || /cathay(?:\s*pacific)?|\bCX\s*\d/i.test(data.airlineName || '') || /CX\s*\d/i.test(data.flightNo || '')) {
+        return generateCathayPacificPdfDoc(data);
+    }
+    if (data.airline === 'Hong Kong Airlines' || /hong\s*kong\s*air(?:lines)?|\bHX\s*\d/i.test(data.airlineName || '') || /HX\s*\d/i.test(data.flightNo || '')) {
+        return generateHongKongAirlinesPdfDoc(data);
+    }
+    if (data.airline === 'HK Express' || /hk\s*express|\bUO\s*\d/i.test(data.airlineName || '') || /UO\s*\d/i.test(data.flightNo || '')) {
+        return generateHkExpressPdfDoc(data);
+    }
     if (data.airline === 'China Airlines' || /china\s*airlines|\bCI\s*\d/i.test(data.airlineName || '') || /CI\s*\d/i.test(data.flightNo || '')) {
         return generateChinaAirlinesPdfDoc(data);
     }
@@ -4319,10 +4361,27 @@ export function formatTicketDateShort(dateVal) {
 }
 
 export function buildTicketDownloadFilename(data, ext = 'pdf') {
+    const cleanExt = ext.replace(/^\./, '');
+    const pnr = (data?.pnr || data?.bookingNo || 'TICKET').trim().toUpperCase();
+    const rawPax = (data?.passengerName || (data?.passengers && data?.passengers[0]?.name) || 'RECEIPT').replace(/[^a-zA-Z0-9]/g, '_');
+
+    if (data?.airline === 'China Eastern' || /china\s*eastern|\bMU\s*\d/i.test(data?.airlineName || '') || /MU\s*\d/i.test(data?.flightNo || '')) {
+        return `ChinaEastern_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    }
+    if (data?.airline === 'Vietnam Airlines' || /vietnam\s*air(?:lines)?|\bVN\s*\d/i.test(data?.airlineName || '') || /VN\s*\d/i.test(data?.flightNo || '')) {
+        return `VietnamAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    }
+    if (data?.airline === 'Cathay Pacific' || /cathay(?:\s*pacific)?|\bCX\s*\d/i.test(data?.airlineName || '') || /CX\s*\d/i.test(data?.flightNo || '')) {
+        return `CathayPacific_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    }
+    if (data?.airline === 'Hong Kong Airlines' || /hong\s*kong\s*air(?:lines)?|\bHX\s*\d/i.test(data?.airlineName || '') || /HX\s*\d/i.test(data?.flightNo || '')) {
+        return `HongKongAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    }
+    if (data?.airline === 'HK Express' || /hk\s*express|\bUO\s*\d/i.test(data?.airlineName || '') || /UO\s*\d/i.test(data?.flightNo || '')) {
+        return `HKExpress_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    }
     if (data?.airline === 'China Airlines' || /CI\s*\d/i.test(data?.flightNo || '')) {
-        const pnr = (data.pnr || data.bookingNo || 'TICKET').trim().toUpperCase();
-        const rawPax = (data.passengerName || (data.passengers && data.passengers[0]?.name) || 'RECEIPT').replace(/[^a-zA-Z0-9]/g, '_');
-        return `ChinaAirlines_ETicket_${pnr}_${rawPax}.${ext.replace(/^\./, '')}`;
+        return `ChinaAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
     }
     const sector = buildSectorCode(data);
     const rawDate = (data?.flights && (data.flights[0]?.depDateFormatted || data.flights[0]?.depDate || data.flights[0]?.date)) ||
@@ -4332,7 +4391,6 @@ export function buildTicketDownloadFilename(data, ext = 'pdf') {
         ? data.passengers.length
         : (parseInt(data?.passengerCount, 10) || 1);
     const paxStr = `${paxCount}Pax`;
-    const cleanExt = ext.replace(/^\./, '');
     return `${sector}_${dateStr}_${paxStr}.${cleanExt}`;
 }
 
@@ -5156,6 +5214,21 @@ export function renderScootTicketHtml(data) {
  * Generate preview HTML markup that renders identically to the PDF
  */
 export function renderAirAsiaTicketHtml(data) {
+    if (data.airline === 'China Eastern' || /china\s*eastern|\bMU\s*\d/i.test(data.airlineName || '') || /MU\s*\d/i.test(data.flightNo || '')) {
+        return renderChinaEasternTicketHtml(data);
+    }
+    if (data.airline === 'Vietnam Airlines' || /vietnam\s*air(?:lines)?|\bVN\s*\d/i.test(data.airlineName || '') || /VN\s*\d/i.test(data.flightNo || '')) {
+        return renderVietnamAirlinesTicketHtml(data);
+    }
+    if (data.airline === 'Cathay Pacific' || /cathay(?:\s*pacific)?|\bCX\s*\d/i.test(data.airlineName || '') || /CX\s*\d/i.test(data.flightNo || '')) {
+        return renderCathayPacificTicketHtml(data);
+    }
+    if (data.airline === 'Hong Kong Airlines' || /hong\s*kong\s*air(?:lines)?|\bHX\s*\d/i.test(data.airlineName || '') || /HX\s*\d/i.test(data.flightNo || '')) {
+        return renderHongKongAirlinesTicketHtml(data);
+    }
+    if (data.airline === 'HK Express' || /hk\s*express|\bUO\s*\d/i.test(data.airlineName || '') || /UO\s*\d/i.test(data.flightNo || '')) {
+        return renderHkExpressTicketHtml(data);
+    }
     if (data.airline === 'China Airlines' || /china\s*airlines|\bCI\s*\d/i.test(data.airlineName || '') || /CI\s*\d/i.test(data.flightNo || '')) {
         return renderChinaAirlinesTicketHtml(data);
     }
