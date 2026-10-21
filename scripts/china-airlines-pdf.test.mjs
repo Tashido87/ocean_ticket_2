@@ -20,8 +20,12 @@ test('renderChinaAirlinesTicketHtml returns valid HTML with authentic layout', (
     assert.match(html, /FEYF43/);
     assert.match(html, /297 2425301246/);
     assert.match(html, /CI834/);
-    assert.match(html, /BANGKOK SUVARNABHUMI INTL/);
-    assert.match(html, /TAIPEI TAIWAN TAOYUAN INTL/);
+    assert.match(html, /<strong[^>]*>BANGKOK<\/strong>\s*<span[^>]*>SUVARNABHUMI INTL<\/span>/);
+    assert.match(html, /<strong[^>]*>TAIPEI<\/strong>\s*<span[^>]*>TAIWAN TAOYUAN INTL<\/span>/);
+    assert.match(html, /Ticket number:\s*<\/span>\s*<span[^>]*font-weight:\s*normal[^>]*>297 2425301246<\/span>/);
+    assert.match(html, /font-weight:\s*bold;\s*font-style:\s*italic;[^>]*>\s*At check-in, you must show a photo ID\./);
+    assert.match(html, /<strong[^>]*>\(1\) OK = confirmed \(2\) NVB = Not valid before \(3\) NVA = Not valid after \(4\)<\/strong>/);
+    assert.match(html, /<a href="https:\/\/www\.china-airlines\.com"[^>]*color:\s*#0000ff;\s*text-decoration:\s*underline;[^>]*>General Conditions of Carriage\.<\/a>/);
     assert.match(html, /Duration : <\/span><strong[^>]*>03:40/);
     assert.match(html, /ECOMMERCE, NO\. 1, Q HOUSE LUMPINI/);
     assert.match(html, /ELECTRONIC TICKET REMARKS/);

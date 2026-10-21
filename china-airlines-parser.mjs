@@ -43,6 +43,34 @@ const MONTH_FULL_NAMES = [
 ];
 
 /**
+ * Separate City Name from Airport Name
+ * Known multi-word cities or first word as City (e.g. BANGKOK SUVARNABHUMI INTL -> city: 'BANGKOK', airport: 'SUVARNABHUMI INTL')
+ */
+export function splitCityAndAirport(name) {
+    if (!name) return { city: '', airport: '' };
+    const str = String(name).trim();
+    const multiWordCities = [
+        'HO CHI MINH CITY', 'HO CHI MINH', 'KUALA LUMPUR', 'CHIANG MAI',
+        'NEW YORK', 'SAN FRANCISCO', 'LOS ANGELES', 'HONG KONG',
+        'DA NANG', 'PHNOM PENH', 'SIEM REAP', 'DON MUEANG', 'BANDAR SERI BEGAWAN'
+    ];
+    for (const mwc of multiWordCities) {
+        if (str.toUpperCase().startsWith(mwc)) {
+            const airport = str.slice(mwc.length).trim();
+            return { city: str.slice(0, mwc.length), airport };
+        }
+    }
+    const spaceIdx = str.indexOf(' ');
+    if (spaceIdx === -1) {
+        return { city: str, airport: '' };
+    }
+    return {
+        city: str.slice(0, spaceIdx),
+        airport: str.slice(spaceIdx + 1).trim()
+    };
+}
+
+/**
  * Format passenger name ensuring (ADT) is attached for adults
  */
 export function formatPassengerName(name) {

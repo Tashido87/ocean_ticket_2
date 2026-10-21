@@ -11,7 +11,8 @@ import {
     calculateTicketValidity,
     normalizeDuration,
     resolveAirportName,
-    parseItinerarySchedule
+    parseItinerarySchedule,
+    splitCityAndAirport
 } from './china-airlines-parser.mjs';
 
 export {
@@ -25,7 +26,8 @@ export {
     calculateTicketValidity,
     normalizeDuration,
     resolveAirportName,
-    parseItinerarySchedule
+    parseItinerarySchedule,
+    splitCityAndAirport
 };
 
 let cachedLogoDataUrl = null;
@@ -148,7 +150,8 @@ export function createDefaultChinaAirlinesData() {
                 depDate: flightDateStr,
                 arrTime: '15:30',
                 arrDate: flightDateStr,
-                cabinClass: 'THSHBZB, D',
+                cabinClass: 'Economy, Y',
+                flightClass: 'Economy, Y',
                 seat: generateRandomSeat('Economy'),
                 operatedBy: 'CHINA AIRLINES LTD.',
                 marketedBy: 'CHINA AIRLINES LTD.',
@@ -183,8 +186,11 @@ export function renderChinaAirlinesTicketHtml(data) {
         : createDefaultChinaAirlinesData().flights;
 
     const flightCardsHtml = rawFlights.map((f, idx) => {
-        const fromText = escapeHtml(f.from || f.depAirport || '');
-        const toText = escapeHtml(f.to || f.arrAirport || '');
+        const fromParts = splitCityAndAirport(f.from || f.depAirport || '');
+        const toParts = splitCityAndAirport(f.to || f.arrAirport || '');
+        const fromCityHtml = `<strong style="color:#000000; font-weight:bold;">${escapeHtml(fromParts.city)}</strong>${fromParts.airport ? ` <span style="font-weight:normal; color:#000000;">${escapeHtml(fromParts.airport)}</span>` : ''}`;
+        const toCityHtml = `<strong style="color:#000000; font-weight:bold;">${escapeHtml(toParts.city)}</strong>${toParts.airport ? ` <span style="font-weight:normal; color:#000000;">${escapeHtml(toParts.airport)}</span>` : ''}`;
+
         const arrTerminalText = f.arrTerminal ? `<div style="font-size:10pt; font-weight:bold; margin-top:2px; color:#000000;">Terminal: ${escapeHtml(f.arrTerminal)}</div>` : '';
         const depTerminalText = f.depTerminal ? `<div style="font-size:10pt; font-weight:bold; margin-top:2px; color:#000000;">Terminal: ${escapeHtml(f.depTerminal)}</div>` : '';
         const flightNoText = escapeHtml(f.flightNo || 'CI834');
@@ -208,22 +214,22 @@ export function renderChinaAirlinesTicketHtml(data) {
         return `
         <div class="ci-flight-block" style="margin-bottom:12px; border-bottom:1.4pt solid #2d73b9;">
             <!-- Grey Header Flight Row -->
-            <div style="background:#ebebeb; padding:8px 10px; display:grid; grid-template-columns: 160px 150px 50px 75px 75px 1fr; gap:6px; font-size:10pt; font-weight:bold; color:#000000; align-items:start; line-height:1.25;">
+            <div style="background:#ebebeb; padding:8px 10px; display:grid; grid-template-columns: 160px 150px 50px 75px 75px 1fr; gap:6px; font-size:10pt; color:#000000; align-items:start; line-height:1.25;">
                 <div>
-                    <div>${fromText}</div>
+                    <div>${fromCityHtml}</div>
                     ${depTerminalText}
                 </div>
                 <div>
-                    <div>${toText}</div>
+                    <div>${toCityHtml}</div>
                     ${arrTerminalText}
                 </div>
-                <div>${flightNoText}</div>
+                <div style="font-weight:bold;">${flightNoText}</div>
                 <div>
-                    <div>${depTimeText}</div>
+                    <div style="font-weight:bold;">${depTimeText}</div>
                     <div style="font-size:9.5pt; font-weight:bold;">${depDateText}</div>
                 </div>
                 <div>
-                    <div>${arrTimeText}</div>
+                    <div style="font-weight:bold;">${arrTimeText}</div>
                     <div style="font-size:9.5pt; font-weight:bold;">${arrDateText}</div>
                 </div>
                 <div style="font-size:9pt; font-weight:normal; color:#444444;">
@@ -276,8 +282,8 @@ export function renderChinaAirlinesTicketHtml(data) {
                     <strong style="color:#000000; font-weight:bold;">${escapeHtml(pnr)}</strong>
                 </div>
                 <div style="font-size:11pt; line-height:1.2;">
-                    <span style="color:#434343;">Ticket number : </span>
-                    <strong style="color:#000000; font-weight:bold;">${escapeHtml(ticketNo)}</strong>
+                    <span style="color:#434343;">Ticket number: </span>
+                    <span style="color:#000000; font-weight:normal;">${escapeHtml(ticketNo)}</span>
                 </div>
             </div>
 
@@ -306,7 +312,7 @@ export function renderChinaAirlinesTicketHtml(data) {
         </div>
 
         <!-- Notice -->
-        <div style="font-size:8.8pt; color:#000000; margin-bottom:14pt; padding-left:1pt;">
+        <div style="font-size:8.8pt; color:#000000; margin-bottom:14pt; padding-left:1pt; font-weight:bold; font-style:italic;">
             At check-in, you must show a photo ID.
         </div>
 
@@ -325,7 +331,7 @@ export function renderChinaAirlinesTicketHtml(data) {
 
         <!-- Footnotes -->
         <div style="font-size:7.8pt; color:#000000; line-height:1.35; margin-bottom:14pt; padding-left:1pt;">
-            (1) OK = confirmed (2) NVB = Not valid before (3) NVA = Not valid after (4) Each passenger can check in a specific amount of baggage at no extra cost as indicated above in the column baggage.
+            <strong style="font-weight:bold;">(1) OK = confirmed (2) NVB = Not valid before (3) NVA = Not valid after (4)</strong> Each passenger can check in a specific amount of baggage at no extra cost as indicated above in the column baggage.
         </div>
 
         <!-- Electronic Ticket Remarks -->
@@ -345,7 +351,7 @@ export function renderChinaAirlinesTicketHtml(data) {
                 </div>
                 <div style="position:relative; margin-bottom:2.5pt;">
                     <span style="position:absolute; left:-14pt; font-size:6pt; top:1pt;">&#9632;</span>
-                    For details of ticket validity, please refer to the <a href="https://www.china-airlines.com" target="_blank" style="color:#0000ff; text-decoration:underline;">Article 3.2</a> of General Conditions of Carriage.
+                    For details of ticket validity, please refer to the Article 3.2 of <a href="https://www.china-airlines.com" target="_blank" style="color:#0000ff; text-decoration:underline;">General Conditions of Carriage.</a>
                 </div>
                 <div style="position:relative; margin-bottom:2.5pt;">
                     <span style="position:absolute; left:-14pt; font-size:6pt; top:1pt;">&#9632;</span>
@@ -357,6 +363,39 @@ export function renderChinaAirlinesTicketHtml(data) {
 
     </div>
     `;
+}
+
+/**
+ * Render City in Bold and Airport Name in Normal Weight for PDF
+ */
+function renderCityAirportPdf(doc, fullText, startX, startY, maxWidth = 150) {
+    const { city, airport } = splitCityAndAirport(fullText);
+    let curX = startX;
+    let curY = startY;
+    const lineHeight = 11.0;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.0);
+    doc.setTextColor(0, 0, 0);
+    doc.text(city, curX, curY);
+    curX += doc.getTextWidth(city + ' ');
+
+    if (!airport) return curY;
+
+    doc.setFont('helvetica', 'normal');
+    const words = airport.split(/\s+/).filter(Boolean);
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const wordWidth = doc.getTextWidth(word);
+        const spaceWidth = doc.getTextWidth(' ');
+        if (curX + wordWidth > startX + maxWidth && curX > startX) {
+            curY += lineHeight;
+            curX = startX;
+        }
+        doc.text(word, curX, curY);
+        curX += wordWidth + spaceWidth;
+    }
+    return curY;
 }
 
 /**
@@ -412,9 +451,9 @@ export async function generateChinaAirlinesPdfDoc(data) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11.0);
     doc.setTextColor(67, 67, 67);
-    doc.text('Ticket number : ', marginX, 162.5);
-    const tktLabelWidth = doc.getTextWidth('Ticket number : ');
-    doc.setFont('helvetica', 'bold');
+    doc.text('Ticket number: ', marginX, 162.5);
+    const tktLabelWidth = doc.getTextWidth('Ticket number: ');
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
     doc.text(ticketNo, marginX + tktLabelWidth, 162.5);
 
@@ -452,7 +491,7 @@ export async function generateChinaAirlinesPdfDoc(data) {
     doc.text('ELECTRONIC TICKET RECEIPT', marginX, bannerY + 21.0);
 
     // 5. Notice
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bolditalic');
     doc.setFontSize(8.8);
     doc.setTextColor(0, 0, 0);
     doc.text('At check-in, you must show a photo ID.', marginX, bannerY + 44.0);
@@ -491,27 +530,26 @@ export async function generateChinaAirlinesPdfDoc(data) {
         doc.setFontSize(10.0);
         doc.setTextColor(0, 0, 0);
 
-        // From
-        const fromLines = doc.splitTextToSize(f.from || f.depAirport || '', 150);
-        doc.text(fromLines, marginX + 5, tableY + 15.0);
+        // From (only city is bold)
+        renderCityAirportPdf(doc, f.from || f.depAirport || '', marginX + 5, tableY + 15.0, 150);
 
-        // To + Terminal
-        const toLines = doc.splitTextToSize(f.to || f.arrAirport || '', 145);
-        doc.text(toLines, marginX + 160, tableY + 15.0);
+        // To + Terminal (only city is bold)
+        const toEndY = renderCityAirportPdf(doc, f.to || f.arrAirport || '', marginX + 160, tableY + 15.0, 145);
         const term = f.arrTerminal || '';
         if (term) {
-            const arrTermY = tableY + 15.0 + (toLines.length * 11.0);
-            doc.text(`Terminal: ${term}`, marginX + 160, arrTermY);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Terminal: ${term}`, marginX + 160, toEndY + 11.0);
         }
 
-        // Flight
+        // Flight (bold)
+        doc.setFont('helvetica', 'bold');
         doc.text(f.flightNo || 'CI834', marginX + 310, tableY + 15.0);
 
-        // Departure
+        // Departure (bold)
         doc.text(f.depTime || '10:50', marginX + 360, tableY + 15.0);
         doc.text(f.depDate || f.depDateFormatted || '', marginX + 360, tableY + 28.0);
 
-        // Arrival
+        // Arrival (bold)
         doc.text(f.arrTime || '15:30', marginX + 430, tableY + 15.0);
         doc.text(f.arrDate || f.arrDateFormatted || f.depDate || f.depDateFormatted || '', marginX + 430, tableY + 28.0);
 
@@ -581,13 +619,19 @@ export async function generateChinaAirlinesPdfDoc(data) {
 
     // 8. Footnotes
     tableY += 6.0;
-    doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.8);
+    const fnBoldPart = '(1) OK = confirmed (2) NVB = Not valid before (3) NVA = Not valid after (4) ';
+    const fnNormalPart1 = 'Each passenger can check in a specific amount of baggage at no extra';
+    const fnNormalPart2 = 'cost as indicated above in the column baggage.';
+
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    const noteLine1 = '(1) OK = confirmed (2) NVB = Not valid before (3) NVA = Not valid after (4) Each passenger can check in a specific amount of baggage at no extra';
-    const noteLine2 = 'cost as indicated above in the column baggage.';
-    doc.text(noteLine1, marginX, tableY);
-    doc.text(noteLine2, marginX, tableY + 11.0);
+    doc.text(fnBoldPart, marginX, tableY);
+
+    const boldPartWidth = doc.getTextWidth(fnBoldPart);
+    doc.setFont('helvetica', 'normal');
+    doc.text(fnNormalPart1, marginX + boldPartWidth, tableY);
+    doc.text(fnNormalPart2, marginX, tableY + 11.0);
 
     tableY += 26.0;
 
@@ -611,10 +655,22 @@ export async function generateChinaAirlinesPdfDoc(data) {
     doc.rect(marginX + 20, tableY - 4.5, 3.0, 3.0, 'F');
     doc.text("The name field on this e-ticket receipt is in the order of the passenger's passport: 1. Family name 2. Given name 3. Title.", marginX + 30, tableY);
 
-    // Bullet 3
+    // Bullet 3 (General Conditions of Carriage. is blue and underline)
     tableY += 11.5;
     doc.rect(marginX + 20, tableY - 4.5, 3.0, 3.0, 'F');
-    doc.text('For details of ticket validity, please refer to the Article 3.2 of General Conditions of Carriage.', marginX + 30, tableY);
+    const b3Prefix = 'For details of ticket validity, please refer to the Article 3.2 of ';
+    const b3Link = 'General Conditions of Carriage.';
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.text(b3Prefix, marginX + 30, tableY);
+    const b3PrefixWidth = doc.getTextWidth(b3Prefix);
+    const linkX = marginX + 30 + b3PrefixWidth;
+    doc.setTextColor(41, 52, 255);
+    doc.text(b3Link, linkX, tableY);
+    const linkWidth = doc.getTextWidth(b3Link);
+    doc.setDrawColor(41, 52, 255);
+    doc.setLineWidth(0.6);
+    doc.line(linkX, tableY + 1.2, linkX + linkWidth, tableY + 1.2);
 
     // Bullet 4
     tableY += 11.5;
