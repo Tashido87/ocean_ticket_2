@@ -1975,10 +1975,10 @@ function initializeAirAsiaGenerator() {
                 checkinEl.value = '(SIN) 1 Nov 2026, 7:00 AM';
             }
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|vietjet|thai|singapore|eva/i.test(f.airlineName)) {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|eva|china|vietnam|cathay|hong kong|hk express/i.test(f.airlineName)) {
                     f.airlineName = 'Scoot';
                 }
-                if (!f.flightNo || /^(AK|VJ|TG|SQ|BR)/i.test(f.flightNo)) {
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|BR|CI|MU|VN|CX|HX|UO)/i.test(f.flightNo)) {
                     f.flightNo = 'TR 001';
                 }
                 if (!f.duration) f.duration = '2h 30min, Non-Stop';
@@ -2003,10 +2003,10 @@ function initializeAirAsiaGenerator() {
                 checkinEl.value = '(TPE) 1 Nov 2026, 6:25 AM';
             }
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot/i.test(f.airlineName)) {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot|china|vietnam|cathay|hong kong|hk express/i.test(f.airlineName)) {
                     f.airlineName = 'EVA Air';
                 }
-                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR)/i.test(f.flightNo)) {
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR|CI|MU|VN|CX|HX|UO)/i.test(f.flightNo)) {
                     f.flightNo = 'BR 001';
                 }
                 if (!f.duration) f.duration = '3h 40min, Non-Stop';
@@ -2031,10 +2031,10 @@ function initializeAirAsiaGenerator() {
                 checkinEl.value = '(SIN) 1 Nov 2026, 6:00 AM';
             }
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|vietjet|thai|scoot/i.test(f.airlineName)) {
+                if (!f.airlineName || /airasia|vietjet|thai|scoot|eva|china|vietnam|cathay|hong kong|hk express/i.test(f.airlineName)) {
                     f.airlineName = 'Singapore Airlines';
                 }
-                if (!f.flightNo || /^(AK|VJ|TG|TR)/i.test(f.flightNo)) {
+                if (!f.flightNo || /^(AK|VJ|TG|TR|BR|CI|MU|VN|CX|HX|UO)/i.test(f.flightNo)) {
                     f.flightNo = 'SQ 001';
                 }
                 if (!f.duration) f.duration = '13h 30min, Non-Stop';
@@ -2059,10 +2059,10 @@ function initializeAirAsiaGenerator() {
                 checkinEl.value = '(BKK) 29 Sep 2026, 9:45 PM';
             }
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|vietjet|singapore|scoot/i.test(f.airlineName)) {
+                if (!f.airlineName || /airasia|vietjet|singapore|scoot|eva|china|vietnam|cathay|hong kong|hk express/i.test(f.airlineName)) {
                     f.airlineName = 'Thai Airways International';
                 }
-                if (!f.flightNo || /^(AK|VJ|SQ|TR)/i.test(f.flightNo)) {
+                if (!f.flightNo || /^(AK|VJ|SQ|TR|BR|CI|MU|VN|CX|HX|UO)/i.test(f.flightNo)) {
                     f.flightNo = 'TG 910';
                 }
                 if (!f.duration) f.duration = '12h 30min, Non-Stop';
@@ -2083,22 +2083,22 @@ function initializeAirAsiaGenerator() {
             renderFlightRows(currentFlights);
         } else if (selectedAirline === 'VietJet Air') {
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|thai|singapore|scoot/i.test(f.airlineName)) f.airlineName = 'VietJet Air';
-                if (!f.flightNo || /^(AK|TG|SQ|TR)/i.test(f.flightNo)) f.flightNo = 'VJ';
+                if (!f.airlineName || /airasia|thai|singapore|scoot|eva|china|vietnam|cathay|hong kong|hk express/i.test(f.airlineName)) f.airlineName = 'VietJet Air';
+                if (!f.flightNo || /^(AK|TG|SQ|TR|BR|CI|MU|VN|CX|HX|UO)/i.test(f.flightNo)) f.flightNo = 'VJ';
             });
             renderFlightRows(currentFlights);
         } else if (selectedAirline === 'AirAsia') {
             currentFlights.forEach(f => {
-                if (!f.airlineName || /vietjet|thai|singapore|scoot|china/i.test(f.airlineName)) f.airlineName = 'AirAsia Berhad';
-                if (!f.flightNo || /^(VJ|TG|SQ|TR|CI)/i.test(f.flightNo)) f.flightNo = 'AK';
+                if (!f.airlineName || /vietjet|thai|singapore|scoot|eva|china|vietnam|cathay|hong kong|hk express/i.test(f.airlineName)) f.airlineName = 'AirAsia Berhad';
+                if (!f.flightNo || /^(VJ|TG|SQ|TR|BR|CI|MU|VN|CX|HX|UO)/i.test(f.flightNo)) f.flightNo = 'AK';
             });
             renderFlightRows(currentFlights);
         } else if (selectedAirline === 'China Airlines') {
             currentFlights.forEach(f => {
-                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot|eva/i.test(f.airlineName)) {
+                if (!f.airlineName || /airasia|vietjet|thai|singapore|scoot|eva|china eastern|vietnam|cathay|hong kong|hk express/i.test(f.airlineName)) {
                     f.airlineName = 'CHINA AIRLINES LTD.';
                 }
-                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR|BR)/i.test(f.flightNo)) {
+                if (!f.flightNo || /^(AK|VJ|TG|SQ|TR|BR|MU|VN|CX|HX|UO)/i.test(f.flightNo)) {
                     f.flightNo = 'CI 834';
                 }
             });
@@ -2255,25 +2255,47 @@ function initializeAirAsiaGenerator() {
             defaultFlightNo = 'UO 614';
         }
 
-        const safeAirlineName = (primaryFlight.airlineName && (
-            (selectedA === 'Scoot' && !/airasia|vietjet|thai|singapore|eva|china/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'EVA Air' && !/airasia|vietjet|thai|singapore|scoot|china/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'Singapore Airlines' && !/airasia|vietjet|thai|eva|scoot|china/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'Thai Airways' && !/airasia|vietjet|singapore|eva|scoot|china/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'VietJet Air' && !/airasia|thai|singapore|eva|scoot|china/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'China Airlines' && !/airasia|vietjet|thai|singapore|eva|scoot/i.test(primaryFlight.airlineName)) ||
-            (selectedA === 'AirAsia' && !/vietjet|thai|singapore|eva|scoot|china/i.test(primaryFlight.airlineName))
-        )) ? primaryFlight.airlineName : defaultAirlineName;
+        const isMismatchedAirlineName = (an, targetAirline) => {
+            if (!an) return true;
+            if (targetAirline === 'AirAsia' && !/airasia/i.test(an)) return /vietjet|thai|singapore|scoot|eva|china|vietnam|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'VietJet Air' && !/vietjet/i.test(an)) return /airasia|thai|singapore|scoot|eva|china|vietnam|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'Thai Airways' && !/thai/i.test(an)) return /airasia|vietjet|singapore|scoot|eva|china|vietnam|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'Singapore Airlines' && !/singapore/i.test(an)) return /airasia|vietjet|thai|scoot|eva|china|vietnam|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'EVA Air' && !/eva/i.test(an)) return /airasia|vietjet|thai|singapore|scoot|china|vietnam|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'Scoot' && !/scoot/i.test(an)) return /airasia|vietjet|thai|singapore|eva|china|vietnam|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'China Airlines' && !/china airlines/i.test(an)) return /airasia|vietjet|thai|singapore|scoot|eva|china eastern|vietnam|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'China Eastern' && !/china eastern/i.test(an)) return /airasia|vietjet|thai|singapore|scoot|eva|china airlines|vietnam|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'Vietnam Airlines' && !/vietnam/i.test(an)) return /airasia|vietjet|thai|singapore|scoot|eva|china|cathay|hong kong|hk express/i.test(an);
+            if (targetAirline === 'Cathay Pacific' && !/cathay/i.test(an)) return /airasia|vietjet|thai|singapore|scoot|eva|china|vietnam|hong kong|hk express/i.test(an);
+            if (targetAirline === 'Hong Kong Airlines' && !/hong kong airlines/i.test(an)) return /airasia|vietjet|thai|singapore|scoot|eva|china|vietnam|cathay|hk express/i.test(an);
+            if (targetAirline === 'HK Express' && !/hk express/i.test(an)) return /airasia|vietjet|thai|singapore|scoot|eva|china|vietnam|cathay|hong kong airlines/i.test(an);
+            return false;
+        };
 
-        const safeFlightNo = (primaryFlight.flightNo && (
-            (selectedA === 'Scoot' && !/^(AK|VJ|TG|SQ|BR|CI)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'EVA Air' && !/^(AK|VJ|TG|SQ|TR|CI)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'Singapore Airlines' && !/^(AK|VJ|TG|BR|TR|CI)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'Thai Airways' && !/^(AK|VJ|SQ|BR|TR|CI)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'VietJet Air' && !/^(AK|TG|SQ|BR|TR|CI)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'China Airlines' && !/^(AK|VJ|TG|SQ|BR|TR)/i.test(primaryFlight.flightNo)) ||
-            (selectedA === 'AirAsia' && !/^(VJ|TG|SQ|BR|TR|CI)/i.test(primaryFlight.flightNo))
-        )) ? primaryFlight.flightNo : defaultFlightNo;
+        const isMismatchedFlightNo = (fn, targetAirline) => {
+            if (!fn) return true;
+            if (targetAirline === 'AirAsia' && !/^AK/i.test(fn)) return /^(VJ|TG|SQ|TR|BR|CI|MU|VN|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'VietJet Air' && !/^VJ/i.test(fn)) return /^(AK|TG|SQ|TR|BR|CI|MU|VN|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'Thai Airways' && !/^TG/i.test(fn)) return /^(AK|VJ|SQ|TR|BR|CI|MU|VN|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'Singapore Airlines' && !/^SQ/i.test(fn)) return /^(AK|VJ|TG|TR|BR|CI|MU|VN|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'EVA Air' && !/^BR/i.test(fn)) return /^(AK|VJ|TG|SQ|TR|CI|MU|VN|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'Scoot' && !/^TR/i.test(fn)) return /^(AK|VJ|TG|SQ|BR|CI|MU|VN|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'China Airlines' && !/^CI/i.test(fn)) return /^(AK|VJ|TG|SQ|TR|BR|MU|VN|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'China Eastern' && !/^MU/i.test(fn)) return /^(AK|VJ|TG|SQ|TR|BR|CI|VN|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'Vietnam Airlines' && !/^VN/i.test(fn)) return /^(AK|VJ|TG|SQ|TR|BR|CI|MU|CX|HX|UO)/i.test(fn);
+            if (targetAirline === 'Cathay Pacific' && !/^CX/i.test(fn)) return /^(AK|VJ|TG|SQ|TR|BR|CI|MU|VN|HX|UO)/i.test(fn);
+            if (targetAirline === 'Hong Kong Airlines' && !/^HX/i.test(fn)) return /^(AK|VJ|TG|SQ|TR|BR|CI|MU|VN|CX|UO)/i.test(fn);
+            if (targetAirline === 'HK Express' && !/^UO/i.test(fn)) return /^(AK|VJ|TG|SQ|TR|BR|CI|MU|VN|CX|HX)/i.test(fn);
+            return false;
+        };
+
+        const safeAirlineName = (primaryFlight.airlineName && !isMismatchedAirlineName(primaryFlight.airlineName, selectedA))
+            ? primaryFlight.airlineName
+            : defaultAirlineName;
+
+        const safeFlightNo = (primaryFlight.flightNo && !isMismatchedFlightNo(primaryFlight.flightNo, selectedA))
+            ? primaryFlight.flightNo
+            : defaultFlightNo;
 
         const formPnr = (document.getElementById('aa_pnr')?.value || '').trim().toUpperCase();
         const sectorPnrs = [];

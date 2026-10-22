@@ -3686,42 +3686,64 @@ export async function generateScootPdfDoc(data) {
 /**
  * Generate native vector jsPDF document matching the exact official template
  */
+/**
+ * Resolve effective airline from explicit data.airline or auto-detection fallback
+ */
+export function resolveAirline(data) {
+    const explicit = (data?.airline || '').trim();
+    if (explicit) {
+        if (/China Eastern/i.test(explicit)) return 'China Eastern';
+        if (/Vietnam Airlines/i.test(explicit)) return 'Vietnam Airlines';
+        if (/Cathay Pacific/i.test(explicit)) return 'Cathay Pacific';
+        if (/Hong Kong Airlines/i.test(explicit)) return 'Hong Kong Airlines';
+        if (/HK Express/i.test(explicit)) return 'HK Express';
+        if (/China Airlines/i.test(explicit)) return 'China Airlines';
+        if (/Scoot/i.test(explicit)) return 'Scoot';
+        if (/EVA Air/i.test(explicit)) return 'EVA Air';
+        if (/Singapore Airlines/i.test(explicit)) return 'Singapore Airlines';
+        if (/Thai Airways/i.test(explicit)) return 'Thai Airways';
+        if (/VietJet/i.test(explicit)) return 'VietJet Air';
+        if (/AirAsia/i.test(explicit)) return 'AirAsia';
+    }
+
+    // Auto-detection fallback ONLY when data.airline is not explicitly specified
+    const sample = `${data?.airlineName || ''} ${data?.flightNo || ''} ${data?.flights?.[0]?.airlineName || ''} ${data?.flights?.[0]?.flightNo || ''}`;
+    if (/china\s*eastern|\bMU\s*\d/i.test(sample)) return 'China Eastern';
+    if (/vietnam\s*air(?:lines)?|\bVN\s*\d/i.test(sample)) return 'Vietnam Airlines';
+    if (/cathay(?:\s*pacific)?|\bCX\s*\d/i.test(sample)) return 'Cathay Pacific';
+    if (/hong\s*kong\s*air(?:lines)?|\bHX\s*\d/i.test(sample)) return 'Hong Kong Airlines';
+    if (/hk\s*express|\bUO\s*\d/i.test(sample)) return 'HK Express';
+    if (/china\s*airlines|\bCI\s*\d/i.test(sample)) return 'China Airlines';
+    if (/scoot|flyscoot|\bTR\s*\d/i.test(sample)) return 'Scoot';
+    if (/eva\s*air|\bBR\s*\d/i.test(sample)) return 'EVA Air';
+    if (/singapore\s*air(?:lines)?|\bSQ\s*\d/i.test(sample)) return 'Singapore Airlines';
+    if (/thai\s*airways|\bTG\s*\d/i.test(sample)) return 'Thai Airways';
+    if (/vietjet|\bVJ\s*\d/i.test(sample)) return 'VietJet Air';
+
+    return 'AirAsia';
+}
+
+/**
+ * Generate AirAsia (or VietJet / other airline) Vector PDF document using jsPDF
+ */
 export async function generateAirAsiaPdfDoc(data) {
     await loadDocumentLibraries('pdf');
-    if (data.airline === 'China Eastern' || /china\s*eastern|\bMU\s*\d/i.test(data.airlineName || '') || /MU\s*\d/i.test(data.flightNo || '')) {
-        return generateChinaEasternPdfDoc(data);
-    }
-    if (data.airline === 'Vietnam Airlines' || /vietnam\s*air(?:lines)?|\bVN\s*\d/i.test(data.airlineName || '') || /VN\s*\d/i.test(data.flightNo || '')) {
-        return generateVietnamAirlinesPdfDoc(data);
-    }
-    if (data.airline === 'Cathay Pacific' || /cathay(?:\s*pacific)?|\bCX\s*\d/i.test(data.airlineName || '') || /CX\s*\d/i.test(data.flightNo || '')) {
-        return generateCathayPacificPdfDoc(data);
-    }
-    if (data.airline === 'Hong Kong Airlines' || /hong\s*kong\s*air(?:lines)?|\bHX\s*\d/i.test(data.airlineName || '') || /HX\s*\d/i.test(data.flightNo || '')) {
-        return generateHongKongAirlinesPdfDoc(data);
-    }
-    if (data.airline === 'HK Express' || /hk\s*express|\bUO\s*\d/i.test(data.airlineName || '') || /UO\s*\d/i.test(data.flightNo || '')) {
-        return generateHkExpressPdfDoc(data);
-    }
-    if (data.airline === 'China Airlines' || /china\s*airlines|\bCI\s*\d/i.test(data.airlineName || '') || /CI\s*\d/i.test(data.flightNo || '')) {
-        return generateChinaAirlinesPdfDoc(data);
-    }
-    if (data.airline === 'Scoot' || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '')) {
-        return generateScootPdfDoc(data);
-    }
-    if (data.airline === 'EVA Air' || /eva\s*air|\bBR\s*\d/i.test(data.airlineName || '') || /BR\s*\d/i.test(data.flightNo || '')) {
-        return generateEvaAirPdfDoc(data);
-    }
-    if (data.airline === 'Singapore Airlines' || /singapore\s*air(?:lines)?|\bSQ\s*\d/i.test(data.airlineName || '') || /SQ\s*\d/i.test(data.flightNo || '')) {
-        return generateSingaporeAirlinesPdfDoc(data);
-    }
-    if (data.airline === 'Thai Airways' || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '')) {
-        return generateThaiAirwaysPdfDoc(data);
-    }
+    const airline = resolveAirline(data);
+    if (airline === 'China Eastern') return generateChinaEasternPdfDoc(data);
+    if (airline === 'Vietnam Airlines') return generateVietnamAirlinesPdfDoc(data);
+    if (airline === 'Cathay Pacific') return generateCathayPacificPdfDoc(data);
+    if (airline === 'Hong Kong Airlines') return generateHongKongAirlinesPdfDoc(data);
+    if (airline === 'HK Express') return generateHkExpressPdfDoc(data);
+    if (airline === 'China Airlines') return generateChinaAirlinesPdfDoc(data);
+    if (airline === 'Scoot') return generateScootPdfDoc(data);
+    if (airline === 'EVA Air') return generateEvaAirPdfDoc(data);
+    if (airline === 'Singapore Airlines') return generateSingaporeAirlinesPdfDoc(data);
+    if (airline === 'Thai Airways') return generateThaiAirwaysPdfDoc(data);
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
 
-    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
+    const isVietJet = (airline === 'VietJet Air');
     const logoDataUrl = await getAirlineLogoDataUrl(isVietJet ? 'VietJet Air' : 'AirAsia');
 
     // A4 dimensions in pt: 595.28 x 841.89
@@ -4364,25 +4386,20 @@ export function buildTicketDownloadFilename(data, ext = 'pdf') {
     const cleanExt = ext.replace(/^\./, '');
     const pnr = (data?.pnr || data?.bookingNo || 'TICKET').trim().toUpperCase();
     const rawPax = (data?.passengerName || (data?.passengers && data?.passengers[0]?.name) || 'RECEIPT').replace(/[^a-zA-Z0-9]/g, '_');
+    const airline = resolveAirline(data);
 
-    if (data?.airline === 'China Eastern' || /china\s*eastern|\bMU\s*\d/i.test(data?.airlineName || '') || /MU\s*\d/i.test(data?.flightNo || '')) {
-        return `ChinaEastern_ETicket_${pnr}_${rawPax}.${cleanExt}`;
-    }
-    if (data?.airline === 'Vietnam Airlines' || /vietnam\s*air(?:lines)?|\bVN\s*\d/i.test(data?.airlineName || '') || /VN\s*\d/i.test(data?.flightNo || '')) {
-        return `VietnamAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
-    }
-    if (data?.airline === 'Cathay Pacific' || /cathay(?:\s*pacific)?|\bCX\s*\d/i.test(data?.airlineName || '') || /CX\s*\d/i.test(data?.flightNo || '')) {
-        return `CathayPacific_ETicket_${pnr}_${rawPax}.${cleanExt}`;
-    }
-    if (data?.airline === 'Hong Kong Airlines' || /hong\s*kong\s*air(?:lines)?|\bHX\s*\d/i.test(data?.airlineName || '') || /HX\s*\d/i.test(data?.flightNo || '')) {
-        return `HongKongAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
-    }
-    if (data?.airline === 'HK Express' || /hk\s*express|\bUO\s*\d/i.test(data?.airlineName || '') || /UO\s*\d/i.test(data?.flightNo || '')) {
-        return `HKExpress_ETicket_${pnr}_${rawPax}.${cleanExt}`;
-    }
-    if (data?.airline === 'China Airlines' || /CI\s*\d/i.test(data?.flightNo || '')) {
-        return `ChinaAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
-    }
+    if (airline === 'China Eastern') return `ChinaEastern_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'Vietnam Airlines') return `VietnamAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'Cathay Pacific') return `CathayPacific_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'Hong Kong Airlines') return `HongKongAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'HK Express') return `HKExpress_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'China Airlines') return `ChinaAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'Scoot') return `Scoot_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'EVA Air') return `EVAAir_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'Singapore Airlines') return `SingaporeAirlines_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'Thai Airways') return `ThaiAirways_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+    if (airline === 'VietJet Air') return `VietJet_ETicket_${pnr}_${rawPax}.${cleanExt}`;
+
     const sector = buildSectorCode(data);
     const rawDate = (data?.flights && (data.flights[0]?.depDateFormatted || data.flights[0]?.depDate || data.flights[0]?.date)) ||
                     data?.departureDate || data?.flightDate || data?.date || data?.bookingDate || data?.issuedDate;
@@ -5214,37 +5231,19 @@ export function renderScootTicketHtml(data) {
  * Generate preview HTML markup that renders identically to the PDF
  */
 export function renderAirAsiaTicketHtml(data) {
-    if (data.airline === 'China Eastern' || /china\s*eastern|\bMU\s*\d/i.test(data.airlineName || '') || /MU\s*\d/i.test(data.flightNo || '')) {
-        return renderChinaEasternTicketHtml(data);
-    }
-    if (data.airline === 'Vietnam Airlines' || /vietnam\s*air(?:lines)?|\bVN\s*\d/i.test(data.airlineName || '') || /VN\s*\d/i.test(data.flightNo || '')) {
-        return renderVietnamAirlinesTicketHtml(data);
-    }
-    if (data.airline === 'Cathay Pacific' || /cathay(?:\s*pacific)?|\bCX\s*\d/i.test(data.airlineName || '') || /CX\s*\d/i.test(data.flightNo || '')) {
-        return renderCathayPacificTicketHtml(data);
-    }
-    if (data.airline === 'Hong Kong Airlines' || /hong\s*kong\s*air(?:lines)?|\bHX\s*\d/i.test(data.airlineName || '') || /HX\s*\d/i.test(data.flightNo || '')) {
-        return renderHongKongAirlinesTicketHtml(data);
-    }
-    if (data.airline === 'HK Express' || /hk\s*express|\bUO\s*\d/i.test(data.airlineName || '') || /UO\s*\d/i.test(data.flightNo || '')) {
-        return renderHkExpressTicketHtml(data);
-    }
-    if (data.airline === 'China Airlines' || /china\s*airlines|\bCI\s*\d/i.test(data.airlineName || '') || /CI\s*\d/i.test(data.flightNo || '')) {
-        return renderChinaAirlinesTicketHtml(data);
-    }
-    if (data.airline === 'Scoot' || /scoot|flyscoot|\bTR\s*\d/i.test(data.airlineName || '') || /TR\s*\d/i.test(data.flightNo || '')) {
-        return renderScootTicketHtml(data);
-    }
-    if (data.airline === 'EVA Air' || /eva\s*air|\bBR\s*\d/i.test(data.airlineName || '') || /BR\s*\d/i.test(data.flightNo || '')) {
-        return renderEvaAirTicketHtml(data);
-    }
-    if (data.airline === 'Singapore Airlines' || /singapore\s*air(?:lines)?|\bSQ\s*\d/i.test(data.airlineName || '') || /SQ\s*\d/i.test(data.flightNo || '')) {
-        return renderSingaporeAirlinesTicketHtml(data);
-    }
-    if (data.airline === 'Thai Airways' || /thai\s*airways/i.test(data.airlineName || '') || /TG\s*\d/i.test(data.flightNo || '')) {
-        return renderThaiAirwaysTicketHtml(data);
-    }
-    const isVietJet = (data.airline === 'VietJet Air') || /vietjet/i.test(data.airlineName || '') || /VJ\d/i.test(data.flightNo || '');
+    const airline = resolveAirline(data);
+    if (airline === 'China Eastern') return renderChinaEasternTicketHtml(data);
+    if (airline === 'Vietnam Airlines') return renderVietnamAirlinesTicketHtml(data);
+    if (airline === 'Cathay Pacific') return renderCathayPacificTicketHtml(data);
+    if (airline === 'Hong Kong Airlines') return renderHongKongAirlinesTicketHtml(data);
+    if (airline === 'HK Express') return renderHkExpressTicketHtml(data);
+    if (airline === 'China Airlines') return renderChinaAirlinesTicketHtml(data);
+    if (airline === 'Scoot') return renderScootTicketHtml(data);
+    if (airline === 'EVA Air') return renderEvaAirTicketHtml(data);
+    if (airline === 'Singapore Airlines') return renderSingaporeAirlinesTicketHtml(data);
+    if (airline === 'Thai Airways') return renderThaiAirwaysTicketHtml(data);
+
+    const isVietJet = (airline === 'VietJet Air');
     const logoSrc = isVietJet ? (cachedVietJetLogoDataUrl || 'vietjet-logo.png') : (cachedAirAsiaLogoDataUrl || 'airasia-logo.png');
     const airlineTitle = isVietJet ? 'VietJet Air' : 'AirAsia';
 
