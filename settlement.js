@@ -204,7 +204,7 @@ function inRange(date, start, end) {
  * across all tickets/settlements/adjustments, using the selected basis.
  */
 export function getOpeningBalance(start) {
-    const RESET_DATE = new Date(2026, 3, 1); // April 1, 2026
+    const RESET_DATE = new Date(2026, 9, 1); // October 1, 2026 reset
     const useReset = start >= RESET_DATE;
     const filterStartDate = useReset ? RESET_DATE : null;
 
@@ -894,12 +894,10 @@ function renderKpis() {
         kpi('fa-ticket', 'navy', 'Total Revenue', formatMMK(s.totalRevenue), 'Net amount + date change (current month)'),
         kpi('fa-file-invoice-dollar', 'navy', 'Owner Payable', formatMMK(s.ownerPayable), 'Opening balance + total revenue'),
         kpi('fa-handshake', 'teal', 'Paid to Owner', formatMMK(s.paidToOwner), `${s.periodSettlements.length} settlements`),
-        kpi('fa-scale-balanced', s.remainingDue > 0 ? 'coral' : 'teal', 'Remaining Due to Owner', formatMMK(s.remainingDue), s.remainingDue > 0 ? 'Outstanding owner payable' : 'No owner balance due'),
+        kpi('fa-credit-card', 'purple', 'Self-Purchased Profit', formatMMK(s.selfProfit), `${(s.selfItems || []).length} direct bookings (click to view)`, 'kpi-self-card', 'style="cursor: pointer;" title="Click to scroll to Self-Purchased bookings"'),
         kpi('fa-percent', 'teal', 'My Commission', formatMMK(s.myCommission), 'Commission retained (not self purchased)'),
         kpi('fa-arrow-trend-up', 'amber', 'Extra Profit', formatMMK(s.extraProfit), 'Extra fare retained'),
-        kpi('fa-chart-line', 'teal', 'Owner Profit', formatMMK(s.myProfit), 'Commission + extra fare'),
-        kpi('fa-credit-card', 'purple', 'Self-Purchased Profit', formatMMK(s.selfProfit), `${(s.selfItems || []).length} direct bookings (click to view list)`, 'class="settle-kpi-card glass-card kpi-purple kpi-self-card" style="grid-column: span 2; cursor: pointer;" title="Click to scroll to Self-Purchased bookings list"'),
-        kpi('fa-wallet', 'teal', 'Grand Total Profit', formatMMK(s.grandTotalProfit), `Owner (${formatMMK(s.myProfit)}) + Self (${formatMMK(s.selfProfit)})`, 'class="settle-kpi-card glass-card kpi-teal" style="grid-column: span 2;"')
+        kpi('fa-chart-line', 'teal', 'Total Profit', formatMMK(s.myProfit + s.selfProfit), `Owner (${formatMMK(s.myProfit)}) + Self (${formatMMK(s.selfProfit)})`)
     ];
 
     grid.innerHTML = cards.join('');
@@ -913,10 +911,11 @@ function renderKpis() {
     }
 }
 
-function kpi(icon, color, label, value, support, customWrap = '') {
-    const wrapStart = customWrap || `<div class="settle-kpi-card glass-card kpi-${color}">`;
+function kpi(icon, color, label, value, support, extraClass = '', extraAttrs = '') {
+    const cls = extraClass ? `settle-kpi-card glass-card kpi-${color} ${extraClass}` : `settle-kpi-card glass-card kpi-${color}`;
+    const attrs = extraAttrs ? ` ${extraAttrs}` : '';
     return `
-        ${wrapStart}
+        <div class="${cls}"${attrs}>
             <div class="settle-kpi-icon"><i class="fa-solid ${icon}"></i></div>
             <div class="settle-kpi-body">
                 <div class="settle-kpi-label">${escapeHtml(label)}</div>
