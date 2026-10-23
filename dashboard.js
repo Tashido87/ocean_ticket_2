@@ -575,12 +575,18 @@ function groupUnpaidTickets(rows, hotelRows = (state.allHotels || [])) {
         });
     });
 
-    const accountCounts = new Map();
+    const accountPnrCounts = new Map();
+    const accountHotelCounts = new Map();
     groups.forEach(g => {
-        accountCounts.set(g.accountGroupKey, (accountCounts.get(g.accountGroupKey) || 0) + 1);
+        if (g.isHotel) {
+            accountHotelCounts.set(g.accountGroupKey, (accountHotelCounts.get(g.accountGroupKey) || 0) + 1);
+        } else {
+            accountPnrCounts.set(g.accountGroupKey, (accountPnrCounts.get(g.accountGroupKey) || 0) + 1);
+        }
     });
     groups.forEach(g => {
-        g.accountPnrCount = accountCounts.get(g.accountGroupKey) || 1;
+        g.accountPnrCount = accountPnrCounts.get(g.accountGroupKey) || 0;
+        g.accountHotelCount = accountHotelCounts.get(g.accountGroupKey) || 0;
     });
 
     return [...groups.values()].sort((a, b) => {
@@ -2268,22 +2274,38 @@ function getBookingDeadlineReminderRows(activeBookings) {
         group.pax += 1;
     });
 
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const tomorrowStart = todayStart + 24 * 60 * 60 * 1000;
+    const dayAfterTomorrowStart = tomorrowStart + 24 * 60 * 60 * 1000;
+
     return [...grouped.values()].map(group => {
-        const minutes = Math.round((group.deadline.getTime() - Date.now()) / 60000);
+        const deadlineTime = group.deadline.getTime();
+        const minutes = Math.round((deadlineTime - Date.now()) / 60000);
         let tone = 'neutral';
         let label = 'Upcoming';
         if (minutes < 0) {
             tone = 'danger';
             label = 'Overdue';
-        } else if (minutes <= 6 * 60) {
-            tone = 'danger';
-            label = 'Due soon';
-        } else if (minutes <= 24 * 60) {
+        } else if (deadlineTime >= todayStart && deadlineTime < tomorrowStart) {
+            // Deadline is within calendar today
+            if (minutes <= 3 * 60) {
+                tone = 'danger';
+                label = 'Due soon';
+            } else {
+                tone = 'warning';
+                label = 'Due today';
+            }
+        } else if (deadlineTime >= tomorrowStart && deadlineTime < dayAfterTomorrowStart) {
+            // Deadline is tomorrow
             tone = 'warning';
-            label = 'Due today';
-        } else if (minutes <= 72 * 60) {
-            tone = 'warning';
+            label = 'Due tomorrow';
+        } else if (minutes <= 7 * 24 * 60) {
+            tone = 'neutral';
             label = 'This week';
+        } else {
+            tone = 'neutral';
+            label = 'Upcoming';
         }
         return { ...group, minutes, tone, label };
     }).sort((a, b) => a.deadline - b.deadline);
@@ -3075,9 +3097,9 @@ export function updateComparisonChart() {
     const computed = getComputedStyle(document.body);
     const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#24242b';
     const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || 'rgba(36,36,43,0.10)';
-    const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#22b8b2';
-    const profitBase = (computed.getPropertyValue('--chart-tickets') || '').trim() || '#4d8df7';
-    const cancelBase = (computed.getPropertyValue('--coral') || '').trim() || '#ff6f5e';
+    const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#0284C7';
+    const profitBase = (computed.getPropertyValue('--chart-profit') || computed.getPropertyValue('--chart-tickets') || '').trim() || '#F97316';
+    const cancelBase = (computed.getPropertyValue('--coral') || '').trim() || '#EF4444';
 
     const withAlpha = (color, alpha) => {
         const c = String(color).trim();
@@ -3100,13 +3122,15 @@ export function updateComparisonChart() {
     };
 
     const ctx = canvas.getContext('2d');
-    const revenueFill = ctx.createLinearGradient(0, 0, 0, 300);
-    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.35));
-    revenueFill.addColorStop(1, withAlpha(revenueBase, 0.01));
+    const revenueFill = ctx.createLinearGradient(0, 0, 0, 320);
+    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.28));
+    revenueFill.addColorStop(0.65, withAlpha(revenueBase, 0.08));
+    revenueFill.addColorStop(1, withAlpha(revenueBase, 0.00));
 
-    const profitFill = ctx.createLinearGradient(0, 0, 0, 300);
-    profitFill.addColorStop(0, withAlpha(profitBase, 0.35));
-    profitFill.addColorStop(1, withAlpha(profitBase, 0.01));
+    const profitFill = ctx.createLinearGradient(0, 0, 0, 320);
+    profitFill.addColorStop(0, withAlpha(profitBase, 0.30));
+    profitFill.addColorStop(0.65, withAlpha(profitBase, 0.09));
+    profitFill.addColorStop(1, withAlpha(profitBase, 0.00));
 
     const hasCancellations = buckets.some(b => b.cancellations > 0);
     const datasets = [{
@@ -3114,12 +3138,12 @@ export function updateComparisonChart() {
         data: buckets.map(bucket => bucket.revenue),
         borderColor: revenueBase,
         backgroundColor: revenueFill,
-        borderWidth: 3,
+        borderWidth: 3.5,
         pointRadius: 0,
         pointHoverRadius: 6,
         pointHoverBackgroundColor: '#ffffff',
         pointHoverBorderColor: revenueBase,
-        pointHoverBorderWidth: 2,
+        pointHoverBorderWidth: 2.5,
         tension: 0.45,
         fill: true,
         yAxisID: 'y'
@@ -3129,12 +3153,12 @@ export function updateComparisonChart() {
         type: 'line',
         borderColor: profitBase,
         backgroundColor: profitFill,
-        borderWidth: 3,
+        borderWidth: 3.5,
         pointRadius: 0,
         pointHoverRadius: 6,
         pointHoverBackgroundColor: '#ffffff',
         pointHoverBorderColor: profitBase,
-        pointHoverBorderWidth: 2,
+        pointHoverBorderWidth: 2.5,
         tension: 0.45,
         fill: true,
         yAxisID: 'y1'

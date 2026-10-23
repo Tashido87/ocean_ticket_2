@@ -642,11 +642,40 @@ function toggleFeaturedClient(event, clientKey) {
 }
 
 /**
- * Pre-fills the "Sell Ticket" form for a specific client.
- * @param {string} clientKey The unique key of the client.
+ * Resolves a client record from an existing client object or a lookup key/id/name.
+ * @param {string|Object} clientOrKey
+ * @returns {Object|null}
  */
-export function sellTicketForClient(clientKey) {
-    const client = state.allClients.find(c => c.client_key === clientKey);
+export function findClientRecord(clientOrKey) {
+    if (!clientOrKey) return null;
+    if (typeof clientOrKey === 'object' && clientOrKey.name) return clientOrKey;
+    const key = String(clientOrKey).trim();
+    if (!key) return null;
+    const decodedKey = decodeURIComponent(key);
+
+    return (state.allClients || []).find(c => c.client_key === key)
+        || (state.allClients || []).find(c => c.client_key === decodedKey)
+        || (state.allClients || []).find(c => c.client_id === key || c.client_id === decodedKey)
+        || (state.allClients || []).find(c => {
+            const parts = (decodedKey || key).split('|');
+            const pName = (parts[0] || '').trim().toUpperCase();
+            const pDoc = (parts[1] || '').trim().toUpperCase();
+            const pPhone = (parts[2] || '').trim();
+            if (pName && c.name && c.name.trim().toUpperCase() === pName) {
+                if (pPhone && c.phone && String(c.phone).replace(/\D/g, '') === pPhone.replace(/\D/g, '')) return true;
+                if (pDoc && ((c.nrc_no && c.nrc_no.toUpperCase() === pDoc) || (c.passport_no && c.passport_no.toUpperCase() === pDoc))) return true;
+            }
+            return false;
+        })
+        || (state.allClients || []).find(c => c.name && c.name.trim().toUpperCase() === key.toUpperCase());
+}
+
+/**
+ * Pre-fills the "Sell Ticket" form for a specific client.
+ * @param {string|Object} clientOrKey The client object or unique key.
+ */
+export function sellTicketForClient(clientOrKey) {
+    const client = findClientRecord(clientOrKey);
     if (!client) {
         showToast('Could not find client details.', 'error');
         return;
@@ -669,10 +698,10 @@ export function sellTicketForClient(clientKey) {
 
 /**
  * Pre-fills the "New Booking" form for a specific client.
- * @param {string} clientKey The unique key of the client.
+ * @param {string|Object} clientOrKey The client object or unique key.
  */
-export function bookForClient(clientKey) {
-    const client = state.allClients.find(c => c.client_key === clientKey);
+export function bookForClient(clientOrKey) {
+    const client = findClientRecord(clientOrKey);
     if (!client) {
         showToast('Could not find client details.', 'error');
         return;
@@ -693,7 +722,7 @@ export function bookForClient(clientKey) {
     const passengerNrcInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-nrc');
     const passengerPassportInput = document.querySelector('#booking-passenger-forms-container .booking-passenger-passport');
     if (passengerGenderSelect) passengerGenderSelect.value = client.gender || 'MR';
-    if (passengerNameInput) passengerNameInput.value = client.name.toUpperCase();
+    if (passengerNameInput) passengerNameInput.value = (client.name || '').toUpperCase();
     if (passengerNrcInput) passengerNrcInput.value = (client.nrc_no || '').toUpperCase();
     if (passengerPassportInput) passengerPassportInput.value = (client.passport_no || '').toUpperCase();
 
@@ -702,10 +731,10 @@ export function bookForClient(clientKey) {
 
 /**
  * Pre-fills the "New Hotel Reservation" form for a specific client.
- * @param {string} clientKey The unique key of the client.
+ * @param {string|Object} clientOrKey The client object or unique key.
  */
-export function reserveHotelForClient(clientKey) {
-    const client = state.allClients.find(c => c.client_key === clientKey);
+export function reserveHotelForClient(clientOrKey) {
+    const client = findClientRecord(clientOrKey);
     if (!client) {
         showToast('Could not find client details.', 'error');
         return;

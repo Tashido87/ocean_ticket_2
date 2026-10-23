@@ -9,7 +9,7 @@ import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToD
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets, updateTicket } from './db.js';
-import { sellTicketForClient, bookForClient, reserveHotelForClient } from './clients.js';
+import { sellTicketForClient, bookForClient, reserveHotelForClient, findClientRecord } from './clients.js';
 import { showDetails } from './tickets.js';
 import { findTicketForManage } from './manage.js';
 import { openPhotoLightbox } from './passport.js';
@@ -1407,7 +1407,7 @@ function renderClientDetailView() {
     const headerEl = document.getElementById('searchViewHeader');
     if (!detail) return;
 
-    const client = state.allClients.find(c => c.client_key === searchState.selectedClientKey);
+    const client = findClientRecord(searchState.selectedClientKey) || state.allClients.find(c => c.client_key === searchState.selectedClientKey);
     if (!client) {
         searchState.selectedClientKey = '';
         showListView();
@@ -2111,9 +2111,9 @@ function wireDetailActions(detail, client, tickets) {
     detail.querySelectorAll('[data-detail-action]').forEach(btn => {
         btn.addEventListener('click', () => {
             const action = btn.dataset.detailAction;
-            if (action === 'sell') sellTicketForClient(client.client_key);
-            else if (action === 'booking') bookForClient(client.client_key);
-            else if (action === 'hotel') reserveHotelForClient(client.client_key);
+            if (action === 'sell') sellTicketForClient(client);
+            else if (action === 'booking') bookForClient(client);
+            else if (action === 'hotel') reserveHotelForClient(client);
             else if (action === 'back') {
                 searchState.selectedClientKey = '';
                 refreshSearchView(false);
