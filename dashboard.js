@@ -1811,6 +1811,321 @@ const REMINDER_BANK_CARDS = [
     }
 ];
 
+const REMINDER_CARD_STYLE_CSS = `
+    .payment-reminder-card-sheet,
+    #paymentReminderCardCanvasTarget {
+        width: 794px !important;
+        min-width: 794px !important;
+        max-width: 794px !important;
+        min-height: 1123px !important;
+        box-sizing: border-box !important;
+        margin: 0 auto !important;
+        padding: 44px 56px 40px !important;
+        background: #ffffff !important;
+        color: #232323 !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+        display: flex !important;
+        flex-direction: column !important;
+        position: relative !important;
+    }
+    #paymentReminderCardCanvasTarget * {
+        box-sizing: border-box !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-sheet-main {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-top {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-brand {
+        width: 220px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-brand img.prc-brand-logo {
+        display: block !important;
+        width: 200px !important;
+        max-width: 200px !important;
+        height: auto !important;
+        max-height: 60px !important;
+        object-fit: contain !important;
+        object-position: left top !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-top-right {
+        text-align: right !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-doc-type {
+        margin: 0 0 4px !important;
+        font-size: 28px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em !important;
+        color: #232323 !important;
+        line-height: 1.1 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-doc-id {
+        margin: 0 0 3px !important;
+        font-size: 13px !important;
+        color: #5F6B78 !important;
+        font-weight: 600 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-doc-date {
+        margin: 0 !important;
+        font-size: 13px !important;
+        color: #5F6B78 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-company-lines {
+        margin-top: 14px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-company-lines p {
+        margin: 0 0 3px !important;
+        font-size: 10.5px !important;
+        color: #5F6B78 !important;
+        line-height: 1.4 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-header-rule {
+        height: 2.5px !important;
+        background: #AA0F11 !important;
+        margin: 12px 0 18px !important;
+        border: none !important;
+        width: 100% !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-billing-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+        margin-bottom: 22px !important;
+        width: 100% !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-billed-label {
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        color: #AA0F11 !important;
+        margin-bottom: 4px !important;
+        letter-spacing: 0.05em !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-client-name {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        color: #232323 !important;
+        margin-bottom: 4px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-pnr-line {
+        font-size: 11.5px !important;
+        color: #232323 !important;
+        line-height: 1.4 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-platform-badge {
+        display: inline-block !important;
+        padding: 1px 7px !important;
+        border-radius: 999px !important;
+        background: #F1F5F9 !important;
+        border: 1px solid #CBD5E1 !important;
+        color: #0F172A !important;
+        font-size: 10px !important;
+        font-weight: 700 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-meta-right {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 5px !important;
+        min-width: 200px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-meta-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        font-size: 11.5px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-meta-label {
+        color: #5F6B78 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-meta-val {
+        font-weight: 700 !important;
+        color: #232323 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-status-pending {
+        color: #AA0F11 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 16px !important;
+        table-layout: fixed !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-table th {
+        padding: 8px 6px !important;
+        border-bottom: 1px solid #E2E6EA !important;
+        font-size: 10.5px !important;
+        font-weight: 700 !important;
+        color: #5F6B78 !important;
+        background: transparent !important;
+        text-align: left !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-table td {
+        padding: 9px 6px !important;
+        border-bottom: 1px solid #E2E6EA !important;
+        font-size: 11.5px !important;
+        color: #232323 !important;
+        vertical-align: middle !important;
+        word-break: break-word !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-table th.col-idx,
+    #paymentReminderCardCanvasTarget .prc-inv-table td.col-idx {
+        text-align: center !important;
+        width: 28px !important;
+        color: #5F6B78 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-table th.col-pnr,
+    #paymentReminderCardCanvasTarget .prc-inv-table td.col-pnr {
+        text-align: left !important;
+        width: 95px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-table th.col-desc,
+    #paymentReminderCardCanvasTarget .prc-inv-table td.col-desc {
+        text-align: left !important;
+        width: 140px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-table th.col-route,
+    #paymentReminderCardCanvasTarget .prc-inv-table td.col-route {
+        text-align: left !important;
+        width: 165px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-inv-table th.col-num,
+    #paymentReminderCardCanvasTarget .prc-inv-table td.col-num {
+        text-align: right !important;
+        width: 86px !important;
+        font-variant-numeric: tabular-nums !important;
+        font-weight: 700 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-totals-section {
+        width: 290px !important;
+        margin-left: auto !important;
+        margin-top: 4px !important;
+        margin-bottom: 22px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-total-line {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        font-size: 12px !important;
+        color: #5F6B78 !important;
+        padding: 4px 0 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-total-line span:last-child {
+        font-variant-numeric: tabular-nums !important;
+        font-weight: 700 !important;
+        color: #232323 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-balance-pill {
+        background: #AA0F11 !important;
+        border-radius: 6px !important;
+        padding: 9px 14px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        letter-spacing: 0.03em !important;
+        margin-top: 8px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-balance-pill span:last-child {
+        font-variant-numeric: tabular-nums !important;
+        font-weight: 800 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-thank-you {
+        text-align: center !important;
+        font-style: italic !important;
+        font-size: 12.5px !important;
+        color: #5F6B78 !important;
+        margin-top: auto !important;
+        margin-bottom: auto !important;
+        padding: 24px 0 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-payment-section {
+        margin-top: auto !important;
+        margin-bottom: 24px !important;
+        width: 100% !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-payment-title {
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        color: #232323 !important;
+        letter-spacing: 0.04em !important;
+        margin-bottom: 4px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-account-name {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #AA0F11 !important;
+        margin-bottom: 12px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-bank-cards {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 14px !important;
+        width: 100% !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-bank-card {
+        background: #F7F8F9 !important;
+        border: 1px solid #E2E6EA !important;
+        border-radius: 6px !important;
+        overflow: hidden !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-bank-card-header {
+        background: #232323 !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 11.5px !important;
+        padding: 6px 12px !important;
+        border-bottom: 2px solid #AA0F11 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-bank-card-body {
+        padding: 8px 12px 10px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-bank-row {
+        line-height: 1.35 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-bank-label {
+        font-size: 9.5px !important;
+        color: #5F6B78 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-bank-acc {
+        font-size: 11.5px !important;
+        font-weight: 700 !important;
+        color: #232323 !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-footer {
+        margin-top: auto !important;
+        text-align: center !important;
+        padding-top: 24px !important;
+        width: 100% !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-footer-tagline {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        color: #AA0F11 !important;
+        letter-spacing: 0.08em !important;
+        margin-bottom: 5px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-footer-line {
+        width: 70px !important;
+        height: 1px !important;
+        background: #E2E6EA !important;
+        margin: 0 auto 6px !important;
+    }
+    #paymentReminderCardCanvasTarget .prc-footer-contact {
+        font-size: 10px !important;
+        color: #5F6B78 !important;
+    }
+`;
+
 export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {}) {
     const allUnpaidGroups = groupUnpaidTickets(state.allTickets || []);
     const normalizedAccKey = String(accountKey || '').trim().toLowerCase();
@@ -1923,34 +2238,34 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         const { totalGross, effectiveAgentFare, effectivePaid, balanceDue } = computeSummary(items, groupsToUse);
 
         const rowsHtml = items.map((item, idx) => `
-            <tr>
-                <td class="col-idx">${idx + 1}</td>
-                <td class="col-pnr">
-                    <div class="prc-cell-pnr">${dashboardEscapeHtml(item.pnr)}</div>
-                    <div class="prc-cell-sub">Issued: ${dashboardEscapeHtml(item.issuedDate)}</div>
+            <tr style="${idx % 2 === 1 ? 'background: #F7F8F9;' : 'background: #FFFFFF;'}">
+                <td class="col-idx" style="padding: 9px 6px; border-bottom: 1px solid #E2E6EA; font-size: 11.5px; color: #5F6B78; text-align: center; width: 28px;">${idx + 1}</td>
+                <td class="col-pnr" style="padding: 9px 6px; border-bottom: 1px solid #E2E6EA; font-size: 11.5px; color: #232323; text-align: left; width: 95px;">
+                    <div class="prc-cell-pnr" style="font-family: Arial, Helvetica, sans-serif; font-weight: 700; color: #232323; font-size: 11.5px;">${dashboardEscapeHtml(item.pnr)}</div>
+                    <div class="prc-cell-sub" style="font-size: 10px; color: #5F6B78; margin-top: 2px;">Issued: ${dashboardEscapeHtml(item.issuedDate)}</div>
                 </td>
-                <td class="col-desc">
-                    <div class="prc-cell-pax">${dashboardEscapeHtml(item.passenger)}</div>
-                    ${item.isFee ? `<span class="prc-fee-badge">Date Change / Fee</span>` : ''}
+                <td class="col-desc" style="padding: 9px 6px; border-bottom: 1px solid #E2E6EA; font-size: 11.5px; color: #232323; text-align: left; width: 140px;">
+                    <div class="prc-cell-pax" style="font-weight: 700; color: #232323; font-size: 11.5px;">${dashboardEscapeHtml(item.passenger)}</div>
+                    ${item.isFee ? `<span class="prc-fee-badge" style="display: inline-block; margin-top: 2px; padding: 1px 6px; border-radius: 4px; background: #FEF3C7; color: #B45309; font-size: 9.5px; font-weight: 700;">Date Change / Fee</span>` : ''}
                 </td>
-                <td class="col-route">
-                    <div class="prc-cell-route">${dashboardEscapeHtml(item.route)}</div>
-                    <div class="prc-cell-sub">${item.airline ? `${dashboardEscapeHtml(item.airline)} · ` : ''}Travel: ${dashboardEscapeHtml(item.travelDate)}</div>
+                <td class="col-route" style="padding: 9px 6px; border-bottom: 1px solid #E2E6EA; font-size: 11.5px; color: #232323; text-align: left; width: 165px;">
+                    <div class="prc-cell-route" style="font-weight: 600; color: #232323; font-size: 11.5px;">${dashboardEscapeHtml(item.route)}</div>
+                    <div class="prc-cell-sub" style="font-size: 10px; color: #5F6B78; margin-top: 2px;">${item.airline ? `${dashboardEscapeHtml(item.airline)} · ` : ''}Travel: ${dashboardEscapeHtml(item.travelDate)}</div>
                 </td>
-                <td class="col-num">${formatDashboardAmount(item.gross)}</td>
-                <td class="col-num prc-cell-paid">${formatDashboardAmount(item.paid)}</td>
-                <td class="col-num prc-cell-due">${formatDashboardAmount(item.due)}</td>
+                <td class="col-num" style="padding: 9px 6px; border-bottom: 1px solid #E2E6EA; font-size: 11.5px; color: #232323; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; width: 86px;">${formatDashboardAmount(item.gross)}</td>
+                <td class="col-num prc-cell-paid" style="padding: 9px 6px; border-bottom: 1px solid #E2E6EA; font-size: 11.5px; color: #059669; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; width: 80px;">${formatDashboardAmount(item.paid)}</td>
+                <td class="col-num prc-cell-due" style="padding: 9px 6px; border-bottom: 1px solid #E2E6EA; font-size: 11.5px; color: #AA0F11; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; width: 88px;">${formatDashboardAmount(item.due)}</td>
             </tr>
         `).join('');
 
         const bankCardsHtml = REMINDER_BANK_CARDS.map(card => `
-            <div class="prc-bank-card">
-                <div class="prc-bank-card-header">${dashboardEscapeHtml(card.bank)}</div>
-                <div class="prc-bank-card-body">
+            <div class="prc-bank-card" style="background: #F7F8F9; border: 1px solid #E2E6EA; border-radius: 6px; overflow: hidden;">
+                <div class="prc-bank-card-header" style="background: #232323; color: #ffffff; font-weight: 700; font-size: 11.5px; padding: 6px 12px; border-bottom: 2px solid #AA0F11;">${dashboardEscapeHtml(card.bank)}</div>
+                <div class="prc-bank-card-body" style="padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 6px;">
                     ${card.items.map(item => `
-                        <div class="prc-bank-row">
-                            <div class="prc-bank-label">${dashboardEscapeHtml(item.label)}</div>
-                            <div class="prc-bank-acc">${dashboardEscapeHtml(item.account)}</div>
+                        <div class="prc-bank-row" style="line-height: 1.35; display: flex; justify-content: space-between; align-items: baseline;">
+                            <div class="prc-bank-label" style="font-size: 9.5px; color: #5F6B78;">${dashboardEscapeHtml(item.label)}</div>
+                            <div class="prc-bank-acc" style="font-size: 11.5px; font-weight: 700; color: #232323; font-family: Arial, Helvetica, sans-serif;">${dashboardEscapeHtml(item.account)}</div>
                         </div>
                     `).join('')}
                 </div>
@@ -1958,49 +2273,50 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         `).join('');
 
         return `
-            <div class="prc-sheet-main">
-                <div class="prc-inv-top">
-                    <div class="prc-brand">
-                        <img src="./ocean-travel-logo.png" alt="Ocean Travel" class="prc-brand-logo" crossorigin="anonymous" />
+            <style id="prcCardEmbeddedStyles">${REMINDER_CARD_STYLE_CSS}</style>
+            <div class="prc-sheet-main" style="flex: 1; display: flex; flex-direction: column; width: 100%; box-sizing: border-box;">
+                <div class="prc-inv-top" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                    <div class="prc-brand" style="width: 220px;">
+                        <img src="./ocean-travel-logo.png" alt="Ocean Travel" class="prc-brand-logo" crossorigin="anonymous" style="display: block; width: 200px; max-width: 200px; height: auto; max-height: 60px; object-fit: contain; object-position: left top;" />
                     </div>
-                    <div class="prc-top-right">
-                        <h1 class="prc-doc-type">PAYMENT REMINDER</h1>
-                        <p class="prc-doc-id">PR-${dashboardEscapeHtml(leadGroup.pnr || 'OCT26')}</p>
-                        <p class="prc-doc-date">${dashboardEscapeHtml(todayFormatted)} · Due on Receipt</p>
+                    <div class="prc-top-right" style="text-align: right;">
+                        <h1 class="prc-doc-type" style="margin: 0 0 4px; font-size: 28px; font-weight: 700; letter-spacing: 0.04em; color: #232323; line-height: 1.1;">PAYMENT REMINDER</h1>
+                        <p class="prc-doc-id" style="margin: 0 0 3px; font-size: 13px; color: #5F6B78; font-weight: 600;">PR-${dashboardEscapeHtml(leadGroup.pnr || 'OCT26')}</p>
+                        <p class="prc-doc-date" style="margin: 0; font-size: 13px; color: #5F6B78;">${dashboardEscapeHtml(todayFormatted)} · Due on Receipt</p>
                     </div>
                 </div>
 
-                <div class="prc-company-lines">
-                    <p>A3-1, Room 603, Myanma Gone Yi Housing, Upper Pansodan St,<br>Mingalar Taung Nyunt Tsp, Yangon</p>
-                    <p>09964403435, 09740862500 · oceantravel.mm@gmail.com</p>
+                <div class="prc-company-lines" style="margin-top: 14px;">
+                    <p style="margin: 0 0 3px; font-size: 10.5px; color: #5F6B78; line-height: 1.4;">A3-1, Room 603, Myanma Gone Yi Housing, Upper Pansodan St,<br>Mingalar Taung Nyunt Tsp, Yangon</p>
+                    <p style="margin: 0 0 3px; font-size: 10.5px; color: #5F6B78; line-height: 1.4;">09964403435, 09740862500 · oceantravel.mm@gmail.com</p>
                 </div>
 
-                <hr class="prc-header-rule" />
+                <hr class="prc-header-rule" style="height: 2.5px; background: #AA0F11; margin: 12px 0 18px; border: none; width: 100%;" />
 
-                <div class="prc-billing-row">
+                <div class="prc-billing-row" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; width: 100%;">
                     <div>
-                        <div class="prc-billed-label">BILLED TO</div>
-                        <div class="prc-client-name">${dashboardEscapeHtml(customerDisplayName)}</div>
-                        <div class="prc-pnr-line">Account: ${dashboardEscapeHtml(leadGroup.socialAccount || customerDisplayName)}${leadGroup.accountType ? ` · <span class="prc-platform-badge">${dashboardEscapeHtml(leadGroup.accountType)}</span>` : ''}</div>
-                        <div class="prc-pnr-line">Unpaid Bookings: ${groupsToUse.length} PNR${groupsToUse.length > 1 ? 's' : ''} (${items.length} Item${items.length > 1 ? 's' : ''})</div>
+                        <div class="prc-billed-label" style="font-size: 10px; font-weight: 700; color: #AA0F11; margin-bottom: 4px; letter-spacing: 0.05em;">BILLED TO</div>
+                        <div class="prc-client-name" style="font-size: 18px; font-weight: 700; color: #232323; margin-bottom: 4px;">${dashboardEscapeHtml(customerDisplayName)}</div>
+                        <div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">Account: ${dashboardEscapeHtml(leadGroup.socialAccount || customerDisplayName)}${leadGroup.accountType ? ` · <span class="prc-platform-badge" style="display: inline-block; padding: 1px 7px; border-radius: 999px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; font-size: 10px; font-weight: 700;">${dashboardEscapeHtml(leadGroup.accountType)}</span>` : ''}</div>
+                        <div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">Unpaid Bookings: ${groupsToUse.length} PNR${groupsToUse.length > 1 ? 's' : ''} (${items.length} Item${items.length > 1 ? 's' : ''})</div>
                     </div>
-                    <div class="prc-meta-right">
-                        <div class="prc-meta-row"><span class="prc-meta-label">Reminder Date</span><span class="prc-meta-val">${dashboardEscapeHtml(todayFormatted)}</span></div>
-                        <div class="prc-meta-row"><span class="prc-meta-label">Terms</span><span class="prc-meta-val">Due on Receipt</span></div>
-                        <div class="prc-meta-row"><span class="prc-meta-label">Status</span><span class="prc-meta-val prc-status-pending">Payment Pending</span></div>
+                    <div class="prc-meta-right" style="display: flex; flex-direction: column; gap: 5px; min-width: 200px;">
+                        <div class="prc-meta-row" style="display: flex; justify-content: space-between; font-size: 11.5px;"><span class="prc-meta-label" style="color: #5F6B78;">Reminder Date</span><span class="prc-meta-val" style="font-weight: 700; color: #232323;">${dashboardEscapeHtml(todayFormatted)}</span></div>
+                        <div class="prc-meta-row" style="display: flex; justify-content: space-between; font-size: 11.5px;"><span class="prc-meta-label" style="color: #5F6B78;">Terms</span><span class="prc-meta-val" style="font-weight: 700; color: #232323;">Due on Receipt</span></div>
+                        <div class="prc-meta-row" style="display: flex; justify-content: space-between; font-size: 11.5px;"><span class="prc-meta-label" style="color: #5F6B78;">Status</span><span class="prc-meta-val prc-status-pending" style="font-weight: 700; color: #AA0F11;">Payment Pending</span></div>
                     </div>
                 </div>
 
-                <table class="prc-inv-table">
+                <table class="prc-inv-table" style="width: 100%; border-collapse: collapse; margin-bottom: 16px; table-layout: fixed; background: #FFFFFF;">
                     <thead>
                         <tr>
-                            <th class="col-idx">#</th>
-                            <th class="col-pnr">PNR / REF</th>
-                            <th class="col-desc">PASSENGER & DETAILS</th>
-                            <th class="col-route">ROUTE & TRAVEL DATE</th>
-                            <th class="col-num">TOTAL (MMK)</th>
-                            <th class="col-num">PAID (MMK)</th>
-                            <th class="col-num">DUE (MMK)</th>
+                            <th class="col-idx" style="padding: 8px 6px; border-bottom: 1px solid #E2E6EA; font-size: 10.5px; font-weight: 700; color: #5F6B78; text-align: center; width: 28px;">#</th>
+                            <th class="col-pnr" style="padding: 8px 6px; border-bottom: 1px solid #E2E6EA; font-size: 10.5px; font-weight: 700; color: #5F6B78; text-align: left; width: 95px;">PNR / REF</th>
+                            <th class="col-desc" style="padding: 8px 6px; border-bottom: 1px solid #E2E6EA; font-size: 10.5px; font-weight: 700; color: #5F6B78; text-align: left; width: 140px;">PASSENGER & DETAILS</th>
+                            <th class="col-route" style="padding: 8px 6px; border-bottom: 1px solid #E2E6EA; font-size: 10.5px; font-weight: 700; color: #5F6B78; text-align: left; width: 165px;">ROUTE & TRAVEL DATE</th>
+                            <th class="col-num" style="padding: 8px 6px; border-bottom: 1px solid #E2E6EA; font-size: 10.5px; font-weight: 700; color: #5F6B78; text-align: right; width: 86px;">TOTAL (MMK)</th>
+                            <th class="col-num" style="padding: 8px 6px; border-bottom: 1px solid #E2E6EA; font-size: 10.5px; font-weight: 700; color: #5F6B78; text-align: right; width: 80px;">PAID (MMK)</th>
+                            <th class="col-num" style="padding: 8px 6px; border-bottom: 1px solid #E2E6EA; font-size: 10.5px; font-weight: 700; color: #5F6B78; text-align: right; width: 88px;">DUE (MMK)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2008,32 +2324,43 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                     </tbody>
                 </table>
 
-                <div class="prc-totals-section">
-                    <div class="prc-total-line"><span>Sub Total</span><span>${formatDashboardAmount(totalGross)} MMK</span></div>
+                <div class="prc-totals-section" style="width: 290px; margin-left: auto; margin-top: 4px; margin-bottom: 22px;">
+                    <div class="prc-total-line" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #5F6B78; padding: 4px 0;">
+                        <span>Sub Total</span>
+                        <span style="font-variant-numeric: tabular-nums; font-weight: 700; color: #232323;">${formatDashboardAmount(totalGross)} MMK</span>
+                    </div>
                     ${effectiveAgentFare > 0 ? `
-                    <div class="prc-total-line prc-agent-fare-line"><span>Agent Fare</span><span style="color: #D97706; font-weight: 700;">- ${formatDashboardAmount(effectiveAgentFare)} MMK</span></div>
+                    <div class="prc-total-line prc-agent-fare-line" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #5F6B78; padding: 4px 0;">
+                        <span>Agent Fare</span>
+                        <span style="font-variant-numeric: tabular-nums; font-weight: 700; color: #D97706;">- ${formatDashboardAmount(effectiveAgentFare)} MMK</span>
+                    </div>
                     ` : ''}
-                    <div class="prc-total-line prc-paid-line"><span>Paid / Deposit</span><span style="color: #059669; font-weight: 700;">- ${formatDashboardAmount(effectivePaid)} MMK</span></div>
-                    <div class="prc-balance-pill">
+                    <div class="prc-total-line prc-paid-line" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #5F6B78; padding: 4px 0;">
+                        <span>Paid / Deposit</span>
+                        <span style="font-variant-numeric: tabular-nums; font-weight: 700; color: #059669;">- ${formatDashboardAmount(effectivePaid)} MMK</span>
+                    </div>
+                    <div class="prc-balance-pill" style="background: #AA0F11; border-radius: 6px; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; color: #ffffff; font-weight: 700; font-size: 13px; letter-spacing: 0.03em; margin-top: 8px;">
                         <span>BALANCE DUE</span>
-                        <span>MMK ${formatDashboardAmount(balanceDue)}</span>
+                        <span style="font-variant-numeric: tabular-nums; font-weight: 800;">MMK ${formatDashboardAmount(balanceDue)}</span>
                     </div>
                 </div>
 
-                <div class="prc-thank-you">Thank you for choosing Ocean Travel. Please transfer the outstanding balance to one of our accounts below.</div>
+                <div class="prc-thank-you" style="text-align: center; font-style: italic; font-size: 12.5px; color: #5F6B78; margin-top: auto; margin-bottom: auto; padding: 22px 0;">
+                    Thank you for choosing Ocean Travel. Please transfer the outstanding balance to one of our accounts below.
+                </div>
 
-                <div class="prc-payment-section">
-                    <div class="prc-payment-title">PAYMENT METHODS</div>
-                    <div class="prc-account-name">Account Name: AUNG PYAE SONE</div>
-                    <div class="prc-bank-cards">
+                <div class="prc-payment-section" style="margin-top: auto; margin-bottom: 24px; width: 100%;">
+                    <div class="prc-payment-title" style="font-size: 12px; font-weight: 700; color: #232323; letter-spacing: 0.04em; margin-bottom: 4px;">PAYMENT METHODS</div>
+                    <div class="prc-account-name" style="font-size: 13px; font-weight: 700; color: #AA0F11; margin-bottom: 12px;">Account Name: AUNG PYAE SONE</div>
+                    <div class="prc-bank-cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%;">
                         ${bankCardsHtml}
                     </div>
                 </div>
 
-                <div class="prc-footer">
-                    <div class="prc-footer-tagline">EXPLORE. DISCOVER. EXPERIENCE.</div>
-                    <div class="prc-footer-line"></div>
-                    <div class="prc-footer-contact">OCEAN TRAVEL & TOUR CO., LTD. · oceantravel.mm@gmail.com · 09964403435 / 09740862500</div>
+                <div class="prc-footer" style="margin-top: auto; text-align: center; padding-top: 24px; width: 100%;">
+                    <div class="prc-footer-tagline" style="font-size: 11px; font-weight: 700; color: #AA0F11; letter-spacing: 0.08em; margin-bottom: 5px;">EXPLORE. DISCOVER. EXPERIENCE.</div>
+                    <div class="prc-footer-line" style="width: 70px; height: 1px; background: #E2E6EA; margin: 0 auto 6px;"></div>
+                    <div class="prc-footer-contact" style="font-size: 10px; color: #5F6B78;">OCEAN TRAVEL & TOUR CO., LTD. · oceantravel.mm@gmail.com · 09964403435 / 09740862500</div>
                 </div>
             </div>
         `;
@@ -2120,7 +2447,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             </div>
 
             <div class="prc-preview-scroll-viewport">
-                <div id="paymentReminderCardCanvasTarget" class="payment-reminder-card-sheet">
+                <div id="paymentReminderCardCanvasTarget" class="payment-reminder-card-sheet" style="width: 794px; min-width: 794px; max-width: 794px; min-height: 1123px; box-sizing: border-box; margin: 0 auto; padding: 44px 56px 40px; background: #ffffff; color: #232323; font-family: Arial, Helvetica, sans-serif; display: flex; flex-direction: column; text-align: left;">
                     ${buildCardInnerHtml()}
                 </div>
             </div>
@@ -2132,6 +2459,21 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
     const refreshCardView = () => {
         const target = document.getElementById('paymentReminderCardCanvasTarget');
         if (target) target.innerHTML = buildCardInnerHtml();
+    };
+
+    const waitForTargetImages = (root) => {
+        const images = Array.from(root.querySelectorAll('img'));
+        return Promise.all(
+            images.map((img) => new Promise((resolve) => {
+                if (img.complete && img.naturalWidth !== 0) {
+                    resolve();
+                    return;
+                }
+                img.onload = () => resolve();
+                img.onerror = () => resolve();
+                setTimeout(resolve, 1500);
+            }))
+        );
     };
 
     document.getElementById('prcCloseModalBtn')?.addEventListener('click', closeModal);
@@ -2194,10 +2536,14 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             downloadPngBtn.disabled = true;
             downloadPngBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Rendering...';
             await loadDocumentLibraries('canvas');
+            await waitForTargetImages(target);
             const canvas = await window.html2canvas(target, {
-                scale: 2.5,
+                scale: 2,
                 useCORS: true,
-                backgroundColor: '#FFFFFF'
+                backgroundColor: '#FFFFFF',
+                logging: false,
+                width: 794,
+                windowWidth: 1200
             });
             const link = document.createElement('a');
             link.download = `Payment-Reminder-${safeFileSlug}-${new Date().toISOString().slice(0, 10)}.png`;
@@ -2222,10 +2568,14 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             downloadPdfBtn.disabled = true;
             downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Rendering...';
             await loadDocumentLibraries('pdf', 'canvas');
+            await waitForTargetImages(target);
             const canvas = await window.html2canvas(target, {
-                scale: 2.2,
+                scale: 2,
                 useCORS: true,
-                backgroundColor: '#FFFFFF'
+                backgroundColor: '#FFFFFF',
+                logging: false,
+                width: 794,
+                windowWidth: 1200
             });
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const { jsPDF } = window.jspdf;
