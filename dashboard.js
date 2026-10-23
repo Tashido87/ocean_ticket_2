@@ -377,7 +377,7 @@ function getUpcomingTripGroups(days = 14) {
     return [...groups.values()].sort((a, b) => a.date - b.date);
 }
 
-function groupUnpaidTickets(rows) {
+function groupUnpaidTickets(rows, hotelRows = (state.allHotels || [])) {
     const groups = new Map();
 
     // Match Client Detail outstanding logic: unpaid money can live on passenger rows
@@ -478,6 +478,7 @@ function groupUnpaidTickets(rows) {
             const accountGroupKey = accountDisplayLabel.trim().toLowerCase();
 
             groups.set(pnrKey, {
+                isHotel: false,
                 pnr: displayPnr,
                 client: clientLabel,
                 rawClient: clientLabel,
@@ -503,6 +504,75 @@ function groupUnpaidTickets(rows) {
                 hasFeeRows: hasFeeUnpaid
             });
         }
+    });
+
+    // Include Unpaid Hotel Reservations
+    (hotelRows || []).forEach(h => {
+        const rawPaid = h.paid !== undefined && h.paid !== null && h.paid !== '' ? h.paid : h.payment_status;
+        const paidKey = String(rawPaid ?? '').trim().toLowerCase();
+        if (paidKey === 'paid' || rawPaid === true) return;
+
+        const gross = Number(h.selling_price || h.net_amount || 0);
+        let unpaid = gross;
+        let paid = 0;
+        if (paidKey === 'partial') {
+            if (h.outstanding_amount !== undefined && Number(h.outstanding_amount) >= 0) {
+                unpaid = Number(h.outstanding_amount);
+                paid = Math.max(0, gross - unpaid);
+            } else if (h.paid_amount) {
+                paid = Number(h.paid_amount);
+                unpaid = Math.max(0, gross - paid);
+            }
+        }
+        if (unpaid <= 0) return;
+
+        const hotelKey = `HOTEL_${h.id || h.booking_ref || Math.random()}`;
+        const clientName = String(h.client_name || 'Guest').trim();
+        const hotelName = String(h.hotel_name || 'Hotel').trim();
+        const displayRef = String(h.booking_ref || hotelName || 'Hotel').trim();
+        const cleanSocial = String(h.account_name || '').trim();
+        const accountDisplayLabel = cleanSocial || clientName;
+        const accountGroupKey = accountDisplayLabel.trim().toLowerCase();
+
+        const checkinDate = parseSheetDate(h.checkin) || parseSheetDate(h.booking_date);
+        const checkoutDate = parseSheetDate(h.checkout);
+
+        groups.set(hotelKey, {
+            isHotel: true,
+            hotelId: h.id,
+            pnr: displayRef,
+            client: clientName,
+            rawClient: clientName,
+            socialAccount: cleanSocial,
+            accountDisplayLabel,
+            accountGroupKey,
+            accountType: String(h.account_type || '').trim(),
+            accountLink: String(h.account_link || '').trim(),
+            airline: hotelName,
+            hotelName,
+            city: String(h.city || '').trim(),
+            country: String(h.country || '').trim(),
+            checkin: String(h.checkin || '').trim(),
+            checkout: String(h.checkout || '').trim(),
+            travelDateStr: h.checkin ? `${h.checkin}${h.checkout ? ` to ${h.checkout}` : ''}` : '',
+            issuedDateStr: String(h.booking_date || '').trim(),
+            rawPassenger: clientName,
+            route: `${hotelName}${h.city ? ` (${h.city})` : ''}`,
+            sectors: [{
+                departure: `${hotelName}${h.city ? `, ${h.city}` : ''}`,
+                destination: h.checkin && h.checkout ? `${h.checkin} → ${h.checkout}` : ''
+            }],
+            dueDate: checkinDate,
+            issuedDate: parseSheetDate(h.booking_date),
+            amount: unpaid,
+            totalGross: gross,
+            agentFareAmount: 0,
+            paidAmount: paid,
+            tickets: 1,
+            ticketRows: [],
+            hotelRow: h,
+            hasFeeRows: false
+        });
     });
 
     const accountCounts = new Map();
@@ -1349,6 +1419,7 @@ function renderDashboardTravelSchedule(groups) {
 
 let dashboardUnpaidSearchTerm = '';
 let dashboardUnpaidViewMode = 'pnr'; // 'pnr' | 'account'
+let dashboardUnpaidTypeFilter = 'all'; // 'all' | 'ticket' | 'hotel'
 
 function consolidateUnpaidByAccount(groups) {
     const accountMap = new Map();
@@ -1362,6 +1433,7 @@ function consolidateUnpaidByAccount(groups) {
                 accountType: g.accountType || '',
                 accountLink: g.accountLink || '',
                 pnrGroups: [],
+                hotelGroups: [],
                 pnrList: [],
                 clientsSet: new Set(),
                 totalGross: 0,
@@ -1369,18 +1441,24 @@ function consolidateUnpaidByAccount(groups) {
                 paidAmount: 0,
                 unpaidAmount: 0,
                 ticketCount: 0,
+                hotelCount: 0,
                 earliestDue: null
             });
         }
         const entry = accountMap.get(key);
-        entry.pnrGroups.push(g);
-        entry.pnrList.push(g.pnr);
+        if (g.isHotel) {
+            entry.hotelGroups.push(g);
+            entry.hotelCount += 1;
+        } else {
+            entry.pnrGroups.push(g);
+            entry.pnrList.push(g.pnr);
+            entry.ticketCount += Number(g.tickets) || 1;
+        }
         if (g.client) entry.clientsSet.add(g.client);
         entry.totalGross += Number(g.totalGross) || Number(g.amount) || 0;
         entry.agentFareAmount += Number(g.agentFareAmount) || 0;
         entry.paidAmount += Number(g.paidAmount) || 0;
         entry.unpaidAmount += Number(g.amount) || 0;
-        entry.ticketCount += Number(g.tickets) || 1;
         if (g.dueDate?.getTime?.()) {
             if (!entry.earliestDue || g.dueDate < entry.earliestDue) {
                 entry.earliestDue = g.dueDate;
@@ -1401,7 +1479,9 @@ function consolidateUnpaidByAccount(groups) {
     });
 
     return [...accountMap.values()].sort((a, b) => {
-        if (b.pnrGroups.length !== a.pnrGroups.length) return b.pnrGroups.length - a.pnrGroups.length;
+        const aCount = a.pnrGroups.length + a.hotelCount;
+        const bCount = b.pnrGroups.length + b.hotelCount;
+        if (bCount !== aCount) return bCount - aCount;
         return b.unpaidAmount - a.unpaidAmount;
     });
 }
@@ -1421,28 +1501,42 @@ function renderDashboardUnpaidTickets(groups) {
         container.innerHTML = `
             <div class="dashboard-empty-panel">
                 <span class="mini-wallet-illustration" aria-hidden="true"></span>
-                <strong>No unpaid tickets</strong>
-                <span>All tickets are marked paid.</span>
+                <strong>No unpaid bookings</strong>
+                <span>All tickets and hotel stays are marked paid.</span>
             </div>
         `;
         return;
     }
 
+    const ticketCount = groups.filter(g => !g.isHotel).length;
+    const hotelCount = groups.filter(g => g.isHotel).length;
+    const totalCount = groups.length;
+
+    // Filter by type (all / tickets / hotels)
+    let typeFiltered = groups;
+    if (dashboardUnpaidTypeFilter === 'ticket') {
+        typeFiltered = typeFiltered.filter(g => !g.isHotel);
+    } else if (dashboardUnpaidTypeFilter === 'hotel') {
+        typeFiltered = typeFiltered.filter(g => g.isHotel);
+    }
+
     // Filter groups by search term if provided
     const term = (dashboardUnpaidSearchTerm || '').toLowerCase().trim();
     const filteredGroups = term
-        ? groups.filter(g =>
+        ? typeFiltered.filter(g =>
             String(g.pnr || '').toLowerCase().includes(term) ||
             String(g.client || '').toLowerCase().includes(term) ||
             String(g.rawClient || '').toLowerCase().includes(term) ||
             String(g.socialAccount || '').toLowerCase().includes(term) ||
             String(g.rawPassenger || '').toLowerCase().includes(term) ||
+            String(g.hotelName || '').toLowerCase().includes(term) ||
+            String(g.city || '').toLowerCase().includes(term) ||
             String(g.route || '').toLowerCase().includes(term)
         )
-        : groups;
+        : typeFiltered;
 
     const consolidatedAccounts = consolidateUnpaidByAccount(filteredGroups);
-    const multiTicketAccountCount = consolidateUnpaidByAccount(groups).filter(a => a.pnrGroups.length > 1 || a.ticketCount > 1).length;
+    const multiTicketAccountCount = consolidateUnpaidByAccount(groups).filter(a => (a.pnrGroups.length + a.hotelCount) > 1).length;
 
     let tableHeadHtml = '';
     let tableRowsHtml = '';
@@ -1451,7 +1545,7 @@ function renderDashboardUnpaidTickets(groups) {
         tableHeadHtml = `
             <tr>
                 <th>ACCOUNT / CUSTOMER</th>
-                <th>UNPAID PNRS</th>
+                <th>UNPAID BOOKINGS</th>
                 <th>TOTAL / PAID</th>
                 <th>BALANCE DUE</th>
                 <th>ACTION</th>
@@ -1462,6 +1556,16 @@ function renderDashboardUnpaidTickets(groups) {
                 `<a href="#" class="clickable-pnr" data-pnr="${dashboardEscapeHtml(p)}">${dashboardEscapeHtml(p)}</a>`
             ).join(' ');
             const extraPnrs = acc.pnrList.length > 4 ? ` <small>+${acc.pnrList.length - 4}</small>` : '';
+
+            const hotelBadges = (acc.hotelGroups || []).slice(0, 3).map(h =>
+                `<a href="#" class="clickable-hotel-ref" data-hotel-id="${h.hotelId}" style="display:inline-flex; align-items:center; gap:3px; background:rgba(13,110,119,0.12); color:#0D6E77; border-radius:4px; padding:2px 6px; font-weight:600; font-size:11px;"><i class="fa-solid fa-hotel"></i> ${dashboardEscapeHtml(h.pnr || h.hotelName)}</a>`
+            ).join(' ');
+            const extraHotels = (acc.hotelGroups || []).length > 3 ? ` <small>+${acc.hotelGroups.length - 3}</small>` : '';
+
+            const bookingCountParts = [];
+            if (acc.pnrGroups.length > 0) bookingCountParts.push(`${acc.pnrGroups.length} PNR${acc.pnrGroups.length > 1 ? 's' : ''}`);
+            if (acc.hotelCount > 0) bookingCountParts.push(`${acc.hotelCount} Hotel Stay${acc.hotelCount > 1 ? 's' : ''}`);
+
             const passengerPreview = [...acc.clientsSet].slice(0, 2).join(', ');
             return `
                 <tr>
@@ -1473,9 +1577,9 @@ function renderDashboardUnpaidTickets(groups) {
                     </td>
                     <td>
                         <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
-                            ${pnrBadges}${extraPnrs}
+                            ${pnrBadges}${extraPnrs}${hotelBadges}${extraHotels}
                         </div>
-                        <div class="unpaid-account-sub">${acc.pnrGroups.length} PNR${acc.pnrGroups.length > 1 ? 's' : ''} • ${acc.ticketCount} Ticket${acc.ticketCount > 1 ? 's' : ''}</div>
+                        <div class="unpaid-account-sub">${bookingCountParts.join(' • ')}</div>
                     </td>
                     <td class="num">
                         <div style="font-size:0.75rem; color:var(--dash-text-muted);">Total: ${formatDashboardAmount(acc.totalGross)}</div>
@@ -1496,14 +1600,57 @@ function renderDashboardUnpaidTickets(groups) {
     } else {
         tableHeadHtml = `
             <tr>
-                <th>PNR</th>
+                <th>PNR / REF</th>
                 <th>CLIENT / ACCOUNT</th>
-                <th>ROUTE</th>
+                <th>ROUTE / HOTEL</th>
                 <th>AMOUNT DUE</th>
                 <th>ACTION</th>
             </tr>
         `;
         tableRowsHtml = filteredGroups.map(group => {
+            if (group.isHotel) {
+                return `
+                    <tr>
+                        <td>
+                            <div style="display:flex; flex-direction:column; gap:2px; align-items:flex-start;">
+                                <span class="unpaid-tag-hotel"><i class="fa-solid fa-hotel"></i> Hotel</span>
+                                <strong><a href="#" class="clickable-hotel-ref" data-hotel-id="${group.hotelId}">${dashboardEscapeHtml(group.pnr)}</a></strong>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="unpaid-client-primary">${dashboardEscapeHtml(group.client)}</div>
+                            ${group.socialAccount && group.socialAccount.toLowerCase() !== group.client.toLowerCase()
+                                ? `<div class="unpaid-account-sub"><i class="fa-solid fa-at"></i> ${dashboardEscapeHtml(group.socialAccount)}</div>`
+                                : ''}
+                        </td>
+                        <td>
+                            <div class="unpaid-route-stack">
+                                <div class="unpaid-route-line" title="${dashboardEscapeHtml(group.hotelName)}">
+                                    <i class="fa-solid fa-hotel" style="color:#0D6E77; margin-right:4px;"></i> <strong>${dashboardEscapeHtml(group.hotelName)}</strong>${group.city ? ` <small style="color:var(--dash-text-muted);">(${dashboardEscapeHtml(group.city)})</small>` : ''}
+                                </div>
+                                <div class="unpaid-route-line return-line" style="font-size:0.75rem; color:var(--dash-text-muted);">
+                                    <i class="fa-regular fa-calendar-days" style="margin-right:4px;"></i> ${dashboardEscapeHtml(group.travelDateStr || 'Stay')}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="num">
+                            <strong>${formatDashboardAmount(group.amount)} MMK</strong>
+                            <span class="payment-badge payment-${group.hotelRow?.paid || 'unpaid'}" style="font-size:10px; margin-left:4px; padding:2px 6px; text-transform:capitalize;">${group.hotelRow?.paid === 'partial' ? 'Partial' : 'Unpaid'}</span>
+                        </td>
+                        <td>
+                            <div class="unpaid-row-actions">
+                                <button type="button" class="dashboard-row-action reminder-card-btn" data-reminder-account="${dashboardEscapeHtml(group.accountGroupKey)}" data-reminder-pnr="${dashboardEscapeHtml(group.pnr)}" title="Payment Reminder Card for ${dashboardEscapeHtml(group.client)}">
+                                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                                </button>
+                                <button type="button" class="dashboard-row-action clickable-hotel-ref" data-hotel-id="${group.hotelId}" title="View Hotel Reservation Details">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
             const feeBadge = group.hasFeeRows
                 ? `<span class="unpaid-tag-fee" title="Includes Date Change or Fee Entry">Fee</span>`
                 : '';
@@ -1549,17 +1696,28 @@ function renderDashboardUnpaidTickets(groups) {
     container.innerHTML = `
         <div class="unpaid-summary-grid">
             <div><span>Total Unpaid</span><strong>${formatDashboardAmount(totalAmount)}</strong><small>MMK</small></div>
-            <div><span>Overdue</span><strong>${overdue.length}</strong><small>PNR</small></div>
-            <div><span>Due Today</span><strong>${dueToday.length}</strong><small>PNR</small></div>
-            <div><span>Due This Week</span><strong>${dueThisWeek.length}</strong><small>PNR</small></div>
+            <div><span>Overdue</span><strong>${overdue.length}</strong><small>Bookings</small></div>
+            <div><span>Due Today</span><strong>${dueToday.length}</strong><small>Bookings</small></div>
+            <div><span>Due This Week</span><strong>${dueThisWeek.length}</strong><small>Bookings</small></div>
         </div>
         <div class="dashboard-unpaid-toolbar">
-            <input type="text" id="dashboardUnpaidSearch" placeholder="Filter PNR, client, social account, or route..." value="${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}">
+            <input type="text" id="dashboardUnpaidSearch" placeholder="Filter PNR, hotel, client, or route..." value="${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}">
+            <div class="unpaid-view-mode-switch" role="group" aria-label="Type filter">
+                <button type="button" class="unpaid-mode-btn ${dashboardUnpaidTypeFilter === 'all' ? 'active' : ''}" data-unpaid-type="all">
+                    All (${totalCount})
+                </button>
+                <button type="button" class="unpaid-mode-btn ${dashboardUnpaidTypeFilter === 'ticket' ? 'active' : ''}" data-unpaid-type="ticket">
+                    <i class="fa-solid fa-plane"></i> Tickets (${ticketCount})
+                </button>
+                <button type="button" class="unpaid-mode-btn ${dashboardUnpaidTypeFilter === 'hotel' ? 'active' : ''}" data-unpaid-type="hotel">
+                    <i class="fa-solid fa-hotel"></i> Hotels ${hotelCount > 0 ? `<span class="unpaid-mode-badge">${hotelCount}</span>` : ''}
+                </button>
+            </div>
             <div class="unpaid-view-mode-switch" role="group" aria-label="Unpaid view mode">
                 <button type="button" class="unpaid-mode-btn ${dashboardUnpaidViewMode === 'pnr' ? 'active' : ''}" data-unpaid-mode="pnr">
-                    By PNR
+                    By Booking
                 </button>
-                <button type="button" class="unpaid-mode-btn ${dashboardUnpaidViewMode === 'account' ? 'active' : ''}" data-unpaid-mode="account" title="Group unpaid tickets by Social Media Account Name">
+                <button type="button" class="unpaid-mode-btn ${dashboardUnpaidViewMode === 'account' ? 'active' : ''}" data-unpaid-mode="account" title="Group unpaid bookings by Social Media Account Name">
                     By Account ${multiTicketAccountCount > 0 ? `<span class="unpaid-mode-badge">${multiTicketAccountCount}</span>` : ''}
                 </button>
             </div>
@@ -1570,7 +1728,7 @@ function renderDashboardUnpaidTickets(groups) {
                     ${tableHeadHtml}
                 </thead>
                 <tbody>
-                    ${tableRowsHtml || `<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--dash-text-muted);">No unpaid tickets matching "${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}"</td></tr>`}
+                    ${tableRowsHtml || `<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--dash-text-muted);">No unpaid bookings matching "${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}"</td></tr>`}
                 </tbody>
             </table>
         </div>
@@ -1578,7 +1736,17 @@ function renderDashboardUnpaidTickets(groups) {
 
     wireDashboardPnrButtons(container);
 
-    container.querySelectorAll('.unpaid-mode-btn').forEach(btn => {
+    container.querySelectorAll('[data-unpaid-type]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const nextType = btn.dataset.unpaidType;
+            if (nextType && nextType !== dashboardUnpaidTypeFilter) {
+                dashboardUnpaidTypeFilter = nextType;
+                renderDashboardUnpaidTickets(groups);
+            }
+        });
+    });
+
+    container.querySelectorAll('.unpaid-mode-btn[data-unpaid-mode]').forEach(btn => {
         btn.addEventListener('click', () => {
             const nextMode = btn.dataset.unpaidMode;
             if (nextMode && nextMode !== dashboardUnpaidViewMode) {

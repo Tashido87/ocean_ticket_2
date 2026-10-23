@@ -595,6 +595,21 @@ body.dark-theme :is(#home-view, #booking-view, #hotel-view, #manage-view) {
   vertical-align: middle;
 }
 
+#home-view .unpaid-tag-hotel {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(13, 110, 119, 0.12);
+  color: #0D6E77;
+  border: 1px solid rgba(13, 110, 119, 0.25);
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 #home-view .dashboard-table-wrap {
   max-height: none;
   overflow-x: auto;
