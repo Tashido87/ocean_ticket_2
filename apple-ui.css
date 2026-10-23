@@ -4121,18 +4121,50 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 }
 
 @media (max-width: 900px) {
+    #airAsiaModal .modal-content,
+    #chinaHotelModal .modal-content {
+        max-height: 94vh !important;
+        width: 96vw !important;
+        margin: 8px auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 14px 16px !important;
+    }
+    #airAsiaModal .modal-body,
+    #chinaHotelModal .modal-body {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex: 1 1 auto !important;
+        max-height: calc(94vh - 120px) !important;
+        padding-right: 4px !important;
+    }
     .airasia-modal-layout {
-        grid-template-columns: 1fr;
+        display: block !important;
+        grid-template-columns: 1fr !important;
+        max-height: none !important;
     }
-    .airasia-form-scroll,
-    .airasia-preview-scroll {
-        max-height: none;
+    .airasia-form-scroll {
+        max-height: none !important;
+        overflow-y: visible !important;
+        padding-right: 0 !important;
     }
-    .airasia-preview-scroll {
-        padding: 8px;
+    /* Hide live preview completely on mobile per user request */
+    .airasia-preview-scroll,
+    #airAsiaPreviewContainer,
+    #agodaPreviewContainer {
+        display: none !important;
     }
-    .airasia-ticket-wrapper {
-        padding: 20px 16px;
+    .airasia-form-row {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+    .modal-footer {
+        position: sticky !important;
+        bottom: 0 !important;
+        background: var(--surface, #ffffff) !important;
+        z-index: 10 !important;
+        padding-top: 10px !important;
+        margin-top: 10px !important;
     }
 }
 

@@ -5454,21 +5454,41 @@ export async function downloadAirAsiaImage(data) {
         throw new Error('html2canvas library is not loaded');
     }
     const previewEl = document.getElementById('chinaAirlinesTicketDocument') || document.getElementById('airAsiaTicketDocument');
-    if (!previewEl) return;
+    let offscreenContainer = null;
+    let targetEl = previewEl;
 
-    const canvas = await window.html2canvas(previewEl, {
-        scale: 2.5,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-    });
+    if (!targetEl || targetEl.offsetParent === null) {
+        // Element is hidden or on mobile view where preview is hidden
+        offscreenContainer = document.createElement('div');
+        offscreenContainer.style.position = 'fixed';
+        offscreenContainer.style.left = '-9999px';
+        offscreenContainer.style.top = '0';
+        offscreenContainer.style.width = '800px';
+        offscreenContainer.style.background = '#ffffff';
+        offscreenContainer.innerHTML = renderAirAsiaTicketHtml(data);
+        document.body.appendChild(offscreenContainer);
+        targetEl = offscreenContainer.firstElementChild || offscreenContainer;
+    }
 
-    const filename = buildTicketDownloadFilename(data, 'png');
+    try {
+        const canvas = await window.html2canvas(targetEl, {
+            scale: 2.5,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+        });
 
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    return filename;
+        const filename = buildTicketDownloadFilename(data, 'png');
+
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        return filename;
+    } finally {
+        if (offscreenContainer?.parentNode) {
+            offscreenContainer.remove();
+        }
+    }
 }
 
 /**
