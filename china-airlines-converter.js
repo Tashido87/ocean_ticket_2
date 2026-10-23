@@ -47,8 +47,7 @@ export async function getChinaAirlinesLogoDataUrl() {
         await new Promise((resolve, reject) => {
             img.onload = resolve;
             img.onerror = reject;
-            // Use clean authentic banner (without stamped check-in text)
-            img.src = 'assets/china-airlines-pdf-banner.png';
+            img.src = 'assets/china-airlines-logo.png';
         });
         const canvas = document.createElement('canvas');
         canvas.width = img.naturalWidth || img.width;
@@ -58,26 +57,8 @@ export async function getChinaAirlinesLogoDataUrl() {
         cachedLogoDataUrl = canvas.toDataURL('image/png');
         return cachedLogoDataUrl;
     } catch (err) {
-        console.warn('Could not load china-airlines-pdf-banner.png, trying fallback logo:', err);
-        try {
-            const img2 = new Image();
-            img2.crossOrigin = 'Anonymous';
-            await new Promise((resolve, reject) => {
-                img2.onload = resolve;
-                img2.onerror = reject;
-                img2.src = 'assets/china-airlines-logo.png';
-            });
-            const canvas2 = document.createElement('canvas');
-            canvas2.width = img2.naturalWidth || img2.width;
-            canvas2.height = img2.naturalHeight || img2.height;
-            const ctx2 = canvas2.getContext('2d');
-            ctx2.drawImage(img2, 0, 0);
-            cachedLogoDataUrl = canvas2.toDataURL('image/png');
-            return cachedLogoDataUrl;
-        } catch (e) {
-            console.error('Failed to load any China Airlines logo:', e);
-            return 'assets/china-airlines-logo.png';
-        }
+        console.warn('Could not load assets/china-airlines-logo.png:', err);
+        return 'assets/china-airlines-logo.png';
     }
 }
 
@@ -178,7 +159,7 @@ export function renderChinaAirlinesTicketHtml(data) {
     const issueDate = data.issueDate || data.issuedDate || formatIssueDate(new Date());
     const telephone = data.telephone || '66-2-2108999';
 
-    const logoSrc = cachedLogoDataUrl || 'assets/china-airlines-pdf-banner.png';
+    const logoSrc = cachedLogoDataUrl || 'assets/china-airlines-logo.png';
     const barcodeSrc = cachedBarcodeDataUrl || 'assets/china-airlines-barcode.png';
 
     const rawFlights = (data.flights && data.flights.length > 0)
@@ -414,10 +395,10 @@ export async function generateChinaAirlinesPdfDoc(data) {
     const logoDataUrl = await getChinaAirlinesLogoDataUrl();
     const barcodeDataUrl = await getChinaAirlinesBarcodeDataUrl();
 
-    // 1. Top Logo Banner
+    // 1. Top Logo Banner (Natural aspect ratio matching HTML preview)
     if (logoDataUrl) {
         try {
-            doc.addImage(logoDataUrl, 'PNG', 26.0, 18.0, 545.0, 54.0);
+            doc.addImage(logoDataUrl, 'PNG', marginX, 22.0, 225.0, 42.0);
         } catch (e) {
             console.warn('Could not add logo to PDF:', e);
         }
@@ -843,4 +824,18 @@ export async function parseTripSchedulePdf(file) {
         fullText += pageText + '\n';
     }
     return parseItinerarySchedule(fullText);
+}
+
+// Preload assets and libraries in background for instant PDF generation
+if (typeof window !== 'undefined') {
+    const preload = () => {
+        getChinaAirlinesLogoDataUrl().catch(() => {});
+        getChinaAirlinesBarcodeDataUrl().catch(() => {});
+        loadDocumentLibraries('pdf').catch(() => {});
+    };
+    if (window.requestIdleCallback) {
+        window.requestIdleCallback(preload);
+    } else {
+        setTimeout(preload, 100);
+    }
 }

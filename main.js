@@ -25,6 +25,7 @@ let hotelModule;
 const renderHotelReservations = () => hotelModule?.renderHotelReservations();
 const hideHotelReservationForm = () => hotelModule?.hideHotelReservationForm();
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
+import { loadDocumentLibraries } from './document-libraries.js';
 let extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine, parseTripScheduleImage, parseItinerarySchedule, formatPassengerName, generateRandomSeat;
 let renderAgodaHotelHtml, downloadAgodaPdf, downloadAgodaImage, shareAgodaBooking, generateRandomBookingId, generateRandomMemberId, generateRandomBookingRefNo, formatAgodaDate, calculateDefaultCancellationDate, DESTINATION_PRESETS, parseHotelConfirmationPdf;
 
@@ -1653,6 +1654,7 @@ let airAsiaGeneratorInitialized = false;
 function initializeAirAsiaGenerator() {
     if (airAsiaGeneratorInitialized) return;
     airAsiaGeneratorInitialized = true;
+    loadDocumentLibraries('pdf').catch(() => {});
     const dropZone = document.getElementById('airAsiaDropZone');
     const fileInput = document.getElementById('airAsiaFileInput');
     const uploadBtn = document.getElementById('airAsiaUploadBtn');
@@ -2601,6 +2603,7 @@ let chinaHotelGeneratorInitialized = false;
 function initializeChinaHotelGenerator() {
     if (chinaHotelGeneratorInitialized) return;
     chinaHotelGeneratorInitialized = true;
+    loadDocumentLibraries('pdf').catch(() => {});
     const openBtn = document.getElementById('openChinaHotelBtn');
     const quickBtn = document.getElementById('quickChinaHotelBtn');
     const modal = document.getElementById('chinaHotelModal');

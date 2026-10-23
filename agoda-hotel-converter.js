@@ -87,12 +87,57 @@ export const DESTINATION_PRESETS = {
         bookedPayableTitle: 'Booked And Payable By :',
         bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
         benefits: 'Express check-in, Free WiFi'
+    },
+    'Yangon - Lotte': {
+        destination: 'Yangon',
+        propertyName: 'Lotte Hotel Yangon',
+        propertyAddress: '82 Sin Phyu Shin Avenue, Hlaing Township,\nMayangon, Yangon Region 11051, Myanmar',
+        propertyContact: '+95 1 935 1000',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
+    },
+    'Yangon - Melia': {
+        destination: 'Yangon',
+        propertyName: 'Melia Yangon',
+        propertyAddress: '192, Kaba Aye Pagoda Road, Bahan Township,\nKamayut, Yangon Region 11201, Myanmar',
+        propertyContact: '+95 1 934 5000',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
+    },
+    'Yangon - Sayarsan': {
+        destination: 'Yangon',
+        propertyName: 'Sayarsan Hotel Yangon',
+        propertyAddress: 'No. 42, Sayarsan Road, Corner of Sayarsan Road and Pyi Htaung Su Street,\nSayarsan NorthWest Quarter, Bahan Township, Kamayut,\nYangon Region 11201, Myanmar',
+        propertyContact: '+95 1 860 5722',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
+    },
+    'Yangon - Sedona': {
+        destination: 'Yangon',
+        propertyName: 'Sedona Hotel Yangon',
+        propertyAddress: '1 Kabar Aye Pagoda Rd, Yankin Township,\nThingangyun, Yangon Region 11181, Myanmar',
+        propertyContact: '+95 1 860 5377',
+        stampFile: 'agoda-stamp.png',
+        bookedPayableTitle: 'Booked And Payable By :',
+        bookedPayableAddress: 'Agoda Company Pte, Ltd.\n30 Cecil Street, Prudential Tower #19-08,\nSingapore 049712',
+        benefits: 'Express check-in, Free WiFi'
     }
 };
 DESTINATION_PRESETS.ChiangMai = DESTINATION_PRESETS['Chiang Mai'];
 DESTINATION_PRESETS.DaNang = DESTINATION_PRESETS['Da Nang'];
 DESTINATION_PRESETS.HoChiMinh = DESTINATION_PRESETS['Ho Chi Minh'];
 DESTINATION_PRESETS.Saigon = DESTINATION_PRESETS['Ho Chi Minh'];
+DESTINATION_PRESETS['Lotte Hotel Yangon'] = DESTINATION_PRESETS['Yangon - Lotte'];
+DESTINATION_PRESETS['Melia Yangon'] = DESTINATION_PRESETS['Yangon - Melia'];
+DESTINATION_PRESETS['Sayarsan Hotel Yangon'] = DESTINATION_PRESETS['Yangon - Sayarsan'];
+DESTINATION_PRESETS['Sedona Hotel Yangon'] = DESTINATION_PRESETS['Yangon - Sedona'];
+DESTINATION_PRESETS.Yangon = DESTINATION_PRESETS['Yangon - Lotte'];
 
 let cachedAgodaLogoDataUrl = null;
 let cachedAgodaStampDataUrl = null;
@@ -1358,6 +1403,13 @@ function detectHotelDestination(text = '', propertyName = '', propertyAddress = 
     }
     if (combined.includes('kuala lumpur') || combined.includes('malaysia') || combined.includes('penang')) {
         return 'Kuala Lumpur';
+    }
+    if (combined.includes('lotte')) return 'Yangon - Lotte';
+    if (combined.includes('melia')) return 'Yangon - Melia';
+    if (combined.includes('sayarsan') || combined.includes('sayar san')) return 'Yangon - Sayarsan';
+    if (combined.includes('sedona')) return 'Yangon - Sedona';
+    if (combined.includes('yangon') || combined.includes('rangoon') || combined.includes('myanmar') || combined.includes('rgn')) {
+        return 'Yangon - Lotte';
     }
     return 'Bangkok';
 }
