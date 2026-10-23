@@ -966,7 +966,7 @@ body.dark-theme #home-view .passport-vip-badge.is-frequent {
 
 /* Payment Reminder Card Modal & Sheet */
 #modal .modal-content.prc-dialog-modal {
-  max-width: 840px;
+  max-width: 890px;
   width: 96vw;
   padding: 20px;
   border-radius: 18px;
@@ -1096,236 +1096,256 @@ body.dark-theme #home-view .passport-vip-badge.is-frequent {
 
 .prc-preview-scroll-viewport {
   overflow-x: auto;
-  max-height: 70vh;
+  max-height: 75vh;
   overflow-y: auto;
-  padding: 10px;
-  background: #E2E8F0;
+  padding: 18px 12px;
+  background: #CBD5E1;
   border-radius: 12px;
+  display: flex;
+  justify-content: center;
 }
 
-/* Printable / Exportable Card Sheet (Always Crisp Light Theme for PNG/PDF) */
+/* Printable / Exportable Card Sheet (A4 Portrait Receipt Layout) */
 .payment-reminder-card-sheet {
-  width: 720px;
-  min-width: 720px;
-  max-width: 720px;
+  width: 794px;
+  min-width: 794px;
+  max-width: 794px;
+  min-height: 1123px;
   box-sizing: border-box;
   margin: 0 auto;
-  padding: 22px 24px;
+  padding: 44px 56px 40px;
   background: #FFFFFF;
-  color: #0F172A;
-  border-radius: 14px;
-  border: 1px solid #CBD5E1;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #232323;
+  border-radius: 2px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.12);
+  font-family: Arial, Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
-.prc-header-banner {
+.prc-sheet-main {
+  flex: 1;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+}
+
+.prc-inv-top {
+  display: flex;
   justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #0D6E77;
+  align-items: flex-start;
 }
 
-.prc-brand-block {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.prc-brand {
+  width: 220px;
 }
 
-.prc-brand-logo {
-  width: 46px;
-  height: 46px;
+.prc-brand img.prc-brand-logo {
+  display: block;
+  width: 200px;
+  max-height: 65px;
+  height: auto;
   object-fit: contain;
-  border-radius: 10px;
+  object-position: left top;
 }
 
-.prc-brand-title {
-  font-size: 1.12rem;
-  font-weight: 800;
-  color: #0D6E77;
-  letter-spacing: 0.04em;
-}
-
-.prc-brand-sub {
-  font-size: 0.68rem;
-  color: #64748B;
-  line-height: 1.35;
-}
-
-.prc-doc-badge-block {
+.prc-top-right {
   text-align: right;
-  flex-shrink: 0;
 }
 
-.prc-doc-pill {
-  display: inline-block;
-  padding: 4px 11px;
-  border-radius: 999px;
-  background: #0D6E77;
-  color: #FFFFFF;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+.prc-doc-type {
+  margin: 0 0 4px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #232323;
+}
+
+.prc-doc-id {
+  margin: 0 0 3px;
+  font-size: 13px;
+  color: #5F6B78;
+  font-weight: 600;
 }
 
 .prc-doc-date {
-  margin-top: 5px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #64748B;
+  margin: 0;
+  font-size: 13px;
+  color: #5F6B78;
 }
 
-.prc-customer-strip {
+.prc-company-lines {
+  margin-top: 14px;
+}
+
+.prc-company-lines p {
+  margin: 0 0 3px;
+  font-size: 10.5px;
+  color: #5F6B78;
+  line-height: 1.4;
+}
+
+.prc-header-rule {
+  height: 2.5px;
+  background: #AA0F11;
+  margin: 12px 0 18px;
+  border: none;
+}
+
+.prc-billing-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin: 12px 0;
-  padding: 9px 14px;
-  background: #F0FAFB;
-  border: 1px solid rgba(13, 110, 119, 0.22);
-  border-radius: 10px;
+  align-items: flex-start;
+  margin-bottom: 22px;
 }
 
-.prc-strip-label {
-  display: block;
-  font-size: 0.62rem;
-  font-weight: 800;
-  color: #64748B;
+.prc-billed-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #AA0F11;
+  margin-bottom: 4px;
   letter-spacing: 0.05em;
 }
 
-.prc-customer-name {
-  font-size: 0.96rem;
-  font-weight: 800;
-  color: #094F56;
-  margin-right: 8px;
+.prc-client-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #232323;
+  margin-bottom: 4px;
 }
 
-.prc-platform-tag {
+.prc-pnr-line {
+  font-size: 11.5px;
+  color: #232323;
+  line-height: 1.4;
+}
+
+.prc-platform-badge {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 999px;
-  background: #FFFFFF;
-  border: 1px solid rgba(13, 110, 119, 0.28);
-  color: #0D6E77;
-  font-size: 0.66rem;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  color: #0F172A;
+  font-size: 10px;
   font-weight: 700;
 }
 
-.prc-stat-mini {
-  text-align: right;
+.prc-meta-right {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
 }
 
-.prc-stat-mini span {
-  display: block;
-  font-size: 0.64rem;
-  color: #64748B;
+.prc-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
 }
 
-.prc-stat-mini strong {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #0F172A;
+.prc-meta-label {
+  color: #5F6B78;
 }
 
-.prc-table-container {
-  margin-bottom: 12px;
-  border: 1px solid #CBD5E1;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #FFFFFF;
+.prc-meta-val {
+  font-weight: 700;
+  color: #232323;
 }
 
-#paymentReminderCardCanvasTarget .prc-items-table {
+.prc-status-pending {
+  color: #AA0F11 !important;
+}
+
+/* Items Table */
+.prc-inv-table {
   width: 100% !important;
-  table-layout: fixed !important;
   border-collapse: collapse !important;
-  margin: 0 !important;
+  margin-bottom: 16px !important;
+  background: #FFFFFF !important;
+  table-layout: fixed !important;
 }
 
-#paymentReminderCardCanvasTarget .prc-items-table thead th {
-  background: #0F172A !important;
-  color: #FFFFFF !important;
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  line-height: 1.25 !important;
-  letter-spacing: 0.04em !important;
-  padding: 7px 8px !important;
+.prc-inv-table thead th {
+  padding: 8px 6px !important;
+  border-bottom: 1px solid #E2E6EA !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  color: #5F6B78 !important;
+  letter-spacing: 0.03em;
+  background: transparent !important;
   text-align: left;
-  border-bottom: none !important;
-  white-space: nowrap;
 }
 
-#paymentReminderCardCanvasTarget .prc-items-table thead th.prc-th-idx {
-  width: 28px;
-  text-align: center;
-}
-
-#paymentReminderCardCanvasTarget .prc-items-table thead th.prc-th-pnr {
-  width: 98px;
-}
-
-#paymentReminderCardCanvasTarget .prc-items-table thead th.prc-th-pax {
-  width: 138px;
-}
-
-#paymentReminderCardCanvasTarget .prc-items-table thead th.prc-th-route {
-  width: 162px;
-}
-
-#paymentReminderCardCanvasTarget .prc-items-table thead th.prc-th-num {
-  width: 82px;
-  text-align: right !important;
-}
-
-#paymentReminderCardCanvasTarget .prc-items-table tbody td {
-  padding: 7px 8px !important;
+.prc-inv-table tbody td {
+  padding: 9px 6px !important;
+  border-bottom: 1px solid #E2E6EA !important;
   font-size: 11.5px !important;
-  line-height: 1.32 !important;
-  border-bottom: 1px solid #E2E8F0 !important;
-  color: #1E293B !important;
+  color: #232323 !important;
   background: #FFFFFF !important;
   vertical-align: middle !important;
   word-break: break-word;
 }
 
-#paymentReminderCardCanvasTarget .prc-items-table tbody tr:nth-child(even) td {
-  background: #F8FAFC !important;
+.prc-inv-table tbody tr:nth-child(even) td {
+  background: #F7F8F9 !important;
 }
 
-#paymentReminderCardCanvasTarget .prc-items-table tbody tr:last-child td {
-  border-bottom: none !important;
+.prc-inv-table th.col-idx,
+.prc-inv-table td.col-idx {
+  text-align: center !important;
+  width: 28px;
+  color: #5F6B78 !important;
+  font-size: 11px;
 }
 
-#paymentReminderCardCanvasTarget .prc-items-table tbody td.prc-col-idx {
-  text-align: center;
-  color: #64748B !important;
-  font-weight: 700 !important;
-  font-size: 11px !important;
+.prc-inv-table th.col-pnr,
+.prc-inv-table td.col-pnr {
+  text-align: left !important;
+  width: 95px;
 }
 
-.prc-pnr-code {
+.prc-cell-pnr {
   font-family: 'JetBrains Mono', monospace;
-  font-weight: 800;
-  color: #0D6E77;
-  font-size: 11.5px;
-  line-height: 1.25;
-}
-
-.prc-pax-name {
   font-weight: 700;
   color: #0F172A;
   font-size: 11.5px;
-  line-height: 1.28;
 }
 
-.prc-fee-pill {
+.prc-inv-table th.col-desc,
+.prc-inv-table td.col-desc {
+  text-align: left !important;
+  width: 130px;
+}
+
+.prc-cell-pax {
+  font-weight: 700;
+  color: #232323;
+  font-size: 11.5px;
+}
+
+.prc-inv-table th.col-route,
+.prc-inv-table td.col-route {
+  text-align: left !important;
+  width: 165px;
+}
+
+.prc-cell-route {
+  font-weight: 600;
+  color: #232323;
+  font-size: 11.5px;
+}
+
+.prc-cell-sub {
+  font-size: 10px;
+  color: #5F6B78;
+  margin-top: 2px;
+}
+
+.prc-fee-badge {
   display: inline-block;
   margin-top: 2px;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 4px;
   background: #FEF3C7;
   color: #B45309;
@@ -1333,190 +1353,166 @@ body.dark-theme #home-view .passport-vip-badge.is-frequent {
   font-weight: 700;
 }
 
-.prc-route-text {
-  font-weight: 700;
-  color: #1E293B;
-  font-size: 11.5px;
-  line-height: 1.28;
-}
-
-.prc-sub-meta {
-  font-size: 10px;
-  color: #64748B;
-  line-height: 1.25;
-  margin-top: 1px;
-}
-
-#paymentReminderCardCanvasTarget .prc-items-table tbody td.prc-num {
+.prc-inv-table th.col-num,
+.prc-inv-table td.col-num {
   text-align: right !important;
+  width: 86px;
   font-variant-numeric: tabular-nums;
-  font-weight: 700 !important;
-  font-size: 11.5px !important;
-  white-space: nowrap;
+  font-weight: 700;
 }
 
-#paymentReminderCardCanvasTarget .prc-items-table tbody td.prc-paid-val {
+.prc-inv-table td.prc-cell-paid {
   color: #059669 !important;
 }
 
-#paymentReminderCardCanvasTarget .prc-items-table tbody td.prc-due-val {
-  color: #DC2626 !important;
+.prc-inv-table td.prc-cell-due {
+  color: #AA0F11 !important;
   font-weight: 800 !important;
 }
 
-/* Totals Row + Polite Note */
-.prc-totals-section-row {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 14px;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.prc-polite-note {
-  padding: 10px 12px;
-  background: #F8FAFC;
-  border: 1px dashed #CBD5E1;
-  border-radius: 8px;
-  font-size: 11px;
-  line-height: 1.5;
-  color: #475569;
-}
-
-.prc-totals-box {
-  padding: 10px 12px;
-  background: #F8FAFC;
-  border: 1px solid #CBD5E1;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Totals Section */
+.prc-totals-section {
+  width: 290px;
+  margin-left: auto;
+  margin-top: 4px;
+  margin-bottom: 22px;
 }
 
 .prc-total-line {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  font-size: 11.5px;
-  color: #334155;
-  font-weight: 600;
+  align-items: center;
+  font-size: 12px;
+  color: #5F6B78;
+  padding: 4px 0;
 }
 
-.prc-total-line strong {
+.prc-total-line span:last-child {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #232323;
+}
+
+.prc-balance-pill {
+  background: #AA0F11;
+  border-radius: 6px;
+  padding: 9px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  margin-top: 8px;
+}
+
+.prc-balance-pill span:last-child {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
-  color: #0F172A;
 }
 
-.prc-total-line.agent-fare strong {
-  color: #D97706;
+.prc-thank-you {
+  text-align: center;
+  font-style: italic;
+  font-size: 12.5px;
+  color: #5F6B78;
+  margin-top: auto;
+  margin-bottom: auto;
+  padding: 24px 0;
 }
 
-.prc-total-line.paid strong {
-  color: #059669;
+/* Payment Methods */
+.prc-payment-section {
+  margin-top: auto;
+  margin-bottom: 24px;
 }
 
-.prc-total-line.balance-due {
-  margin-top: 2px;
-  padding: 8px 10px;
-  background: #FEF2F2;
-  border: 1.5px solid #FCA5A5;
-  border-radius: 8px;
+.prc-payment-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #232323;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
 }
 
-.prc-due-en {
-  font-size: 11px;
-  font-weight: 800;
-  color: #991B1B;
-  letter-spacing: 0.03em;
+.prc-account-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #AA0F11;
+  margin-bottom: 12px;
 }
 
-.prc-total-line.balance-due strong {
-  font-size: 14px;
-  font-weight: 900;
-  color: #DC2626;
-}
-
-/* Invoice-Style Payment Methods Section (Clean, No QR) */
-.prc-inv-payment-section {
-  padding-top: 12px;
-  border-top: 1px solid #E2E8F0;
-}
-
-.prc-inv-payment-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.prc-inv-payment-title {
-  font-size: 11px;
-  font-weight: 800;
-  color: #0D6E77;
-  letter-spacing: 0.05em;
-}
-
-.prc-inv-account-owner {
-  font-size: 11px;
-  color: #475569;
-}
-
-.prc-inv-account-owner strong {
-  color: #0F172A;
-  font-weight: 800;
-}
-
-.prc-inv-bank-cards-grid {
+.prc-bank-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 14px;
 }
 
-.prc-inv-bank-card {
-  border: 1px solid #CBD5E1;
-  border-radius: 8px;
-  background: #F8FAFC;
+.prc-bank-card {
+  background: #F7F8F9;
+  border: 1px solid #E2E6EA;
+  border-radius: 6px;
   overflow: hidden;
 }
 
-.prc-inv-bank-header {
-  background: #E2E8F0;
-  padding: 5px 10px;
-  font-size: 11px;
-  font-weight: 800;
-  color: #0F172A;
-  letter-spacing: 0.02em;
+.prc-bank-card-header {
+  background: #232323;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 11.5px;
+  padding: 6px 12px;
+  border-bottom: 2px solid #AA0F11;
 }
 
-.prc-inv-bank-body {
-  padding: 7px 10px;
+.prc-bank-card-body {
+  padding: 8px 12px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.prc-inv-bank-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   gap: 6px;
-  font-size: 10.5px;
-  line-height: 1.3;
 }
 
-.prc-inv-bank-label {
-  color: #64748B;
-  font-weight: 600;
-  white-space: nowrap;
+.prc-bank-row {
+  line-height: 1.35;
 }
 
-.prc-inv-bank-acc {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10.5px;
+.prc-bank-label {
+  font-size: 9.5px;
+  color: #5F6B78;
+}
+
+.prc-bank-acc {
+  font-size: 11.5px;
   font-weight: 700;
-  color: #0F172A;
-  text-align: right;
+  color: #232323;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Footer */
+.prc-footer {
+  margin-top: auto;
+  text-align: center;
+  padding-top: 22px;
+}
+
+.prc-footer-tagline {
+  font-size: 11px;
+  font-weight: 700;
+  color: #AA0F11;
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+}
+
+.prc-footer-line {
+  width: 70px;
+  height: 1px;
+  background: #E2E6EA;
+  margin: 0 auto 6px;
+}
+
+.prc-footer-contact {
+  font-size: 10px;
+  color: #5F6B78;
 }
 
 

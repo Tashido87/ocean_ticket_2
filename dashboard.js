@@ -1924,33 +1924,33 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
 
         const rowsHtml = items.map((item, idx) => `
             <tr>
-                <td class="prc-col-idx">${idx + 1}</td>
-                <td class="prc-col-pnr">
-                    <div class="prc-pnr-code">${dashboardEscapeHtml(item.pnr)}</div>
-                    <div class="prc-sub-meta">Issued: ${dashboardEscapeHtml(item.issuedDate)}</div>
+                <td class="col-idx">${idx + 1}</td>
+                <td class="col-pnr">
+                    <div class="prc-cell-pnr">${dashboardEscapeHtml(item.pnr)}</div>
+                    <div class="prc-cell-sub">Issued: ${dashboardEscapeHtml(item.issuedDate)}</div>
                 </td>
-                <td class="prc-col-pax">
-                    <div class="prc-pax-name">${dashboardEscapeHtml(item.passenger)}</div>
-                    ${item.isFee ? `<span class="prc-fee-pill">Date Change / Fee</span>` : ''}
+                <td class="col-desc">
+                    <div class="prc-cell-pax">${dashboardEscapeHtml(item.passenger)}</div>
+                    ${item.isFee ? `<span class="prc-fee-badge">Date Change / Fee</span>` : ''}
                 </td>
-                <td class="prc-col-route">
-                    <div class="prc-route-text">${dashboardEscapeHtml(item.route)}</div>
-                    <div class="prc-sub-meta">${item.airline ? `${dashboardEscapeHtml(item.airline)} • ` : ''}Travel: ${dashboardEscapeHtml(item.travelDate)}</div>
+                <td class="col-route">
+                    <div class="prc-cell-route">${dashboardEscapeHtml(item.route)}</div>
+                    <div class="prc-cell-sub">${item.airline ? `${dashboardEscapeHtml(item.airline)} · ` : ''}Travel: ${dashboardEscapeHtml(item.travelDate)}</div>
                 </td>
-                <td class="prc-num">${formatDashboardAmount(item.gross)}</td>
-                <td class="prc-num prc-paid-val">${formatDashboardAmount(item.paid)}</td>
-                <td class="prc-num prc-due-val">${formatDashboardAmount(item.due)}</td>
+                <td class="col-num">${formatDashboardAmount(item.gross)}</td>
+                <td class="col-num prc-cell-paid">${formatDashboardAmount(item.paid)}</td>
+                <td class="col-num prc-cell-due">${formatDashboardAmount(item.due)}</td>
             </tr>
         `).join('');
 
         const bankCardsHtml = REMINDER_BANK_CARDS.map(card => `
-            <div class="prc-inv-bank-card">
-                <div class="prc-inv-bank-header">${dashboardEscapeHtml(card.bank)}</div>
-                <div class="prc-inv-bank-body">
+            <div class="prc-bank-card">
+                <div class="prc-bank-card-header">${dashboardEscapeHtml(card.bank)}</div>
+                <div class="prc-bank-card-body">
                     ${card.items.map(item => `
-                        <div class="prc-inv-bank-row">
-                            <span class="prc-inv-bank-label">${dashboardEscapeHtml(item.label)}</span>
-                            <strong class="prc-inv-bank-acc">${dashboardEscapeHtml(item.account)}</strong>
+                        <div class="prc-bank-row">
+                            <div class="prc-bank-label">${dashboardEscapeHtml(item.label)}</div>
+                            <div class="prc-bank-acc">${dashboardEscapeHtml(item.account)}</div>
                         </div>
                     `).join('')}
                 </div>
@@ -1958,87 +1958,82 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         `).join('');
 
         return `
-            <div class="prc-header-banner">
-                <div class="prc-brand-block">
-                    <img src="./ocean-travel-logo.png" alt="Ocean Travel" class="prc-brand-logo" crossorigin="anonymous" onerror="this.style.display='none'">
+            <div class="prc-sheet-main">
+                <div class="prc-inv-top">
+                    <div class="prc-brand">
+                        <img src="./ocean-travel-logo.png" alt="Ocean Travel" class="prc-brand-logo" crossorigin="anonymous" />
+                    </div>
+                    <div class="prc-top-right">
+                        <h1 class="prc-doc-type">PAYMENT REMINDER</h1>
+                        <p class="prc-doc-id">PR-${dashboardEscapeHtml(leadGroup.pnr || 'OCT26')}</p>
+                        <p class="prc-doc-date">${dashboardEscapeHtml(todayFormatted)} · Due on Receipt</p>
+                    </div>
+                </div>
+
+                <div class="prc-company-lines">
+                    <p>A3-1, Room 603, Myanma Gone Yi Housing, Upper Pansodan St,<br>Mingalar Taung Nyunt Tsp, Yangon</p>
+                    <p>09964403435, 09740862500 · oceantravel.mm@gmail.com</p>
+                </div>
+
+                <hr class="prc-header-rule" />
+
+                <div class="prc-billing-row">
                     <div>
-                        <div class="prc-brand-title">OCEAN TRAVEL</div>
-                        <div class="prc-brand-sub">A3-1, Room 603, Myanma Gone Yi Housing, Upper Pansodan St, Yangon</div>
-                        <div class="prc-brand-sub">Tel: 09964403435, 09740862500 • oceantravel.mm@gmail.com</div>
+                        <div class="prc-billed-label">BILLED TO</div>
+                        <div class="prc-client-name">${dashboardEscapeHtml(customerDisplayName)}</div>
+                        <div class="prc-pnr-line">Account: ${dashboardEscapeHtml(leadGroup.socialAccount || customerDisplayName)}${leadGroup.accountType ? ` · <span class="prc-platform-badge">${dashboardEscapeHtml(leadGroup.accountType)}</span>` : ''}</div>
+                        <div class="prc-pnr-line">Unpaid Bookings: ${groupsToUse.length} PNR${groupsToUse.length > 1 ? 's' : ''} (${items.length} Item${items.length > 1 ? 's' : ''})</div>
+                    </div>
+                    <div class="prc-meta-right">
+                        <div class="prc-meta-row"><span class="prc-meta-label">Reminder Date</span><span class="prc-meta-val">${dashboardEscapeHtml(todayFormatted)}</span></div>
+                        <div class="prc-meta-row"><span class="prc-meta-label">Terms</span><span class="prc-meta-val">Due on Receipt</span></div>
+                        <div class="prc-meta-row"><span class="prc-meta-label">Status</span><span class="prc-meta-val prc-status-pending">Payment Pending</span></div>
                     </div>
                 </div>
-                <div class="prc-doc-badge-block">
-                    <span class="prc-doc-pill">PAYMENT REMINDER</span>
-                    <div class="prc-doc-date">Date: ${dashboardEscapeHtml(todayFormatted)}</div>
-                </div>
-            </div>
 
-            <div class="prc-customer-strip">
-                <div class="prc-customer-left">
-                    <span class="prc-strip-label">CUSTOMER / SOCIAL MEDIA ACCOUNT</span>
-                    <strong class="prc-customer-name">${dashboardEscapeHtml(customerDisplayName)}</strong>
-                    ${leadGroup.accountType ? `<span class="prc-platform-tag">${dashboardEscapeHtml(leadGroup.accountType)}</span>` : ''}
-                </div>
-                <div class="prc-customer-right">
-                    <div class="prc-stat-mini">
-                        <span>Unpaid Bookings</span>
-                        <strong>${groupsToUse.length} PNR${groupsToUse.length > 1 ? 's' : ''} (${items.length} Item${items.length > 1 ? 's' : ''})</strong>
-                    </div>
-                </div>
-            </div>
-
-            <div class="prc-table-container">
-                <table class="prc-items-table">
+                <table class="prc-inv-table">
                     <thead>
                         <tr>
-                            <th class="prc-th-idx">#</th>
-                            <th class="prc-th-pnr">PNR / ISSUED</th>
-                            <th class="prc-th-pax">PASSENGER</th>
-                            <th class="prc-th-route">ROUTE & TRAVEL DATE</th>
-                            <th class="prc-th-num">TOTAL</th>
-                            <th class="prc-th-num">PAID</th>
-                            <th class="prc-th-num">DUE</th>
+                            <th class="col-idx">#</th>
+                            <th class="col-pnr">PNR / REF</th>
+                            <th class="col-desc">PASSENGER & DETAILS</th>
+                            <th class="col-route">ROUTE & TRAVEL DATE</th>
+                            <th class="col-num">TOTAL (MMK)</th>
+                            <th class="col-num">PAID (MMK)</th>
+                            <th class="col-num">DUE (MMK)</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${rowsHtml}
                     </tbody>
                 </table>
-            </div>
 
-            <div class="prc-totals-section-row">
-                <div class="prc-polite-note">
-                    Thank you for choosing Ocean Travel. Please review your outstanding ticket summary and share the payment screenshot once transferred.
-                </div>
-                <div class="prc-totals-box">
-                    <div class="prc-total-line">
-                        <span>Total Amount (စုစုပေါင်း)</span>
-                        <strong>MMK ${formatDashboardAmount(totalGross)}</strong>
-                    </div>
+                <div class="prc-totals-section">
+                    <div class="prc-total-line"><span>Sub Total</span><span>${formatDashboardAmount(totalGross)} MMK</span></div>
                     ${effectiveAgentFare > 0 ? `
-                    <div class="prc-total-line agent-fare">
-                        <span>Agent Fare (အေးဂျင့်ခ)</span>
-                        <strong>- MMK ${formatDashboardAmount(effectiveAgentFare)}</strong>
-                    </div>
+                    <div class="prc-total-line prc-agent-fare-line"><span>Agent Fare</span><span style="color: #D97706; font-weight: 700;">- ${formatDashboardAmount(effectiveAgentFare)} MMK</span></div>
                     ` : ''}
-                    <div class="prc-total-line paid">
-                        <span>Paid / Received (ပေးချေပြီး)</span>
-                        <strong>- MMK ${formatDashboardAmount(effectivePaid)}</strong>
-                    </div>
-                    <div class="prc-total-line balance-due">
-                        <span class="prc-due-en">BALANCE DUE (ကျန်ငွေ)</span>
-                        <strong>MMK ${formatDashboardAmount(balanceDue)}</strong>
+                    <div class="prc-total-line prc-paid-line"><span>Paid / Deposit</span><span style="color: #059669; font-weight: 700;">- ${formatDashboardAmount(effectivePaid)} MMK</span></div>
+                    <div class="prc-balance-pill">
+                        <span>BALANCE DUE</span>
+                        <span>MMK ${formatDashboardAmount(balanceDue)}</span>
                     </div>
                 </div>
-            </div>
 
-            <div class="prc-inv-payment-section">
-                <div class="prc-inv-payment-head">
-                    <span class="prc-inv-payment-title">PAYMENT METHODS</span>
-                    <span class="prc-inv-account-owner">Account Name: <strong>AUNG PYAE SONE</strong></span>
+                <div class="prc-thank-you">Thank you for choosing Ocean Travel. Please transfer the outstanding balance to one of our accounts below.</div>
+
+                <div class="prc-payment-section">
+                    <div class="prc-payment-title">PAYMENT METHODS</div>
+                    <div class="prc-account-name">Account Name: AUNG PYAE SONE</div>
+                    <div class="prc-bank-cards">
+                        ${bankCardsHtml}
+                    </div>
                 </div>
-                <div class="prc-inv-bank-cards-grid">
-                    ${bankCardsHtml}
+
+                <div class="prc-footer">
+                    <div class="prc-footer-tagline">EXPLORE. DISCOVER. EXPERIENCE.</div>
+                    <div class="prc-footer-line"></div>
+                    <div class="prc-footer-contact">OCEAN TRAVEL & TOUR CO., LTD. · oceantravel.mm@gmail.com · 09964403435 / 09740862500</div>
                 </div>
             </div>
         `;
@@ -2103,11 +2098,11 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             <div class="prc-controls-bar">
                 <div class="prc-inputs-row">
                     <div class="prc-paid-input-group">
-                        <label for="prcCustomAgentFareInput">အေးဂျင့်ခ (Agent Fare MMK):</label>
+                        <label for="prcCustomAgentFareInput">Agent Fare (MMK):</label>
                         <input type="number" id="prcCustomAgentFareInput" min="0" step="1000" value="${initialSummary.effectiveAgentFare}" placeholder="0">
                     </div>
                     <div class="prc-paid-input-group">
-                        <label for="prcCustomPaidInput">ပေးပြီးသားငွေ (Paid / Deposit MMK):</label>
+                        <label for="prcCustomPaidInput">Paid / Deposit (MMK):</label>
                         <input type="number" id="prcCustomPaidInput" min="0" step="1000" value="${initialSummary.effectivePaid}" placeholder="0">
                     </div>
                 </div>
@@ -2116,7 +2111,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                         <i class="fa-regular fa-copy"></i> Copy Text (MM)
                     </button>
                     <button type="button" class="btn btn-secondary prc-action-btn" id="prcDownloadPdfBtn">
-                        <i class="fa-solid fa-file-pdf"></i> Download PDF
+                        <i class="fa-solid fa-file-pdf"></i> Download PDF (A4)
                     </button>
                     <button type="button" class="btn btn-primary prc-action-btn" id="prcDownloadPngBtn">
                         <i class="fa-solid fa-image"></i> Download PNG
@@ -2208,7 +2203,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             link.download = `Payment-Reminder-${safeFileSlug}-${new Date().toISOString().slice(0, 10)}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
-            showToast('Payment Reminder Card (PNG) downloaded!', 'success');
+            showToast('Payment Reminder (PNG) downloaded!', 'success');
         } catch (err) {
             console.error('Failed to export PNG:', err);
             showToast('Could not generate PNG image.', 'error');
@@ -2235,13 +2230,28 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF({
-                orientation: canvas.width > canvas.height ? 'l' : 'p',
-                unit: 'pt',
-                format: [canvas.width * 0.75 + 40, canvas.height * 0.75 + 40]
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
             });
-            pdf.addImage(imgData, 'JPEG', 20, 20, canvas.width * 0.75, canvas.height * 0.75);
+            const pdfWidth = 210;
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            if (pdfHeight <= 297.5) {
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            } else {
+                let heightLeft = pdfHeight;
+                let position = 0;
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+                heightLeft -= 297;
+                while (heightLeft > 0) {
+                    position -= 297;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
+                    heightLeft -= 297;
+                }
+            }
             pdf.save(`Payment-Reminder-${safeFileSlug}-${new Date().toISOString().slice(0, 10)}.pdf`);
-            showToast('Payment Reminder Card (PDF) downloaded!', 'success');
+            showToast('Payment Reminder (A4 PDF) downloaded!', 'success');
         } catch (err) {
             console.error('Failed to export PDF:', err);
             showToast('Could not generate PDF document.', 'error');
