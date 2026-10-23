@@ -8632,6 +8632,7 @@ body.material-theme .search-skeleton-row span {
 .kpi-navy  .settle-kpi-icon { background: var(--surface-2);  color: var(--secondary-accent); }
 .kpi-coral .settle-kpi-icon { background: rgba(232, 91, 77, 0.15); color: var(--danger-accent); }
 .kpi-amber .settle-kpi-icon { background: rgba(213, 159, 57, 0.2); color: var(--warning-accent); }
+.kpi-purple .settle-kpi-icon { background: rgba(139, 92, 246, 0.18); color: #8B5CF6; }
 .settle-kpi-label {
     font-size: 0.7rem;
     font-weight: 800;

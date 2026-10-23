@@ -4889,6 +4889,11 @@ button.btn-generate:hover {
     color: #D47B22;
 }
 
+#settle-view .settle-kpi-card.kpi-purple .settle-kpi-icon {
+    background: #EDE9FE;
+    color: #7C3AED;
+}
+
 #settle-view .settle-kpi-body {
     flex: 1;
     min-width: 0;

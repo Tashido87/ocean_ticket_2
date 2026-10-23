@@ -289,6 +289,65 @@ export function getSettlementSummary(customRange = null) {
         myCommission += n(h.commission);
     });
 
+    // Self-Purchased Tickets & Hotels within active period
+    const selfTickets = (state.allTickets || []).filter(t => {
+        if (t.source !== 'self' || isCanceled(t)) return false;
+        const issued = parseSheetDate(t.issued_date);
+        return issued && issued.getTime && inRange(issued, start, end);
+    });
+
+    const selfHotels = (state.allHotels || []).filter(h => {
+        if (h.source !== 'self') return false;
+        const checkin = parseSheetDate(h.checkin) || parseSheetDate(h.booking_date);
+        return checkin && checkin.getTime && inRange(checkin, start, end);
+    });
+
+    let selfProfit = 0;
+    const selfItems = [];
+
+    selfTickets.forEach(t => {
+        const revenue = (n(t.base_fare) || 0) + (n(t.extra_fare) || 0);
+        const cost = n(t.cost_price) || 0;
+        let profit = (n(t.commission) || 0) + (n(t.extra_fare) || 0);
+        if (!(n(t.commission) > 0) && revenue > cost) {
+            profit = revenue - cost;
+        }
+        selfProfit += profit;
+        selfItems.push({
+            id: t.id || t.booking_reference,
+            kind: 'ticket',
+            date: parseSheetDate(t.issued_date),
+            dateStr: t.issued_date,
+            pnr: t.booking_reference || t.pnr || '—',
+            client: t.name || '—',
+            route: t.departure && t.destination ? `${(t.departure || '').split('(')[0].trim()} → ${(t.destination || '').split('(')[0].trim()}` : (t.departure || 'Flight'),
+            revenue,
+            cost,
+            profit
+        });
+    });
+
+    selfHotels.forEach(h => {
+        const revenue = n(h.selling_price) || n(h.base_fare) || n(h.net_amount) || 0;
+        const profit = n(h.commission) || 0;
+        const cost = Math.max(0, revenue - profit);
+        selfProfit += profit;
+        selfItems.push({
+            id: h.id || h.booking_ref,
+            kind: 'hotel',
+            date: parseSheetDate(h.checkin) || parseSheetDate(h.booking_date),
+            dateStr: h.checkin || h.booking_date,
+            pnr: h.booking_ref || `HTL-${h.id || ''}`,
+            client: h.client_name || '—',
+            route: `${h.hotel_name || 'Hotel'}${h.city ? ` (${h.city})` : ''}`,
+            revenue,
+            cost,
+            profit
+        });
+    });
+
+    selfItems.sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
+
     const periodSettlements = state.allSettlements.filter(s => inRange(parseSheetDate(s.settlement_date), start, end));
     const paidToOwner = periodSettlements.reduce((sum, s) => sum + n(s.amount_paid), 0);
 
@@ -312,6 +371,9 @@ export function getSettlementSummary(customRange = null) {
         myCommission,
         extraProfit,
         myProfit: myCommission + extraProfit,
+        selfProfit,
+        selfItems,
+        grandTotalProfit: myCommission + extraProfit + selfProfit,
         adjustmentsTotal,
         closing: remainingDue,
         periodTickets,
@@ -721,6 +783,7 @@ export function displaySettlements() {
     renderReconciliation();
     renderHealthCard();
     renderRecords();
+    renderSelfPurchasedSection();
     renderClosedPeriods();
 }
 
@@ -834,15 +897,26 @@ function renderKpis() {
         kpi('fa-scale-balanced', s.remainingDue > 0 ? 'coral' : 'teal', 'Remaining Due to Owner', formatMMK(s.remainingDue), s.remainingDue > 0 ? 'Outstanding owner payable' : 'No owner balance due'),
         kpi('fa-percent', 'teal', 'My Commission', formatMMK(s.myCommission), 'Commission retained (not self purchased)'),
         kpi('fa-arrow-trend-up', 'amber', 'Extra Profit', formatMMK(s.extraProfit), 'Extra fare retained'),
-        kpi('fa-chart-line', 'teal', 'Total Profit', formatMMK(s.myProfit), 'Commission + extra fare')
+        kpi('fa-chart-line', 'teal', 'Owner Profit', formatMMK(s.myProfit), 'Commission + extra fare'),
+        kpi('fa-credit-card', 'purple', 'Self-Purchased Profit', formatMMK(s.selfProfit), `${(s.selfItems || []).length} direct bookings (click to view list)`, 'class="settle-kpi-card glass-card kpi-purple kpi-self-card" style="grid-column: span 2; cursor: pointer;" title="Click to scroll to Self-Purchased bookings list"'),
+        kpi('fa-wallet', 'teal', 'Grand Total Profit', formatMMK(s.grandTotalProfit), `Owner (${formatMMK(s.myProfit)}) + Self (${formatMMK(s.selfProfit)})`, 'class="settle-kpi-card glass-card kpi-teal" style="grid-column: span 2;"')
     ];
 
     grid.innerHTML = cards.join('');
+
+    const selfCard = grid.querySelector('.kpi-self-card');
+    if (selfCard) {
+        selfCard.addEventListener('click', () => {
+            const section = document.getElementById('settleSelfPurchasedSection');
+            if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }
 }
 
-function kpi(icon, color, label, value, support) {
+function kpi(icon, color, label, value, support, customWrap = '') {
+    const wrapStart = customWrap || `<div class="settle-kpi-card glass-card kpi-${color}">`;
     return `
-        <div class="settle-kpi-card glass-card kpi-${color}">
+        ${wrapStart}
             <div class="settle-kpi-icon"><i class="fa-solid ${icon}"></i></div>
             <div class="settle-kpi-body">
                 <div class="settle-kpi-label">${escapeHtml(label)}</div>
@@ -850,6 +924,62 @@ function kpi(icon, color, label, value, support) {
                 ${support ? `<div class="settle-kpi-support">${escapeHtml(support)}</div>` : ''}
             </div>
         </div>
+    `;
+}
+
+function renderSelfPurchasedSection() {
+    const section = document.getElementById('settleSelfPurchasedSection');
+    const tbody = document.getElementById('settleSelfBody');
+    const badgeWrap = document.getElementById('settleSelfBadgeWrap');
+    if (!section || !tbody) return;
+
+    const s = getSettlementSummary();
+    const items = s.selfItems || [];
+
+    if (badgeWrap) {
+        badgeWrap.innerHTML = `
+            <span class="settle-badge-purple" style="background: rgba(139, 92, 246, 0.12); color: #7C3AED; border: 1px solid rgba(139, 92, 246, 0.28); padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-coins"></i> Total Profit: <strong>+${formatMMK(s.selfProfit)}</strong>
+            </span>
+        `;
+    }
+
+    if (!items.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="settle-empty" style="text-align: center; padding: 2rem; color: #94A3B8;">
+                    No self-purchased tickets or hotels in this period.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = items.map(item => {
+        const isHotel = item.kind === 'hotel';
+        const typeBadge = isHotel
+            ? `<span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; border-radius:999px; background:#E0F2FE; color:#0369A1; font-weight:600;"><i class="fa-solid fa-hotel"></i> Hotel</span>`
+            : `<span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; border-radius:999px; background:#EDE9FE; color:#6D28D9; font-weight:600;"><i class="fa-solid fa-plane"></i> Flight</span>`;
+
+        return `
+            <tr>
+                <td>${escapeHtml(formatDateToDMMMY(formatDateForSheet(item.date)) || item.dateStr || '—')}</td>
+                <td>${typeBadge}</td>
+                <td><strong>${escapeHtml(item.pnr)}</strong></td>
+                <td><strong>${escapeHtml(item.client)}</strong></td>
+                <td>${escapeHtml(item.route)}</td>
+                <td class="num">${item.revenue ? formatMMK(item.revenue) : '—'}</td>
+                <td class="num">${item.cost ? formatMMK(item.cost) : '—'}</td>
+                <td class="num" style="color: #059669; font-weight: 700;">+${formatMMK(item.profit)}</td>
+            </tr>
+        `;
+    }).join('') + `
+        <tr style="background: rgba(139, 92, 246, 0.05); font-weight: 700; border-top: 2px solid rgba(139, 92, 246, 0.2);">
+            <td colspan="5"><strong>Total (${items.length} booking${items.length === 1 ? '' : 's'})</strong></td>
+            <td class="num"><strong>${formatMMK(items.reduce((sum, i) => sum + (i.revenue || 0), 0))}</strong></td>
+            <td class="num"><strong>${formatMMK(items.reduce((sum, i) => sum + (i.cost || 0), 0))}</strong></td>
+            <td class="num" style="color: #059669; font-weight: 800; font-size: 0.95rem;">+${formatMMK(s.selfProfit)}</td>
+        </tr>
     `;
 }
 

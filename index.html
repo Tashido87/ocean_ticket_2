@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Ocean Travel">
-    <link rel="stylesheet" href="app-styles.min.css?v=985bf29d">
+    <link rel="stylesheet" href="app-styles.min.css?v=a61f9164">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -528,6 +528,39 @@
                             <tbody id="settleRecordsBody"></tbody>
                         </table></div>
                         <div id="settlementPagination" class="pagination-container"></div>
+                    </section>
+
+                    <!-- Self-Purchased Bookings & Profit -->
+                    <section class="settle-section glass-card" id="settleSelfPurchasedSection">
+                        <div class="settle-section-head">
+                            <div class="settle-section-titles">
+                                <span class="settle-section-icon" style="background: rgba(139, 92, 246, 0.12); color: #8B5CF6;">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                </span>
+                                <div>
+                                    <h3>Self-Purchased Bookings & Profit</h3>
+                                    <p class="settle-section-subtitle">Directly purchased tickets & hotels (independent of owner payable)</p>
+                                </div>
+                            </div>
+                            <div class="settle-section-badge-wrap" id="settleSelfBadgeWrap"></div>
+                        </div>
+                        <div class="settle-table-wrap">
+                            <table class="settle-table" id="settleSelfTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>PNR / Ref</th>
+                                        <th>Passenger / Guest</th>
+                                        <th>Route / Hotel</th>
+                                        <th class="num">Revenue</th>
+                                        <th class="num">Cost</th>
+                                        <th class="num">Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="settleSelfBody"></tbody>
+                            </table>
+                        </div>
                     </section>
 
                     <!-- Closed Periods -->
@@ -1991,7 +2024,7 @@
     "./passport.js": "./passport.js?v=5d8bc9ea",
     "./reports.js": "./reports.js?v=cbd055c3",
     "./search.js": "./search.js?v=f4de2bad",
-    "./settlement.js": "./settlement.js?v=c4a0e740",
+    "./settlement.js": "./settlement.js?v=bd625bce",
     "./state.js": "./state.js?v=8eca2a3d",
     "./tickets.js": "./tickets.js?v=d5aec67f",
     "./ui.js": "./ui.js?v=ee8df8bb",
