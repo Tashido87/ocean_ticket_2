@@ -802,6 +802,30 @@ function setupEventListeners() {
         recordsTodayEl.textContent = `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
     }
 
+    // Dashboard KPI Card Navigation
+    const selfPurchasedCard = document.getElementById('self-purchased-box');
+    if (selfPurchasedCard) {
+        selfPurchasedCard.style.cursor = 'pointer';
+        selfPurchasedCard.title = 'Click to view Self-Purchased tickets and hotels in Records';
+        selfPurchasedCard.addEventListener('click', () => {
+            showView('records');
+            const searchSource = document.getElementById('searchSource');
+            if (searchSource) {
+                searchSource.value = 'self';
+                searchSource.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+
+    const ownerPayableCard = document.getElementById('owner-payable-box');
+    if (ownerPayableCard) {
+        ownerPayableCard.style.cursor = 'pointer';
+        ownerPayableCard.title = 'Click to open Owner Settlement view';
+        ownerPayableCard.addEventListener('click', () => {
+            showView('settle');
+        });
+    }
+
     document.getElementById('recordsFilterToggle').addEventListener('click', () => {
         const panel = document.getElementById('recordsFilters');
         if (panel) panel.hidden = !panel.hidden;
