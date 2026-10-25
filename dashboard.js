@@ -2144,12 +2144,14 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         return;
     }
 
-    let scopeMode = accountMatchedGroups.length > 1 ? 'account' : 'all'; // 'account' | 'single'
+    // If a specific PNR was clicked on a row, default to 'single' so ONLY that client's booking is shown.
+    // If opened without a specific PNR (e.g. from Group by Account view), default to 'account'.
+    let scopeMode = (normalizedPnr && singlePnrGroups.length > 0)
+        ? 'single'
+        : (accountMatchedGroups.length > 1 ? 'account' : 'all');
     let customExtraPaid = null; // null means use computed paidAmount from tickets
     let customExtraAgentFare = null; // null means use computed unsettled sub_agent_fare
 
-    const leadGroup = initialGroups[0];
-    const customerDisplayName = leadGroup.accountDisplayLabel || leadGroup.socialAccount || leadGroup.client || 'Customer';
     const todayFormatted = new Date().toLocaleDateString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric'
     });
@@ -2158,7 +2160,20 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         if (scopeMode === 'single' && singlePnrGroups.length > 0) {
             return singlePnrGroups;
         }
-        return initialGroups;
+        return accountMatchedGroups.length > 0 ? accountMatchedGroups : singlePnrGroups;
+    };
+
+    const getActiveLeadGroup = () => {
+        const grps = getActiveGroups();
+        return grps[0] || initialGroups[0];
+    };
+
+    const getActiveDisplayName = () => {
+        const lead = getActiveLeadGroup();
+        if (scopeMode === 'single') {
+            return lead.client || lead.accountDisplayLabel || lead.socialAccount || 'Customer';
+        }
+        return lead.accountDisplayLabel || lead.socialAccount || lead.client || 'Customer';
     };
 
     const buildLineItems = (groupsToUse) => {
@@ -2216,11 +2231,12 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         const defaultPaid = items.reduce((s, item) => s + item.paid, 0);
         const itemsAgentFare = items.reduce((s, item) => s + (item.agentFare || 0), 0);
         const groupTicketRows = (groupsToUse || []).flatMap(g => g.ticketRows || []);
+        const activeLead = getActiveLeadGroup();
         const defaultAgentFare = scopeMode === 'single'
             ? itemsAgentFare
             : Math.max(
                 itemsAgentFare,
-                getAccountUnsettledAgentFare(leadGroup.socialAccount || customerDisplayName, groupTicketRows)
+                getAccountUnsettledAgentFare(activeLead.socialAccount || activeLead.accountDisplayLabel || 'Customer', groupTicketRows)
             );
         const effectiveAgentFare = customExtraAgentFare !== null
             ? Math.max(0, Number(customExtraAgentFare) || 0)
@@ -2234,6 +2250,8 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
 
     const buildCardInnerHtml = () => {
         const groupsToUse = getActiveGroups();
+        const activeLead = getActiveLeadGroup();
+        const activeDisplayName = getActiveDisplayName();
         const items = buildLineItems(groupsToUse);
         const { totalGross, effectiveAgentFare, effectivePaid, balanceDue } = computeSummary(items, groupsToUse);
 
@@ -2281,7 +2299,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                     </div>
                     <div class="prc-top-right" style="text-align: right;">
                         <h1 class="prc-doc-type" style="margin: 0 0 4px; font-size: 28px; font-weight: 700; letter-spacing: 0.04em; color: #232323; line-height: 1.1;">PAYMENT REMINDER</h1>
-                        <p class="prc-doc-id" style="margin: 0 0 3px; font-size: 13px; color: #5F6B78; font-weight: 600;">PR-${dashboardEscapeHtml(leadGroup.pnr || 'OCT26')}</p>
+                        <p class="prc-doc-id" style="margin: 0 0 3px; font-size: 13px; color: #5F6B78; font-weight: 600;">PR-${dashboardEscapeHtml(activeLead.pnr || 'OCT26')}</p>
                         <p class="prc-doc-date" style="margin: 0; font-size: 13px; color: #5F6B78;">${dashboardEscapeHtml(todayFormatted)} · Due on Receipt</p>
                     </div>
                 </div>
@@ -2296,9 +2314,9 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                 <div class="prc-billing-row" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; width: 100%;">
                     <div>
                         <div class="prc-billed-label" style="font-size: 10px; font-weight: 700; color: #AA0F11; margin-bottom: 4px; letter-spacing: 0.05em;">BILLED TO</div>
-                        <div class="prc-client-name" style="font-size: 18px; font-weight: 700; color: #232323; margin-bottom: 4px;">${dashboardEscapeHtml(customerDisplayName)}</div>
-                        <div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">Account: ${dashboardEscapeHtml(leadGroup.socialAccount || customerDisplayName)}${leadGroup.accountType ? ` · <span class="prc-platform-badge" style="display: inline-block; padding: 1px 7px; border-radius: 999px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; font-size: 10px; font-weight: 700;">${dashboardEscapeHtml(leadGroup.accountType)}</span>` : ''}</div>
-                        <div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">Unpaid Bookings: ${groupsToUse.length} PNR${groupsToUse.length > 1 ? 's' : ''} (${items.length} Item${items.length > 1 ? 's' : ''})</div>
+                        <div class="prc-client-name" style="font-size: 18px; font-weight: 700; color: #232323; margin-bottom: 4px;">${dashboardEscapeHtml(activeDisplayName)}</div>
+                        ${activeLead.socialAccount ? `<div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">Account: ${dashboardEscapeHtml(activeLead.socialAccount)}${activeLead.accountType ? ` · <span class="prc-platform-badge" style="display: inline-block; padding: 1px 7px; border-radius: 999px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; font-size: 10px; font-weight: 700;">${dashboardEscapeHtml(activeLead.accountType)}</span>` : ''}</div>` : ''}
+                        <div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">${scopeMode === 'single' ? `Booking: PNR ${dashboardEscapeHtml(activeLead.pnr)}` : `Unpaid Bookings: ${groupsToUse.length} PNR${groupsToUse.length > 1 ? 's' : ''}`} (${items.length} Item${items.length > 1 ? 's' : ''})</div>
                     </div>
                     <div class="prc-meta-right" style="display: flex; flex-direction: column; gap: 5px; min-width: 200px;">
                         <div class="prc-meta-row" style="display: flex; justify-content: space-between; font-size: 11.5px;"><span class="prc-meta-label" style="color: #5F6B78;">Reminder Date</span><span class="prc-meta-val" style="font-weight: 700; color: #232323;">${dashboardEscapeHtml(todayFormatted)}</span></div>
@@ -2368,6 +2386,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
 
     const buildReminderTextMm = () => {
         const groupsToUse = getActiveGroups();
+        const activeDisplayName = getActiveDisplayName();
         const items = buildLineItems(groupsToUse);
         const { totalGross, effectiveAgentFare, effectivePaid, balanceDue } = computeSummary(items, groupsToUse);
         const lines = items.map((item, idx) =>
@@ -2375,7 +2394,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         ).join('\n');
 
         return [
-            `မင်္ဂလာပါ ${customerDisplayName} ခင်ဗျာ 🙏`,
+            `မင်္ဂလာပါ ${activeDisplayName} ခင်ဗျာ 🙏`,
             `Ocean Travel မှ လူကြီးမင်း၏ မရှင်းလင်းရသေးသော လေယာဉ်လက်မှတ် စာရင်းချုပ် (Payment Reminder) အား လေးစားစွာ ပေးပို့အပ်ပါသည်ခင်ဗျာ။`,
             ``,
             `🎫 လက်မှတ်စာရင်း (${groupsToUse.length} PNR / ${items.length} စောင်)`,
@@ -2408,11 +2427,11 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                     <h3 class="prc-modal-title"><i class="fa-solid fa-file-invoice-dollar"></i> Payment Reminder Card</h3>
                     ${accountMatchedGroups.length > 1 && singlePnrGroups.length > 0 ? `
                     <div class="prc-scope-switch">
-                        <button type="button" class="prc-scope-btn active" data-prc-scope="account">
-                            All ${accountMatchedGroups.length} PNRs (${dashboardEscapeHtml(customerDisplayName)})
+                        <button type="button" class="prc-scope-btn${scopeMode === 'single' ? ' active' : ''}" data-prc-scope="single">
+                            Only PNR ${dashboardEscapeHtml(normalizedPnr)} (${dashboardEscapeHtml(singlePnrGroups[0]?.client || 'Client')})
                         </button>
-                        <button type="button" class="prc-scope-btn" data-prc-scope="single">
-                            Only PNR ${dashboardEscapeHtml(normalizedPnr)}
+                        <button type="button" class="prc-scope-btn${scopeMode === 'account' ? ' active' : ''}" data-prc-scope="account">
+                            All ${accountMatchedGroups.length} PNRs (${dashboardEscapeHtml(accountMatchedGroups[0]?.accountDisplayLabel || 'Account')})
                         </button>
                     </div>
                     ` : ''}
@@ -2482,7 +2501,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         btn.addEventListener('click', () => {
             document.querySelectorAll('.prc-scope-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            scopeMode = btn.dataset.prcScope || 'account';
+            scopeMode = btn.dataset.prcScope || 'single';
             customExtraPaid = null;
             customExtraAgentFare = null;
             const activeGrps = getActiveGroups();
@@ -2525,7 +2544,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
         }
     });
 
-    const safeFileSlug = customerDisplayName.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-|-$/g, '') || 'Customer';
+    const safeFileSlug = (getActiveDisplayName()).replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-|-$/g, '') || 'Customer';
 
     const downloadPngBtn = document.getElementById('prcDownloadPngBtn');
     downloadPngBtn?.addEventListener('click', async () => {
