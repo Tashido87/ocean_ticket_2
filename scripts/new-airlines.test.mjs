@@ -113,7 +113,7 @@ test('Vietnam Airlines: HTML preview and PDF generator match brand specification
             arrTerminal: 'Terminal 1',
             depTime: '08:30',
             arrTime: '09:50',
-            depDateFormatted: 'Wednesday, 21 Oct 2026',
+            depDateFormatted: 'Wednesday, 28 October 2026',
             flightClass: 'Economy Classic (K)',
             aircraft: 'Boeing 787-9',
             seat: '16C'
@@ -130,6 +130,10 @@ test('Vietnam Airlines: HTML preview and PDF generator match brand specification
     assert.match(html, /VN 126/);
     assert.match(html, /SGN/);
     assert.match(html, /DAD/);
+    assert.match(html, /28 Oct 2026/);
+    assert.doesNotMatch(html, /Wednesday,\s*28/i);
+    assert.match(html, /08:30 &nbsp;T1/);
+    assert.doesNotMatch(html, /TTerminal/i);
 
     const doc = await generateVietnamAirlinesPdfDoc(data);
     assert.ok(doc);
