@@ -149,6 +149,57 @@ export function createDefaultChinaAirlinesData() {
 }
 
 /**
+ * Resolve carry-on weight dynamically
+ */
+export function resolveCarryOnText(data, defaultWeight = '7kg') {
+    if (!data) return defaultWeight;
+    if (data.carryOnWeight) {
+        const m = String(data.carryOnWeight).match(/(\d+)\s*kg/i);
+        if (m) return `${m[1]}kg`;
+    }
+    if (data.carryOnBaggage) {
+        const m = String(data.carryOnBaggage).match(/(\d+)\s*kg/i);
+        if (m) return `${m[1]}kg`;
+    }
+    if (data.checkedBaggage) {
+        const m = String(data.checkedBaggage).match(/Carry-on\s*:\s*(\d+)\s*kg/i);
+        if (m) return `${m[1]}kg`;
+    }
+    return defaultWeight;
+}
+
+/**
+ * Resolve baggage display string for China Airlines e-ticket
+ */
+export function resolveChinaAirlinesBaggage(flight, data) {
+    const carryOn = resolveCarryOnText(data, '7kg');
+    const rawBag = (flight && flight.baggage) || (data && data.checkedBaggage) || '';
+
+    const hasNoChecked = /(?:no\s*free|no\s*checked|no\s*baggage|(?<!\d)0\s*(?:kg|pcs?|pieces?)\b|\bnil\b|\bnone\b|\bnot\s*included\b)/i.test(rawBag) ||
+                         /(?:no\s*free|no\s*checked|no\s*baggage|(?<!\d)0\s*(?:kg|pcs?|pieces?)\b|\bnil\b|\bnone\b|\bnot\s*included\b)/i.test(data?.checkedBaggage || '');
+
+    if (hasNoChecked) {
+        return `Carry-on: ${carryOn}`;
+    }
+
+    if (flight?.baggage && flight.baggage !== '2PC') {
+        return flight.baggage;
+    }
+
+    if (data?.checkedBaggage) {
+        const m = data.checkedBaggage.match(/(\d+\s*(?:pc|pcs|pieces?|kg))/i);
+        if (m) return m[1].toUpperCase();
+    }
+
+    const isLcc = /airasia|vietjet|scoot|fd|ak|vj|tr/i.test(data?.airline || flight?.airlineName || flight?.flightNo || '');
+    if (isLcc) {
+        return `Carry-on: ${carryOn}`;
+    }
+
+    return flight?.baggage || '2PC';
+}
+
+/**
  * Render authentic China Airlines Electronic Ticket Receipt HTML
  */
 export function renderChinaAirlinesTicketHtml(data) {
@@ -187,7 +238,7 @@ export function renderChinaAirlinesTicketHtml(data) {
         const duration = escapeHtml(f.duration || '03:40');
         const operatedBy = escapeHtml(f.operatedBy || f.airlineName || 'CHINA AIRLINES LTD.');
         const marketedBy = escapeHtml(f.marketedBy || f.airlineName || 'CHINA AIRLINES LTD.');
-        const baggage = escapeHtml(f.baggage || '2PC');
+        const baggage = escapeHtml(resolveChinaAirlinesBaggage(f, data));
         const fareBasis = escapeHtml(f.fareBasis || 'DOTH');
         const nvb = escapeHtml(f.nvb || f.depDate || f.depDateFormatted || '');
         const nva = escapeHtml(f.nva || f.depDate || f.depDateFormatted || '');
@@ -563,7 +614,7 @@ export async function generateChinaAirlinesPdfDoc(data) {
         doc.text('Baggage (4): ', c1X, tableY + 36.0);
         w = doc.getTextWidth('Baggage (4): ');
         doc.setFont('helvetica', 'normal');
-        doc.text(f.baggage || '2PC', c1X + w, tableY + 36.0);
+        doc.text(resolveChinaAirlinesBaggage(f, data), c1X + w, tableY + 36.0);
 
         doc.setFont('helvetica', 'bold');
         doc.text('Fare basis: ', c1X, tableY + 48.0);

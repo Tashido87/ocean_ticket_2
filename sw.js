@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-200b1212';
+const CACHE_NAME = 'ocean-travel-f19fa149';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -6,7 +6,7 @@ const CORE_ASSETS = [
     './ocean-travel-logo.png',
     './app-styles.min.css?v=188d7587',
     './document-libraries.js?v=7c5a726d',
-    './main.js?v=570bbb7d',
+    './main.js?v=88ef76c6',
     './dashboard.js?v=a9fef149',
     './auth.js?v=625c50ce',
     './firebase-config.js?v=aab230c1',
@@ -29,8 +29,8 @@ const CORE_ASSETS = [
     './passport.js?v=5d8bc9ea',
     './passport-ocr.js?v=456777f7',
     './passport-parser.mjs?v=d0633dfa',
-    './china-airlines-converter.js?v=5e26ad8a',
-    './china-airlines-parser.mjs?v=cb9928ac'
+    './china-airlines-converter.js?v=57085d6a',
+    './china-airlines-parser.mjs?v=569d8f51'
 ];
 
 self.addEventListener('install', (event) => {

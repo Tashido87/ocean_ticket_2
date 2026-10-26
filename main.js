@@ -2368,6 +2368,13 @@ function initializeAirAsiaGenerator() {
             route: primaryFlight.route || '',
             checkedBaggage: document.getElementById('aa_bag_checked')?.value || '',
             carryOnBaggage: document.getElementById('aa_bag_carry')?.value || '',
+            carryOnWeight: (() => {
+                const cb = (document.getElementById('aa_bag_carry')?.value || '') + ' ' + (document.getElementById('aa_bag_checked')?.value || '');
+                const m = cb.match(/carry[\s-]*on[\s\S]{0,30}?(\d+)\s*kg/i)
+                    || (document.getElementById('aa_bag_carry')?.value || '').match(/(?:cannot\s*exceed|up\s*to|max)\s*(\d+)\s*kg/i)
+                    || (document.getElementById('aa_bag_carry')?.value || '').match(/(\d+)\s*kg/i);
+                return m ? `${m[1]}kg` : undefined;
+            })(),
             personalItem: document.getElementById('aa_bag_personal')?.value || ''
         };
     }
@@ -2482,6 +2489,7 @@ function initializeAirAsiaGenerator() {
                     flights: flights,
                     checkedBaggage: parsedSchedule.checkedBaggage,
                     carryOnBaggage: parsedSchedule.carryOnBaggage,
+                    carryOnWeight: parsedSchedule.carryOnWeight,
                     personalItem: parsedSchedule.personalItem
                 };
             } else {
@@ -2501,6 +2509,9 @@ function initializeAirAsiaGenerator() {
                         parsedData.passengers = [{ name: altSchedule.passengerName || '', type: 'Adult' }];
                         if (altSchedule.checkedBaggage && !parsedData.checkedBaggage) {
                             parsedData.checkedBaggage = altSchedule.checkedBaggage;
+                        }
+                        if (altSchedule.carryOnWeight && !parsedData.carryOnWeight) {
+                            parsedData.carryOnWeight = altSchedule.carryOnWeight;
                         }
                     }
                 }

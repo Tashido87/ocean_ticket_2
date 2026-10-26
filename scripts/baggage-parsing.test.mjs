@@ -2,6 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseItineraryText, formatCheckedBaggageLine, renderAirAsiaTicketHtml } from '../airasia-converter.js';
 import { parseItinerarySchedule } from '../china-airlines-parser.mjs';
+import { renderChinaAirlinesTicketHtml } from '../china-airlines-converter.js';
+import {
+    renderChinaEasternTicketHtml,
+    renderVietnamAirlinesTicketHtml,
+    renderCathayPacificTicketHtml,
+    renderHongKongAirlinesTicketHtml,
+    renderHkExpressTicketHtml
+} from '../new-airlines-converter.js';
 
 test('parseItineraryText correctly detects "No free baggage allowance" and does not hardcode 30 kg', () => {
     const rawTripDoc = `
@@ -108,4 +116,46 @@ Personal item and carry-on max 7 kg
     assert.equal(res.detectedAirline, 'AirAsia');
     assert.match(res.checkedBaggage, /No free baggage allowance/i);
     assert.doesNotMatch(res.checkedBaggage, /30\s*kg/i);
+    assert.equal(res.carryOnWeight, '7kg');
+    assert.equal(res.flights[0].baggage, 'Carry-on: 7kg');
+});
+
+test('Ticket templates dynamically render Carry-on: 7kg when ticket has no checked baggage', () => {
+    const rawTripDoc = `
+Trip.com E-Ticket / Receipt
+Booking No. 12984719284
+Booking Ref: HIGGNX
+Thai AirAsia FD 252 Economy
+Passenger: SOE SANDAR TUN
+Yangon (RGN) to Bangkok (DMK)
+Departure: 14 Nov 2026 08:30
+Arrival: 14 Nov 2026 10:15
+
+Baggage Allowance
+Personal item: 1 piece per person (max 40x30x10 cm)
+Carry-on baggage: 1 piece per person (max 56x36x23 cm)
+Checked baggage: No free baggage allowance
+* The total weight of the personal item and carry-on baggage cannot exceed 7 kg.
+`;
+    const parsed = parseItineraryText(rawTripDoc);
+    assert.equal(parsed.carryOnWeight, '7kg');
+
+    // 1. China Airlines template
+    const ciHtml = renderChinaAirlinesTicketHtml(parsed);
+    assert.match(ciHtml, /Carry-on:\s*7kg/i);
+    assert.doesNotMatch(ciHtml, /Baggage\s*\(4\)[^<]*2PC/i);
+
+    // 2. China Eastern template
+    const muHtml = renderChinaEasternTicketHtml(parsed);
+    assert.match(muHtml, /Carry-on:\s*7kg/i);
+    assert.doesNotMatch(muHtml, /Carry-on:\s*8kg/i);
+
+    // 3. Vietnam Airlines template
+    const vnHtml = renderVietnamAirlinesTicketHtml(parsed);
+    assert.match(vnHtml, /Carry-on:\s*7kg/i);
+    assert.doesNotMatch(vnHtml, /Carry-on:\s*12kg/i);
+
+    // 4. HK Express template
+    const uoHtml = renderHkExpressTicketHtml(parsed);
+    assert.match(uoHtml, /7kg\s*carry-on/i);
 });

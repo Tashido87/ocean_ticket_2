@@ -567,6 +567,13 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
     let carryOnBaggage = undefined;
     let personalItem = undefined;
 
+    let carryOnWeight = '7kg';
+    const carryOnMatch = text.match(/(?:carry[\s-]*on|cabin|hand\s*baggage|hand\s*luggage)[\s\S]{0,60}?(\d+)\s*kg/i)
+        || text.match(/(?:total\s*weight[\s\S]{0,60}cannot\s*exceed|cannot\s*exceed)\s*(\d+)\s*kg/i);
+    if (carryOnMatch) {
+        carryOnWeight = `${carryOnMatch[1]}kg`;
+    }
+
     const checkedLineMatch = text.match(/Checked\s*(?:baggage)?\s*[:：]\s*([^\r\n]+)/i);
     const bagBlock = text.match(/Checked\s*baggage\b[\s\S]*?(?=(?:Carry-on|Personal|Important|\*|\n\s*\n|$))/i);
     const checkedSectionText = checkedLineMatch ? checkedLineMatch[1].trim() : (bagBlock ? bagBlock[0].replace(/^Checked\s*baggage\s*[:：]?\s*/i, '').trim() : '');
@@ -579,28 +586,45 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
 
     if (hasNoCheckedBag) {
         checkedBaggage = isStandardLayout
-            ? 'Checked: No free baggage allowance   |   Carry-on: 7 kg'
+            ? `Checked: No free baggage allowance   |   Carry-on: ${carryOnWeight}`
             : 'No free baggage allowance\nOptional checked baggage can be purchased separately';
     } else if (checkedSectionText) {
         const weightMatch = checkedSectionText.match(/(\d+)\s*kg/i);
         const pieceMatch = checkedSectionText.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
         if (pieceMatch) {
             checkedBaggage = isStandardLayout
-                ? `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`
+                ? `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: ${carryOnWeight}`
                 : `${pieceMatch[2]} kg per person (${pieceMatch[1]} pieces)\nEach piece max 119 x 119 x 81 cm`;
         } else if (weightMatch) {
             checkedBaggage = isStandardLayout
-                ? `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg`
+                ? `Checked: ${weightMatch[1]} kg   |   Carry-on: ${carryOnWeight}`
                 : `${weightMatch[1]} kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm`;
         }
     } else {
         const explicitBagWeight = text.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
         if (explicitBagWeight) {
             checkedBaggage = isStandardLayout
-                ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: 7 kg`
+                ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: ${carryOnWeight}`
                 : `${explicitBagWeight[1]} kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm`;
         }
     }
+
+    flights.forEach(fl => {
+        fl.carryOn = carryOnWeight;
+        if (hasNoCheckedBag) {
+            fl.baggage = `Carry-on: ${carryOnWeight}`;
+        } else if (checkedBaggage) {
+            const wm = checkedBaggage.match(/(\d+)\s*kg/i);
+            const pm = checkedBaggage.match(/(\d+)\s*(?:pieces?|pcs|pc)/i);
+            if (pm && wm) {
+                fl.baggage = `${pm[1]}PC (${wm[1]}kg)`;
+            } else if (wm) {
+                fl.baggage = `${wm[1]}kg`;
+            } else if (pm) {
+                fl.baggage = `${pm[1]}PC`;
+            }
+        }
+    });
 
     return {
         passengerName, // Blank by default if not in schedule
@@ -610,6 +634,7 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
         detectedAirline,
         checkedBaggage,
         carryOnBaggage,
+        carryOnWeight,
         personalItem
     };
 }

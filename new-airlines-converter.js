@@ -65,6 +65,43 @@ function formatCompactBaggage(bagStr, defaultVal = '20 kg') {
 }
 
 /**
+ * Resolve carry-on / cabin baggage weight dynamically from ticket data
+ */
+export function resolveCarryOnText(data, defaultWeight = '7kg') {
+    if (!data) return defaultWeight;
+
+    if (data.carryOnWeight) {
+        const m = String(data.carryOnWeight).match(/(\d+)\s*kg/i);
+        if (m) return `${m[1]}kg`;
+    }
+
+    if (data.carryOnBaggage) {
+        const m = String(data.carryOnBaggage).match(/(\d+)\s*kg/i);
+        if (m) return `${m[1]}kg`;
+    }
+
+    if (data.checkedBaggage) {
+        const m = String(data.checkedBaggage).match(/Carry-on\s*:\s*(\d+)\s*kg/i);
+        if (m) return `${m[1]}kg`;
+    }
+
+    if (data.flights && data.flights.length > 0) {
+        for (const f of data.flights) {
+            if (f && f.carryOn) {
+                const m = String(f.carryOn).match(/(\d+)\s*kg/i);
+                if (m) return `${m[1]}kg`;
+            }
+            if (f && f.baggage && /carry-on/i.test(f.baggage)) {
+                const m = String(f.baggage).match(/(\d+)\s*kg/i);
+                if (m) return `${m[1]}kg`;
+            }
+        }
+    }
+
+    return defaultWeight;
+}
+
+/**
  * Extract clean airport code e.g. 'TPE' from 'Taipei - Taoyuan (TPE)'
  */
 function extractAirportCode(str) {
@@ -177,6 +214,7 @@ export function renderChinaEasternTicketHtml(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'China Eastern Airlines', 'MU 562', 'Airbus A350-900');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '2PC (23kg)');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#2D3748; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:32px 38px; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.06); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.4; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
@@ -264,7 +302,7 @@ export function renderChinaEasternTicketHtml(data) {
                     </td>
                     <td style="padding:8px 10px; border:1px solid #DAE0E9; vertical-align:top;">
                         <div style="font-weight:700; color:#2D3748;">${escapeHtml(checkedBag)}</div>
-                        <div style="font-size:9.5px; color:#646E7D;">Carry-on: 8kg</div>
+                        <div style="font-size:9.5px; color:#646E7D;">Carry-on: ${escapeHtml(carryOnText)}</div>
                     </td>
                     <td style="padding:8px 10px; border:1px solid #DAE0E9; vertical-align:top; text-align:center;">
                         <span style="font-weight:800; color:#166534;">OK</span>
@@ -295,7 +333,7 @@ export function renderChinaEasternTicketHtml(data) {
             <div style="font-weight:800; color:#0B2341; margin-bottom:3px; text-transform:uppercase;">Notice & Travel Reminders</div>
             <div>- Check-in counters open 3 hours prior and close strictly 60 minutes before departure. Gate closes 20 minutes prior.</div>
             <div>- Passengers must present a valid government-issued photo ID / passport matching the electronic ticket name at check-in.</div>
-            <div>- Checked baggage allowance as indicated above. Carry-on baggage: 1 piece (max 8kg, 55x40x20cm).</div>
+            <div>- Checked baggage allowance as indicated above. Carry-on baggage: 1 piece (max ${escapeHtml(carryOnText)}, 55x40x20cm).</div>
         </div>
 
         <div style="text-align:center; font-size:9.5px; color:#8C959F; margin-top:14px;">
@@ -330,6 +368,7 @@ export async function generateChinaEasternPdfDoc(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'China Eastern Airlines', 'MU 562', 'Airbus A350-900');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '2PC (23kg)');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     // Top Stripe
     doc.setFillColor(...NAVY);
@@ -535,7 +574,7 @@ export async function generateChinaEasternPdfDoc(data) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Carry-on: 8kg', marginL + 390, curY + 26);
+        doc.text(`Carry-on: ${carryOnText}`, marginL + 390, curY + 26);
 
         // Status Column
         doc.setFont('helvetica', 'bold');
@@ -594,7 +633,7 @@ export async function generateChinaEasternPdfDoc(data) {
     doc.setTextColor(...TEXT_MUT);
     doc.text('- Check-in counters open 3 hours prior and close strictly 60 minutes before departure. Gate closes 20 minutes prior.', marginL + 8, curY + 24);
     doc.text('- Passengers must present a valid government photo ID / passport matching the electronic ticket name at check-in.', marginL + 8, curY + 34);
-    doc.text('- Checked baggage allowance as indicated above. Carry-on baggage: 1 piece (max 8kg, 55x40x20cm).', marginL + 8, curY + 44);
+    doc.text(`- Checked baggage allowance as indicated above. Carry-on baggage: 1 piece (max ${carryOnText}, 55x40x20cm).`, marginL + 8, curY + 44);
 
     curY += 66;
 
@@ -618,6 +657,7 @@ export function renderVietnamAirlinesTicketHtml(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'Vietnam Airlines', 'VN 126', 'Boeing 787-9');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '1PC (23kg)');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#232D37; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:32px 38px; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.06); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.4; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
@@ -705,7 +745,7 @@ export function renderVietnamAirlinesTicketHtml(data) {
                     </td>
                     <td style="padding:8px 10px; border:1px solid #C3D7DB; vertical-align:top;">
                         <div style="font-weight:700; color:#232D37;">${escapeHtml(checkedBag)}</div>
-                        <div style="font-size:9.5px; color:#5F6973;">Carry-on: 12kg</div>
+                        <div style="font-size:9.5px; color:#5F6973;">Carry-on: ${escapeHtml(carryOnText)}</div>
                     </td>
                     <td style="padding:8px 10px; border:1px solid #C3D7DB; vertical-align:top; text-align:center;">
                         <span style="font-weight:800; color:#166534;">OK</span>
@@ -736,7 +776,7 @@ export function renderVietnamAirlinesTicketHtml(data) {
             <div style="font-weight:800; color:#004851; margin-bottom:3px; text-transform:uppercase;">Important Travel Information</div>
             <div>- Online check-in is available 24 hours to 1 hour before scheduled flight at www.vietnamairlines.com.</div>
             <div>- Check-in counters close 50 min before domestic flights and 60 min before international flights.</div>
-            <div>- Free cabin baggage limit: 1 piece (max 10kg) + 1 small personal item (max 2kg), total weight not exceeding 12kg.</div>
+            <div>- Free cabin baggage limit: 1 piece (max ${escapeHtml(carryOnText)}) + 1 small personal item.</div>
         </div>
 
         <div style="text-align:center; font-size:9.5px; color:#8C959F; margin-top:14px;">
@@ -771,6 +811,7 @@ export async function generateVietnamAirlinesPdfDoc(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'Vietnam Airlines', 'VN 126', 'Boeing 787-9');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '1PC (23kg)');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     // Top Teal Bar
     doc.setFillColor(...TEAL);
@@ -976,7 +1017,7 @@ export async function generateVietnamAirlinesPdfDoc(data) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Carry-on: 12kg', marginL + 390, curY + 26);
+        doc.text(`Carry-on: ${carryOnText}`, marginL + 390, curY + 26);
 
         // Status Column
         doc.setFont('helvetica', 'bold');
@@ -1035,7 +1076,7 @@ export async function generateVietnamAirlinesPdfDoc(data) {
     doc.setTextColor(...TEXT_MUT);
     doc.text('- Online check-in is available 24 hours to 1 hour before scheduled flight at www.vietnamairlines.com.', marginL + 8, curY + 24);
     doc.text('- Check-in counters close 50 min before domestic flights and 60 min before international flights.', marginL + 8, curY + 34);
-    doc.text('- Free cabin baggage limit: 1 piece (max 10kg) + 1 small personal item (max 2kg), total max 12kg.', marginL + 8, curY + 44);
+    doc.text(`- Free cabin baggage limit: 1 piece (max ${carryOnText}) + 1 small personal item.`, marginL + 8, curY + 44);
 
     curY += 66;
 
@@ -1059,6 +1100,7 @@ export function renderCathayPacificTicketHtml(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'Cathay Pacific', 'CX 714', 'Airbus A350-1000');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '2PC (23kg)');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#222222; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:32px 38px; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.06); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.4; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
@@ -1147,7 +1189,7 @@ export function renderCathayPacificTicketHtml(data) {
                     </td>
                     <td style="padding:8px 10px; border:1px solid #CDDAD8; vertical-align:top;">
                         <div style="font-weight:700; color:#222222;">${escapeHtml(checkedBag)}</div>
-                        <div style="font-size:9.5px; color:#666666;">Cabin: 7kg</div>
+                        <div style="font-size:9.5px; color:#666666;">Cabin: ${escapeHtml(carryOnText)}</div>
                     </td>
                     <td style="padding:8px 10px; border:1px solid #CDDAD8; vertical-align:top; text-align:center;">
                         <span style="font-weight:800; color:#166534;">OK</span>
@@ -1163,7 +1205,7 @@ export function renderCathayPacificTicketHtml(data) {
                 <td style="padding:6px 10px; border:1px solid #CDDAD8; width:22%; font-weight:700; color:#004C48;">Checked Baggage</td>
                 <td style="padding:6px 10px; border:1px solid #CDDAD8; width:28%; color:#222222;">${escapeHtml(checkedBag)}</td>
                 <td style="padding:6px 10px; border:1px solid #CDDAD8; width:22%; font-weight:700; color:#004C48;">Cabin Baggage</td>
-                <td style="padding:6px 10px; border:1px solid #CDDAD8; width:28%; color:#222222;">1 piece up to 7 kg + 1 small item</td>
+                <td style="padding:6px 10px; border:1px solid #CDDAD8; width:28%; color:#222222;">1 piece up to ${escapeHtml(carryOnText)} + 1 small item</td>
             </tr>
             <tr>
                 <td style="padding:6px 10px; border:1px solid #CDDAD8; font-weight:700; color:#004C48;">Form of Payment</td>
@@ -1212,6 +1254,7 @@ export async function generateCathayPacificPdfDoc(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'Cathay Pacific', 'CX 714', 'Airbus A350-1000');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '2PC (23kg)');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     // Top Jade Line
     doc.setFillColor(...JADE);
@@ -1423,7 +1466,7 @@ export async function generateCathayPacificPdfDoc(data) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Cabin: 7kg', marginL + 414, curY + 26);
+        doc.text(`Cabin: ${carryOnText}`, marginL + 414, curY + 26);
 
         // Status Column
         doc.setFont('helvetica', 'bold');
@@ -1455,7 +1498,7 @@ export async function generateCathayPacificPdfDoc(data) {
     doc.text('Cabin Baggage:', marginL + 285, curY + 12);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...TEXT_DK);
-    doc.text('1 piece up to 7 kg + 1 small item', marginL + 365, curY + 12);
+    doc.text(`1 piece up to ${carryOnText} + 1 small item`, marginL + 365, curY + 12);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...JADE);
@@ -1513,6 +1556,7 @@ export function renderHongKongAirlinesTicketHtml(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'Hong Kong Airlines', 'HX 264', 'Airbus A330-300');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '20 kg');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#2D3748; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:32px 38px; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.06); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.4; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
@@ -1600,7 +1644,7 @@ export function renderHongKongAirlinesTicketHtml(data) {
                     </td>
                     <td style="padding:8px 10px; border:1px solid #E2DADB; vertical-align:top;">
                         <div style="font-weight:700; color:#2D3748;">${escapeHtml(checkedBag)}</div>
-                        <div style="font-size:9.5px; color:#646E7D;">Carry-on: 7kg</div>
+                        <div style="font-size:9.5px; color:#646E7D;">Carry-on: ${escapeHtml(carryOnText)}</div>
                     </td>
                     <td style="padding:8px 10px; border:1px solid #E2DADB; vertical-align:top; text-align:center;">
                         <span style="font-weight:800; color:#166534;">OK</span>
@@ -1665,6 +1709,7 @@ export async function generateHongKongAirlinesPdfDoc(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'Hong Kong Airlines', 'HX 264', 'Airbus A330-300');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '20 kg');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     // Top Burgundy Line
     doc.setFillColor(...BURGUNDY);
@@ -1870,7 +1915,7 @@ export async function generateHongKongAirlinesPdfDoc(data) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...TEXT_MUT);
-        doc.text('Carry-on: 7kg', marginL + 390, curY + 26);
+        doc.text(`Carry-on: ${toSafeAscii(carryOnText)}`, marginL + 390, curY + 26);
 
         // Status Column
         doc.setFont('helvetica', 'bold');
@@ -1928,7 +1973,7 @@ export async function generateHongKongAirlinesPdfDoc(data) {
     doc.setFontSize(7);
     doc.setTextColor(...TEXT_MUT);
     doc.text('- Check-in counters close 60 minutes prior to departure. Boarding gate closes strictly 20 minutes before departure.', marginL + 8, curY + 24);
-    doc.text('- Free checked baggage allowance: 20kg (1 piece). Maximum dimensions: 158cm (L+W+H). Carry-on baggage: 7kg.', marginL + 8, curY + 34);
+    doc.text(`- Free checked baggage allowance: 20kg (1 piece). Maximum dimensions: 158cm (L+W+H). Carry-on baggage: ${toSafeAscii(carryOnText)}.`, marginL + 8, curY + 34);
     doc.text('- Passengers must hold a valid passport with at least 6 months validity from date of travel.', marginL + 8, curY + 44);
 
     curY += 66;
@@ -1953,6 +1998,7 @@ export function renderHkExpressTicketHtml(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'HK Express', 'UO 614', 'Airbus A321neo');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '20 kg');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     return `
     <div class="airasia-ticket-wrapper" id="airAsiaTicketDocument" style="background:#ffffff; color:#2D3748; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; padding:32px 38px; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.06); max-width:800px; margin:0 auto; box-sizing:border-box; line-height:1.4; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
@@ -2007,7 +2053,7 @@ export function renderHkExpressTicketHtml(data) {
                     <td style="padding:7px 10px; border:1px solid #DAE1E9; font-weight:700; color:#2D3748;">${escapeHtml(p.name)}</td>
                     <td style="padding:7px 10px; border:1px solid #DAE1E9; text-align:center; font-weight:700; color:#381E54;">${escapeHtml(p.seat)}</td>
                     <td style="padding:7px 10px; border:1px solid #DAE1E9; color:#2D3748; font-weight:600;">${escapeHtml(checkedBag)}</td>
-                    <td style="padding:7px 10px; border:1px solid #DAE1E9; color:#646E7D;">7kg carry-on</td>
+                    <td style="padding:7px 10px; border:1px solid #DAE1E9; color:#646E7D;">${escapeHtml(carryOnText)} carry-on</td>
                 </tr>
                 `).join('')}
             </tbody>
@@ -2078,7 +2124,7 @@ export function renderHkExpressTicketHtml(data) {
             <div style="font-weight:800; color:#381E54; margin-bottom:3px; text-transform:uppercase;">HK Express Travel Reminders</div>
             <div>- Online Check-in opens 48 hours and closes 75 minutes before departure at hkexpress.com or mobile app.</div>
             <div>- Arrive at airport at least 2 to 3 hours prior to departure for check-in, document verification and security checks.</div>
-            <div>- Strict cabin baggage limits apply: 1 carry-on bag (up to 7kg, 56x36x23cm) + 1 small personal item.</div>
+            <div>- Strict cabin baggage limits apply: 1 carry-on bag (up to ${escapeHtml(carryOnText)}, 56x36x23cm) + 1 small personal item.</div>
         </div>
 
         <div style="text-align:center; font-size:9.5px; color:#8C959F; margin-top:14px;">
@@ -2113,6 +2159,7 @@ export async function generateHkExpressPdfDoc(data) {
     const paxList = preparePaxList(data);
     const flights = prepareFlightList(data, 'HK Express', 'UO 614', 'Airbus A321neo');
     const checkedBag = formatCompactBaggage(data.checkedBaggage, '20 kg');
+    const carryOnText = resolveCarryOnText(data, '7kg');
 
     // Top Stripe
     doc.setFillColor(...PLUM);
@@ -2229,7 +2276,7 @@ export async function generateHkExpressPdfDoc(data) {
 
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...TEXT_MUT);
-        doc.text('7kg carry-on', marginL + 430, curY + 13);
+        doc.text(`${toSafeAscii(carryOnText)} carry-on`, marginL + 430, curY + 13);
 
         curY += 20;
     });
@@ -2378,7 +2425,7 @@ export async function generateHkExpressPdfDoc(data) {
     doc.setTextColor(...TEXT_MUT);
     doc.text('- Online Check-in opens 48 hours and closes 75 minutes before departure at hkexpress.com or app.', marginL + 8, curY + 24);
     doc.text('- Please arrive at the airport at least 2 to 3 hours prior to departure for check-in and security checks.', marginL + 8, curY + 34);
-    doc.text('- Strict baggage limits: 1 carry-on bag (up to 7kg, 56x36x23cm) + 1 small personal item.', marginL + 8, curY + 44);
+    doc.text(`- Strict baggage limits: 1 carry-on bag (up to ${toSafeAscii(carryOnText)}, 56x36x23cm) + 1 small personal item.`, marginL + 8, curY + 44);
 
     curY += 66;
 

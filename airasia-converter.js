@@ -1481,26 +1481,35 @@ export function parseItineraryText(rawText) {
         }
     }
 
+    let carryOnWeight = '7kg';
+    const weightInDoc = clean.match(/(?:carry-on|cabin|personal\s*item[\s\S]{0,60}carry-on)[\s\S]{0,80}?(?:cannot\s*exceed|max|up\s*to|limit|weight\s*not\s*exceeding|[:：])\s*(\d+)\s*kg/i) ||
+                        clean.match(/(?:total\s*weight[\s\S]{0,60}cannot\s*exceed|cannot\s*exceed|total\s*weight\s*not\s*exceeding)\s*(\d+)\s*kg/i) ||
+                        clean.match(/Carry-on\s*[:：]?\s*(\d+)\s*kg/i) ||
+                        clean.match(/(\d+)\s*kg\s*(?:carry-on|cabin|hand)/i);
+    if (weightInDoc) {
+        carryOnWeight = `${weightInDoc[1]}kg`;
+    }
+
     if (airline === 'Scoot') {
         if (hasNoCheckedBag) {
-            checkedBaggage = 'Checked: No free baggage allowance   |   Carry-on: 7 kg';
+            checkedBaggage = `Checked: No free baggage allowance   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
         } else if (checkedSectionText) {
             const weightMatch = checkedSectionText.match(/(\d+)\s*kg/i);
-            checkedBaggage = weightMatch ? `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg` : `Checked: ${checkedSectionText}`;
+            checkedBaggage = weightMatch ? `Checked: ${weightMatch[1]} kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}` : `Checked: ${checkedSectionText}`;
         } else {
             const explicitBagWeight = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
-            checkedBaggage = explicitBagWeight ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: 7 kg` : 'Checked: 20 kg   |   Carry-on: 7 kg';
+            checkedBaggage = explicitBagWeight ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}` : `Checked: 20 kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
         }
     } else if (airline === 'EVA Air' || airline === 'Thai Airways') {
         if (hasNoCheckedBag) {
-            checkedBaggage = 'Checked: No free baggage allowance   |   Carry-on: 7 kg';
+            checkedBaggage = `Checked: No free baggage allowance   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
         } else if (checkedSectionText) {
             const pieceMatch = checkedSectionText.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
             const weightMatch = checkedSectionText.match(/(\d+)\s*kg/i);
             if (pieceMatch) {
-                checkedBaggage = `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`;
+                checkedBaggage = `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
             } else if (weightMatch) {
-                checkedBaggage = `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg`;
+                checkedBaggage = `Checked: ${weightMatch[1]} kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
             } else {
                 checkedBaggage = `Checked: ${checkedSectionText}`;
             }
@@ -1508,24 +1517,24 @@ export function parseItineraryText(rawText) {
             const pieceMatch = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
             const explicitBagWeight = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
             if (pieceMatch) {
-                checkedBaggage = `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`;
+                checkedBaggage = `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
             } else if (explicitBagWeight && explicitBagWeight[1] === '23') {
-                checkedBaggage = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
+                checkedBaggage = `Checked: 2 Pcs, 23 kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
             } else if (explicitBagWeight) {
-                checkedBaggage = `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: 7 kg`;
+                checkedBaggage = `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
             } else {
-                checkedBaggage = (airline === 'EVA Air' ? 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg' : 'Checked: 30 kg   |   Carry-on: 7 kg');
+                checkedBaggage = (airline === 'EVA Air' ? `Checked: 2 Pcs, 23 kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}` : `Checked: 30 kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`);
             }
         }
     } else if (airline === 'Singapore Airlines') {
         if (hasNoCheckedBag) {
-            checkedBaggage = 'Checked: No free baggage allowance   |   Carry-on: 7 kg';
+            checkedBaggage = `Checked: No free baggage allowance   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
         } else if (checkedSectionText) {
             const weightMatch = checkedSectionText.match(/(\d+)\s*kg/i);
-            checkedBaggage = weightMatch ? `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg` : `Checked: ${checkedSectionText}`;
+            checkedBaggage = weightMatch ? `Checked: ${weightMatch[1]} kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}` : `Checked: ${checkedSectionText}`;
         } else {
             const explicitBagWeight = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
-            checkedBaggage = explicitBagWeight ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: 7 kg` : 'Checked: 30 kg   |   Carry-on: 7 kg';
+            checkedBaggage = explicitBagWeight ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}` : `Checked: 30 kg   |   Carry-on: ${carryOnWeight.replace(/kg/i, ' kg')}`;
         }
     } else {
         if (hasNoCheckedBag) {
@@ -1557,10 +1566,16 @@ export function parseItineraryText(rawText) {
         }
     }
 
-    // Assign individual sector PNR to each flight if multiple PNRs exist
+    // Assign individual sector PNR and baggage to each flight if multiple exist
     flights.forEach((f, idx) => {
         if (!f.pnr) {
             f.pnr = (pnrs && pnrs[idx]) ? pnrs[idx] : (pnrs && pnrs[0] ? pnrs[0] : pnr);
+        }
+        if (!f.baggage) {
+            f.baggage = hasNoCheckedBag ? `Carry-on: ${carryOnWeight}` : undefined;
+        }
+        if (!f.carryOn) {
+            f.carryOn = carryOnWeight;
         }
     });
 
@@ -1577,6 +1592,7 @@ export function parseItineraryText(rawText) {
         passengerType,
         passengers,
         flights,
+        carryOnWeight,
         // Primary flight fields for backward compatibility
         flightNo: primaryFlight.flightNo || '',
         airlineName: primaryFlight.airlineName || (airline === 'EVA Air' ? 'EVA Air' : (airline === 'Singapore Airlines' ? 'Singapore Airlines' : (airline === 'Thai Airways' ? 'Thai Airways International' : (airline === 'VietJet Air' ? 'VietJet Air' : 'AirAsia Berhad')))),
