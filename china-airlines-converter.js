@@ -149,6 +149,53 @@ export function createDefaultChinaAirlinesData() {
 }
 
 /**
+ * Format China Airlines date compactly into standard airline format (e.g. 28OCT2026)
+ * to prevent date collisions in the Departure/Arrival columns.
+ */
+export function formatChinaAirlinesDate(dateStr) {
+    if (!dateStr) return '';
+    let clean = String(dateStr).trim();
+    clean = clean.replace(/^[A-Za-z]+day,\s*/i, '').replace(/^[A-Za-z]{3},\s*/i, '').trim();
+
+    if (/^\d{1,2}[A-Za-z]{3}(?:\d{2,4})?$/i.test(clean)) {
+        return clean.toUpperCase();
+    }
+
+    const months = [
+        ['January', 'JAN'], ['February', 'FEB'], ['March', 'MAR'], ['April', 'APR'],
+        ['May', 'MAY'], ['June', 'JUN'], ['July', 'JUL'], ['August', 'AUG'],
+        ['September', 'SEP'], ['October', 'OCT'], ['November', 'NOV'], ['December', 'DEC']
+    ];
+    for (const [full, short] of months) {
+        clean = clean.replace(new RegExp(`\\b${full}\\b`, 'i'), short);
+    }
+    const m = clean.match(/^(\d{1,2})\s*([A-Za-z]{3})(?:\s*(\d{2,4}))?/);
+    if (m) {
+        const day = m[1].padStart(2, '0');
+        const mon = m[2].toUpperCase();
+        const yr = m[3] ? (m[3].length === 2 ? `20${m[3]}` : m[3]) : new Date().getFullYear();
+        return `${day}${mon}${yr}`;
+    }
+    return clean;
+}
+
+/**
+ * Clean terminal string so "Terminal 1" -> "1", preventing "Terminal: Terminal 1"
+ */
+export function formatTerminalClean(term) {
+    if (!term) return '';
+    const clean = String(term).trim();
+    if (!clean) return '';
+    if (/^terminal\s*(\w+)/i.test(clean)) {
+        return clean.replace(/^terminal\s*/i, '').trim();
+    }
+    if (/^t\s*(\w+)/i.test(clean)) {
+        return clean.replace(/^t\s*/i, '').trim();
+    }
+    return clean;
+}
+
+/**
  * Resolve carry-on weight dynamically
  */
 export function resolveCarryOnText(data, defaultWeight = '7kg') {
@@ -223,13 +270,15 @@ export function renderChinaAirlinesTicketHtml(data) {
         const fromCityHtml = `<strong style="color:#000000; font-weight:bold;">${escapeHtml(fromParts.city)}</strong>${fromParts.airport ? ` <span style="font-weight:normal; color:#000000;">${escapeHtml(fromParts.airport)}</span>` : ''}`;
         const toCityHtml = `<strong style="color:#000000; font-weight:bold;">${escapeHtml(toParts.city)}</strong>${toParts.airport ? ` <span style="font-weight:normal; color:#000000;">${escapeHtml(toParts.airport)}</span>` : ''}`;
 
-        const arrTerminalText = f.arrTerminal ? `<div style="font-size:10pt; font-weight:bold; margin-top:2px; color:#000000;">Terminal: ${escapeHtml(f.arrTerminal)}</div>` : '';
-        const depTerminalText = f.depTerminal ? `<div style="font-size:10pt; font-weight:bold; margin-top:2px; color:#000000;">Terminal: ${escapeHtml(f.depTerminal)}</div>` : '';
+        const arrTermClean = formatTerminalClean(f.arrTerminal || '');
+        const depTermClean = formatTerminalClean(f.depTerminal || '');
+        const arrTerminalText = arrTermClean ? `<div style="font-size:10pt; font-weight:bold; margin-top:2px; color:#000000;">Terminal: ${escapeHtml(arrTermClean)}</div>` : '';
+        const depTerminalText = depTermClean ? `<div style="font-size:10pt; font-weight:bold; margin-top:2px; color:#000000;">Terminal: ${escapeHtml(depTermClean)}</div>` : '';
         const flightNoText = escapeHtml(f.flightNo || 'CI834');
         const depTimeText = escapeHtml(f.depTime || '10:50');
-        const depDateText = escapeHtml(f.depDate || f.depDateFormatted || '');
+        const depDateText = escapeHtml(formatChinaAirlinesDate(f.depDate || f.depDateFormatted || ''));
         const arrTimeText = escapeHtml(f.arrTime || '15:30');
-        const arrDateText = escapeHtml(f.arrDate || f.arrDateFormatted || f.depDate || f.depDateFormatted || '');
+        const arrDateText = escapeHtml(formatChinaAirlinesDate(f.arrDate || f.arrDateFormatted || f.depDate || f.depDateFormatted || ''));
         const lastCheckIn = escapeHtml(f.lastCheckIn || '');
 
         const cabinClass = escapeHtml(f.cabinClass || f.flightClass || 'Economy, Y');
@@ -240,13 +289,13 @@ export function renderChinaAirlinesTicketHtml(data) {
         const marketedBy = escapeHtml(f.marketedBy || f.airlineName || 'CHINA AIRLINES LTD.');
         const baggage = escapeHtml(resolveChinaAirlinesBaggage(f, data));
         const fareBasis = escapeHtml(f.fareBasis || 'DOTH');
-        const nvb = escapeHtml(f.nvb || f.depDate || f.depDateFormatted || '');
-        const nva = escapeHtml(f.nva || f.depDate || f.depDateFormatted || '');
+        const nvb = escapeHtml(formatChinaAirlinesDate(f.nvb || f.depDate || f.depDateFormatted || ''));
+        const nva = escapeHtml(formatChinaAirlinesDate(f.nva || f.depDate || f.depDateFormatted || ''));
 
         return `
         <div class="ci-flight-block" style="margin-bottom:12px; border-bottom:1.4pt solid #2d73b9;">
             <!-- Grey Header Flight Row -->
-            <div style="background:#ebebeb; padding:8px 10px; display:grid; grid-template-columns: 160px 150px 50px 75px 75px 1fr; gap:6px; font-size:10pt; color:#000000; align-items:start; line-height:1.25;">
+            <div style="background:#ebebeb; padding:8px 10px; display:grid; grid-template-columns: 155px 145px 50px 80px 80px 1fr; gap:6px; font-size:10pt; color:#000000; align-items:start; line-height:1.25;">
                 <div>
                     <div>${fromCityHtml}</div>
                     ${depTerminalText}
@@ -258,11 +307,11 @@ export function renderChinaAirlinesTicketHtml(data) {
                 <div style="font-weight:bold;">${flightNoText}</div>
                 <div>
                     <div style="font-weight:bold;">${depTimeText}</div>
-                    <div style="font-size:9.5pt; font-weight:bold;">${depDateText}</div>
+                    <div style="font-size:9pt; font-weight:bold; margin-top:2px;">${depDateText}</div>
                 </div>
                 <div>
                     <div style="font-weight:bold;">${arrTimeText}</div>
-                    <div style="font-size:9.5pt; font-weight:bold;">${arrDateText}</div>
+                    <div style="font-size:9pt; font-weight:bold; margin-top:2px;">${arrDateText}</div>
                 </div>
                 <div style="font-size:9pt; font-weight:normal; color:#444444;">
                     ${lastCheckIn}
@@ -350,7 +399,7 @@ export function renderChinaAirlinesTicketHtml(data) {
         </div>
 
         <!-- Flight Table Header -->
-        <div style="background:#2d73b9; color:#ffffff; padding:4pt 10pt; display:grid; grid-template-columns: 160px 150px 50px 75px 75px 1fr; gap:6px; font-size:8pt; font-weight:bold; text-transform:none; margin-bottom:2px;">
+        <div style="background:#2d73b9; color:#ffffff; padding:4pt 10pt; display:grid; grid-template-columns: 155px 145px 50px 80px 80px 1fr; gap:6px; font-size:8pt; font-weight:bold; text-transform:none; margin-bottom:2px;">
             <div>From</div>
             <div>To</div>
             <div>Flight</div>
@@ -538,11 +587,11 @@ export async function generateChinaAirlinesPdfDoc(data) {
     doc.setFontSize(8.0);
     doc.setTextColor(255, 255, 255);
     doc.text('From', marginX + 5, tableY + 13.0);
-    doc.text('To', marginX + 160, tableY + 13.0);
-    doc.text('Flight', marginX + 310, tableY + 13.0);
-    doc.text('Departure', marginX + 360, tableY + 13.0);
-    doc.text('Arrival', marginX + 430, tableY + 13.0);
-    doc.text('Last check-in', marginX + 495, tableY + 13.0);
+    doc.text('To', marginX + 155, tableY + 13.0);
+    doc.text('Flight', marginX + 300, tableY + 13.0);
+    doc.text('Departure', marginX + 355, tableY + 13.0);
+    doc.text('Arrival', marginX + 435, tableY + 13.0);
+    doc.text('Last check-in', marginX + 500, tableY + 13.0);
 
     tableY += 19.0;
 
@@ -564,27 +613,35 @@ export async function generateChinaAirlinesPdfDoc(data) {
         doc.setTextColor(0, 0, 0);
 
         // From (only city is bold)
-        renderCityAirportPdf(doc, f.from || f.depAirport || '', marginX + 5, tableY + 15.0, 150);
+        renderCityAirportPdf(doc, f.from || f.depAirport || '', marginX + 5, tableY + 15.0, 145);
 
         // To + Terminal (only city is bold)
-        const toEndY = renderCityAirportPdf(doc, f.to || f.arrAirport || '', marginX + 160, tableY + 15.0, 145);
-        const term = f.arrTerminal || '';
+        const toEndY = renderCityAirportPdf(doc, f.to || f.arrAirport || '', marginX + 155, tableY + 15.0, 140);
+        const term = formatTerminalClean(f.arrTerminal || '');
         if (term) {
             doc.setFont('helvetica', 'bold');
-            doc.text(`Terminal: ${term}`, marginX + 160, toEndY + 11.0);
+            doc.text(`Terminal: ${term}`, marginX + 155, toEndY + 11.0);
         }
 
         // Flight (bold)
         doc.setFont('helvetica', 'bold');
-        doc.text(f.flightNo || 'CI834', marginX + 310, tableY + 15.0);
+        doc.setFontSize(10.0);
+        doc.text(f.flightNo || 'CI834', marginX + 300, tableY + 15.0);
+
+        const depDateText = formatChinaAirlinesDate(f.depDate || f.depDateFormatted || '');
+        const arrDateText = formatChinaAirlinesDate(f.arrDate || f.arrDateFormatted || f.depDate || f.depDateFormatted || '');
 
         // Departure (bold)
-        doc.text(f.depTime || '10:50', marginX + 360, tableY + 15.0);
-        doc.text(f.depDate || f.depDateFormatted || '', marginX + 360, tableY + 28.0);
+        doc.setFontSize(10.0);
+        doc.text(f.depTime || '10:50', marginX + 355, tableY + 15.0);
+        doc.setFontSize(8.5);
+        doc.text(depDateText, marginX + 355, tableY + 28.0);
 
         // Arrival (bold)
-        doc.text(f.arrTime || '15:30', marginX + 430, tableY + 15.0);
-        doc.text(f.arrDate || f.arrDateFormatted || f.depDate || f.depDateFormatted || '', marginX + 430, tableY + 28.0);
+        doc.setFontSize(10.0);
+        doc.text(f.arrTime || '15:30', marginX + 435, tableY + 15.0);
+        doc.setFontSize(8.5);
+        doc.text(arrDateText, marginX + 435, tableY + 28.0);
 
         tableY += greyHeight;
 
@@ -643,18 +700,18 @@ export async function generateChinaAirlinesPdfDoc(data) {
         doc.text(f.bookingStatus || 'OK', c2X + w, tableY + 36.0);
 
         // Column 3
-        const c3X = marginX + 420;
+        const c3X = marginX + 415;
         doc.setFont('helvetica', 'bold');
         doc.text('NVB (2): ', c3X, tableY + 24.0);
         w = doc.getTextWidth('NVB (2): ');
         doc.setFont('helvetica', 'normal');
-        doc.text(f.nvb || f.depDate || f.depDateFormatted || '', c3X + w, tableY + 24.0);
+        doc.text(formatChinaAirlinesDate(f.nvb || f.depDate || f.depDateFormatted || ''), c3X + w, tableY + 24.0);
 
         doc.setFont('helvetica', 'bold');
         doc.text('NVA (3): ', c3X, tableY + 36.0);
         w = doc.getTextWidth('NVA (3): ');
         doc.setFont('helvetica', 'normal');
-        doc.text(f.nva || f.depDate || f.depDateFormatted || '', c3X + w, tableY + 36.0);
+        doc.text(formatChinaAirlinesDate(f.nva || f.depDate || f.depDateFormatted || ''), c3X + w, tableY + 36.0);
 
         doc.setFont('helvetica', 'bold');
         doc.text('Duration: ', c3X, tableY + 48.0);

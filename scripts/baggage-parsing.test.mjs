@@ -144,6 +144,9 @@ Checked baggage: No free baggage allowance
     const ciHtml = renderChinaAirlinesTicketHtml(parsed);
     assert.match(ciHtml, /Carry-on:\s*7kg/i);
     assert.doesNotMatch(ciHtml, /Baggage\s*\(4\)[^<]*2PC/i);
+    assert.match(ciHtml, /14NOV2026/);
+    assert.doesNotMatch(ciHtml, /Wednesday,\s*14/i);
+    assert.doesNotMatch(ciHtml, /Terminal:\s*Terminal/i);
 
     // 2. China Eastern template
     const muHtml = renderChinaEasternTicketHtml(parsed);
