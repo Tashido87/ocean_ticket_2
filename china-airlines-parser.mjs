@@ -561,11 +561,55 @@ export function parseItinerarySchedule(rawText, defaultYear = new Date().getFull
 
     const detectedAirline = detectAirlineFromText(text, flights[0]?.flightNo || '');
 
+    // Baggage detection
+    const noBagPattern = /(?:no\s*free\s*baggage(?:\s*allowance)?|no\s*checked\s*baggage|no\s*baggage\s*allowance|(?<!\d)0\s*(?:kg|pcs?|pieces?)\b|\bnil\b|\bnone\b|\bnot\s*included\b)/i;
+    let checkedBaggage = undefined;
+    let carryOnBaggage = undefined;
+    let personalItem = undefined;
+
+    const checkedLineMatch = text.match(/Checked\s*(?:baggage)?\s*[:：]\s*([^\r\n]+)/i);
+    const bagBlock = text.match(/Checked\s*baggage\b[\s\S]*?(?=(?:Carry-on|Personal|Important|\*|\n\s*\n|$))/i);
+    const checkedSectionText = checkedLineMatch ? checkedLineMatch[1].trim() : (bagBlock ? bagBlock[0].replace(/^Checked\s*baggage\s*[:：]?\s*/i, '').trim() : '');
+
+    const hasNoCheckedBag = noBagPattern.test(checkedSectionText) ||
+        (text.includes('Baggage Allowance') && noBagPattern.test(text)) ||
+        /(?:Checked\s*baggage|Checked)[\s\S]{0,80}(?:no\s*free\s*baggage|no\s*checked\s*baggage|no\s*baggage\s*allowance|(?<!\d)0\s*(?:kg|pcs?|pieces?)\b|\bnil\b|\bnone\b|\bnot\s*included\b)/i.test(text);
+
+    const isStandardLayout = ['EVA Air', 'Thai Airways', 'Singapore Airlines', 'Scoot'].includes(detectedAirline);
+
+    if (hasNoCheckedBag) {
+        checkedBaggage = isStandardLayout
+            ? 'Checked: No free baggage allowance   |   Carry-on: 7 kg'
+            : 'No free baggage allowance\nOptional checked baggage can be purchased separately';
+    } else if (checkedSectionText) {
+        const weightMatch = checkedSectionText.match(/(\d+)\s*kg/i);
+        const pieceMatch = checkedSectionText.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
+        if (pieceMatch) {
+            checkedBaggage = isStandardLayout
+                ? `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`
+                : `${pieceMatch[2]} kg per person (${pieceMatch[1]} pieces)\nEach piece max 119 x 119 x 81 cm`;
+        } else if (weightMatch) {
+            checkedBaggage = isStandardLayout
+                ? `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg`
+                : `${weightMatch[1]} kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm`;
+        }
+    } else {
+        const explicitBagWeight = text.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
+        if (explicitBagWeight) {
+            checkedBaggage = isStandardLayout
+                ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: 7 kg`
+                : `${explicitBagWeight[1]} kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm`;
+        }
+    }
+
     return {
         passengerName, // Blank by default if not in schedule
         pnr: pnr || generateBookingRef(),
         ticketNo: ticketNo || generateTicketNumber(detectedAirline),
         flights,
-        detectedAirline
+        detectedAirline,
+        checkedBaggage,
+        carryOnBaggage,
+        personalItem
     };
 }

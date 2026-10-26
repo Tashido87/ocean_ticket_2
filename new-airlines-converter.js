@@ -53,6 +53,9 @@ function normalizePaxName(rawName) {
 function formatCompactBaggage(bagStr, defaultVal = '20 kg') {
     if (!bagStr || typeof bagStr !== 'string') return defaultVal;
     const clean = bagStr.split('\n')[0].trim();
+    if (/(?:no\s*free\s*baggage|no\s*checked\s*baggage|no\s*baggage\s*allowance|(?<!\d)0\s*(?:kg|pcs?|pieces?)\b|\bnil\b|\bnone\b|\bnot\s*included\b)/i.test(clean)) {
+        return 'No free baggage';
+    }
     const m = clean.match(/(?:checked:\s*)?(\d+\s*(?:kg|kilos?|pc|pcs|pieces?)(?:\s*\([^)]+\))?)/i);
     if (m) {
         return m[1].replace(/checked:\s*/i, '').trim();

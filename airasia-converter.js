@@ -793,16 +793,20 @@ export function calculateFlightDuration(depAirportOrCode, depDateStr, depTimeStr
 export function formatCheckedBaggageLine(val) {
     if (!val) return 'Checked: 30 kg   |   Carry-on: 7 kg';
     val = String(val).trim();
-    if (val.startsWith('Checked:')) return val;
-    const pieceMatch = val.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
+    if (/(?:no\s*free\s*baggage|no\s*checked\s*baggage|no\s*baggage\s*allowance|(?<!\d)0\s*(?:kg|pcs?|pieces?)\b|\bnil\b|\bnone\b|\bnot\s*included\b)/i.test(val)) {
+        return 'Checked: No free baggage allowance   |   Carry-on: 7 kg';
+    }
+    if (val.startsWith('Checked:') && val.includes('Carry-on:')) return val;
+    const cleanVal = val.replace(/^Checked\s*:\s*/i, '');
+    const pieceMatch = cleanVal.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
     if (pieceMatch) {
         return `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`;
     }
-    const weightMatch = val.match(/(\d+)\s*kg/i);
+    const weightMatch = cleanVal.match(/(\d+)\s*kg/i);
     if (weightMatch) {
         return `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg`;
     }
-    const firstLine = val.split(/[\r\n]+/)[0].trim();
+    const firstLine = cleanVal.split(/[\r\n]+/)[0].trim();
     return `Checked: ${firstLine}   |   Carry-on: 7 kg`;
 }
 
@@ -1436,61 +1440,121 @@ export function parseItineraryText(rawText) {
     }
 
     // 9. Baggage
-    let checkedBaggage = '30 kg per person\nEach piece max 119 x 119 x 81 cm (total 319 cm)';
+    const noBagPattern = /(?:no\s*free\s*baggage(?:\s*allowance)?|no\s*checked\s*baggage|no\s*baggage\s*allowance|(?<!\d)0\s*(?:kg|pcs?|pieces?)\b|\bnil\b|\bnone\b|\bnot\s*included\b)/i;
+
+    let checkedSectionText = '';
+    const checkedLineMatch = clean.match(/Checked\s*(?:baggage)?\s*[:：]\s*([^\r\n]+)/i);
+    if (checkedLineMatch) {
+        checkedSectionText = checkedLineMatch[1].trim();
+    } else {
+        const bagBlock = clean.match(/Checked\s*baggage\b[\s\S]*?(?=(?:Carry-on|Personal|Important|\*|\n\s*\n|$))/i);
+        if (bagBlock) {
+            checkedSectionText = bagBlock[0].replace(/^Checked\s*baggage\s*[:：]?\s*/i, '').trim();
+        }
+    }
+
+    const hasNoCheckedBag = noBagPattern.test(checkedSectionText) ||
+        (clean.includes('Baggage Allowance') && noBagPattern.test(clean)) ||
+        /(?:Checked\s*baggage|Checked)[\s\S]{0,80}(?:no\s*free\s*baggage|no\s*checked\s*baggage|no\s*baggage\s*allowance|(?<!\d)0\s*(?:kg|pcs?|pieces?)\b|\bnil\b|\bnone\b|\bnot\s*included\b)/i.test(clean);
+
+    let checkedBaggage = '';
     let carryOnBaggage = '1 piece per person\nMax 56 x 36 x 23 cm per piece';
     let personalItem = '1 piece per person\nMax 40 x 30 x 10 cm per piece, fits under the seat in front of you';
 
+    const carryMatch = clean.match(/Carry-on\s*baggage\b[\s\S]*?(?=(?:Personal|Checked|Important|\*|\n\s*\n|$))/i);
+    if (carryMatch) {
+        const carryText = carryMatch[0].replace(/^Carry-on\s*baggage\s*[:：]?\s*/i, '').trim();
+        const carryPieces = carryText.match(/(\d+\s*piece[^\r\n,]*)/i);
+        const carryDim = carryText.match(/(?:max\s*)?([0-9\s*xX]{7,}cm)/i);
+        if (carryPieces || carryDim) {
+            carryOnBaggage = `${carryPieces ? carryPieces[1].trim() : '1 piece per person'}\n${carryDim ? 'Max ' + carryDim[1].replace(/\s+/g, ' ').replace(/[xX]/g, ' x ').trim() + ' per piece' : 'Max 56 x 36 x 23 cm per piece'}`;
+        }
+    }
+
+    const personalMatch = clean.match(/Personal\s*item\b[\s\S]*?(?=(?:Carry-on|Checked|Important|\*|\n\s*\n|$))/i);
+    if (personalMatch) {
+        const personalText = personalMatch[0].replace(/^Personal\s*item\s*[:：]?\s*/i, '').trim();
+        const persPieces = personalText.match(/(\d+\s*piece[^\r\n,]*)/i);
+        const persDim = personalText.match(/(?:max\s*)?([0-9\s*xX]{7,}cm)/i);
+        if (persPieces || persDim) {
+            personalItem = `${persPieces ? persPieces[1].trim() : '1 piece per person'}\n${persDim ? 'Max ' + persDim[1].replace(/\s+/g, ' ').replace(/[xX]/g, ' x ').trim() + ' per piece, fits under the seat in front of you' : 'Max 40 x 30 x 10 cm per piece, fits under the seat in front of you'}`;
+        }
+    }
+
     if (airline === 'Scoot') {
-        const scootBagMatch = clean.match(/Checked:\s*([^\n\r]+)/i);
-        if (scootBagMatch) {
-            checkedBaggage = `Checked: ${scootBagMatch[1].trim()}`;
+        if (hasNoCheckedBag) {
+            checkedBaggage = 'Checked: No free baggage allowance   |   Carry-on: 7 kg';
+        } else if (checkedSectionText) {
+            const weightMatch = checkedSectionText.match(/(\d+)\s*kg/i);
+            checkedBaggage = weightMatch ? `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg` : `Checked: ${checkedSectionText}`;
         } else {
-            const bagWeight = clean.match(/(\d+)\s*kg/i);
-            checkedBaggage = bagWeight ? `Checked: ${bagWeight[1]} kg   |   Carry-on: 7 kg` : 'Checked: 30 kg   |   Carry-on: 7 kg';
+            const explicitBagWeight = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
+            checkedBaggage = explicitBagWeight ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: 7 kg` : 'Checked: 20 kg   |   Carry-on: 7 kg';
         }
     } else if (airline === 'EVA Air' || airline === 'Thai Airways') {
-        const thaiBagMatch = clean.match(/Checked:\s*([^\n\r]+)/i);
-        if (thaiBagMatch) {
-            checkedBaggage = `Checked: ${thaiBagMatch[1].trim()}`;
-        } else {
-            const pieceMatch = clean.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
-            const bagWeight = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i) || clean.match(/(\d+)\s*kg/i);
+        if (hasNoCheckedBag) {
+            checkedBaggage = 'Checked: No free baggage allowance   |   Carry-on: 7 kg';
+        } else if (checkedSectionText) {
+            const pieceMatch = checkedSectionText.match(/(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
+            const weightMatch = checkedSectionText.match(/(\d+)\s*kg/i);
             if (pieceMatch) {
                 checkedBaggage = `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`;
-            } else if (bagWeight && bagWeight[1] === '23') {
+            } else if (weightMatch) {
+                checkedBaggage = `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg`;
+            } else {
+                checkedBaggage = `Checked: ${checkedSectionText}`;
+            }
+        } else {
+            const pieceMatch = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*(?:pieces?|pcs)\s*(?:,\s*|\s+)(\d+)\s*kg/i);
+            const explicitBagWeight = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
+            if (pieceMatch) {
+                checkedBaggage = `Checked: ${pieceMatch[1]} Pcs, ${pieceMatch[2]} kg   |   Carry-on: 7 kg`;
+            } else if (explicitBagWeight && explicitBagWeight[1] === '23') {
                 checkedBaggage = 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg';
-            } else if (bagWeight) {
-                checkedBaggage = `Checked: ${bagWeight[1]} kg   |   Carry-on: 7 kg`;
+            } else if (explicitBagWeight) {
+                checkedBaggage = `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: 7 kg`;
             } else {
                 checkedBaggage = (airline === 'EVA Air' ? 'Checked: 2 Pcs, 23 kg   |   Carry-on: 7 kg' : 'Checked: 30 kg   |   Carry-on: 7 kg');
             }
         }
     } else if (airline === 'Singapore Airlines') {
-        const siaBagMatch = clean.match(/Checked:\s*([^\n\r]+)/i);
-        if (siaBagMatch) {
-            checkedBaggage = `Checked: ${siaBagMatch[1].trim()}`;
+        if (hasNoCheckedBag) {
+            checkedBaggage = 'Checked: No free baggage allowance   |   Carry-on: 7 kg';
+        } else if (checkedSectionText) {
+            const weightMatch = checkedSectionText.match(/(\d+)\s*kg/i);
+            checkedBaggage = weightMatch ? `Checked: ${weightMatch[1]} kg   |   Carry-on: 7 kg` : `Checked: ${checkedSectionText}`;
         } else {
-            const bagWeight = clean.match(/(\d+)\s*kg/i);
-            checkedBaggage = bagWeight ? `Checked: ${bagWeight[1]} kg   |   Carry-on: 7 kg` : 'Checked: 30 kg   |   Carry-on: 7 kg';
+            const explicitBagWeight = clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
+            checkedBaggage = explicitBagWeight ? `Checked: ${explicitBagWeight[1]} kg   |   Carry-on: 7 kg` : 'Checked: 30 kg   |   Carry-on: 7 kg';
         }
     } else {
-        const bagBlock = clean.match(/Checked\s*baggage[\s\S]*?(?=(?:Carry-on|Personal|Important|$))/i);
-        const bagText = bagBlock ? bagBlock[0] : clean;
+        if (hasNoCheckedBag) {
+            checkedBaggage = 'No free baggage allowance\nOptional checked baggage can be purchased separately';
+        } else {
+            const targetText = checkedSectionText || clean;
+            const weightMatch = checkedSectionText
+                ? checkedSectionText.match(/(\d+)\s*kg/i)
+                : clean.match(/(?:Checked\s*baggage|Checked)[\s\S]*?(\d+)\s*kg/i);
 
-        const weightMatch = bagText.match(/(\d+)\s*kg/i);
-        const weightVal = weightMatch ? weightMatch[1] : (airline === 'VietJet Air' ? '20' : '30');
-
-        const dimMatch = bagText.match(/\(([0-9\s*xX]+cm)\)/i) ||
-                         bagText.match(/(?:cannot\s*exceed|max)[\s\S]*?([0-9\s*xX]{7,}cm)/i);
-        let dimStr = '119 x 119 x 81 cm';
-        if (dimMatch) {
-            dimStr = dimMatch[1].replace(/\s+/g, ' ').replace(/[xX]/g, ' x ').trim();
+            if (weightMatch) {
+                const weightVal = weightMatch[1];
+                const dimMatch = targetText.match(/\(([0-9\s*xX]+cm)\)/i) ||
+                                 targetText.match(/(?:cannot\s*exceed|max)[\s\S]*?([0-9\s*xX]{7,}cm)/i);
+                let dimStr = '119 x 119 x 81 cm';
+                if (dimMatch) {
+                    dimStr = dimMatch[1].replace(/\s+/g, ' ').replace(/[xX]/g, ' x ').trim();
+                }
+                const totalMatch = targetText.match(/cannot\s*exceed\s*(\d+\s*cm)/i);
+                const totalStr = totalMatch ? ` (total ${totalMatch[1]})` : '';
+                checkedBaggage = `${weightVal} kg per person\nEach piece max ${dimStr}${totalStr}`;
+            } else if (clean.includes('Baggage Allowance') || checkedSectionText) {
+                checkedBaggage = 'No free baggage allowance\nOptional checked baggage can be purchased separately';
+            } else {
+                checkedBaggage = airline === 'VietJet Air'
+                    ? '20 kg per person\nDimensions of each piece cannot exceed 119 x 119 x 81 cm'
+                    : '30 kg per person\nEach piece max 119 x 119 x 81 cm (total 319 cm)';
+            }
         }
-
-        const totalMatch = bagText.match(/cannot\s*exceed\s*(\d+\s*cm)/i);
-        const totalStr = totalMatch ? ` (total ${totalMatch[1]})` : '';
-
-        checkedBaggage = `${weightVal} kg per person\nEach piece max ${dimStr}${totalStr}`;
     }
 
     // Assign individual sector PNR to each flight if multiple PNRs exist
@@ -5394,7 +5458,7 @@ export function renderAirAsiaTicketHtml(data) {
                     <td style="padding:10px; border:1px solid #E0AAAA; width:28%; vertical-align:top;"><strong>Checked baggage</strong></td>
                     <td style="padding:10px; border:1px solid #E0AAAA; width:72%;">
                         <div style="font-weight:600;">${checkedLines[0] || '30 kg per person'}</div>
-                        <div style="color:#555555; margin-top:2px;">${checkedLines[1] || 'Each piece max 119 x 119 x 81 cm (total 319 cm)'}</div>
+                        ${checkedLines[1] ? `<div style="color:#555555; margin-top:2px;">${checkedLines[1]}</div>` : (/(?:no\s*free|0\s*kg|nil|none|not\s*included)/i.test(checkedLines[0] || '') ? '' : '<div style="color:#555555; margin-top:2px;">Each piece max 119 x 119 x 81 cm (total 319 cm)</div>')}
                     </td>
                 </tr>
                 <tr>
