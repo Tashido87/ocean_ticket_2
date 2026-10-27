@@ -873,6 +873,13 @@ export function showDetails(docId) {
     const returnOutstanding = returnLeg ? (returnLeg.paid ? 0 : (returnLeg.outstanding_amount !== undefined ? (Number(returnLeg.outstanding_amount) || 0) : getTicketAmount(returnLeg))) : 0;
     const totalOutstanding = outboundOutstanding + returnOutstanding;
 
+    // Total profit for this ticket (commission + extra fare)
+    const outboundProfit = (Number(outboundLeg.commission) || 0) + (Number(outboundLeg.extra_fare) || 0);
+    const returnProfit = returnLeg ? ((Number(returnLeg.commission) || 0) + (Number(returnLeg.extra_fare) || 0)) : 0;
+    const totalProfit = passengerSharingTickets.length > 0
+        ? passengerSharingTickets.reduce((sum, t) => sum + (Number(t.commission) || 0) + (Number(t.extra_fare) || 0), 0)
+        : (outboundProfit + returnProfit);
+
     // Payment stats for roster rendering
     let isPaid = false;
     let paymentStatusLabel = 'UNPAID';
@@ -1180,12 +1187,12 @@ export function showDetails(docId) {
                 border: 1px solid #fecaca;
             }
 
-            /* Outstanding color */
-            .outstanding-text {
+            /* Outstanding / Profit color */
+            .outstanding-text, .profit-text {
                 font-weight: 700;
             }
-            .outstanding-text.green { color: #047857; }
-            .outstanding-text.red { color: #b91c1c; }
+            .outstanding-text.green, .profit-text.green { color: #047857; }
+            .outstanding-text.red, .profit-text.red { color: #b91c1c; }
 
             /* Roster item list */
             .aesthetic-body-content::-webkit-scrollbar {
@@ -1402,8 +1409,8 @@ export function showDetails(docId) {
                             <span class="grid-val-bold">${bookingTotal.toLocaleString()} MMK</span>
                         </div>
                         <div class="grid-col-item">
-                            <span class="grid-label">OUTSTANDING BALANCE</span>
-                            <span class="grid-val-bold outstanding-text ${totalOutstanding > 0 ? 'red' : 'green'}">${totalOutstanding.toLocaleString()} MMK</span>
+                            <span class="grid-label">TOTAL PROFIT</span>
+                            <span class="grid-val-bold profit-text ${totalProfit < 0 ? 'red' : 'green'}">${totalProfit.toLocaleString()} MMK</span>
                         </div>
                     </div>
                 </div>
