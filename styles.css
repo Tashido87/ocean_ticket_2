@@ -295,16 +295,17 @@ body::before {
 }
 
 .sidebar {
-    width: 196px;
-    min-width: 196px;
-    background: var(--surface);
-    border-right: 1px solid var(--line);
+    width: 168px;
+    min-width: 168px;
+    background: #FAFCFC;
+    border-right: 1px solid #E9F0F0;
     display: flex;
     flex-direction: column;
-    padding: 1rem 0.65rem;
+    padding: 0.85rem 0.5rem;
     position: fixed;
     top: 0; left: 0; bottom: 0;
     z-index: 1001;
+    box-shadow: none;
     transition: transform 0.3s var(--ease-smooth), width 0.3s var(--ease-smooth);
 }
 
@@ -312,15 +313,15 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.6rem 0.5rem 0.8rem;
-    margin-bottom: 0.4rem;
-    border-bottom: 1px solid #f0efea;
+    padding: 0.5rem 0.4rem 0.6rem;
+    margin-bottom: 0.3rem;
+    border-bottom: 1px solid #E9F0F0;
 }
 
 .sidebar-brand .brand-logo {
     width: 100%;
     height: auto;
-    max-height: 48px;
+    max-height: 44px;
     object-fit: contain;
 }
 
@@ -328,10 +329,20 @@ body::before {
     display: none;
 }
 
+.sidebar-section-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+    color: #789097;
+    padding: 6px 8px 3px;
+    margin-top: 2px;
+}
+
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 4px;
 }
 
 .sidebar-nav-main {
@@ -340,60 +351,132 @@ body::before {
 
 .sidebar-nav-footer {
     margin-top: auto;
-    padding-top: 0.75rem;
-    border-top: 1px solid #f0efea;
+    padding-top: 0.5rem;
+    border-top: 1px solid #E9F0F0;
 }
 
 .sidebar-nav .nav-btn {
     background: transparent;
     border: none;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
+    color: #294A52;
+    font-size: 12.5px;
     font-weight: 500;
-    padding: 0.5rem 0.65rem;
+    padding: 0 8px;
+    height: 34px;
+    min-height: 32px;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s var(--ease-smooth);
+    transition: background-color 0.15s ease, color 0.15s ease;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 8px;
     text-align: left;
     width: 100%;
     text-decoration: none;
 }
 
 .sidebar-nav .nav-btn i {
-    width: 20px;
+    width: 18px;
     text-align: center;
-    font-size: 0.95rem;
-    color: var(--text-secondary);
-    transition: color 0.2s var(--ease-smooth);
+    font-size: 13px;
+    color: #789097;
+    transition: color 0.15s ease;
 }
 
 .sidebar-nav .nav-btn:hover {
-    background: var(--surface-soft);
-    color: var(--ink);
+    background: #EFF8F8;
+    color: #17333B;
 }
 
 .sidebar-nav .nav-btn:hover i {
-    color: var(--primary-accent-dark);
+    color: #0C6670;
 }
 
 .sidebar-nav .nav-btn.active {
-    background: var(--surface-soft);
-    color: var(--primary-accent-dark);
+    background: #DDF1F1;
+    color: #0C6670;
     font-weight: 600;
 }
 
 .sidebar-nav .nav-btn.active i {
-    color: var(--primary-accent-dark);
+    color: #0C6670;
+}
+
+.sidebar-badge.booking-badge {
+    background: #F07864;
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    line-height: 1;
+}
+
+.sidebar-user-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 4px 4px;
+    margin-top: 6px;
+    border-top: 1px solid #E9F0F0;
+}
+
+.sidebar-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #DDF1F1;
+    color: #0C6670;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sidebar-user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sidebar-user-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #17333B;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.sidebar-user-role {
+    font-size: 9.5px;
+    color: #789097;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
 }
 
 .app-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    margin-left: 196px;
+    margin-left: 168px;
     transition: margin-left 0.25s var(--ease-smooth);
 }
 
@@ -409,14 +492,14 @@ body.sidebar-collapsed .app-body {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: var(--app-bg);
-    border-bottom: 1px solid var(--line);
-    padding: 1rem 1.5rem;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E9F0F0;
+    padding: 0 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    height: 84px;
+    height: 50px;
 }
 
 .header-left {
@@ -3703,13 +3786,13 @@ body.material-theme .header {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    height: 90px;
-    padding: 0.55rem 1.25rem;
-    background: #ffffff;
+    height: 50px;
+    padding: 0 16px;
+    background: #FFFFFF;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    border-bottom: 1px solid #e8e8e3;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+    border-bottom: 1px solid #E9F0F0;
+    box-shadow: 0 1px 2px rgba(23, 51, 59, 0.04) !important;
 }
 body.material-theme.dark-theme .header {
     background: #1a1917;
@@ -3741,8 +3824,8 @@ body.material-theme .title {
 
 /* Sidebar in material theme */
 body.material-theme .sidebar {
-    background: #ffffff;
-    border-right: 1px solid #e8e8e3;
+    background: #FAFCFC;
+    border-right: 1px solid #E9F0F0;
 }
 body.material-theme.dark-theme .sidebar {
     background: #1a1917;
@@ -9165,11 +9248,14 @@ body.material-theme .search-skeleton-row span {
 
 /* Removed overriding PASTEL ILLUSTRATION SYSTEM */
 
-body.material-theme .sidebar,
+body.material-theme .sidebar {
+    background: #FAFCFC !important;
+    border-color: #E9F0F0 !important;
+}
 body.material-theme .header {
-    background: #ffffff !important;
-    border-color: rgba(36, 36, 43, 0.08) !important;
-    box-shadow: 0 10px 40px rgba(36, 36, 43, 0.05);
+    background: #FFFFFF !important;
+    border-color: #E9F0F0 !important;
+    box-shadow: 0 1px 2px rgba(23, 51, 59, 0.04) !important;
 }
 
 body.material-theme .glass-card,

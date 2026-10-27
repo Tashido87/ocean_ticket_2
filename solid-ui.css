@@ -42,14 +42,12 @@ body {
 
 body #main-header,
 body #sidebar,
-body #home-view .dashboard-period-controls,
 body #sellForm > #section-payment {
     background: #ffffff;
 }
 
 body.dark-theme #main-header,
 body.dark-theme #sidebar,
-body.dark-theme #home-view .dashboard-period-controls,
 body.dark-theme #sellForm > #section-payment {
     background: var(--surface) !important;
     border-color: var(--border-color) !important;
@@ -85,8 +83,7 @@ button:active,
 
 /* Primary buttons */
 .btn-primary,
-.manage-action-btn.primary,
-#home-view .btn-primary {
+.manage-action-btn.primary {
     background-color: var(--primary-accent) !important;
     border-color: var(--primary-accent) !important;
     color: #ffffff !important;
@@ -387,9 +384,9 @@ body.dark-theme tbody tr:hover td {
 /* 11. Typography Hierarchy & Sizing Standard */
 
 /* Page title: 24–28px */
-h1,
-.page-title,
-.view-title,
+h1:not(#home-view *),
+.page-title:not(#home-view *),
+.view-title:not(#home-view *),
 #main-header h1,
 .dashboard-welcome h1,
 .welcome-banner h1,
@@ -425,10 +422,10 @@ h3,
 
 /* Body / table: 14–16px */
 body,
-p,
-table td,
-.table td,
-.data-cell,
+p:not(#home-view *),
+table td:not(#home-view *),
+.table td:not(#home-view *),
+.data-cell:not(#home-view *),
 .document-card,
 .doc-info,
 #modificationHistoryTable td,
@@ -438,18 +435,18 @@ table td,
 }
 
 /* Secondary labels: 12–13px (with guaranteed >= 4.5:1 contrast) */
-.secondary-label,
-.text-muted,
-.form-hint,
-.section-subtitle,
-.service-panel-desc,
-.form-group label,
-.form-label,
-.doc-meta,
-.activity-meta,
-.audit-note,
-.settle-section-subtitle,
-small {
+.secondary-label:not(#home-view *),
+.text-muted:not(#home-view *),
+.form-hint:not(#home-view *),
+.section-subtitle:not(#home-view *),
+.service-panel-desc:not(#home-view *),
+.form-group label:not(#home-view *),
+.form-label:not(#home-view *),
+.doc-meta:not(#home-view *),
+.activity-meta:not(#home-view *),
+.audit-note:not(#home-view *),
+.settle-section-subtitle:not(#home-view *),
+small:not(#home-view *) {
     font-size: 13px !important;
     line-height: 1.4 !important;
     color: var(--text-secondary);
@@ -467,7 +464,6 @@ small {
 .total-revenue,
 .net-profit,
 .statement-total-amount,
-.dashboard-kpi-value,
 .client-hero-stat .stat-num {
     font-size: clamp(26px, 2.5vw, 32px);
     font-weight: 700;
@@ -488,7 +484,6 @@ small {
 .total-revenue,
 .net-profit,
 .statement-total-amount,
-.dashboard-kpi-value,
 .client-hero-stat .stat-num,
 table td.amount,
 table td.numeric,

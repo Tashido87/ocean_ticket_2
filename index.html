@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Ocean Travel">
-    <link rel="stylesheet" href="app-styles.min.css?v=7a4bad98">
+    <link rel="stylesheet" href="app-styles.min.css?v=89b44824">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,11 +40,12 @@
                 </button>
             </div>
             <nav class="sidebar-nav sidebar-nav-main">
+                <div class="sidebar-section-label">MAIN MENU</div>
                 <a class="nav-btn active" href="#/home" data-view="home"><i class="fa-solid fa-house" aria-hidden="true"></i><span>Dashboard</span></a>
                 <a class="nav-btn" href="#/records" data-view="records"><i class="fa-solid fa-table-list" aria-hidden="true"></i><span>Records</span></a>
                 <a class="nav-btn" href="#/sell" data-view="sell"><i class="fa-solid fa-ticket" aria-hidden="true"></i><span>Sell Ticket</span></a>
                 <a class="nav-btn" href="#/manage" data-view="manage"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Manage Ticket</span></a>
-                <a class="nav-btn" href="#/booking" data-view="booking"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span>Booking</span></a>
+                <a class="nav-btn" href="#/booking" data-view="booking"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span>Booking</span><span class="sidebar-badge booking-badge" id="sidebarBookingBadge" style="display:none;"></span></a>
                 <a class="nav-btn" href="#/hotel" data-view="hotel"><i class="fa-solid fa-hotel" aria-hidden="true"></i><span>Hotel</span></a>
                 <a class="nav-btn" href="#/settle" data-view="settle"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span>Settle</span></a>
                 <a class="nav-btn" href="#/services" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></a>
@@ -54,6 +55,15 @@
                 <a class="nav-btn" href="#/settings" data-view="settings" id="sidebarSettingsBtn"><i class="fa-solid fa-gear" aria-hidden="true"></i><span>Settings</span></a>
                 <button class="nav-btn" id="sidebarSignoutBtn"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
             </nav>
+            <div class="sidebar-user-strip" id="sidebarUserStrip">
+                <div class="sidebar-user-avatar" id="sidebarUserAvatar">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name" id="sidebarUserName">Admin User</span>
+                    <span class="sidebar-user-role" id="sidebarUserRole">Administrator</span>
+                </div>
+            </div>
         </aside>
 
         <div class="app-body">
@@ -78,6 +88,10 @@
                         <i class="fa-regular fa-calendar" aria-hidden="true"></i>
                         <span id="headerTodayDateText"></span>
                     </div>
+                    <button type="button" class="header-notification-btn" id="headerNotificationBtn" aria-label="Notifications" title="Notifications">
+                        <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                        <span class="notification-dot"></span>
+                    </button>
                 </div>
             </header>
 
@@ -114,15 +128,20 @@
                             <h1 class="dashboard-compact-title">Dashboard</h1>
                             <p class="dashboard-compact-subtitle">Operations, sales, bookings &amp; owner payable</p>
                         </div>
-                        <div class="dashboard-period-controls" aria-label="Dashboard period">
-                            <button type="button" class="dashboard-period-btn active" data-dashboard-period="month">This Month</button>
-                            <button type="button" class="dashboard-period-btn" data-dashboard-period="today">Today</button>
-                            <button type="button" class="dashboard-period-btn" data-dashboard-period="last-month">Last Month</button>
-                            <button type="button" class="dashboard-period-btn" data-dashboard-period="custom">Custom</button>
-                            <span class="dashboard-custom-range" id="dashboardCustomRange" hidden>
-                                <input type="date" id="dashboardCustomStart" aria-label="Dashboard start date">
-                                <input type="date" id="dashboardCustomEnd" aria-label="Dashboard end date">
-                            </span>
+                        <div class="dashboard-header-right">
+                            <div class="dashboard-period-controls" aria-label="Dashboard period">
+                                <button type="button" class="dashboard-period-btn active" data-dashboard-period="month">This Month</button>
+                                <button type="button" class="dashboard-period-btn" data-dashboard-period="today">Today</button>
+                                <button type="button" class="dashboard-period-btn" data-dashboard-period="last-month">Last Month</button>
+                                <button type="button" class="dashboard-period-btn" data-dashboard-period="custom">Custom</button>
+                                <span class="dashboard-custom-range" id="dashboardCustomRange" hidden>
+                                    <input type="date" id="dashboardCustomStart" aria-label="Dashboard start date">
+                                    <input type="date" id="dashboardCustomEnd" aria-label="Dashboard end date">
+                                </span>
+                            </div>
+                            <a href="#/sell" class="dashboard-new-sale-btn" id="dashboardNewSaleBtn">
+                                <i class="fa-solid fa-plus"></i> New Sale
+                            </a>
                         </div>
                     </div>
 
@@ -202,7 +221,7 @@
                     </div>
 
                     <!-- Row 1: Revenue & Profit Chart (Wide) + Upcoming Travel Schedule -->
-                    <div class="dashboard-grid-row dashboard-grid-row-2col-wide">
+                    <div class="dashboard-grid-row dashboard-grid-row-2col-wide dashboard-primary-row">
                         <div id="booking-revenue-overview-box" class="dashboard-panel chart-panel booking-revenue-panel">
                             <div class="panel-header">
                                 <h3><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Revenue &amp; Profit Overview</h3>
@@ -215,19 +234,19 @@
 
                         <div id="travel-schedule-box" class="dashboard-panel travel-schedule-panel">
                             <div class="panel-header">
-                                <h3><i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Upcoming Travel Schedule</h3>
-                                <span class="panel-hint hint-neutral">Next 7 days</span>
+                                <h3><i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Upcoming Travel</h3>
+                                <span class="panel-hint hint-neutral">Soonest first</span>
                             </div>
                             <div id="dashboardTravelSchedule" class="travel-schedule-list panel-list"></div>
                         </div>
                     </div>
 
                     <!-- Row 2: Unpaid Tickets + Tasks & Reminders -->
-                    <div class="dashboard-grid-row dashboard-grid-row-2col-equal">
+                    <div class="dashboard-grid-row dashboard-grid-row-2col-equal dashboard-operations-row">
                         <div id="dashboard-unpaid-box" class="dashboard-panel dashboard-unpaid-panel">
                             <div class="panel-header">
-                                <h3><i class="fa-solid fa-receipt" aria-hidden="true"></i> Unpaid Bookings</h3>
-                                <span class="panel-hint" id="dashboardUnpaidHint">0 MMK</span>
+                                <h3><i class="fa-solid fa-receipt" aria-hidden="true"></i> Unpaid Tickets</h3>
+                                <span class="panel-hint unpaid-coral-hint" id="dashboardUnpaidHint">0 MMK</span>
                             </div>
                             <div id="dashboardUnpaidTickets" class="dashboard-unpaid-content"></div>
                         </div>
@@ -2008,7 +2027,7 @@
     "./china-airlines-parser.mjs": "./china-airlines-parser.mjs?v=569d8f51",
     "./clients.js": "./clients.js?v=46be8017",
     "./config.js": "./config.js?v=147a2e3d",
-    "./dashboard.js": "./dashboard.js?v=e176f69f",
+    "./dashboard.js": "./dashboard.js?v=9c318b38",
     "./db.js": "./db.js?v=00aef24a",
     "./document-libraries.js": "./document-libraries.js?v=7c5a726d",
     "./documents.js": "./documents.js?v=cfee9d8d",
@@ -2017,7 +2036,7 @@
     "./hotel.js": "./hotel.js?v=2f4fea86",
     "./invoice-selection.mjs": "./invoice-selection.mjs?v=2d426669",
     "./invoice.js": "./invoice.js?v=8c3cc9bd",
-    "./main.js": "./main.js?v=88ef76c6",
+    "./main.js": "./main.js?v=4468f19f",
     "./manage.js": "./manage.js?v=0fff7338",
     "./passport-ocr.js": "./passport-ocr.js?v=456777f7",
     "./passport-parser.mjs": "./passport-parser.mjs?v=d0633dfa",
@@ -2032,6 +2051,6 @@
   }
 }
     </script>
-    <script src="main.js?v=88ef76c6" type="module"></script>
+    <script src="main.js?v=4468f19f" type="module"></script>
 </body>
 </html>
