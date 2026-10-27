@@ -1017,6 +1017,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
     const totalUnpaid = allRows.filter(t => !isTicketPaid(t)).reduce((s, t) => s + ticketGrossAmount(t), 0);
     const totalAmount = allRows.reduce((s, t) => s + ticketGrossAmount(t), 0);
     const totalReceived = Math.max(0, totalAmount - totalUnpaid);
+    const totalProfit = allRows.reduce((s, t) => s + (Number(t.commission) || 0) + (Number(t.extra_fare) || 0), 0);
     const isLargePax = uniquePassengers.length >= 4;
 
     // Separate Booking / Ticket Status
@@ -1229,9 +1230,9 @@ function getFeeRowDateChangeText(t, allRows = []) {
                         <strong class="pnr-settlement-val ${totalReceived > 0 ? 'pnr-val-received' : ''}">${formatDashboardAmount(totalReceived)} <span class="pnr-settlement-curr">MMK</span></strong>
                     </div>
                     <div class="pnr-settlement-cell">
-                        <span class="pnr-settlement-label">Outstanding</span>
-                        <strong class="pnr-settlement-val ${totalUnpaid > 0 ? 'pnr-val-outstanding' : 'pnr-val-cleared'}">
-                            ${formatDashboardAmount(totalUnpaid)} <span class="pnr-settlement-curr">MMK</span>
+                        <span class="pnr-settlement-label">Total Profit</span>
+                        <strong class="pnr-settlement-val ${totalProfit < 0 ? 'pnr-val-outstanding' : 'pnr-val-profit'}" style="color: ${totalProfit < 0 ? '#dc2626' : '#059669'};">
+                            ${formatDashboardAmount(totalProfit)} <span class="pnr-settlement-curr">MMK</span>
                         </strong>
                     </div>
                 </div>

@@ -569,7 +569,8 @@
     color: var(--text-muted, #64748b);
 }
 
-.pnr-detail-dialog .pnr-val-received {
+.pnr-detail-dialog .pnr-val-received,
+.pnr-detail-dialog .pnr-val-profit {
     color: #059669;
 }
 
