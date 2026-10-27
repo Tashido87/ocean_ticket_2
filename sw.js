@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-c9c52004';
+const CACHE_NAME = 'ocean-travel-a697bb18';
 const CORE_ASSETS = [
     './',
     './index.html',
