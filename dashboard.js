@@ -283,7 +283,7 @@ function getTrendBadgeHtml(current, previous, inverse = false) {
         : `<span class="trend-badge negative"><i class="fa-solid fa-arrow-down"></i> ${absPct}</span>`;
 }
 
-export function updateSidebarBookingBadge(count) {
+function updateSidebarBookingBadge(count) {
     const badge = document.getElementById('sidebarBookingBadge');
     if (!badge) return;
     const num = typeof count === 'number' ? count : (getActiveBookings() || []).length;
