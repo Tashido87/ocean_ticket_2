@@ -28,7 +28,7 @@ body.material-theme .sidebar,
 .sidebar-brand { border-bottom-color: #E9F0F0 !important; }
 .sidebar-nav-footer { border-top-color: #E9F0F0 !important; }
 .sidebar-nav .nav-btn {
-  font-size: 13px !important;
+  font-size: 12.5px !important;
   font-weight: 500 !important;
   color: #294A52 !important;
   padding: 8px 10px !important;
@@ -74,7 +74,7 @@ body.material-theme .main-content { background: #F3F7F7 !important; }
   color: #294A52 !important;
 }
 
-#home-view .dashboard-content-wrapper { gap: 10px !important; }
+#home-view .dashboard-content-wrapper { gap: 12px !important; }
 
 /* ---------- Header ---------- */
 #home-view .dashboard-compact-title { font-size: 20px !important; font-weight: 700 !important; color: #17333B !important; letter-spacing: -0.01em !important; }
@@ -83,20 +83,24 @@ body.material-theme .main-content { background: #F3F7F7 !important; }
 #home-view .dashboard-period-btn.active { background: #0F7781 !important; color: #FFFFFF !important; }
 
 /* ---------- KPI cards ---------- */
-#home-view .dashboard-kpis { gap: 10px !important; }
+#home-view .dashboard-kpis { gap: 12px !important; }
 #home-view .dashboard-kpis .info-card {
   background: #FFFFFF !important;
   border: 1px solid #E9F0F0 !important;
   border-radius: 12px !important;
   box-shadow: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05) !important;
-  padding: 12px 14px !important;
-  min-height: 108px !important;
+  padding: 14px 14px !important;
+  height: auto !important;
+  min-height: 118px !important;
+  overflow: visible !important;
 }
 #home-view .dashboard-kpis .stat-head h3 { font-size: 9px !important; font-weight: 700 !important; letter-spacing: 0.035em !important; color: #789097 !important; }
 #home-view .dashboard-kpis .stat-head .icon { width: 28px !important; height: 28px !important; border-radius: 8px !important; font-size: 13px !important; }
-#home-view .dashboard-kpis .main-value { font-size: 21px !important; font-weight: 700 !important; color: #17333B !important; }
-#home-view .dashboard-kpis .currency-label { font-size: 11px !important; color: #9BAEB3 !important; }
-#home-view .dashboard-kpis .stat-foot .sub-value { font-size: 11px !important; color: #9BAEB3 !important; }
+#home-view .dashboard-kpis .main-value { font-size: 20px !important; font-weight: 700 !important; color: #17333B !important; line-height: 1.15 !important; }
+#home-view .dashboard-kpis .currency-label { font-size: 10px !important; color: #9BAEB3 !important; }
+#home-view .dashboard-kpis .stat-foot { font-size: 10px !important; margin-top: 6px !important; }
+#home-view .dashboard-kpis .stat-foot .sub-value { font-size: 10px !important; color: #9BAEB3 !important; }
+#home-view .trend-badge { font-size: 9px !important; padding: 2px 6px !important; }
 #home-view .trend-badge.positive { background: #E8F8F0 !important; color: #2FAE7B !important; }
 #home-view .trend-badge.negative { background: #FFF0EC !important; color: #F07864 !important; }
 #home-view .trend-badge.neutral { background: #F8FBFB !important; color: #789097 !important; }
@@ -119,7 +123,7 @@ body.material-theme .main-content { background: #F3F7F7 !important; }
   border: 1px solid #E9F0F0 !important;
   border-radius: 12px !important;
   box-shadow: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05) !important;
-  padding: 13px 15px !important;
+  padding: 15px 16px !important;
 }
 #home-view .panel-header h3 { font-size: 13px !important; font-weight: 700 !important; color: #17333B !important; }
 #home-view .panel-header h3 i { color: #0F7781 !important; }
@@ -127,6 +131,17 @@ body.material-theme .main-content { background: #F3F7F7 !important; }
 
 /* ---------- Tables ---------- */
 #home-view .dashboard-mini-table th { font-size: 9px !important; font-weight: 700 !important; text-transform: uppercase !important; color: #789097 !important; background: #F8FBFB !important; }
-#home-view .dashboard-mini-table td { font-size: 12px !important; color: #294A52 !important; }
+#home-view .dashboard-mini-table td { font-size: 11.5px !important; color: #294A52 !important; padding: 8px 10px !important; }
+#home-view .dashboard-mini-table th { padding: 7px 10px !important; }
+
+/* ---------- Breathing room: rows, travel, tasks ---------- */
+#home-view .travel-schedule-list { gap: 8px !important; }
+#home-view .travel-schedule-row { padding: 10px 12px !important; gap: 12px !important; }
+#home-view .travel-schedule-main strong { font-size: 12px !important; }
+#home-view .travel-schedule-main span { font-size: 11px !important; }
+#home-view .unpaid-summary-grid { gap: 8px !important; }
+#home-view .unpaid-summary-grid > div { padding: 8px 10px !important; }
+#home-view .dashboard-task-list { gap: 10px !important; }
+#home-view .dashboard-auto-task, #home-view .dashboard-task-item.manual { padding: 8px 10px !important; font-size: 11.5px !important; }
 #home-view .unpaid-summary-grid strong { color: #F07864 !important; }
 #home-view .dashboard-unpaid-toolbar input:focus { border-color: #F07864 !important; }
