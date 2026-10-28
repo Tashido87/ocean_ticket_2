@@ -1,25 +1,73 @@
-/* Scoped to the booking-details dialog; other modals retain their existing UI. */
-#modal .modal-content.pnr-detail-dialog {
-    width: min(640px, calc(100vw - 24px));
-    max-width: 640px;
-    max-height: calc(100dvh - 32px);
-    padding: 22px 24px;
-    border-radius: 20px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    box-sizing: border-box;
-}
+/* ==========================================================================
+   Booking Details (PNR) Modal — Consolidated Dashboard Token System
+   Scoped to #modal .modal-content.pnr-detail-dialog and .pnr-detail-dialog
+   ========================================================================== */
 
+body.material-theme #modal.solid-modal-open .modal-content.solid-modal.pnr-detail-dialog,
+#modal.solid-modal-open .modal-content.solid-modal.pnr-detail-dialog,
+#modal .modal-content.pnr-detail-dialog,
 #modal .modal-content.pnr-detail-dialog.pnr-side-panel {
-    width: min(720px, calc(100vw - 24px));
-    max-width: 720px;
+    /* Dashboard Token System */
+    --app-bg: #F3F7F7;
+    --surface: #FFFFFF;
+    --surface-soft: #F8FBFB;
+    --border: #DCE8E7;
+    --border-soft: #E9F0F0;
+    --text-strong: #17333B;
+    --text: #294A52;
+    --text-muted: #789097;
+    --text-faint: #9BAEB3;
+    --teal-700: #0C6670;
+    --teal-600: #0F7781;
+    --teal-500: #238E98;
+    --teal-100: #DDF1F1;
+    --teal-050: #EFF8F8;
+    --mint: #2FAE7B;
+    --mint-soft: #E8F8F0;
+    --coral: #F07864;
+    --coral-soft: #FFF0EC;
+    --amber: #E9A33A;
+    --amber-soft: #FFF5DE;
+    --sky: #55AFCB;
+    --sky-soft: #EAF7FB;
+    --danger: #E65353;
+    --danger-soft: #FDEBEC;
+    --shadow-sm: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05);
+
+    width: min(600px, calc(100vw - 24px)) !important;
+    max-width: 600px !important;
+    max-height: calc(100dvh - 32px) !important;
+    padding: 18px 20px !important;
+    border-radius: 16px !important;
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border-soft) !important;
+    box-shadow: var(--shadow-sm), 0 16px 40px rgba(23, 51, 59, 0.14) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+    box-sizing: border-box !important;
 }
 
 .pnr-detail-dialog .trip-detail-modal-container {
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", Padauk, Pyidaungsu, sans-serif;
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    color: var(--text);
+}
+
+.pnr-detail-dialog .trip-detail-modal-container *:not(i):not(.fa-solid):not(.fa-regular):not(.fa-brands) {
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Focus Ring — single calm teal ring */
+.pnr-detail-dialog button:focus-visible,
+.pnr-detail-dialog a:focus-visible,
+.pnr-detail-dialog textarea:focus-visible {
+    outline: none !important;
+    border-color: var(--teal-600) !important;
+    box-shadow: 0 0 0 3px rgba(15, 119, 129, 0.18) !important;
 }
 
 /* Toolbar */
@@ -27,8 +75,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: -4px 0 6px;
-    padding-bottom: 2px;
+    margin: 0;
+    padding: 0 0 2px;
 }
 
 .pnr-detail-dialog .pnr-toolbar-title-group {
@@ -38,20 +86,22 @@
 }
 
 .pnr-detail-dialog .pnr-toolbar-title {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.2px;
+    color: var(--text-strong);
+    letter-spacing: -0.01em;
+    line-height: 1.25;
 }
 
 .pnr-detail-dialog .pnr-toolbar-badge {
-    font-size: 11px;
-    font-weight: 650;
+    font-size: 10px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     padding: 2px 8px;
     border-radius: 9999px;
-    background: rgba(13, 110, 119, 0.1);
-    color: var(--primary, #0D6E77);
-    border: 1px solid rgba(13, 110, 119, 0.2);
+    background: var(--teal-100);
+    color: var(--teal-700);
+    border: 0;
 }
 
 .pnr-detail-dialog .pnr-toolbar-actions-group {
@@ -60,71 +110,56 @@
     gap: 8px;
 }
 
-.pnr-detail-dialog .pnr-toolbar-jump-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 9999px;
-    font-size: 12px;
-    font-weight: 650;
-    background: var(--surface-2, #f3f4f6);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color, #e5e7eb);
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.pnr-detail-dialog .pnr-toolbar-jump-btn:hover {
-    background: var(--primary, #0D6E77);
-    color: #ffffff;
-    border-color: var(--primary, #0D6E77);
-}
-
 .pnr-detail-dialog .pnr-close-circle-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
     border: 0;
     border-radius: 50%;
-    background: var(--surface-2, #f3f4f6);
-    color: var(--text-primary);
+    background: var(--teal-050);
+    color: var(--text);
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    transition: background 0.15s ease;
+    font-size: 13px;
+    padding: 0;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .pnr-detail-dialog .pnr-close-circle-btn:hover {
-    background: var(--border-color, #e5e7eb);
+    background: var(--teal-600);
+    color: #FFFFFF;
 }
 
-.pnr-detail-dialog button:focus-visible,
-.pnr-detail-dialog a:focus-visible {
-    outline: 2px solid var(--primary, #0D6E77);
-    outline-offset: 2px;
+/* Shared Section Cards — uniform white cards */
+.pnr-detail-dialog .pnr-modal-top-card,
+.pnr-detail-dialog .pnr-modal-middle-card,
+.pnr-detail-dialog .pnr-modal-roster-card,
+.pnr-detail-dialog .pnr-modal-bottom-card {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-sizing: border-box;
 }
 
-/* 1. Top Section: PNR, Route, Airline, Status */
+/* 1. Top Section: Route, Airline, PNR, Statuses */
 .pnr-detail-dialog .pnr-modal-top-card {
-    background: var(--surface-2, #f6f7f9);
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 16px;
-    padding: 16px 18px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
 }
 
 .pnr-detail-dialog .pnr-top-flight-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed var(--border-color, #e2e8f0);
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--border-soft);
 }
 
 .pnr-detail-dialog .pnr-routes-cluster {
@@ -135,59 +170,69 @@
 }
 
 .pnr-detail-dialog .pnr-sector-divider {
-    color: var(--text-muted, #94a3b8);
+    color: var(--text-muted);
     font-weight: 700;
-    font-size: 16px;
-    padding: 0 2px;
+    font-size: 14px;
+    margin: 0 2px;
+}
+
+.pnr-detail-dialog .pnr-airline-sep {
+    color: var(--text-muted);
+    margin: 0 4px;
 }
 
 .pnr-detail-dialog .pnr-route-pill {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    background: var(--surface, #ffffff);
-    border: 1px solid var(--border-color, #e2e8f0);
-    padding: 5px 14px;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    padding: 6px 12px;
     border-radius: 9999px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    box-shadow: none;
 }
 
 .pnr-detail-dialog .pnr-route-code {
-    font-size: 17px;
-    font-weight: 750;
-    letter-spacing: 0.5px;
-    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--text-strong);
+    line-height: 1.2;
 }
 
 .pnr-detail-dialog .pnr-route-arrow-flow {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
-    color: var(--primary, #0D6E77);
-    font-size: 12px;
+    gap: 4px;
+    color: var(--teal-600);
+    font-size: 11px;
 }
 
 .pnr-detail-dialog .pnr-flow-line {
-    width: 12px;
+    width: 10px;
     height: 1.5px;
     background: currentColor;
-    opacity: 0.45;
+    opacity: 0.4;
 }
 
 .pnr-detail-dialog .pnr-flow-icon {
-    font-size: 12px;
+    font-size: 11px;
+    color: var(--teal-600);
 }
 
 .pnr-detail-dialog .pnr-airline-box {
     display: flex;
     align-items: center;
     flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
 }
 
 .pnr-detail-dialog .pnr-top-code-status-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: 16px;
+    gap: 12px;
     align-items: start;
 }
 
@@ -195,141 +240,205 @@
 .pnr-detail-dialog .pnr-status-cell {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
     min-width: 0;
 }
 
-.pnr-detail-dialog .pnr-mini-label {
-    display: block;
-    font-size: 11px;
+/* Section Labels (PNR, Statuses, Travel Date, etc.) */
+.pnr-detail-dialog .pnr-mini-label,
+.pnr-detail-dialog .pnr-meta-label,
+.pnr-detail-dialog .pnr-roster-title,
+.pnr-detail-dialog .pnr-addon-label,
+.pnr-detail-dialog .pnr-settlement-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 650;
-    color: var(--text-muted, #64748b);
+    letter-spacing: 0.035em;
+    color: var(--text-muted);
+    line-height: 1.2;
 }
 
 .pnr-detail-dialog .pnr-value-row {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
-    margin-top: 2px;
 }
 
 .pnr-detail-dialog .pnr-value-large {
-    font-size: 23px;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-strong);
     line-height: 1.2;
 }
 
-.pnr-detail-dialog .pnr-icon-action-btn {
-    width: 30px;
-    height: 30px;
+/* Copy PNR & Phonetic Spell-Check Ghost Buttons */
+#modal .modal-content.pnr-detail-dialog .pnr-icon-action-btn,
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-btn,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-btn,
+.pnr-detail-dialog .pnr-icon-action-btn,
+.pnr-detail-dialog .pnr-phonetic-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
     border-radius: 8px;
-    border: 1px solid var(--border-color, #cbd5e1);
-    background: var(--surface, #ffffff);
-    color: var(--text-secondary);
+    border: 1px solid var(--border-soft, #E9F0F0);
+    background: var(--surface, #FFFFFF);
+    color: var(--text-muted, #789097);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    font-size: 12px;
+    padding: 0;
+    line-height: 1;
+    flex-shrink: 0;
+    box-shadow: none;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.pnr-detail-dialog .pnr-icon-action-btn:hover {
-    background: var(--primary, #0D6E77);
-    color: #ffffff;
-    border-color: var(--primary, #0D6E77);
+#modal .modal-content.pnr-detail-dialog .pnr-icon-action-btn:hover,
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-btn:hover,
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-btn.is-active,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-btn:hover,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-btn.is-active,
+.pnr-detail-dialog .pnr-icon-action-btn:hover,
+.pnr-detail-dialog .pnr-phonetic-btn:hover,
+.pnr-detail-dialog .pnr-phonetic-btn.is-active {
+    background: var(--teal-600, #0F7781);
+    color: #FFFFFF;
+    border-color: var(--teal-600, #0F7781);
+    transform: none;
+    box-shadow: none;
 }
 
-/* Statuses - strictly separate ticket/booking and payment badges */
-.pnr-detail-dialog .pnr-dual-status-cluster {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 2px;
-}
-
-.pnr-detail-dialog .pnr-status-pair {
+/* Phonetic Expansion Panel */
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-panel,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-panel,
+.pnr-detail-dialog .pnr-phonetic-panel {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    min-width: 0;
+    gap: 6px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+    padding: 8px 10px;
+    background: var(--teal-050, #EFF8F8);
+    border: 1px solid var(--border-soft, #E9F0F0);
+    border-radius: 10px;
+    font-size: 12px;
+    box-shadow: none;
+    animation: pnrPhoneticFadeIn 0.16s ease;
 }
 
-.pnr-detail-dialog .pnr-status-caption {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 650;
-    color: var(--text-muted, #64748b);
+@keyframes pnrPhoneticFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pnr-detail-dialog .pnr-phonetic-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
+}
+
+.pnr-detail-dialog .pnr-phonetic-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-alpha,
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-digit,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-alpha,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-digit {
+    background: var(--surface, #FFFFFF);
+    border: 1px solid var(--border, #DCE8E7);
+    box-shadow: none;
+}
+
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-alpha .chip-char,
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-digit .chip-char,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-alpha .chip-char,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-digit .chip-char {
+    font-weight: 700;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--teal-700, #0C6670);
+}
+
+#modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-alpha .chip-word,
+body.dark-theme #modal .modal-content.pnr-detail-dialog .pnr-phonetic-chip.is-alpha .chip-word {
+    font-weight: 500;
+    color: var(--text, #294A52);
+    font-size: 12px;
+}
+
+/* Statuses — two pale 10px pills on one line */
+.pnr-detail-dialog .pnr-dual-status-cluster {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 1px;
 }
 
 .pnr-detail-dialog .pnr-status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    font-weight: 650;
-    padding: 4px 10px;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 9px;
     border-radius: 9999px;
+    border: 0;
     line-height: 1.25;
     white-space: nowrap;
 }
 
-.pnr-detail-dialog .pnr-status-booking-confirmed {
-    background: rgba(16, 185, 129, 0.12);
-    color: #059669;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+.pnr-detail-dialog .pnr-status-booking-confirmed,
+.pnr-detail-dialog .pnr-status-payment-paid {
+    background: var(--mint-soft);
+    color: var(--mint);
 }
 
-.pnr-detail-dialog .pnr-status-booking-partial {
-    background: rgba(245, 158, 11, 0.12);
-    color: #d97706;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+.pnr-detail-dialog .pnr-status-booking-partial,
+.pnr-detail-dialog .pnr-status-payment-partial {
+    background: var(--amber-soft);
+    color: var(--amber);
 }
 
 .pnr-detail-dialog .pnr-status-booking-canceled {
-    background: rgba(239, 68, 68, 0.12);
-    color: #dc2626;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.pnr-detail-dialog .pnr-status-payment-paid {
-    background: rgba(16, 185, 129, 0.12);
-    color: #059669;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.pnr-detail-dialog .pnr-status-payment-partial {
-    background: rgba(245, 158, 11, 0.12);
-    color: #d97706;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: var(--danger-soft);
+    color: var(--danger);
 }
 
 .pnr-detail-dialog .pnr-status-payment-unpaid {
-    background: rgba(239, 68, 68, 0.12);
-    color: #dc2626;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: var(--coral-soft);
+    color: var(--coral);
 }
 
-/* 2. Middle Section: Travel/Issued Dates & Contact Account */
-.pnr-detail-dialog .pnr-modal-middle-card {
-    background: var(--surface-2, #f6f7f9);
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 14px;
-    padding: 14px 18px;
-}
-
+/* 2. Middle Section: Travel Date, Issued Date, Contact Account */
 .pnr-detail-dialog .pnr-meta-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr);
-    gap: 14px;
+    gap: 12px;
     align-items: start;
 }
 
@@ -340,22 +449,11 @@
     min-width: 0;
 }
 
-.pnr-detail-dialog .pnr-meta-label {
-    font-size: 11px;
-    font-weight: 650;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted, #64748b);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
 .pnr-detail-dialog .pnr-meta-val {
-    font-size: 13.5px;
-    font-weight: 650;
-    color: var(--text-primary);
-    line-height: 1.4;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
     word-break: break-word;
 }
 
@@ -364,73 +462,52 @@
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
-    margin-top: 2px;
 }
 
 .pnr-detail-dialog .pnr-contact-client-name {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: var(--text-primary);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1.35;
     word-break: break-word;
 }
 
 /* 3. Passenger List */
-.pnr-detail-dialog .pnr-modal-roster-card {
-    background: var(--surface, #ffffff);
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 14px;
-    padding: 16px 18px;
-}
-
 .pnr-detail-dialog .pnr-roster-header-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.pnr-detail-dialog .pnr-roster-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    margin-bottom: 6px;
 }
 
 .pnr-detail-dialog .pnr-roster-pax-count {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 600;
-    color: var(--text-muted, #64748b);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
 }
 
 .pnr-detail-dialog .pnr-roster-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 .pnr-detail-dialog .pnr-scrollable-roster {
-    max-height: 260px;
+    max-height: 240px;
     overflow-y: auto;
-    padding-right: 6px;
+    padding-right: 4px;
     scrollbar-width: thin;
 }
 
 .pnr-detail-dialog .pnr-roster-addons-wrap {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border-color, #e2e8f0);
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-soft);
 }
 
 .pnr-detail-dialog .pnr-addon-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-secondary);
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    margin-bottom: 4px;
 }
 
 .pnr-detail-dialog .passengers-list-premium {
@@ -440,19 +517,21 @@
 }
 
 .pnr-detail-dialog .pax-row-premium {
-    padding: 12px 0;
+    padding: 10px 0;
     gap: 12px;
     border: 0;
-    border-bottom: 1px solid var(--border-color, #e7e7ec);
+    border-bottom: 1px solid var(--border-soft);
     border-radius: 0;
     background: transparent;
     box-shadow: none;
     display: flex;
     align-items: center;
+    justify-content: space-between;
 }
 
 .pnr-detail-dialog .pax-row-premium:last-child {
     border-bottom: 0;
+    padding-bottom: 2px;
 }
 
 .pnr-detail-dialog .pax-avatar {
@@ -460,305 +539,380 @@
 }
 
 .pnr-detail-dialog .pax-details-premium {
-    flex-grow: 1;
+    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
+#modal .modal-content.pnr-detail-dialog .pax-name-premium,
+#modal .modal-content.pnr-detail-dialog a.pax-name-premium,
 .pnr-detail-dialog .pax-name-premium {
-    font-size: 13.5px;
-    line-height: 1.45;
-    font-weight: 650;
-    color: var(--text-primary);
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
+    font-weight: 600 !important;
+    color: var(--text-strong) !important;
+    text-decoration: none !important;
     overflow-wrap: anywhere;
 }
 
+#modal .modal-content.pnr-detail-dialog a.pax-name-premium:hover,
 .pnr-detail-dialog a.pax-name-premium:hover {
-    color: var(--primary, #0D6E77);
+    color: var(--teal-600) !important;
     text-decoration: underline !important;
 }
 
 .pnr-detail-dialog .pax-ticket-premium {
-    font-size: 12px;
-    color: var(--text-muted, #64748b);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-muted);
+    line-height: 1.3;
     overflow-wrap: anywhere;
 }
 
 .pnr-detail-dialog .pax-finance-premium {
     flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
 }
 
 .pnr-detail-dialog .pax-amount-premium {
-    font-size: 13px;
-    font-weight: 650;
+    font-size: 12.5px;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
-    color: var(--text-primary);
+    color: var(--text-strong);
+    white-space: nowrap;
 }
 
 .pnr-detail-dialog .pax-status-badge-premium {
-    font-size: 10.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: .02em;
-    padding: 2.5px 7px;
+    text-transform: none;
+    letter-spacing: 0;
+    padding: 2.5px 8px;
     border-radius: 9999px;
+    border: 0;
+    line-height: 1.25;
+    white-space: nowrap;
 }
 
 .pnr-detail-dialog .pax-status-badge-premium.paid {
-    background: rgba(16, 185, 129, 0.12);
-    color: #059669;
+    background: var(--mint-soft);
+    color: var(--mint);
 }
 
 .pnr-detail-dialog .pax-status-badge-premium.unpaid {
-    background: rgba(239, 68, 68, 0.12);
-    color: #dc2626;
+    background: var(--coral-soft);
+    color: var(--coral);
 }
 
-/* 4. Bottom Section: Total, Received, Outstanding & Primary Actions */
+/* 4. Bottom Section: Settlement Row, Customer Message Bar & Footer */
 .pnr-detail-dialog .pnr-modal-bottom-card {
-    background: var(--surface-2, #f6f7f9);
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 16px;
-    padding: 16px 18px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 }
 
 .pnr-detail-dialog .pnr-settlement-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
+    padding: 0 0 2px;
 }
 
 .pnr-detail-dialog .pnr-settlement-cell {
-    background: var(--surface, #ffffff);
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 12px;
-    padding: 12px 14px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-}
-
-.pnr-detail-dialog .pnr-settlement-label {
-    font-size: 11px;
-    font-weight: 650;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted, #64748b);
+    gap: 3px;
+    min-width: 0;
 }
 
 .pnr-detail-dialog .pnr-settlement-val {
-    font-size: 17px;
-    font-weight: 750;
+    font-size: 16px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--text-primary);
+    color: var(--text-strong);
     line-height: 1.25;
     word-break: break-word;
 }
 
 .pnr-detail-dialog .pnr-settlement-curr {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    color: var(--text-muted, #64748b);
+    color: var(--text-muted);
 }
 
-.pnr-detail-dialog .pnr-val-received,
-.pnr-detail-dialog .pnr-val-profit {
-    color: #059669;
+.pnr-detail-dialog .pnr-val-received {
+    color: var(--text-strong);
+}
+
+.pnr-detail-dialog .pnr-val-profit,
+.pnr-detail-dialog .pnr-val-cleared {
+    color: var(--mint);
 }
 
 .pnr-detail-dialog .pnr-val-outstanding {
-    color: #dc2626;
+    color: var(--coral);
 }
 
-.pnr-detail-dialog .pnr-val-cleared {
-    color: #059669;
-}
-
-.pnr-detail-dialog .pnr-modal-footer-actions {
+/* 1-Click Copy Customer Message Bar */
+.pnr-customer-msg-bar,
+.pnr-detail-dialog .pnr-customer-msg-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     flex-wrap: wrap;
+    padding: 10px 12px;
+    margin: 0;
+    border-radius: 12px;
+    background: var(--teal-050, #EFF8F8);
+    border: 1px solid var(--border-soft, #E9F0F0);
 }
 
-.pnr-detail-dialog .pnr-footer-action-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.pnr-detail-dialog .pnr-footer-btn-copy {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 40px;
-    border-radius: 10px;
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.pnr-detail-dialog #tripPlanCloseBtn {
-    min-height: 40px;
-    border-radius: 10px;
-    padding: 8px 18px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.pnr-detail-dialog .pnr-footer-btn-manage {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 40px;
-    border-radius: 10px;
-    padding: 8px 18px;
-    font-size: 13px;
-    font-weight: 650;
-}
-
-/* Phonetic Expander */
-.pnr-phonetic-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    border: 1px solid rgba(220, 38, 38, 0.25);
-    background: rgba(220, 38, 38, 0.08);
-    color: #dc2626;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    padding: 0;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.pnr-phonetic-btn:hover {
-    background: #dc2626;
-    color: #ffffff;
-    border-color: #dc2626;
-    transform: scale(1.05);
-}
-
-.pnr-phonetic-btn.is-active {
-    background: #dc2626;
-    color: #ffffff;
-    border-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
-}
-
-.pnr-phonetic-panel {
+.pnr-customer-msg-info,
+.pnr-detail-dialog .pnr-customer-msg-info {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 8px;
-    margin-bottom: 8px;
-    padding: 10px 12px;
-    background: #fff5f5;
-    border: 1px solid rgba(220, 38, 38, 0.2);
-    border-radius: 12px;
-    animation: pnrPhoneticFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    align-items: flex-start;
+    gap: 3px;
+    min-width: 0;
 }
 
-@keyframes pnrPhoneticFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.pnr-phonetic-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-}
-
-.pnr-phonetic-chip {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 12px;
-    line-height: 1.3;
-}
-
-.pnr-phonetic-chip.is-alpha,
-.pnr-phonetic-chip.is-digit {
-    background: #ffffff;
-    border: 1px solid rgba(220, 38, 38, 0.25);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.pnr-phonetic-chip.is-alpha .chip-char,
-.pnr-phonetic-chip.is-digit .chip-char {
-    font-family: monospace;
-    font-weight: 800;
-    font-size: 13px;
-    color: #dc2626;
-}
-
-.pnr-phonetic-chip.is-alpha .chip-word {
-    font-weight: 600;
-    color: #1e293b;
-    font-size: 12px;
-}
-
-/* Social link button & pill */
-.pnr-social-link-btn {
+.pnr-customer-msg-title,
+.pnr-detail-dialog .pnr-customer-msg-title {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 2.5px 8.5px;
-    border-radius: 9999px;
-    background: var(--platform-bg, rgba(0, 132, 255, 0.12));
-    color: var(--platform-color, #0084FF);
-    border: 1px solid var(--platform-color, #0084FF);
     font-size: 11px;
-    font-weight: 650;
+    font-weight: 700;
+    color: var(--teal-700, #0C6670);
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.pnr-customer-msg-badge,
+.pnr-detail-dialog .pnr-customer-msg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    border: 0;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.pnr-customer-msg-badge.dom,
+.pnr-detail-dialog .pnr-customer-msg-badge.dom {
+    background: var(--teal-100, #DDF1F1);
+    color: var(--teal-700, #0C6670);
+}
+
+.pnr-customer-msg-badge.intl,
+.pnr-detail-dialog .pnr-customer-msg-badge.intl {
+    background: var(--sky-soft, #EAF7FB);
+    color: var(--sky, #55AFCB);
+}
+
+.pnr-customer-msg-actions,
+.pnr-detail-dialog .pnr-customer-msg-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.pnr-msg-copy-btn,
+.pnr-detail-dialog .pnr-msg-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border, #DCE8E7);
+    background: var(--surface, #FFFFFF);
+    color: var(--text, #294A52);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+    box-shadow: none;
+}
+
+.pnr-msg-copy-btn:hover,
+.pnr-detail-dialog .pnr-msg-copy-btn:hover {
+    background: var(--teal-050, #EFF8F8);
+    border-color: var(--teal-600, #0F7781);
+    color: var(--teal-700, #0C6670);
+    transform: none;
+}
+
+.pnr-msg-copy-btn.primary,
+.pnr-detail-dialog .pnr-msg-copy-btn.primary {
+    background: var(--teal-600, #0F7781);
+    border-color: var(--teal-600, #0F7781);
+    color: #FFFFFF;
+    box-shadow: none;
+}
+
+.pnr-msg-copy-btn.primary:hover,
+.pnr-detail-dialog .pnr-msg-copy-btn.primary:hover {
+    background: var(--teal-700, #0C6670);
+    border-color: var(--teal-700, #0C6670);
+    color: #FFFFFF;
+}
+
+.pnr-msg-copy-btn.icon-only,
+.pnr-detail-dialog .pnr-msg-copy-btn.icon-only {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+    border: 1px solid var(--border-soft, #E9F0F0);
+    background: var(--surface, #FFFFFF);
+    color: var(--text-muted, #789097);
+}
+
+.pnr-msg-copy-btn.icon-only:hover,
+.pnr-detail-dialog .pnr-msg-copy-btn.icon-only:hover {
+    background: var(--teal-100, #DDF1F1);
+    border-color: var(--teal-100, #DDF1F1);
+    color: var(--teal-700, #0C6670);
+}
+
+.pnr-customer-msg-preview,
+.pnr-detail-dialog .pnr-customer-msg-preview {
+    margin: 0;
+}
+
+.pnr-customer-msg-textarea,
+#modal .modal-content.pnr-detail-dialog textarea.pnr-customer-msg-textarea {
+    width: 100% !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--border-soft, #E9F0F0) !important;
+    background: var(--surface, #FFFFFF) !important;
+    color: var(--text, #294A52) !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    resize: vertical !important;
+    box-sizing: border-box !important;
+}
+
+/* Footer Actions */
+.pnr-detail-dialog .pnr-modal-footer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pnr-detail-dialog .pnr-footer-action-left,
+.pnr-detail-dialog .pnr-footer-action-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pnr-detail-dialog .pnr-footer-action-right {
+    margin-left: auto;
+}
+
+#modal .modal-content.pnr-detail-dialog .pnr-footer-btn-reminder,
+#modal .modal-content.pnr-detail-dialog .pnr-footer-btn-manage {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    border-radius: 8px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    white-space: nowrap !important;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+}
+
+#modal .modal-content.pnr-detail-dialog .pnr-footer-btn-reminder {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+}
+
+#modal .modal-content.pnr-detail-dialog .pnr-footer-btn-reminder:hover {
+    background: var(--teal-050) !important;
+    border-color: var(--teal-600) !important;
+    color: var(--teal-700) !important;
+}
+
+#modal .modal-content.pnr-detail-dialog .pnr-footer-btn-manage {
+    background: var(--teal-600) !important;
+    border: 1px solid var(--teal-600) !important;
+    color: #FFFFFF !important;
+}
+
+#modal .modal-content.pnr-detail-dialog .pnr-footer-btn-manage:hover {
+    background: var(--teal-700) !important;
+    border-color: var(--teal-700) !important;
+    color: #FFFFFF !important;
+}
+
+/* Social link button & platform pill (preserves platform colour in pale badge style) */
+.pnr-social-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: var(--platform-bg, var(--teal-050, #EFF8F8));
+    color: var(--platform-color, var(--teal-700, #0C6670));
+    border: 1px solid transparent;
+    font-size: 10px;
+    font-weight: 600;
     line-height: 1.25;
     text-decoration: none;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
     cursor: pointer;
     vertical-align: middle;
 }
 
 .pnr-social-link-btn:hover {
-    background: var(--platform-color, #0084FF);
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.pnr-social-link-btn:active {
-    transform: translateY(0);
+    background: var(--platform-color, var(--teal-600, #0F7781));
+    color: #FFFFFF;
 }
 
 .pnr-social-link-btn i {
-    font-size: 11.5px !important;
+    font-size: 11px !important;
     color: inherit !important;
     flex-shrink: 0;
 }
 
 .pnr-social-link-btn .pnr-social-link-arrow {
-    font-size: 9.5px;
+    font-size: 9px;
     opacity: 0.8;
 }
 
@@ -768,124 +922,90 @@
     gap: 4px;
     padding: 2px 7px;
     border-radius: 9999px;
-    background: var(--platform-bg, rgba(100, 116, 139, 0.12));
-    color: var(--platform-color, #64748b);
-    font-size: 11px;
+    background: var(--platform-bg, var(--teal-050, #EFF8F8));
+    color: var(--platform-color, var(--text-muted, #789097));
+    font-size: 10px;
     font-weight: 600;
     line-height: 1.25;
 }
 
 .pnr-social-platform-pill i {
-    font-size: 11px !important;
+    font-size: 10.5px !important;
     color: inherit !important;
 }
 
-/* Dark Theme Overrides */
-body.dark-theme #modal .modal-content.pnr-detail-dialog {
-    background: var(--surface, #1e222b);
-    color: var(--text-primary, #f1f5f9);
+.booking-action-btn.copy-msg {
+    background: var(--teal-050, #EFF8F8);
+    border-color: var(--border, #DCE8E7);
+    color: var(--teal-700, #0C6670);
 }
 
-body.dark-theme .pnr-detail-dialog .pnr-modal-top-card,
-body.dark-theme .pnr-detail-dialog .pnr-modal-middle-card,
-body.dark-theme .pnr-detail-dialog .pnr-modal-bottom-card {
-    background: var(--surface-2, #161922);
-    border-color: var(--border-color, #2d3343);
+.booking-action-btn.copy-msg:hover:not(:disabled) {
+    background: var(--teal-600, #0F7781);
+    border-color: var(--teal-600, #0F7781);
+    color: #FFFFFF;
 }
 
-body.dark-theme .pnr-detail-dialog .pnr-modal-roster-card {
-    background: var(--surface, #1e222b);
-    border-color: var(--border-color, #2d3343);
+/* Dark Theme Overrides — Dark Teal-Tinted Surfaces (No Slate/Red Leaks) */
+body.dark-theme #modal .modal-content.pnr-detail-dialog,
+body.material-theme.dark-theme #modal .modal-content.pnr-detail-dialog {
+    --surface: #12252B;
+    --surface-soft: #172E35;
+    --border: #25454E;
+    --border-soft: #1E3941;
+    --text-strong: #ECF6F7;
+    --text: #C9DFE2;
+    --text-muted: #86A6AD;
+    --text-faint: #67878E;
+    --teal-700: #6AD2DC;
+    --teal-600: #168B96;
+    --teal-500: #28A3AF;
+    --teal-100: #1A3D45;
+    --teal-050: #16333A;
+    --mint: #4CC995;
+    --mint-soft: #16382C;
+    --coral: #F48B79;
+    --coral-soft: #3B2322;
+    --amber: #F0B454;
+    --amber-soft: #392E1C;
+    --sky: #72C2DC;
+    --sky-soft: #183542;
+    --danger: #F07171;
+    --danger-soft: #3B2024;
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border-color: var(--border-soft) !important;
 }
 
-body.dark-theme .pnr-detail-dialog .pnr-top-flight-bar {
-    border-bottom-color: var(--border-color, #2d3343);
-}
-
-body.dark-theme .pnr-detail-dialog .pnr-route-pill {
-    background: var(--surface, #1e222b);
-    border-color: var(--border-color, #2d3343);
-}
-
-body.dark-theme .pnr-detail-dialog .pnr-settlement-cell {
-    background: var(--surface, #1e222b);
-    border-color: var(--border-color, #2d3343);
-}
-
-body.dark-theme .pnr-detail-dialog .pnr-close-circle-btn,
-body.dark-theme .pnr-detail-dialog .pnr-toolbar-jump-btn {
-    background: var(--surface-2, #161922);
-    border-color: var(--border-color, #2d3343);
-    color: var(--text-primary);
-}
-
-body.dark-theme .pnr-detail-dialog .pnr-icon-action-btn {
-    background: var(--surface, #1e222b);
-    border-color: var(--border-color, #2d3343);
-    color: var(--text-primary);
-}
-
-body.dark-theme .pnr-phonetic-btn {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.35);
-    color: #f87171;
-}
-
-body.dark-theme .pnr-phonetic-btn:hover,
-body.dark-theme .pnr-phonetic-btn.is-active {
-    background: #dc2626;
-    color: #ffffff;
-    border-color: #ef4444;
-}
-
-body.dark-theme .pnr-phonetic-panel {
-    background: rgba(220, 38, 38, 0.08);
-    border-color: rgba(239, 68, 68, 0.25);
-}
-
-body.dark-theme .pnr-phonetic-chip.is-alpha,
-body.dark-theme .pnr-phonetic-chip.is-digit {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(239, 68, 68, 0.35);
-}
-
-body.dark-theme .pnr-phonetic-chip.is-alpha .chip-char,
-body.dark-theme .pnr-phonetic-chip.is-digit .chip-char {
-    color: #f87171;
-}
-
-body.dark-theme .pnr-phonetic-chip.is-alpha .chip-word {
-    color: #f1f5f9;
-}
-
-body.dark-theme .pnr-detail-dialog .pax-row-premium {
-    border-bottom-color: var(--border-color, #2d3343);
-}
-
-/* Responsive adjustments */
-@media (max-width: 600px) {
-    #modal .modal-content.pnr-detail-dialog {
-        padding: 16px;
-        border-radius: 16px;
+/* Responsive Adjustments */
+@media (max-width: 560px) {
+    #modal .modal-content.pnr-detail-dialog,
+    #modal .modal-content.pnr-detail-dialog.pnr-side-panel {
+        padding: 14px 14px !important;
+        border-radius: 14px !important;
     }
 
     .pnr-detail-dialog .pnr-top-code-status-grid {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 10px;
     }
 
     .pnr-detail-dialog .pnr-meta-grid {
         grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        gap: 10px;
     }
 
     .pnr-detail-dialog .pnr-meta-contact-cell {
         grid-column: 1 / -1;
     }
 
-    .pnr-detail-dialog .pnr-settlement-row {
-        grid-template-columns: 1fr;
-        gap: 8px;
+    .pnr-customer-msg-bar,
+    .pnr-detail-dialog .pnr-customer-msg-bar,
+    .pnr-customer-msg-info,
+    .pnr-detail-dialog .pnr-customer-msg-info,
+    .pnr-customer-msg-actions,
+    .pnr-detail-dialog .pnr-customer-msg-actions {
+        flex-wrap: wrap;
     }
 
     .pnr-detail-dialog .pnr-modal-footer-actions {
@@ -893,14 +1013,15 @@ body.dark-theme .pnr-detail-dialog .pax-row-premium {
         align-items: stretch;
     }
 
+    .pnr-detail-dialog .pnr-footer-action-left,
     .pnr-detail-dialog .pnr-footer-action-right {
         width: 100%;
-        justify-content: flex-end;
+        margin-left: 0;
     }
 
-    .pnr-detail-dialog .pnr-footer-btn-copy {
-        justify-content: center;
-        width: 100%;
+    #modal .modal-content.pnr-detail-dialog .pnr-footer-btn-reminder,
+    #modal .modal-content.pnr-detail-dialog .pnr-footer-btn-manage {
+        width: 100% !important;
     }
 }
 
@@ -909,186 +1030,13 @@ body.dark-theme .pnr-detail-dialog .pax-row-premium {
         grid-template-columns: 1fr;
     }
 
+    .pnr-detail-dialog .pnr-settlement-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
     .pnr-detail-dialog .pnr-top-flight-bar {
         flex-direction: column;
         align-items: flex-start;
     }
 }
-
-/* 1-Click Copy Customer Message Bar (PNR Detail Modal & Booking Details Modal) */
-.pnr-customer-msg-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-    padding: 10px 12px;
-    margin-bottom: 12px;
-    border-radius: 12px;
-    background: #F0FAFB;
-    border: 1px solid rgba(13, 110, 119, 0.22);
-}
-
-.pnr-customer-msg-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.pnr-customer-msg-title {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.78rem;
-    font-weight: 800;
-    color: #094F56;
-    letter-spacing: 0.01em;
-}
-
-.pnr-customer-msg-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 700;
-}
-
-.pnr-customer-msg-badge.intl {
-    background: rgba(13, 110, 119, 0.14);
-    color: #094F56;
-    border: 1px solid rgba(13, 110, 119, 0.28);
-}
-
-.pnr-customer-msg-badge.dom {
-    background: rgba(16, 185, 129, 0.14);
-    color: #065F46;
-    border: 1px solid rgba(16, 185, 129, 0.28);
-}
-
-.pnr-customer-msg-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.pnr-msg-copy-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    height: 32px;
-    padding: 0 11px;
-    border-radius: 8px;
-    border: 1px solid rgba(13, 110, 119, 0.28);
-    background: #FFFFFF;
-    color: #0D6E77;
-    font-size: 0.76rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.16s ease;
-    white-space: nowrap;
-}
-
-.pnr-msg-copy-btn:hover {
-    background: rgba(13, 110, 119, 0.08);
-    border-color: #0D6E77;
-    transform: translateY(-1px);
-}
-
-.pnr-msg-copy-btn.primary {
-    background: #0D6E77;
-    border-color: #0D6E77;
-    color: #FFFFFF;
-    box-shadow: 0 2px 6px rgba(13, 110, 119, 0.22);
-}
-
-.pnr-msg-copy-btn.primary:hover {
-    background: #094F56;
-    border-color: #094F56;
-    color: #FFFFFF;
-}
-
-.pnr-msg-copy-btn.icon-only {
-    width: 32px;
-    padding: 0;
-}
-
-.pnr-customer-msg-preview {
-    margin-bottom: 12px;
-}
-
-.pnr-customer-msg-textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid #CBD5E1;
-    background: #FFFFFF;
-    color: #0F172A;
-    font-size: 0.8rem;
-    line-height: 1.5;
-    font-family: inherit;
-    resize: vertical;
-}
-
-.booking-action-btn.copy-msg {
-    background: rgba(13, 110, 119, 0.1);
-    border-color: rgba(13, 110, 119, 0.25);
-    color: #094F56;
-}
-
-.booking-action-btn.copy-msg:hover:not(:disabled) {
-    background: #0D6E77;
-    border-color: #0D6E77;
-    color: #FFFFFF;
-}
-
-body.dark-theme .pnr-customer-msg-bar,
-body.material-theme.dark-theme .pnr-customer-msg-bar {
-    background: rgba(13, 110, 119, 0.16);
-    border-color: rgba(45, 212, 191, 0.28);
-}
-
-body.dark-theme .pnr-customer-msg-title,
-body.material-theme.dark-theme .pnr-customer-msg-title {
-    color: #5EEAD4;
-}
-
-body.dark-theme .pnr-customer-msg-badge.intl,
-body.material-theme.dark-theme .pnr-customer-msg-badge.intl {
-    background: rgba(45, 212, 191, 0.18);
-    color: #99F6E4;
-    border-color: rgba(45, 212, 191, 0.32);
-}
-
-body.dark-theme .pnr-customer-msg-badge.dom,
-body.material-theme.dark-theme .pnr-customer-msg-badge.dom {
-    background: rgba(52, 211, 153, 0.18);
-    color: #A7F3D0;
-    border-color: rgba(52, 211, 153, 0.32);
-}
-
-body.dark-theme .pnr-msg-copy-btn:not(.primary),
-body.material-theme.dark-theme .pnr-msg-copy-btn:not(.primary) {
-    background: #0F172A;
-    border-color: #334155;
-    color: #5EEAD4;
-}
-
-body.dark-theme .pnr-customer-msg-textarea,
-body.material-theme.dark-theme .pnr-customer-msg-textarea {
-    background: #0F172A;
-    border-color: #334155;
-    color: #F8FAFC;
-}
-
-body.dark-theme .booking-action-btn.copy-msg,
-body.material-theme.dark-theme .booking-action-btn.copy-msg {
-    background: rgba(45, 212, 191, 0.15);
-    border-color: rgba(45, 212, 191, 0.3);
-    color: #5EEAD4;
-}
-

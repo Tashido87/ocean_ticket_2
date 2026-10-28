@@ -897,13 +897,18 @@ export function showTripPlanDetail(pnr) {
             ? `<a href="#" class="clickable-client-link pax-name-premium" data-client-key="${dashboardEscapeHtml(ck)}">${dashboardEscapeHtml(p.name)}</a>`
             : `<span class="pax-name-premium">${dashboardEscapeHtml(p.name)}</span>`;
         const initials = p.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'PA';
-        const ticketList = p.tickets.filter(tn => tn !== 'N/A').join(', ') || 'N/A';
+        const validTickets = p.tickets
+            .map(tn => String(tn || '').trim())
+            .filter(tn => tn && tn.toUpperCase() !== 'N/A' && tn !== '—');
+        const ticketLineHtml = validTickets.length > 0
+            ? `<span class="pax-ticket-premium">Ticket: ${dashboardEscapeHtml(validTickets.join(', '))}</span>`
+            : '';
         return `
             <div class="pax-row-premium">
                 <div class="pax-avatar">${initials}</div>
                 <div class="pax-details-premium">
                     ${nameHtml}
-                    <span class="pax-ticket-premium">Ticket: ${dashboardEscapeHtml(ticketList)}</span>
+                    ${ticketLineHtml}
                 </div>
                 <div class="pax-finance-premium">
                     <span class="pax-amount-premium">${formatDashboardAmount(p.amount)} MMK</span>
@@ -1106,10 +1111,10 @@ function getFeeRowDateChangeText(t, allRows = []) {
             </div>
             <span class="pnr-route-code" title="${dashboardEscapeHtml(sec.destination || 'Destination')}">${dashboardEscapeHtml(compactPlace(sec.destination) || 'N/A')}</span>
         </div>
-    `).join('<span class="pnr-sector-divider" style="color:var(--dash-text-muted, #94a3b8); font-weight:700; font-size:16px; margin:0 2px;">/</span>');
+    `).join('<span class="pnr-sector-divider">/</span>');
 
     const airlinesHtml = uniqueAirlines.length > 0
-        ? uniqueAirlines.map(a => renderAirlineName(a, { size: 'sm' })).join('<span style="color:var(--dash-text-muted, #94a3b8); margin:0 4px;">•</span>')
+        ? uniqueAirlines.map(a => renderAirlineName(a, { size: 'sm' })).join('<span class="pnr-airline-sep">•</span>')
         : renderAirlineName(lead.airline || 'Airline', { size: 'sm' });
 
     const content = `
@@ -1121,10 +1126,6 @@ function getFeeRowDateChangeText(t, allRows = []) {
                     ${isLargePax ? `<span class="pnr-toolbar-badge">${uniquePassengers.length} Passengers</span>` : ''}
                 </div>
                 <div class="pnr-toolbar-actions-group">
-                    ${isLargePax ? `
-                    <button type="button" class="pnr-toolbar-jump-btn" id="tripPlanJumpManageTopBtn" title="Open full management page">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Full Detail
-                    </button>` : ''}
                     <button type="button" id="tripPlanTopCloseBtn" class="pnr-close-circle-btn" aria-label="Close booking details">
                         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                     </button>
@@ -1134,7 +1135,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
             <!-- 1. Top Section: PNR, Route, Airline, Statuses -->
             <div class="pnr-modal-top-card">
                 <div class="pnr-top-flight-bar">
-                    <div class="pnr-routes-cluster" style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <div class="pnr-routes-cluster">
                         ${sectorsHtml}
                     </div>
                     <div class="pnr-airline-box">
@@ -1160,14 +1161,8 @@ function getFeeRowDateChangeText(t, allRows = []) {
                     <div class="pnr-status-cell">
                         <span class="pnr-mini-label">Statuses</span>
                         <div class="pnr-dual-status-cluster">
-                            <div class="pnr-status-pair">
-                                <span class="pnr-status-caption">Booking</span>
-                                ${bookingStatusHtml}
-                            </div>
-                            <div class="pnr-status-pair">
-                                <span class="pnr-status-caption">Payment</span>
-                                ${paymentStatusHtml}
-                            </div>
+                            ${bookingStatusHtml}
+                            ${paymentStatusHtml}
                         </div>
                     </div>
                 </div>
@@ -1244,7 +1239,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
                     </div>
                     <div class="pnr-settlement-cell">
                         <span class="pnr-settlement-label">Total Profit</span>
-                        <strong class="pnr-settlement-val ${totalProfit < 0 ? 'pnr-val-outstanding' : 'pnr-val-profit'}" style="color: ${totalProfit < 0 ? '#E4572E' : '#5F9E7D'};">
+                        <strong class="pnr-settlement-val ${totalProfit < 0 ? 'pnr-val-outstanding' : 'pnr-val-profit'}">
                             ${formatDashboardAmount(totalProfit)} <span class="pnr-settlement-curr">MMK</span>
                         </strong>
                     </div>
@@ -1276,10 +1271,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
                 </div>
 
                 <div class="pnr-modal-footer-actions">
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <button type="button" class="btn btn-secondary pnr-footer-btn-copy" id="tripPnrCopyBtnBottom">
-                            <i class="fa-regular fa-copy"></i> Copy PNR
-                        </button>
+                    <div class="pnr-footer-action-left">
                         ${totalUnpaid > 0 ? `
                         <button type="button" class="btn btn-secondary pnr-footer-btn-reminder" id="tripPlanReminderCardBtn" title="Generate Consolidated Payment Reminder Card (PNG / PDF) for this Account">
                             <i class="fa-solid fa-file-invoice-dollar"></i> Payment Reminder Card
@@ -1287,7 +1279,6 @@ function getFeeRowDateChangeText(t, allRows = []) {
                         ` : ''}
                     </div>
                     <div class="pnr-footer-action-right">
-                        <button type="button" class="btn btn-secondary" id="tripPlanCloseBtn">Done</button>
                         <button type="button" class="btn btn-primary pnr-footer-btn-manage" id="tripPlanManageActionBtn">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Full Detail
                         </button>
@@ -1368,11 +1359,8 @@ function getFeeRowDateChangeText(t, allRows = []) {
     };
 
     document.getElementById('tripPlanTopCloseBtn')?.addEventListener('click', closeModal);
-    document.getElementById('tripPlanCloseBtn')?.addEventListener('click', closeModal);
     document.getElementById('tripPnrCopyBtn')?.addEventListener('click', handleCopyPnr);
-    document.getElementById('tripPnrCopyBtnBottom')?.addEventListener('click', handleCopyPnr);
     document.getElementById('tripPlanManageActionBtn')?.addEventListener('click', handleJumpManage);
-    document.getElementById('tripPlanJumpManageTopBtn')?.addEventListener('click', handleJumpManage);
     document.getElementById('tripPlanReminderCardBtn')?.addEventListener('click', () => {
         const cleanAcc = (accountName && accountName.toLowerCase() !== 'undefined')
             ? accountName.trim().toLowerCase()
