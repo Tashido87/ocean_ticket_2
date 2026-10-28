@@ -2676,13 +2676,13 @@ body.material-theme:has(#records-view.active) .main-content {
 }
 
 #records-view #resultsTable tbody tr {
-    height: 40px;
+    height: 46px;
     background: var(--surface);
     transition: background-color 120ms ease;
 }
 
 #records-view #resultsTable tbody td {
-    padding: 8px 10px;
+    padding: 11px 10px;
     border-bottom: 1px solid var(--border-soft);
     border-top: none;
     border-left: none;
