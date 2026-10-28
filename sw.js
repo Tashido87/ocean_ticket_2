@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-89032b8c';
+const CACHE_NAME = 'ocean-travel-050f17ea';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -7,7 +7,7 @@ const CORE_ASSETS = [
     './app-styles.min.css?v=400a66ad',
     './dashboard-exact.css?v=10',
     './document-libraries.js?v=7c5a726d',
-    './main.js?v=4468f19f',
+    './main.js?v=15b90742',
     './dashboard.js?v=fe824967',
     './auth.js?v=625c50ce',
     './firebase-config.js?v=aab230c1',
@@ -23,6 +23,9 @@ const CORE_ASSETS = [
     './search.js?v=f4de2bad',
     './manage.js?v=0fff7338',
     './history.js?v=e9920af2',
+    './hotel.js?v=2f4fea86',
+    './agoda-hotel-converter.js?v=8d8c81ec',
+    './airasia-converter.js?v=89192a13',
     './invoice.js?v=8c3cc9bd',
     './invoice-selection.mjs?v=2d426669',
     './documents.js?v=cfee9d8d',
@@ -108,7 +111,13 @@ self.addEventListener('fetch', (event) => {
             .catch(async () => {
                 const exactMatch = await caches.match(event.request);
                 if (exactMatch) return exactMatch;
-                return caches.match(event.request, { ignoreSearch: true });
+                const fuzzyMatch = await caches.match(event.request, { ignoreSearch: true });
+                if (fuzzyMatch) return fuzzyMatch;
+                return new Response('Network error and asset not found in cache', {
+                    status: 504,
+                    statusText: 'Gateway Timeout',
+                    headers: { 'Content-Type': 'text/plain' }
+                });
             })
     );
 });

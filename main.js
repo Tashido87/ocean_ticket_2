@@ -3101,7 +3101,14 @@ async function loadPageFeatures(viewName) {
     notice.textContent = 'Loading page tools…';
     view.before(notice);
     const task = (async () => {
-        if (!hotelModule) hotelModule = await import('./hotel.js');
+        if (!hotelModule) {
+            try {
+                hotelModule = await import('./hotel.js');
+            } catch (err) {
+                console.warn('Initial hotel.js import failed, retrying...', err);
+                hotelModule = await import(`./hotel.js?t=${Date.now()}`);
+            }
+        }
         if (!hotelPageReady) {
             hotelModule.initHotelService();
             hotelModule.initHotelReservationSystem();
