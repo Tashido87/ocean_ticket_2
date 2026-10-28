@@ -3615,7 +3615,7 @@ export function updateComparisonChart() {
                         autoSkip: true,
                         maxRotation: 0,
                         maxTicksLimit: 8,
-                        font: { size: 11, family: chartFontFamily, weight: '500' }
+                        font: { size: 12, family: chartFontFamily, weight: '500' }
                     },
                     grid: { display: false }
                 },
@@ -3633,7 +3633,7 @@ export function updateComparisonChart() {
                             if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
                             return Number(value).toLocaleString();
                         },
-                        font: { size: 11, family: chartFontFamily }
+                        font: { size: 12, family: chartFontFamily }
                     },
                     grid: { color: gridColor, borderDash: [4, 4] },
                     beginAtZero: true
@@ -3653,7 +3653,7 @@ export function updateComparisonChart() {
                             if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
                             return Number(value).toLocaleString();
                         },
-                        font: { size: 11, family: chartFontFamily }
+                        font: { size: 12, family: chartFontFamily }
                     },
                     beginAtZero: true
                 }
@@ -3667,15 +3667,15 @@ export function updateComparisonChart() {
                         pointStyle: 'circle',
                         boxWidth: 7,
                         padding: 16,
-                        font: { size: 11, family: chartFontFamily, weight: '600' }
+                        font: { size: 12, family: chartFontFamily, weight: '600' }
                     }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(255, 255, 255, 0.98)',
                     titleColor: '#0D2B33',
                     bodyColor: '#46626B',
-                    titleFont: { size: 12, weight: '700', family: chartFontFamily },
-                    bodyFont: { size: 11, family: chartFontFamily, weight: '600' },
+                    titleFont: { size: 13, weight: '700', family: chartFontFamily },
+                    bodyFont: { size: 12, family: chartFontFamily, weight: '600' },
                     borderColor: '#E2EAEC',
                     borderWidth: 1,
                     padding: 10,

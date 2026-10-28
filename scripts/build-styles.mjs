@@ -145,7 +145,7 @@ const coreAssetsList = [
     './manifest.json',
     './ocean-travel-logo.png',
     `./app-styles.min.css?v=${cssHash}`,
-    './dashboard-exact.css?v=3',
+    './dashboard-exact.css?v=4',
     ...corePrecacheModules.map(mod => `./${mod}?v=${moduleHashes.get(mod)}`)
 ];
 
