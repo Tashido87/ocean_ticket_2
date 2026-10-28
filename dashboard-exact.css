@@ -1178,7 +1178,7 @@ body.material-theme .header .global-search-box .global-search-suggestions[hidden
 #home-view .travel-schedule-row,
 #home-view .upcoming-trip-item {
     display: grid !important;
-    grid-template-columns: 46px minmax(0, 1fr) auto auto !important;
+    grid-template-columns: 46px minmax(0, 1fr) auto !important;
     align-items: center !important;
     gap: 9px !important;
     padding: 8px 10px !important;

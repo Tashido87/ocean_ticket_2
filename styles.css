@@ -9588,7 +9588,7 @@ body.material-theme {
 
 .travel-schedule-row {
     display: grid;
-    grid-template-columns: 54px minmax(0, 1fr) minmax(110px, 0.58fr) auto;
+    grid-template-columns: 54px minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.75rem;
     padding: 0.72rem;

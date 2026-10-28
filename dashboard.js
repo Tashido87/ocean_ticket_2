@@ -1418,7 +1418,6 @@ function renderDashboardTravelSchedule(groups) {
                 <div class="travel-progress">
                     <small>${renderAirlineName(group.airline, { size: 'xs' })}</small>
                 </div>
-                <button type="button" class="dashboard-row-action" data-dashboard-pnr="${dashboardEscapeHtml(group.pnr)}">View</button>
             </div>
         `;
     }).join('');
