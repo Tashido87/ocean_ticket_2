@@ -1,0 +1,1086 @@
+/* ==========================================================================
+   OCEAN TRAVEL OWNER SETTLEMENT — CANONICAL EXACT-MATCH OVERRIDE (settle-exact.css?v=1)
+   Loaded AFTER app-styles.min.css and dashboard-exact.css in index.html.
+   - Pure white (#FFFFFF) page, app shell, main content, and sidebar background
+   - Manrope + Noto Sans Myanmar font stack in Settle scope
+   - Canonical v3 token system (literal hex: --ink, --teal, --coral, --amber, --sky, --sage, --rose)
+   - Strict size rhythm:
+     * Title: 20px / 700
+     * Subtitle: 12px grey (#46626B)
+     * Section titles: 14px / 700 with small icon chip
+     * KPI labels: 11px / 600 uppercase grey (#8299A1)
+     * KPI values: 21px / 700
+     * KPI subtexts: 11px grey
+     * Reconciliation labels: 11px / 600 uppercase, values 16px / 700, operators 16px grey, Remaining Due in coral #E4572E
+     * Summary strip labels: 11px / 600 uppercase, values 16px / 700, Review Required amber pill (#FDF3E0 / #DD9426), Remaining Due coral #E4572E
+     * Table header: 11px / 600 uppercase, rows 12px, row padding 8px vertical
+     * Table amount column: teal #0C6B7A, 700 weight
+     * Status PAID pill: sage (#E9F4EC / #5F9E7D)
+     * Action buttons: bordered 1px solid #E2EAEC, radius 8px, grey icons, white bg
+     * Period bar: bordered pill container (1px solid #E2EAEC), active pill #E2F2F3 with teal text (NEVER solid)
+     * Primary action: "+ New Settlement" solid #0C6B7A (radius 9-10px)
+     * Secondary action: "Close Month" white bg with 1px solid #E2EAEC border
+   ========================================================================== */
+
+:root,
+body,
+body.material-theme,
+#settle-view {
+    --app-bg: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-2: #F8FBFB;
+    --surface-3: #EEF4F5;
+    --border: #E2EAEC;
+    --border-strong: #D3DFE2;
+    --ink: #0D2B33;
+    --ink-2: #46626B;
+    --ink-3: #8299A1;
+    --teal: #0C6B7A;
+    --teal-bright: #12919F;
+    --teal-soft: #E2F2F3;
+    --coral: #E4572E;
+    --coral-soft: #FDEEE7;
+    --amber: #DD9426;
+    --amber-soft: #FDF3E0;
+    --sky: #3F9BC4;
+    --sky-soft: #E7F3FA;
+    --sage: #5F9E7D;
+    --sage-soft: #E9F4EC;
+    --rose: #D6506D;
+    --rose-soft: #FCEBEE;
+    --shadow: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07);
+    --radius: 14px;
+    --font: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* Override legacy variables in Settle scope */
+    --primary-accent: #0C6B7A !important;
+    --primary: #0C6B7A !important;
+    --brand: #0C6B7A !important;
+    --primary-accent-dark: #094F56 !important;
+    --primary-accent-light: #E2F2F3 !important;
+}
+
+/* ==========================================================================
+   1. FONT & TYPOGRAPHY IN SETTLE SCOPE
+   ========================================================================== */
+#settle-view,
+#settle-view *,
+#settle-view :not(i):not([class*="fa-"]) {
+    font-family: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}
+
+/* ==========================================================================
+   2. PURE WHITE PAGE BACKGROUND & SHELL
+   ========================================================================== */
+body:has(#settle-view:not([style*="display: none"])),
+body.material-theme:has(#settle-view:not([style*="display: none"])),
+body:has(#settle-view:not([style*="display: none"])) .main-container,
+body:has(#settle-view:not([style*="display: none"])) .app-container,
+body:has(#settle-view:not([style*="display: none"])) .app-body,
+body:has(#settle-view:not([style*="display: none"])) .main-content,
+#settle-view,
+#settle-view.view {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+}
+
+#settle-view {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#settle-view .settle-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 2px 24px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    background: transparent !important;
+}
+
+/* ==========================================================================
+   3. UNIVERSAL DASHBOARD CARD LANGUAGE FOR SETTLE
+   ========================================================================== */
+#settle-view .glass-card,
+#settle-view .settle-header,
+#settle-view .settle-toolbar,
+#settle-view .settle-kpi-card,
+#settle-view .settle-reconcile-card,
+#settle-view .settle-health-card,
+#settle-view .settle-section,
+#settle-view .settle-closed-card {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 14px !important;
+    box-shadow: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ==========================================================================
+   4. HEADER SECTION & ACTIONS
+   ========================================================================== */
+#settle-view .settle-header {
+    padding: 15px 16px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 14px !important;
+}
+
+#settle-view .settle-header-text {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+}
+
+#settle-view .settle-eyebrow {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 2px 8px !important;
+    border-radius: 999px !important;
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    width: fit-content !important;
+    margin: 0 !important;
+}
+
+#settle-view .settle-eyebrow i {
+    font-size: 10px !important;
+    color: #0C6B7A !important;
+}
+
+#settle-view .settle-header-text h2 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    margin: 2px 0 0 0 !important;
+    letter-spacing: -0.015em !important;
+    line-height: 1.25 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+#settle-view .settle-header-text h2 i {
+    color: #0C6B7A !important;
+    font-size: 18px !important;
+}
+
+#settle-view .settle-header-text p {
+    font-size: 12px !important;
+    color: #46626B !important;
+    margin: 0 !important;
+    font-weight: 500 !important;
+    line-height: 1.35 !important;
+}
+
+#settle-view .settle-header-chips {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 6px !important;
+    flex-wrap: wrap !important;
+}
+
+#settle-view .settle-header-chips span {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #46626B !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 999px !important;
+    padding: 3px 9px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+}
+
+#settle-view .settle-header-chips span i {
+    color: #0C6B7A !important;
+    font-size: 11px !important;
+}
+
+#settle-view .settle-header-panel {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+}
+
+#settle-view .settle-header-balance {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 14px !important;
+    padding: 10px 14px !important;
+    text-align: right !important;
+    min-width: 180px !important;
+    box-shadow: none !important;
+}
+
+#settle-view .settle-header-balance span {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #8299A1 !important;
+    display: block !important;
+    margin: 0 !important;
+}
+
+#settle-view #settleHeroDue {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    font-variant-numeric: tabular-nums !important;
+    color: #0C6B7A !important;
+    display: block !important;
+    margin: 2px 0 1px 0 !important;
+    line-height: 1.2 !important;
+}
+
+#settle-view #settleHeroDue.is-overpaid {
+    color: #DD9426 !important;
+}
+
+#settle-view #settleHeroDue .settle-kpi-curr {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #8299A1 !important;
+    margin-right: 2px !important;
+}
+
+#settle-view #settleHeroStatus {
+    font-size: 11px !important;
+    color: #8299A1 !important;
+    display: block !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+}
+
+#settle-view .settle-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+#settle-view #newSettlementBtn,
+#settle-view .btn-primary {
+    background: #0C6B7A !important;
+    background-color: #0C6B7A !important;
+    background-image: none !important;
+    color: #FFFFFF !important;
+    border: 1px solid #0C6B7A !important;
+    border-color: #0C6B7A !important;
+    border-radius: 9px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: background-color 0.15s ease !important;
+}
+
+#settle-view #newSettlementBtn:hover,
+#settle-view .btn-primary:hover {
+    background: #094F56 !important;
+    background-color: #094F56 !important;
+    background-image: none !important;
+    border-color: #094F56 !important;
+    color: #FFFFFF !important;
+}
+
+#settle-view #closeMonthBtn {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 9px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #0D2B33 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+#settle-view #closeMonthBtn:hover {
+    background: #F8FBFB !important;
+    border-color: #D3DFE2 !important;
+    color: #0C6B7A !important;
+}
+
+/* ==========================================================================
+   5. PERIOD TOOLBAR
+   ========================================================================== */
+#settle-view .settle-toolbar {
+    padding: 10px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+}
+
+#settle-view .settle-toolbar-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+}
+
+#settle-view .settle-toolbar-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #8299A1 !important;
+}
+
+#settlePeriodTabs {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 9px !important;
+    padding: 2px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+}
+
+#settlePeriodTabs .period-tab {
+    background: transparent !important;
+    border: none !important;
+    padding: 4px 10px !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #8299A1 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+#settlePeriodTabs .period-tab:hover {
+    color: #0D2B33 !important;
+    background: #F8FBFB !important;
+}
+
+#settlePeriodTabs .period-tab.active {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+}
+
+#settleCustomRange {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+    color: #8299A1 !important;
+}
+
+#settleCustomRange input[type="date"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    height: 30px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+    color: #0D2B33 !important;
+    font-family: inherit !important;
+    outline: none !important;
+}
+
+#settleCustomRange input[type="date"]:focus {
+    border-color: #0C6B7A !important;
+    box-shadow: 0 0 0 3px rgba(12, 107, 122, 0.18) !important;
+}
+
+#settleCustomRange button {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    height: 30px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #0C6B7A !important;
+    cursor: pointer !important;
+}
+
+#settleCustomRange button:hover {
+    background: #E2F2F3 !important;
+}
+
+#settlePeriodLabel {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #46626B !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    padding: 4px 10px !important;
+}
+
+#settlePeriodLabel i {
+    color: #8299A1 !important;
+    font-size: 12px !important;
+}
+
+#settlePeriodLabel .settle-basis-pill {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    border: none !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    margin-left: 4px !important;
+}
+
+/* ==========================================================================
+   6. KPI CARDS (8 CARDS, 4 + 4)
+   ========================================================================== */
+#settle-view .settle-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+}
+
+@media (max-width: 1024px) {
+    #settle-view .settle-kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 540px) {
+    #settle-view .settle-kpi-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+#settle-view .settle-kpi-card {
+    padding: 15px 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    min-height: 96px !important;
+    position: relative !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+#settle-view .settle-kpi-card:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(9, 44, 53, 0.07), 0 8px 20px -6px rgba(9, 44, 53, 0.10) !important;
+}
+
+#settle-view .settle-kpi-icon {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+    position: absolute !important;
+    top: 14px !important;
+    right: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+}
+
+#settle-view .settle-kpi-card.kpi-navy .settle-kpi-icon {
+    background: #EEF4F5 !important;
+    color: #0D2B33 !important;
+}
+
+#settle-view .settle-kpi-card.kpi-teal .settle-kpi-icon {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+}
+
+#settle-view .settle-kpi-card.kpi-coral .settle-kpi-icon {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
+}
+
+#settle-view .settle-kpi-card.kpi-amber .settle-kpi-icon {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+}
+
+#settle-view .settle-kpi-card.kpi-purple .settle-kpi-icon {
+    background: #E7F3FA !important;
+    color: #3F9BC4 !important;
+}
+
+#settle-view .settle-kpi-body {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+    padding-right: 36px !important;
+}
+
+#settle-view .settle-kpi-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #8299A1 !important;
+    margin: 0 0 4px 0 !important;
+    line-height: 1.2 !important;
+}
+
+#settle-view .settle-kpi-value {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    font-variant-numeric: tabular-nums !important;
+    white-space: nowrap !important;
+}
+
+#settle-view .settle-kpi-value .settle-kpi-curr {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #8299A1 !important;
+    margin-right: 2px !important;
+}
+
+#settle-view .settle-kpi-support {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
+    margin-top: 4px !important;
+    line-height: 1.3 !important;
+}
+
+/* ==========================================================================
+   7. RECONCILIATION STRIP
+   ========================================================================== */
+#settle-view .settle-reconcile-card {
+    padding: 15px 16px !important;
+}
+
+#settle-view .settle-reconcile-title {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+}
+
+#settle-view .settle-reconcile-title span {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+}
+
+#settle-view .settle-reconcile-title span i {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 6px !important;
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+}
+
+#settle-view .settle-reconcile-title small {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
+}
+
+#settle-view .settle-reconcile-equation {
+    display: flex !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+}
+
+#settle-view .settle-reconcile-term {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+    flex: 1 1 0 !important;
+    min-width: 130px !important;
+    box-shadow: none !important;
+}
+
+#settle-view .settle-reconcile-term span {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #8299A1 !important;
+    display: block !important;
+    margin-bottom: 4px !important;
+}
+
+#settle-view .settle-reconcile-term strong {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    display: block !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+#settle-view .settle-reconcile-term strong .settle-reconcile-curr {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: #8299A1 !important;
+    margin-right: 2px !important;
+}
+
+#settle-view .settle-reconcile-term.term-is-due strong,
+#settle-view .settle-reconcile-term.is-due strong {
+    color: #E4572E !important; /* coral #E4572E, NOT bright red! */
+}
+
+#settle-view .settle-reconcile-term.term-is-overpaid strong,
+#settle-view .settle-reconcile-term.is-overpaid strong {
+    color: #DD9426 !important;
+}
+
+#settle-view .settle-reconcile-term.term-is-settled strong,
+#settle-view .settle-reconcile-term.is-settled strong {
+    color: #5F9E7D !important;
+}
+
+#settle-view .settle-equation-op {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #8299A1 !important;
+    align-self: center !important;
+    flex: 0 0 auto !important;
+    padding: 0 2px !important;
+}
+
+/* ==========================================================================
+   8. SUMMARY / HEALTH CARD
+   ========================================================================== */
+#settle-view .settle-health-card {
+    padding: 15px 16px !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr !important;
+    align-items: center !important;
+    gap: 16px !important;
+}
+
+@media (max-width: 768px) {
+    #settle-view .settle-health-card {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+#settle-view .settle-health-status {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 12px !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+}
+
+#settle-view .settle-health-status.status-review {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+}
+
+#settle-view .settle-health-status.status-balanced,
+#settle-view .settle-health-status.status-settled {
+    background: #E9F4EC !important;
+    color: #5F9E7D !important;
+}
+
+#settle-view .settle-health-status.status-due {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
+}
+
+#settle-view .settle-health-status.status-overpaid {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+}
+
+#settle-view .settle-health-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px 16px !important;
+}
+
+@media (max-width: 640px) {
+    #settle-view .settle-health-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+#settle-view .settle-health-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #8299A1 !important;
+    margin-bottom: 2px !important;
+}
+
+#settle-view .settle-health-value {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+#settle-view .settle-health-value.is-due {
+    color: #E4572E !important;
+}
+
+#settle-view .settle-health-value .settle-health-curr {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: #8299A1 !important;
+    margin-right: 2px !important;
+}
+
+#settle-view .settle-health-sub {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
+    margin-top: 2px !important;
+}
+
+#settle-view .settle-health-warning {
+    grid-column: 1 / -1 !important;
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
+    border: 1px solid #E2EAEC !important;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+/* ==========================================================================
+   9. SETTLEMENT RECORDS & SELF-PURCHASED TABLES
+   ========================================================================== */
+#settle-view .settle-section {
+    padding: 15px 16px !important;
+}
+
+#settle-view .settle-section-head {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+}
+
+#settle-view .settle-section-titles {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+#settle-view .settle-section-icon {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+    box-shadow: none !important;
+}
+
+#settleSelfPurchasedSection .settle-section-icon {
+    background: #E7F3FA !important;
+    color: #3F9BC4 !important;
+}
+
+#settle-view .settle-section-titles h3 {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    margin: 0 !important;
+    line-height: 1.25 !important;
+}
+
+#settle-view .settle-section-subtitle {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
+    margin: 2px 0 0 0 !important;
+}
+
+#settle-view .settle-table-wrap {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 10px !important;
+    overflow-x: auto !important;
+    box-shadow: none !important;
+}
+
+#settle-view .settle-table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-size: 12px !important;
+}
+
+#settle-view .settle-table thead th,
+#settleRecordsTable th,
+#settleSelfTable th {
+    background: #F8FBFB !important;
+    color: #8299A1 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 8px 12px !important;
+    border-bottom: 1px solid #E2EAEC !important;
+    white-space: nowrap !important;
+}
+
+#settle-view .settle-table td,
+#settleRecordsTable td,
+#settleSelfTable td {
+    padding: 8px 12px !important;
+    border-bottom: 1px solid #E2EAEC !important;
+    color: #0D2B33 !important;
+    font-size: 12px !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+}
+
+#settle-view .settle-table tbody tr:hover td,
+#settleRecordsTable tbody tr:hover td,
+#settleSelfTable tbody tr:hover td {
+    background: #F8FBFB !important;
+}
+
+#settle-view .settle-table tr:last-child td,
+#settleRecordsTable tr:last-child td,
+#settleSelfTable tr:last-child td {
+    border-bottom: none !important;
+}
+
+#settle-view .settle-table td.num,
+#settleRecordsTable td.num,
+#settleSelfTable td.num {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+#settleRecordsTable td.num strong,
+#settleRecordsTable td strong {
+    color: #0C6B7A !important;
+    font-weight: 700 !important;
+}
+
+#settleSelfTable td.num {
+    font-weight: 600 !important;
+}
+
+/* Status pills */
+#settle-view .status-pill,
+#settle-view .settle-status-paid,
+#settle-view .status-paid {
+    background: #E9F4EC !important;
+    color: #5F9E7D !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+}
+
+#settle-view .settle-status-pending,
+#settle-view .status-pending {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+#settle-view .settle-status-locked {
+    background: #EEF4F5 !important;
+    color: #0D2B33 !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+}
+
+/* Row Action Buttons */
+#settle-view .settle-row-actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+#settle-view .settle-row-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+    border-radius: 8px !important;
+    border: 1px solid #E2EAEC !important;
+    background: #FFFFFF !important;
+    color: #8299A1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    padding: 0 !important;
+    transition: all 0.15s ease !important;
+    box-shadow: none !important;
+}
+
+#settle-view .settle-row-btn:hover {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    border-color: #D3DFE2 !important;
+    transform: none !important;
+}
+
+#settle-view .settle-row-btn.settle-danger:hover {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
+    border-color: #E4572E !important;
+}
+
+/* ==========================================================================
+   10. CLOSED PERIODS
+   ========================================================================== */
+#settle-view .settle-closed-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+}
+
+@media (max-width: 768px) {
+    #settle-view .settle-closed-list {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+#settle-view .settle-closed-card {
+    padding: 12px 14px !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 12px !important;
+    background: #FFFFFF !important;
+}
+
+#settle-view .settle-closed-head {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+#settle-view .settle-closed-head strong {
+    font-size: 13px !important;
+    color: #0D2B33 !important;
+    font-weight: 700 !important;
+}
+
+#settle-view .settle-closed-head .settle-muted {
+    font-size: 11px !important;
+    color: #8299A1 !important;
+}
+
+#settle-view .settle-closed-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+#settle-view .settle-closed-grid span {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #8299A1 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+}
+
+#settle-view .settle-closed-grid strong {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+/* ==========================================================================
+   11. MODALS IN SETTLE SCOPE
+   ========================================================================== */
+.modal-overlay .settle-detail-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+}
+
+.modal-overlay .settle-detail-grid span {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #8299A1 !important;
+}
+
+.modal-overlay .settle-detail-grid strong {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+}

@@ -95,6 +95,12 @@ export function formatMMK(amount) {
     return `${sign}MMK ${Math.abs(n).toLocaleString('en-US')}`;
 }
 
+function formatMMKHtml(amount) {
+    const val = Math.round(Number(amount || 0));
+    const sign = val < 0 ? '-' : '';
+    return `${sign}<span class="settle-kpi-curr">MMK</span> ${Math.abs(val).toLocaleString('en-US')}`;
+}
+
 function escapeHtml(value) {
     const div = document.createElement('div');
     div.textContent = String(value ?? '');
@@ -830,7 +836,7 @@ function renderHeroSummary() {
     const status = document.getElementById('settleHeroStatus');
     if (!due || !status) return;
     const s = getSettlementSummary();
-    due.textContent = formatMMK(s.remainingDue);
+    due.innerHTML = formatMMKHtml(s.remainingDue);
     due.classList.toggle('is-overpaid', s.remainingDue < 0);
     if (Math.abs(s.remainingDue) < 1) {
         status.textContent = 'Settled for selected period';
@@ -875,7 +881,7 @@ function reconcileTerm(label, amount, tone) {
     return `
         <div class="settle-reconcile-term term-${tone}">
             <span>${escapeHtml(label)}</span>
-            <strong>${formatMMK(amount)}</strong>
+            <strong>${formatMMKHtml(amount)}</strong>
         </div>
     `;
 }
@@ -890,14 +896,14 @@ function renderKpis() {
     const s = getSettlementSummary();
 
     const cards = [
-        kpi('fa-money-bill-wave', 'navy', 'Opening Balance', formatMMK(s.opening), 'Carried from prior period'),
-        kpi('fa-ticket', 'navy', 'Total Revenue', formatMMK(s.totalRevenue), 'Net amount + date change (current month)'),
-        kpi('fa-file-invoice-dollar', 'navy', 'Owner Payable', formatMMK(s.ownerPayable), 'Opening balance + total revenue'),
-        kpi('fa-handshake', 'teal', 'Paid to Owner', formatMMK(s.paidToOwner), `${s.periodSettlements.length} settlements`),
-        kpi('fa-credit-card', 'purple', 'Self-Purchased Profit', formatMMK(s.selfProfit), `${(s.selfItems || []).length} direct bookings (click to view)`, 'kpi-self-card', 'style="cursor: pointer;" title="Click to scroll to Self-Purchased bookings"'),
-        kpi('fa-percent', 'teal', 'My Commission', formatMMK(s.myCommission), 'Commission retained (not self purchased)'),
-        kpi('fa-arrow-trend-up', 'amber', 'Extra Profit', formatMMK(s.extraProfit), 'Extra fare retained'),
-        kpi('fa-chart-line', 'teal', 'Total Profit', formatMMK(s.myProfit + s.selfProfit), `Owner (${formatMMK(s.myProfit)}) + Self (${formatMMK(s.selfProfit)})`)
+        kpi('fa-money-bill-wave', 'navy', 'Opening Balance', formatMMKHtml(s.opening), 'Carried from prior period'),
+        kpi('fa-ticket', 'navy', 'Total Revenue', formatMMKHtml(s.totalRevenue), 'Net amount + date change (current month)'),
+        kpi('fa-file-invoice-dollar', 'navy', 'Owner Payable', formatMMKHtml(s.ownerPayable), 'Opening balance + total revenue'),
+        kpi('fa-handshake', 'teal', 'Paid to Owner', formatMMKHtml(s.paidToOwner), `${s.periodSettlements.length} settlements`),
+        kpi('fa-credit-card', 'purple', 'Self-Purchased Profit', formatMMKHtml(s.selfProfit), `${(s.selfItems || []).length} direct bookings (click to view)`, 'kpi-self-card', 'style="cursor: pointer;" title="Click to scroll to Self-Purchased bookings"'),
+        kpi('fa-percent', 'teal', 'My Commission', formatMMKHtml(s.myCommission), 'Commission retained (not self purchased)'),
+        kpi('fa-arrow-trend-up', 'amber', 'Extra Profit', formatMMKHtml(s.extraProfit), 'Extra fare retained'),
+        kpi('fa-chart-line', 'teal', 'Total Profit', formatMMKHtml(s.myProfit + s.selfProfit), `Owner (${formatMMK(s.myProfit)}) + Self (${formatMMK(s.selfProfit)})`)
     ];
 
     grid.innerHTML = cards.join('');
@@ -1027,7 +1033,7 @@ function renderHealthCard() {
         <div class="settle-health-grid">
             <div>
                 <div class="settle-health-label">Remaining Due</div>
-                <div class="settle-health-value ${s.remainingDue > 0 ? 'is-due' : ''}">${formatMMK(s.remainingDue)}</div>
+                <div class="settle-health-value ${s.remainingDue > 0 ? 'is-due' : ''}">${formatMMKHtml(s.remainingDue)}</div>
             </div>
             <div>
                 <div class="settle-health-label">Last Settlement</div>
@@ -1036,12 +1042,12 @@ function renderHealthCard() {
             </div>
             <div>
                 <div class="settle-health-label">Suggested Next Payment</div>
-                <div class="settle-health-value">${formatMMK(suggestedAmount)}</div>
+                <div class="settle-health-value">${formatMMKHtml(suggestedAmount)}</div>
                 <div class="settle-health-sub">by ${formatDateToDMMMY(formatDateForSheet(suggestedDeadline))}</div>
             </div>
             <div>
                 <div class="settle-health-label">Period Closing Balance</div>
-                <div class="settle-health-value ${s.closing > 0 ? 'is-due' : ''}">${formatMMK(s.closing)}</div>
+                <div class="settle-health-value ${s.closing > 0 ? 'is-due' : ''}">${formatMMKHtml(s.closing)}</div>
             </div>
         </div>
         ${oldDueWarning}
@@ -1334,13 +1340,13 @@ function renderClosedPeriods() {
                 <span class="settle-muted">Owner Settlement</span>
             </div>
             <div class="settle-closed-grid">
-                <div><span>Opening</span><strong>${formatMMK(p.openingBalance)}</strong></div>
-                <div><span>Total Revenue</span><strong>${formatMMK(p.totalRevenue || p.ticketSalesTotal)}</strong></div>
-                <div><span>Owner Payable</span><strong>${formatMMK(p.ownerPayable)}</strong></div>
-                <div><span>My Profit</span><strong>${formatMMK(n(p.myCommission) + n(p.extraProfit))}</strong></div>
-                <div><span>Paid</span><strong>${formatMMK(p.paidToOwner)}</strong></div>
-                <div><span>Adjustments</span><strong>${formatMMK(p.adjustments)}</strong></div>
-                <div><span>Closing</span><strong>${formatMMK(p.closingBalance)}</strong></div>
+                <div><span>Opening</span><strong>${formatMMKHtml(p.openingBalance)}</strong></div>
+                <div><span>Total Revenue</span><strong>${formatMMKHtml(p.totalRevenue || p.ticketSalesTotal)}</strong></div>
+                <div><span>Owner Payable</span><strong>${formatMMKHtml(p.ownerPayable)}</strong></div>
+                <div><span>My Profit</span><strong>${formatMMKHtml(n(p.myCommission) + n(p.extraProfit))}</strong></div>
+                <div><span>Paid</span><strong>${formatMMKHtml(p.paidToOwner)}</strong></div>
+                <div><span>Adjustments</span><strong>${formatMMKHtml(p.adjustments)}</strong></div>
+                <div><span>Closing</span><strong>${formatMMKHtml(p.closingBalance)}</strong></div>
             </div>
             <div class="settle-closed-actions">
                 <button class="settle-row-btn settle-danger" data-unlock-period="${escapeHtml(p.id)}"><i class="fa-solid fa-lock-open"></i> Unlock</button>

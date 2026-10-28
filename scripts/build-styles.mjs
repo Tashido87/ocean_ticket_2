@@ -149,6 +149,7 @@ const coreAssetsList = [
     './ocean-travel-logo.png',
     `./app-styles.min.css?v=${cssHash}`,
     './dashboard-exact.css?v=10',
+    './settle-exact.css?v=1',
     ...corePrecacheModules.map(mod => `./${mod}?v=${moduleHashes.get(mod)}`)
 ];
 

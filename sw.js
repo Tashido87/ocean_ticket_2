@@ -1,11 +1,12 @@
-const CACHE_NAME = 'ocean-travel-3f80e8fd';
+const CACHE_NAME = 'ocean-travel-064faf7a';
 const CORE_ASSETS = [
     './',
     './index.html',
     './manifest.json',
     './ocean-travel-logo.png',
-    './app-styles.min.css?v=193a4e9d',
+    './app-styles.min.css?v=751ee043',
     './dashboard-exact.css?v=10',
+    './settle-exact.css?v=1',
     './document-libraries.js?v=7c5a726d',
     './main.js?v=4722dfbc',
     './dashboard.js?v=c8baa4fe',
@@ -17,7 +18,7 @@ const CORE_ASSETS = [
     './ui.js?v=ee8df8bb',
     './tickets.js?v=f2098800',
     './booking.js?v=f81a1350',
-    './settlement.js?v=e6b72563',
+    './settlement.js?v=b67e0018',
     './clients.js?v=46be8017',
     './reports.js?v=a96e72e7',
     './search.js?v=f4de2bad',
