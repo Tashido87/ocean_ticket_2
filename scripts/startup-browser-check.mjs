@@ -19,7 +19,7 @@ const server = createServer(async (req, res) => {
         res.end(url.pathname === '/old' ? fixture.replace(/<link rel="stylesheet" href="app-styles\.min\.css(?:\?v=[^"]*)?">/, cssFiles.map(f => `<link rel="stylesheet" href="/${f}">`).join('')) : fixture);
         return;
     }
-    const allowed = [...cssFiles, 'app-styles.min.css', 'document-libraries.js'];
+    const allowed = [...cssFiles, 'dashboard-exact.css', 'app-styles.min.css', 'document-libraries.js'];
     if (!allowed.includes(url.pathname.slice(1))) { res.writeHead(404); res.end(); return; }
     res.setHeader('Content-Type', url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript');
     res.end(await readFile(path.join(root, url.pathname)));

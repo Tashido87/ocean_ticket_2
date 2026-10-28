@@ -1,1757 +1,1759 @@
 /* ==========================================================================
-   Ocean Travel — Compact Modern Dashboard Styles
-   Teal-tinted neutrals, Inter typography, 168px sidebar alignment
+   OCEAN TRAVEL DASHBOARD — CANONICAL EXACT-MATCH OVERRIDE (dashboard-exact.css?v=3)
+   Loaded AFTER app-styles.min.css in index.html.
+   Implements Sections 1–6 of the Delta Exact-Match Specification:
+   - Section 1: Pure white (#FFFFFF) page, app shell, main-content, and sidebar background
+   - Section 2: Manrope + Noto Sans Myanmar font stack in Dashboard scope
+   - Section 3: Exact sizes & weights (168px sidebar, 20px/700 page title, 14px/700 section titles,
+     11px/600 uppercase KPI labels, 21px/700 KPI values, 11px grey sub text, 11px/600 table headers,
+     12px table rows, 8px vertical row padding, 14px card radius, 15px 16px card padding, 12px gaps)
+   - Section 4: Literal hex token palette (--ink, --teal, --coral, --amber, --sky, --sage, --rose, etc.)
+     with zero slate leftovers
+   - Section 5: Exact component treatments (non-solid active period pill, solid + New Sale button,
+     unclipped KPI trend pills + sparklines, Upcoming Travel chips, Unpaid Tickets status pills,
+     Tasks & Reminders pale amber deadline cards)
    ========================================================================== */
 
-:root {
-  /* Neutrals — teal-tinted, NOT slate */
-  --app-bg: #F3F7F7;
-  --surface: #FFFFFF;
-  --surface-soft: #F8FBFB;
-  --sidebar-bg: #FAFCFC;
-  --border: #DCE8E7;
-  --border-soft: #E9F0F0;
-
-  /* Text — teal-slate, NOT slate-900/600/500 */
-  --text-strong: #17333B;
-  --text: #294A52;
-  --text-muted: #789097;
-  --text-faint: #9BAEB3;
-
-  /* Primary */
-  --teal-700: #0C6670;
-  --teal-600: #0F7781;
-  --teal-500: #238E98;
-  --teal-100: #DDF1F1;
-  --teal-050: #EFF8F8;
-
-  /* Semantic accents — restrained, small areas only */
-  --mint: #2FAE7B;
-  --mint-soft: #E8F8F0;
-  --coral: #F07864;
-  --coral-soft: #FFF0EC;
-  --amber: #E9A33A;
-  --amber-soft: #FFF5DE;
-  --sky: #55AFCB;
-  --sky-soft: #EAF7FB;
-  --violet: #8A78D6;
-  --violet-soft: #F0EDFF;
-
-  --danger: #E65353;
-  --danger-soft: #FDEBEC;
-
-  --shadow-sm: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05);
-  --shadow-hover: 0 8px 24px rgba(23, 51, 59, 0.09);
-
-  --chart-revenue: #0F7781;
-  --chart-profit: #F07864;
-  --chart-text: #789097;
-  --chart-grid: #E9F0F0;
-}
-
+:root,
+body,
+body.material-theme,
 #home-view {
-  --dash-bg: #F3F7F7;
-  --dash-surface: #FFFFFF;
-  --dash-surface-subtle: #F8FBFB;
-  --dash-border: #DCE8E7;
-  --dash-border-soft: #E9F0F0;
+    /* Section 4: Exact colour system (literal hex, Dashboard scope) */
+    --ink: #0D2B33;
+    --ink-2: #46626B;
+    --ink-3: #8299A1;
+    --teal: #0C6B7A;
+    --teal-bright: #12919F;
+    --teal-soft: #E2F2F3;
+    --coral: #E4572E;
+    --coral-soft: #FDEEE7;
+    --amber: #DD9426;
+    --amber-soft: #FDF3E0;
+    --sky: #3F9BC4;
+    --sky-soft: #E7F3FA;
+    --sage: #5F9E7D;
+    --sage-soft: #E9F4EC;
+    --rose: #D6506D;
+    --rose-soft: #FCEBEE;
+    --border: #E2EAEC;
+    --border-strong: #D3DFE2;
+    --surface: #FFFFFF;
+    --surface-2: #F8FBFB;
+    --surface-3: #EEF4F5;
 
-  --dash-text-strong: #17333B;
-  --dash-text: #294A52;
-  --dash-text-muted: #789097;
-  --dash-text-faint: #9BAEB3;
+    /* Aliases for compatibility with internal Dashboard rules */
+    --app-bg: #FFFFFF;
+    --surface-soft: #F8FBFB;
+    --sidebar-bg: #FFFFFF;
+    --border-soft: #E2EAEC;
+    --text-strong: #0D2B33;
+    --text: #46626B;
+    --text-muted: #8299A1;
+    --text-faint: #8299A1;
+    --teal-700: #0C6B7A;
+    --teal-600: #0C6B7A;
+    --teal-500: #12919F;
+    --teal-100: #E2F2F3;
+    --teal-050: #F8FBFB;
+    --mint: #5F9E7D;
+    --mint-soft: #E9F4EC;
+    --danger: #E4572E;
+    --danger-soft: #FDEEE7;
 
-  --dash-teal-700: #0C6670;
-  --dash-teal-600: #0F7781;
-  --dash-teal-500: #238E98;
-  --dash-teal-100: #DDF1F1;
-  --dash-teal-050: #EFF8F8;
+    --dash-bg: #FFFFFF;
+    --dash-surface: #FFFFFF;
+    --dash-surface-soft: #F8FBFB;
+    --dash-sidebar-bg: #FFFFFF;
+    --dash-border: #E2EAEC;
+    --dash-border-soft: #E2EAEC;
+    --dash-text-strong: #0D2B33;
+    --dash-text: #46626B;
+    --dash-text-muted: #8299A1;
+    --dash-text-faint: #8299A1;
+    --dash-teal-700: #0C6B7A;
+    --dash-teal-600: #0C6B7A;
+    --dash-teal-500: #12919F;
+    --dash-teal-100: #E2F2F3;
+    --dash-teal-050: #F8FBFB;
+    --dash-mint: #5F9E7D;
+    --dash-mint-soft: #E9F4EC;
+    --dash-coral: #E4572E;
+    --dash-coral-soft: #FDEEE7;
+    --dash-amber: #DD9426;
+    --dash-amber-soft: #FDF3E0;
+    --dash-sky: #3F9BC4;
+    --dash-sky-soft: #E7F3FA;
+    --dash-danger: #E4572E;
+    --dash-danger-soft: #FDEEE7;
 
-  --dash-teal: #0F7781;
-  --dash-teal-dark: #0C6670;
-  --dash-teal-light: #DDF1F1;
-  --dash-teal-glow: rgba(15, 119, 129, 0.12);
+    /* Chart variables */
+    --chart-text: #8299A1;
+    --chart-grid: #E2EAEC;
+    --chart-revenue: #0C6B7A;
+    --chart-profit: #E4572E;
+    --chart-tickets: #E4572E;
 
-  --dash-mint: #2FAE7B;
-  --dash-mint-soft: #E8F8F0;
-  --dash-coral: #F07864;
-  --dash-coral-soft: #FFF0EC;
-  --dash-amber: #E9A33A;
-  --dash-amber-soft: #FFF5DE;
-  --dash-sky: #55AFCB;
-  --dash-sky-soft: #EAF7FB;
-  --dash-violet: #8A78D6;
-  --dash-violet-soft: #F0EDFF;
-  --dash-danger: #E65353;
-  --dash-danger-soft: #FDEBEC;
+    /* Card elevation & focus ring */
+    --card-shadow: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07);
+    --dash-shadow-sm: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07);
+    --dash-shadow-hover: 0 2px 4px rgba(9, 44, 53, 0.07), 0 8px 20px -6px rgba(9, 44, 53, 0.10);
+    --dash-focus-ring: 0 0 0 3px rgba(12, 107, 122, 0.18);
 
-  --dash-radius: 11px;
-  --dash-radius-sm: 8px;
-  --dash-shadow: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05);
-  --dash-shadow-hover: 0 8px 24px rgba(23, 51, 59, 0.09);
-
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #294A52;
-  padding: 0 0 20px;
-}
-
-:is(#booking-view, #hotel-view, #manage-view) {
-  --dash-bg: var(--bg);
-  --dash-surface: var(--surface);
-  --dash-surface-subtle: var(--surface-2);
-  --dash-border: var(--border);
-  --dash-border-soft: var(--border);
-  --dash-text: var(--text-primary);
-  --dash-text-muted: var(--text-secondary);
-  --dash-text-faint: var(--text-faint);
-  --dash-teal: var(--primary-accent);
-  --dash-teal-dark: var(--primary-accent-dark);
-  --dash-teal-light: var(--primary-soft, #EBF5F6);
-  --dash-teal-glow: rgba(15, 119, 129, 0.12);
-  --dash-mint: var(--success);
-  --dash-mint-soft: var(--success-soft);
-  --dash-amber: var(--warning);
-  --dash-amber-soft: var(--warning-soft);
-  --dash-coral: var(--danger);
-  --dash-coral-soft: var(--danger-soft);
-  --dash-sky: var(--info-accent);
-  --dash-sky-soft: var(--sky-soft);
-  --dash-violet: #8A78D6;
-  --dash-violet-soft: #F0EDFF;
-  --dash-radius: 12px;
-  --dash-radius-sm: 8px;
-  --dash-shadow: var(--shadow-sm);
-  --dash-shadow-hover: var(--shadow-md);
-  font-family: var(--font-main);
-  color: var(--dash-text);
-  padding: 0 2px 24px;
-}
-
-#home-view .dashboard-content-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+    /* Section 2: Exact Dashboard font stack */
+    --dash-font: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* ==========================================================================
-   1. Compact Header
+   1. PURE WHITE PAGE BACKGROUND & APP SHELL (Section 1)
+   Overrides pale mint/teal background in styles.css, app-styles.min.css, page-harmony.css
    ========================================================================== */
-
-#home-view .dashboard-compact-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 0 0 4px;
+html,
+body,
+body.material-theme,
+.main-container,
+.app-container,
+.app-body,
+.main-content,
+body.material-theme .main-content,
+#home-view,
+#home-view.view,
+#home-view #dashboard-content {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
 }
 
-#home-view .dashboard-title-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+/* ==========================================================================
+   2. MANROPE FONT STACK IN DASHBOARD SCOPE (Section 2)
+   Preserves FontAwesome icons while enforcing Manrope on all text/controls
+   ========================================================================== */
+#home-view,
+#home-view :not(i):not([class*="fa-"]),
+.sidebar,
+.sidebar :not(i):not([class*="fa-"]),
+.header,
+.header :not(i):not([class*="fa-"]) {
+    font-family: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif !important;
 }
 
-#home-view .dashboard-compact-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #17333B;
-  margin: 0;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+/* ==========================================================================
+   3. SIDEBAR: 168px WIDE, PURE WHITE BG, #E2F2F3 ACTIVE NAV (Sections 1, 3, 5)
+   ========================================================================== */
+.sidebar,
+#main-sidebar,
+body.material-theme .sidebar {
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    flex: 0 0 168px !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    border-right: 1px solid #E2EAEC !important;
+    box-shadow: none !important;
+    padding: 12px 10px !important;
+    z-index: 100 !important;
 }
 
-#home-view .dashboard-compact-subtitle {
-  font-size: 11px;
-  color: #789097;
-  margin: 2px 0 0;
-  font-weight: 500;
+.app-body,
+body.material-theme .app-body {
+    margin-left: 168px !important;
+    width: calc(100% - 168px) !important;
+    max-width: calc(100% - 168px) !important;
+    background: #FFFFFF !important;
+    box-sizing: border-box !important;
 }
 
-#home-view .dashboard-header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.main-content,
+body.material-theme .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 14px 18px 20px !important;
+    box-sizing: border-box !important;
+    background: #FFFFFF !important;
 }
 
+/* Keep Ocean Travel logo file, red-and-black colours, and proportions intact */
+.sidebar-header,
+body.material-theme .sidebar-header {
+    padding: 4px 6px 12px !important;
+    margin-bottom: 6px !important;
+    border-bottom: 1px solid #E2EAEC !important;
+    background: transparent !important;
+}
+
+.sidebar-logo-lockup {
+    padding: 2px 0 !important;
+    background: transparent !important;
+}
+
+.sidebar-logo {
+    max-width: 136px !important;
+    height: auto !important;
+    display: block !important;
+}
+
+.sidebar-section-label {
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #8299A1 !important;
+    padding: 6px 8px 4px !important;
+    margin: 0 !important;
+}
+
+.sidebar-nav,
+.sidebar-menu,
+body.material-theme .sidebar-nav,
+body.material-theme .sidebar-menu {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    list-style: none !important;
+}
+
+.sidebar-nav .nav-btn,
+.sidebar-menu li a,
+body.material-theme .sidebar-nav .nav-btn,
+body.material-theme .sidebar-menu li a {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    height: 33px !important;
+    min-height: 33px !important;
+    padding: 0 9px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #46626B !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    transition: background-color 0.14s ease, color 0.14s ease !important;
+}
+
+.sidebar-nav .nav-btn i,
+.sidebar-menu li a i,
+body.material-theme .sidebar-nav .nav-btn i,
+body.material-theme .sidebar-menu li a i {
+    width: 16px !important;
+    font-size: 12.5px !important;
+    text-align: center !important;
+    color: #8299A1 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.sidebar-nav .nav-btn:hover,
+.sidebar-menu li a:hover,
+body.material-theme .sidebar-nav .nav-btn:hover,
+body.material-theme .sidebar-menu li a:hover {
+    background: #F8FBFB !important;
+    color: #0D2B33 !important;
+    transform: none !important;
+}
+
+.sidebar-nav .nav-btn:hover i,
+.sidebar-menu li a:hover i,
+body.material-theme .sidebar-nav .nav-btn:hover i,
+body.material-theme .sidebar-menu li a:hover i {
+    color: #0C6B7A !important;
+}
+
+.sidebar-nav .nav-btn.active,
+.sidebar-menu li a.active,
+body.material-theme .sidebar-nav .nav-btn.active,
+body.material-theme .sidebar-menu li a.active {
+    background: #E2F2F3 !important;
+    background-color: #E2F2F3 !important;
+    background-image: none !important;
+    color: #0C6B7A !important;
+    font-weight: 600 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.sidebar-nav .nav-btn.active span,
+.sidebar-nav .nav-btn.active i,
+.sidebar-menu li a.active i,
+body.material-theme .sidebar-nav .nav-btn.active span,
+body.material-theme .sidebar-nav .nav-btn.active i,
+body.material-theme .sidebar-menu li a.active i {
+    color: #0C6B7A !important;
+}
+
+.sidebar-badge.booking-badge,
+.sidebar-nav-badge {
+    margin-left: auto !important;
+    min-width: 18px !important;
+    height: 17px !important;
+    padding: 0 5px !important;
+    border-radius: 999px !important;
+    background: #E4572E !important;
+    color: #FFFFFF !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    line-height: 17px !important;
+    text-align: center !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+.sidebar-nav-footer,
+.sidebar-footer,
+body.material-theme .sidebar-nav-footer,
+body.material-theme .sidebar-footer {
+    margin-top: auto !important;
+    padding-top: 8px !important;
+    border-top: 1px solid #E2EAEC !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    background: transparent !important;
+}
+
+.sidebar-user-strip {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-top: 6px !important;
+    padding: 7px 6px 2px !important;
+    border-top: 1px solid #E2EAEC !important;
+}
+
+.sidebar-user-avatar {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 999px !important;
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.sidebar-user-info,
+.sidebar-user-meta {
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    line-height: 1.2 !important;
+}
+
+.sidebar-user-name,
+.sidebar-user-meta strong {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #0D2B33 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.sidebar-user-role,
+.sidebar-user-meta span {
+    font-size: 9.5px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
+}
+
+/* ==========================================================================
+   4. TOP BAR (.header)
+   ========================================================================== */
+.header,
+#main-header,
+body.material-theme .header {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    margin: 0 !important;
+    padding: 0 18px !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    border-bottom: 1px solid #E2EAEC !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
+}
+
+.header .header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+@media (min-width: 900px) {
+    .header .sidebar-toggle,
+    #sidebarToggle {
+        display: none !important;
+    }
+}
+
+.header .global-search-box,
+.header .search-bar,
+body.material-theme .header .global-search-box,
+body.material-theme .header .search-bar {
+    position: relative !important;
+    width: 310px !important;
+    max-width: 330px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+
+.header .global-search-box:focus-within,
+.header .search-bar:focus-within {
+    background: #FFFFFF !important;
+    border-color: #0C6B7A !important;
+    box-shadow: var(--dash-focus-ring) !important;
+}
+
+.header .global-search-box .search-icon,
+.header .global-search-box i,
+.header .search-bar i {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 11.5px !important;
+    color: #8299A1 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.header #globalSearchInput,
+.header .search-bar input {
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    color: #0D2B33 !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.header #globalSearchInput::placeholder,
+.header .search-bar input::placeholder {
+    color: #8299A1 !important;
+}
+
+.header-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.header-today-date,
+.header-date-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: 28px !important;
+    padding: 0 10px !important;
+    border-radius: 999px !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
+    color: #46626B !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+.header-today-date i,
+.header-date-pill i {
+    color: #0C6B7A !important;
+    font-size: 11px !important;
+}
+
+.header-notification-btn,
+.notification-bell button,
+.header .icon-button {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    color: #46626B !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    position: relative !important;
+}
+
+.notification-dot,
+.notification-bell .badge {
+    background: #E4572E !important;
+    color: #FFFFFF !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+}
+
+/* ==========================================================================
+   5. DASHBOARD CONTAINER & HEADER BAR (Sections 3, 5)
+   - Page title "Dashboard": 20px / 700
+   - Period group: bordered pill container (1px solid #E2EAEC), inactive transparent
+     with grey text (#8299A1), active pill #E2F2F3 with #0C6B7A teal text (NEVER solid teal)
+   - "+ New Sale" button: solid #0C6B7A fill, #FFFFFF text, 9px radius
+   ========================================================================== */
+#home-view {
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #46626B !important;
+}
+
+#home-view #dashboard-content,
+#home-view .dashboard-content-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#home-view .dashboard-compact-header,
+#home-view .dashboard-command-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    padding: 0 0 2px 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+#home-view .dashboard-compact-title,
+#home-view .dashboard-command-title h2 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.015em !important;
+    color: #0D2B33 !important;
+    margin: 0 0 2px 0 !important;
+}
+
+#home-view .dashboard-compact-subtitle,
+#home-view .dashboard-command-title p {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    line-height: 1.35 !important;
+    color: #8299A1 !important;
+    margin: 0 !important;
+}
+
+#home-view .dashboard-header-right,
+#home-view .dashboard-command-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+}
+
+/* Period group: bordered pill container (1px solid #E2EAEC), active pill light #E2F2F3 with #0C6B7A text */
 #home-view .dashboard-period-controls {
-  display: inline-flex;
-  align-items: center;
-  background: #E9F0F0;
-  border: 1px solid #E9F0F0;
-  padding: 2px;
-  border-radius: 8px;
-  gap: 2px;
-  margin: 0;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    padding: 3px !important;
+    height: 32px !important;
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 9px !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
 }
 
 #home-view .dashboard-period-btn {
-  border: none;
-  background: transparent;
-  color: #789097;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 0 10px;
-  height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  line-height: 28px;
+    height: 24px !important;
+    padding: 0 10px !important;
+    border-radius: 6px !important;
+    border: none !important;
+    background: transparent !important;
+    color: #8299A1 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 24px !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    transition: background-color 0.14s ease, color 0.14s ease !important;
 }
 
 #home-view .dashboard-period-btn:hover {
-  color: #17333B;
-  background: rgba(255, 255, 255, 0.5);
+    color: #0D2B33 !important;
+    background: #F8FBFB !important;
 }
 
 #home-view .dashboard-period-btn.active {
-  background: #FFFFFF;
-  color: #17333B;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(23, 51, 59, 0.08);
-}
-
-#home-view .dashboard-new-sale-btn {
-  height: 32px;
-  padding: 0 12px;
-  background: #0F7781;
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-#home-view .dashboard-new-sale-btn:hover {
-  background: #0C6670;
+    background: #E2F2F3 !important;
+    background-color: #E2F2F3 !important;
+    background-image: none !important;
+    color: #0C6B7A !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
 }
 
 #home-view .dashboard-custom-range {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding-left: 4px;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
 }
 
 #home-view .dashboard-custom-range[hidden] {
-  display: none !important;
+    display: none !important;
 }
 
 #home-view .dashboard-custom-range input {
-  height: 28px;
-  font-size: 11px;
-  padding: 0 8px;
-  border: 1px solid #E9F0F0;
-  border-radius: 6px;
-  background: #FFFFFF;
-  color: #17333B;
+    height: 30px !important;
+    padding: 0 8px !important;
+    border-radius: 8px !important;
+    border: 1px solid #E2EAEC !important;
+    background: #FFFFFF !important;
+    color: #0D2B33 !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    width: 110px !important;
+}
+
+/* "+ New Sale" button: the ONLY solid teal element here */
+#home-view .dashboard-new-sale-btn,
+#home-view #dashboardNewSaleBtn,
+#home-view #dashboardQuickSellBtn {
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    border-radius: 9px !important;
+    background: #0C6B7A !important;
+    background-color: #0C6B7A !important;
+    background-image: none !important;
+    border: 1px solid #0C6B7A !important;
+    color: #FFFFFF !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+}
+
+#home-view .dashboard-new-sale-btn:hover,
+#home-view #dashboardNewSaleBtn:hover,
+#home-view #dashboardQuickSellBtn:hover {
+    background: #12919F !important;
+    border-color: #12919F !important;
+    transform: none !important;
+}
+
+#home-view .dashboard-new-sale-btn i,
+#home-view #dashboardNewSaleBtn i,
+#home-view #dashboardQuickSellBtn i {
+    font-size: 10px !important;
+    color: #FFFFFF !important;
 }
 
 /* ==========================================================================
-   2. KPI Cards (5 Columns)
+   6. KPI ROW — 5 EQUAL CARDS (Sections 1, 3, 4, 5)
+   - Card radius: 14px
+   - Card padding: 15px 16px
+   - Section gap: 12px
+   - KPI label: 11px / 600, uppercase, slight letter-spacing (0.035em), #8299A1
+   - KPI value: 21px / 700, #0D2B33, smaller grey "MMK" suffix (11px, #8299A1)
+   - KPI sub text ("vs prev. period"): 11px, grey (#8299A1)
+   - Sparkline at bottom-right; height: auto; overflow: visible (never clip trend pill)
    ========================================================================== */
-
 #home-view .dashboard-kpis {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 2px;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-#home-view .dashboard-kpis .info-card {
-  background: #FFFFFF !important;
-  border: 1px solid #E9F0F0 !important;
-  border-radius: 11px !important;
-  box-shadow: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05) !important;
-  padding: 12px 14px !important;
-  min-height: 108px !important;
-  height: 108px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  position: relative !important;
-  overflow: hidden !important;
-  transition: box-shadow 0.2s ease, transform 0.15s ease !important;
-}
-
-#home-view .dashboard-kpis .info-card:hover {
-  box-shadow: 0 8px 24px rgba(23, 51, 59, 0.09) !important;
-  border-color: #DCE8E7 !important;
-  transform: translateY(-1px);
+#home-view .dashboard-kpis .info-card,
+#home-view .stat-card {
+    position: relative !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 15px 16px !important;
+    border-radius: 14px !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    border: 1px solid #E2EAEC !important;
+    box-shadow: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    overflow: visible !important;
+    transition: box-shadow 0.16s ease !important;
 }
 
 #home-view .dashboard-kpis .info-card::before,
-#home-view .dashboard-kpis .info-card::after {
-  display: none;
-  content: none;
+#home-view .dashboard-kpis .info-card::after,
+#home-view .stat-card::before,
+#home-view .stat-card::after {
+    display: none !important;
+    content: none !important;
 }
 
-#home-view .dashboard-kpis .stat-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
+#home-view .dashboard-kpis .info-card:hover,
+#home-view .stat-card:hover {
+    transform: none !important;
+    box-shadow: var(--dash-shadow-hover) !important;
 }
 
-#home-view .dashboard-kpis .stat-head h3 {
-  font-size: 9px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.035em !important;
-  text-transform: uppercase;
-  color: #789097 !important;
-  margin: 0;
+#home-view .dashboard-kpis .stat-head,
+#home-view .stat-card .stat-head {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    margin: 0 !important;
 }
 
-#home-view .dashboard-kpis .stat-head .icon {
-  width: 28px !important;
-  height: 28px !important;
-  border-radius: 7px !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  position: static;
-  inset: auto;
-  margin: 0;
+#home-view .dashboard-kpis .stat-head h3,
+#home-view .stat-card h4,
+#home-view .stat-card .stat-head h4 {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.035em !important;
+    color: #8299A1 !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
 }
 
-#home-view #monthly-revenue-box .stat-head .icon {
-  background: #EFF8F8 !important;
-  color: #0F7781 !important;
+#home-view .dashboard-kpis .stat-head .icon,
+#home-view .stat-card .stat-icon {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11.5px !important;
+    box-shadow: none !important;
+    border: none !important;
+    flex-shrink: 0 !important;
 }
 
-#home-view #total-tickets-box .stat-head .icon {
-  background: #EAF7FB !important;
-  color: #55AFCB !important;
+/* Semantic KPI icon tiles (Section 4 & 5) */
+#home-view #monthly-revenue-box .stat-head .icon,
+#home-view .stat-card.kpi-sales .stat-icon {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
 }
 
-#home-view #total-profit-box .stat-head .icon {
-  background: #E8F8F0 !important;
-  color: #2FAE7B !important;
+#home-view #total-tickets-box .stat-head .icon,
+#home-view .stat-card.kpi-tickets .stat-icon {
+    background: #E7F3FA !important;
+    color: #3F9BC4 !important;
 }
 
-#home-view #owner-payable-box .stat-head .icon {
-  background: #FFF5DE !important;
-  color: #E9A33A !important;
+#home-view #total-profit-box .stat-head .icon,
+#home-view .stat-card.kpi-profit .stat-icon {
+    background: #E9F4EC !important;
+    color: #5F9E7D !important;
 }
 
-#home-view #self-purchased-box .stat-head .icon {
-  background: #FFF0EC !important;
-  color: #F07864 !important;
+#home-view #owner-payable-box .stat-head .icon,
+#home-view .stat-card.kpi-payable .stat-icon {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+}
+
+#home-view #self-purchased-box .stat-head .icon,
+#home-view .stat-card.kpi-self .stat-icon {
+    background: #FCEBEE !important;
+    color: #D6506D !important;
 }
 
 #home-view .dashboard-kpis .main-value-wrap,
-#home-view .dashboard-kpis .main-value {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  line-height: 1.15;
+#home-view .stat-card .main-value-wrap {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 4px !important;
+    margin: 2px 0 !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
 }
 
-#home-view .dashboard-kpis .main-value {
-  font-size: 21px !important;
-  font-weight: 700 !important;
-  color: #17333B !important;
-  letter-spacing: -0.015em;
-  font-variant-numeric: tabular-nums !important;
+#home-view .dashboard-kpis .main-value,
+#home-view .stat-card .main-value {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.02em !important;
+    color: #0D2B33 !important;
+    font-variant-numeric: tabular-nums !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
 }
 
-#home-view .dashboard-kpis .currency-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: #9BAEB3;
+#home-view .dashboard-kpis .currency-label,
+#home-view .stat-card .currency-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #8299A1 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+    flex-shrink: 0 !important;
 }
 
-#home-view .dashboard-kpis .stat-foot {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-  font-size: 11px;
+#home-view .dashboard-kpis .stat-foot,
+#home-view .stat-card .stat-foot {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+    margin-top: auto !important;
+    min-width: 0 !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
 }
 
-#home-view .dashboard-kpis .stat-foot .sub-value {
-  font-size: 11px;
-  color: #9BAEB3;
-  font-weight: 500;
+#home-view .dashboard-kpis .trend-wrapper {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
 }
 
-#home-view .trend-badge,
-#home-view .trend-wrapper .trend-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 9.5px;
-  font-weight: 600 !important;
-  line-height: 1.35 !important;
+#home-view .dashboard-kpis .trend-badge,
+#home-view .stat-card .kpi-trend {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+    height: 18px !important;
+    padding: 0 5px !important;
+    border-radius: 999px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    font-variant-numeric: tabular-nums !important;
+    background: #EEF4F5 !important;
+    color: #46626B !important;
+    border: none !important;
+    box-shadow: none !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
 }
 
-#home-view .trend-badge.positive {
-  background: #E8F8F0 !important;
-  color: #2FAE7B !important;
+#home-view .dashboard-kpis .trend-badge.positive,
+#home-view .stat-card .kpi-trend.is-up {
+    background: #E9F4EC !important;
+    color: #5F9E7D !important;
 }
 
-#home-view .trend-badge.negative {
-  background: #FFF0EC !important;
-  color: #F07864 !important;
+#home-view .dashboard-kpis .trend-badge.negative,
+#home-view .stat-card .kpi-trend.is-down {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
 }
 
-#home-view .trend-badge.neutral {
-  background: #EFF8F8 !important;
-  color: #789097 !important;
+#home-view .dashboard-kpis .trend-badge.warning,
+#home-view .stat-card .kpi-trend.is-warn {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+}
+
+#home-view .dashboard-kpis .trend-badge.neutral,
+#home-view .stat-card .kpi-trend.is-flat {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+}
+
+#home-view .dashboard-kpis .sub-value,
+#home-view .stat-card .sub-value {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.01em !important;
+    color: #8299A1 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+#home-view .dashboard-kpis .kpi-sparkline,
+#home-view .stat-card .kpi-sparkline {
+    width: 32px !important;
+    height: 14px !important;
+    margin-left: auto !important;
+    flex-shrink: 1 !important;
+    min-width: 24px !important;
+    display: block !important;
+    overflow: visible !important;
 }
 
 /* ==========================================================================
-   3. Structured Grid Rows for Panels & Charts (2:1 Grid)
+   7. MAIN ROWS (2:1 GRID, 12px GAP) & PANELS (14px RADIUS, 15px 16px PADDING)
    ========================================================================== */
-
-#home-view .dashboard-grid-row,
 #home-view .dashboard-primary-row,
 #home-view .dashboard-operations-row,
-#home-view .dashboard-grid-row-2col-wide,
-#home-view .dashboard-grid-row-2col-equal {
-  display: grid !important;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr) !important;
-  gap: 12px !important;
-  width: 100%;
+#home-view .dashboard-grid-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr) !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+    margin: 0 !important;
 }
 
-#home-view .dashboard-grid-row-2col-wide > *,
-#home-view .dashboard-grid-row-2col-equal > *,
-#home-view .dashboard-primary-row > *,
-#home-view .dashboard-operations-row > *,
+#home-view .dashboard-panel,
+#home-view .panel,
 #home-view #booking-revenue-overview-box,
 #home-view #travel-schedule-box,
 #home-view #dashboard-unpaid-box,
 #home-view #tasks-reminders-box {
-  grid-column: auto;
-  min-width: 0;
-  max-width: 100%;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 14px !important;
+    padding: 15px 16px !important;
+    box-shadow: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
 }
 
-/* Panel Card Base */
-#home-view .dashboard-panel {
-  background: #FFFFFF !important;
-  border: 1px solid #E9F0F0 !important;
-  border-radius: 11px !important;
-  box-shadow: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05) !important;
-  padding: 12px 14px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 0 !important;
+#home-view .dashboard-panel:hover,
+#home-view .panel:hover {
+    transform: none !important;
+    box-shadow: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07) !important;
 }
 
 #home-view .panel-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  margin-bottom: 8px !important;
-  padding-bottom: 8px !important;
-  border-bottom: 1px solid #E9F0F0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 0 0 8px 0 !important;
+    margin: 0 !important;
+    border-bottom: 1px solid #E2EAEC !important;
 }
 
+/* Section 3: Section titles (Revenue, Unpaid, Tasks, Upcoming Travel) = 14px / 700 */
 #home-view .panel-header h3 {
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  color: #17333B !important;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  text-transform: none;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+    letter-spacing: -0.01em !important;
+    color: #0D2B33 !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+
+#home-view .panel-header h3::before,
+#home-view .panel-header h3::after {
+    display: none !important;
+    content: none !important;
 }
 
 #home-view .panel-header h3 i {
-  color: #0F7781 !important;
-  font-size: 12px;
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 6px !important;
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    font-size: 11px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-#home-view .panel-hint {
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  height: 20px !important;
-  padding: 0 8px !important;
-  border-radius: 999px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  background: #EFF8F8 !important;
-  color: #0F7781 !important;
-  border: 1px solid #E9F0F0 !important;
+#home-view #dashboard-unpaid-box .panel-header h3 i,
+#home-view .dashboard-unpaid-panel .panel-header h3 i {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
 }
 
-#home-view .panel-hint.unpaid-coral-hint {
-  background: #FFF0EC !important;
-  color: #F07864 !important;
-  border-color: #FDEBEC !important;
+#home-view #tasks-reminders-box .panel-header h3 i,
+#home-view .tasks-reminders-panel .panel-header h3 i {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
 }
 
-#home-view .panel-hint.hint-neutral {
-  background: #EFF8F8 !important;
-  color: #789097 !important;
-  border-color: #E9F0F0 !important;
+#home-view .panel-hint,
+#home-view .panel-badge {
+    height: 20px !important;
+    padding: 0 8px !important;
+    border-radius: 999px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 20px !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
+    color: #8299A1 !important;
+    font-variant-numeric: tabular-nums !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
 }
 
-/* Revenue Chart Container */
-#home-view .booking-revenue-chart-container {
-  height: 245px;
-  min-height: 245px;
-  position: relative;
-  width: 100%;
+#home-view #dashboardUnpaidHint,
+#home-view .unpaid-coral-hint,
+#home-view #dashboardUnpaidBadge.panel-badge {
+    background: #FDEEE7 !important;
+    border-color: transparent !important;
+    color: #E4572E !important;
 }
 
-/* Travel Schedule List */
-#home-view .travel-schedule-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  height: 245px;
-  max-height: 245px;
-  overflow-y: auto;
-  padding-right: 3px;
+#home-view #dashboardTasksHint,
+#home-view #dashboardTaskBadge.panel-badge {
+    background: #E2F2F3 !important;
+    border-color: transparent !important;
+    color: #0C6B7A !important;
 }
 
-#home-view .travel-schedule-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  background: #F8FBFB !important;
-  border: 1px solid #E9F0F0 !important;
-  border-radius: 8px;
-  transition: all 0.15s ease;
-}
-
-#home-view .travel-schedule-row:hover {
-  background: #FFFFFF !important;
-  border-color: #DCE8E7 !important;
-  box-shadow: 0 1px 4px rgba(23, 51, 59, 0.05) !important;
-}
-
-#home-view .travel-date-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  background: #EFF8F8;
-  border: 1px solid #E9F0F0;
-  border-radius: 6px;
-  line-height: 1;
-}
-
-#home-view .travel-date-chip strong {
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  color: #17333B !important;
-}
-
-#home-view .travel-date-chip span {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #0F7781;
-  margin-top: 2px;
-}
-
-#home-view .travel-schedule-main strong {
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  color: #17333B !important;
-  display: block;
-  line-height: 1.3 !important;
-}
-
-#home-view .travel-schedule-main span {
-  font-size: 11px;
-  color: #294A52;
-}
-
-#home-view .travel-schedule-main small a {
-  font-family: Inter, monospace;
-  font-size: 10.5px;
-  color: #789097 !important;
-  font-weight: 500;
-  text-decoration: none !important;
-}
-
-#home-view .travel-progress small {
-  background: #FFF5DE;
-  color: #E9A33A;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 4px;
-  display: inline-block;
-}
-
-#home-view .dashboard-row-action {
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid #E9F0F0;
-  background: #EFF8F8;
-  color: #294A52;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  transition: all 0.15s ease;
-}
-
-#home-view .dashboard-row-action:hover {
-  background: #0F7781;
-  color: #FFFFFF;
-  border-color: #0F7781;
-}
 /* ==========================================================================
-   4. Unpaid Tickets Panel
+   8. REVENUE & PROFIT OVERVIEW CHART + UPCOMING TRAVEL (Section 5)
    ========================================================================== */
+#home-view .booking-revenue-chart-container,
+#home-view .dashboard-chart-main .chart-wrapper {
+    position: relative !important;
+    height: 220px !important;
+    min-height: 220px !important;
+    max-height: 235px !important;
+    width: 100% !important;
+    padding: 2px 0 0 !important;
+}
+
+#home-view #dashboardTravelSchedule,
+#home-view .travel-schedule-list,
+#home-view .dashboard-upcoming-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    max-height: 235px !important;
+    overflow-y: auto !important;
+    padding-right: 2px !important;
+}
+
+#home-view .travel-schedule-row,
+#home-view .upcoming-trip-item {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) auto auto !important;
+    align-items: center !important;
+    gap: 9px !important;
+    padding: 8px 10px !important;
+    border-radius: 10px !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
+    box-shadow: none !important;
+    transition: border-color 0.14s ease, background-color 0.14s ease !important;
+}
+
+#home-view .travel-schedule-row:hover,
+#home-view .upcoming-trip-item:hover {
+    background: #FFFFFF !important;
+    border-color: #D3DFE2 !important;
+}
+
+/* Section 5: Upcoming Travel Date chip = #E2F2F3 background with #0C6B7A teal text */
+#home-view .travel-date-chip,
+#home-view .upcoming-date-chip {
+    width: 44px !important;
+    height: 40px !important;
+    border-radius: 8px !important;
+    background: #E2F2F3 !important;
+    border: none !important;
+    color: #0C6B7A !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1.05 !important;
+    font-variant-numeric: tabular-nums !important;
+    padding: 2px !important;
+    box-sizing: border-box !important;
+}
+
+#home-view .travel-date-chip strong,
+#home-view .upcoming-date-chip strong {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #0C6B7A !important;
+}
+
+#home-view .travel-date-chip span,
+#home-view .upcoming-date-chip span {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #0C6B7A !important;
+}
+
+#home-view .travel-schedule-main,
+#home-view .upcoming-trip-main {
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+}
+
+#home-view .travel-schedule-main strong,
+#home-view .upcoming-trip-top strong {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #0D2B33 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+#home-view .travel-schedule-main span,
+#home-view .upcoming-trip-meta {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
+}
+
+#home-view .travel-schedule-main small {
+    font-size: 10px !important;
+    color: #8299A1 !important;
+}
+
+/* Airline shown as a small pale pill with text */
+#home-view .travel-progress small,
+#home-view .upcoming-airline-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    height: 20px !important;
+    max-height: 20px !important;
+    max-width: 112px !important;
+    padding: 0 7px !important;
+    border-radius: 999px !important;
+    background: #EEF4F5 !important;
+    color: #46626B !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+#home-view .travel-progress small img,
+#home-view .travel-progress .airline-logo,
+#home-view .upcoming-airline-logo {
+    width: 13px !important;
+    height: 13px !important;
+    max-width: 13px !important;
+    max-height: 13px !important;
+    object-fit: contain !important;
+    border-radius: 2px !important;
+    flex-shrink: 0 !important;
+}
+
+/* ==========================================================================
+   9. UNPAID TICKETS PANEL & TABLE (Sections 3, 4, 5)
+   - Summary mini-cards row on top (Total unpaid in coral text #E4572E)
+   - Table header: 11px / 600, uppercase, grey (#8299A1)
+   - Table rows: 12px, 8px vertical padding
+   - PNR bold, client name teal (#0C6B7A), status as small pale pill
+   ========================================================================== */
+#home-view .dashboard-unpaid-content,
+#home-view .dashboard-unpaid-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
 
 #home-view .unpaid-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 8px;
+    display: grid !important;
+    grid-template-columns: 1.3fr repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin: 0 !important;
 }
 
 #home-view .unpaid-summary-grid > div {
-  background: #F8FBFB;
-  border: 1px solid #E9F0F0;
-  border-radius: 8px;
-  padding: 6px 10px;
-  display: flex;
-  flex-direction: column;
+    padding: 8px 10px !important;
+    border-radius: 10px !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
 }
 
-#home-view .unpaid-summary-grid > div:nth-child(1) {
-  background: #FFF0EC !important;
-  border-color: #FDEBEC !important;
-}
-#home-view .unpaid-summary-grid > div:nth-child(1) strong {
-  color: #F07864 !important;
+#home-view .unpaid-summary-grid > div:first-child {
+    background: #FDEEE7 !important;
+    border-color: rgba(228, 87, 46, 0.20) !important;
 }
 
 #home-view .unpaid-summary-grid > div:nth-child(2) {
-  background: #FFF0EC !important;
-  border-color: #FDEBEC !important;
-}
-#home-view .unpaid-summary-grid > div:nth-child(2) strong {
-  color: #F07864 !important;
+    background: #FDEEE7 !important;
+    border-color: rgba(228, 87, 46, 0.16) !important;
 }
 
 #home-view .unpaid-summary-grid > div:nth-child(3) {
-  background: #FFF5DE !important;
-  border-color: #FFF0EC !important;
-}
-#home-view .unpaid-summary-grid > div:nth-child(3) strong {
-  color: #E9A33A !important;
+    background: #FDF3E0 !important;
+    border-color: rgba(221, 148, 38, 0.20) !important;
 }
 
 #home-view .unpaid-summary-grid > div:nth-child(4) {
-  background: #EFF8F8 !important;
-  border-color: #E9F0F0 !important;
-}
-#home-view .unpaid-summary-grid > div:nth-child(4) strong {
-  color: #0F7781 !important;
+    background: #E2F2F3 !important;
+    border-color: rgba(12, 107, 122, 0.16) !important;
 }
 
 #home-view .unpaid-summary-grid span {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #789097;
-  letter-spacing: 0.03em;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.035em !important;
+    color: #8299A1 !important;
 }
 
 #home-view .unpaid-summary-grid strong {
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  font-variant-numeric: tabular-nums;
-  margin-top: 1px;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    color: #0D2B33 !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+#home-view .unpaid-summary-grid > div:first-child strong,
+#home-view .unpaid-summary-grid > div:nth-child(2) strong {
+    color: #E4572E !important;
+}
+
+#home-view .unpaid-summary-grid > div:nth-child(3) strong {
+    color: #DD9426 !important;
+}
+
+#home-view .unpaid-summary-grid > div:nth-child(4) strong {
+    color: #0C6B7A !important;
 }
 
 #home-view .unpaid-summary-grid small {
-  font-size: 9.5px !important;
-  color: #9BAEB3 !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
 }
 
 #home-view .dashboard-unpaid-toolbar {
-  margin: 6px 0 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
 }
 
-#home-view .dashboard-unpaid-toolbar input {
-  flex: 1 1 180px;
-  width: 100% !important;
-  height: 30px !important;
-  padding: 0 10px !important;
-  font-size: 11.5px !important;
-  border: 1px solid #E9F0F0 !important;
-  border-radius: 6px !important;
-  background: #F8FBFB !important;
-  color: #17333B !important;
-  outline: none !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+#home-view #dashboardUnpaidSearch {
+    flex: 1 1 160px !important;
+    height: 30px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    border: 1px solid #E2EAEC !important;
+    background: #F8FBFB !important;
+    color: #0D2B33 !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
 }
 
-#home-view .dashboard-unpaid-toolbar input:focus {
-  border-color: #0F7781 !important;
-  box-shadow: 0 0 0 3px rgba(15, 119, 129, 0.18) !important;
+#home-view #dashboardUnpaidSearch:focus {
+    background: #FFFFFF !important;
+    border-color: #0C6B7A !important;
+    box-shadow: var(--dash-focus-ring) !important;
+    outline: none !important;
 }
 
 #home-view .unpaid-view-mode-switch {
-  display: inline-flex;
-  background: #F8FBFB;
-  border: 1px solid #E9F0F0;
-  border-radius: 8px;
-  padding: 2px;
-  gap: 2px;
-  flex-shrink: 0;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    padding: 2px !important;
+    border-radius: 8px !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
 }
 
 #home-view .unpaid-mode-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: #789097;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+    height: 24px !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+    border: none !important;
+    background: transparent !important;
+    color: #8299A1 !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
 }
 
 #home-view .unpaid-mode-btn.active {
-  background: #0F7781;
-  color: #FFFFFF;
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    box-shadow: none !important;
 }
 
 #home-view .unpaid-mode-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  font-size: 9.5px;
-  font-weight: 700;
-  background: rgba(15, 119, 129, 0.15);
-  color: #0F7781;
-}
-
-#home-view .unpaid-mode-btn.active .unpaid-mode-badge {
-  background: rgba(255, 255, 255, 0.24);
-  color: #FFFFFF;
+    padding: 0 5px !important;
+    height: 15px !important;
+    line-height: 15px !important;
+    border-radius: 999px !important;
+    background: #FFFFFF !important;
+    color: #0C6B7A !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
 }
 
 #home-view .dashboard-table-wrap {
-  max-height: none;
-  overflow-x: auto;
-  overflow-y: visible;
-  max-width: 100%;
-  -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    overflow-x: auto !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 10px !important;
+    background: #FFFFFF !important;
 }
 
 #home-view .dashboard-mini-table {
-  width: 100%;
-  min-width: 0 !important;
-  border-collapse: collapse;
-  font-size: 11.5px;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 12px !important;
 }
 
-#home-view .dashboard-mini-table th {
-  text-align: left;
-  padding: 6px 8px !important;
-  font-size: 9px !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.035em !important;
-  color: #789097 !important;
-  border-bottom: 1px solid #E9F0F0 !important;
-  background: #F8FBFB !important;
+/* Section 3: Table header = 11px / 600, uppercase, grey (#8299A1), 8px vertical padding */
+#home-view .dashboard-mini-table thead th {
+    padding: 8px 10px !important;
+    background: #F8FBFB !important;
+    border-bottom: 1px solid #E2EAEC !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.035em !important;
+    color: #8299A1 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
 }
 
-#home-view .dashboard-mini-table tr {
-  height: 40px;
+/* Section 3: Table rows = 12px, 8px vertical padding */
+#home-view .dashboard-mini-table tbody td {
+    padding: 8px 10px !important;
+    height: 36px !important;
+    border-bottom: 1px solid #E2EAEC !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #46626B !important;
+    vertical-align: middle !important;
 }
 
-#home-view .dashboard-mini-table td {
-  padding: 6px 8px !important;
-  border-bottom: 1px solid #E9F0F0 !important;
-  color: #294A52 !important;
-  font-size: 11.5px !important;
-  vertical-align: middle;
+#home-view .dashboard-mini-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+#home-view .dashboard-mini-table tbody tr:hover td {
+    background: #F8FBFB !important;
 }
 
 #home-view .dashboard-mini-table td.num {
-  font-variant-numeric: tabular-nums !important;
-  font-weight: 700 !important;
-  color: #17333B !important;
-  font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    font-variant-numeric: tabular-nums !important;
+    white-space: nowrap !important;
+}
+
+/* Section 5: PNR bold (#0D2B33), client name teal (#0C6B7A) */
+#home-view .clickable-pnr,
+#home-view .clickable-hotel-ref {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    text-decoration: none !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+#home-view .clickable-pnr:hover,
+#home-view .clickable-hotel-ref:hover {
+    color: #0C6B7A !important;
+    text-decoration: underline !important;
 }
 
 #home-view .unpaid-client-primary {
-  font-weight: 600;
-  color: #0F7781;
-  line-height: 1.3;
-}
-
-#home-view .clickable-pnr {
-  color: #0F7781 !important;
-  font-weight: 600;
-  text-decoration: none;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #0C6B7A !important;
+    line-height: 1.25 !important;
 }
 
 #home-view .unpaid-account-sub {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-  font-size: 10px;
-  color: #789097;
-}
-
-#home-view .unpaid-route-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1.25;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
+    margin-top: 1px !important;
 }
 
 #home-view .unpaid-route-line {
-  font-weight: 600;
-  color: #294A52;
-  font-size: 11.5px;
-  white-space: nowrap;
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    color: #46626B !important;
 }
 
-#home-view .unpaid-route-line.return-line {
-  color: #789097;
-  font-size: 10.5px;
-  font-weight: 500;
+/* Section 5: Unpaid Tickets status pill (Due this week / Due today / Overdue) */
+#home-view .unpaid-status-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 20px !important;
+    padding: 0 8px !important;
+    border-radius: 999px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 20px !important;
+    white-space: nowrap !important;
 }
 
-#home-view .unpaid-tag-hotel {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: #EFF8F8;
-  color: #0F7781;
-  border: 1px solid #DDF1F1;
-  margin-right: 4px;
-  vertical-align: middle;
+#home-view .unpaid-status-pill.is-due-week {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
 }
 
-#home-view .unpaid-tag-fee {
-  display: inline-block;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: #FFF5DE;
-  color: #E9A33A;
-  border: 1px solid #FFF0EC;
-  margin-left: 4px;
-  vertical-align: middle;
+#home-view .unpaid-status-pill.is-due-today {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+}
+
+#home-view .unpaid-status-pill.is-overdue {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
 }
 
 #home-view .unpaid-row-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
 }
 
-#home-view .dashboard-row-action.reminder-card-btn {
-  color: #0F7781;
-  border-color: #DDF1F1;
-  background: #EFF8F8;
+#home-view .dashboard-row-action {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    border: 1px solid #E2EAEC !important;
+    background: #FFFFFF !important;
+    color: #46626B !important;
+    font-size: 11px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
 }
 
-#home-view .dashboard-row-action.reminder-card-btn.primary-pill {
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  gap: 4px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
+#home-view .travel-schedule-row .dashboard-row-action,
+#home-view .dashboard-row-action.primary-pill {
+    width: auto !important;
+    padding: 0 8px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    gap: 4px !important;
+    background: #E2F2F3 !important;
+    border-color: transparent !important;
+    color: #0C6B7A !important;
+}
+
+#home-view .dashboard-row-action:hover {
+    background: #E2F2F3 !important;
+    border-color: #0C6B7A !important;
+    color: #0C6B7A !important;
 }
 
 /* ==========================================================================
-   5. Tasks & Reminders Panel
+   10. TASKS & REMINDERS PANEL (Section 5)
+   - Booking-deadline cards on pale amber background (#FDF3E0) with bell icon
+   - "Expired" / "Overdue" text in coral (#E4572E)
    ========================================================================== */
-
+#home-view #dashboardTasksReminders,
 #home-view .dashboard-task-list {
-  flex: 1 1 auto;
-  max-height: none;
-  overflow-y: visible;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin: 0 !important;
 }
 
 #home-view .task-mini-section {
-  margin-bottom: 6px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
 }
 
-#home-view .task-mini-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.035em;
-  color: #789097;
-  margin-bottom: 4px;
+#home-view .task-mini-title,
+#home-view .auto-reminder-group-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0 2px !important;
 }
 
-#home-view .task-count-badge {
-  background: #FFF5DE;
-  color: #E9A33A;
-  font-size: 9.5px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 999px;
+#home-view .task-mini-title > span,
+#home-view .auto-reminder-group-header span {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #8299A1 !important;
 }
 
-#home-view #openTaskModalBtn {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  min-height: 26px;
-  aspect-ratio: 1 / 1;
-  padding: 0;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: #0F7781 !important;
-  border: none !important;
-  color: #FFFFFF !important;
+#home-view .task-mini-title > small,
+#home-view .auto-reminder-group-header strong {
+    min-width: 18px !important;
+    height: 17px !important;
+    padding: 0 6px !important;
+    border-radius: 999px !important;
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    line-height: 17px !important;
+    text-align: center !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+#home-view .task-mini-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
 }
 
 #home-view .dashboard-auto-task {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 9px;
-  background: #FFF5DE !important;
-  border: 1px solid #FCE4B8 !important;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-  margin-bottom: 4px;
-  font-size: 11.5px;
+    display: grid !important;
+    grid-template-columns: 26px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    border-radius: 10px !important;
+    background: #FDF3E0 !important;
+    border: 1px solid rgba(221, 148, 38, 0.26) !important;
+    width: 100% !important;
+    text-align: left !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
 }
 
-#home-view .dashboard-auto-task:hover {
-  background: #FFF9ED !important;
-  border-color: #E9A33A !important;
+#home-view .dashboard-auto-task .task-auto-icon,
+#home-view .dashboard-auto-task .auto-task-icon {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 999px !important;
+    background: rgba(221, 148, 38, 0.18) !important;
+    color: #DD9426 !important;
+    font-size: 11px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-#home-view .dashboard-auto-task .task-auto-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(233, 163, 58, 0.18);
-  color: #E9A33A;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  flex-shrink: 0;
+#home-view .dashboard-auto-task.danger .task-auto-icon,
+#home-view .dashboard-auto-task.expired .auto-task-icon {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
 }
 
-#home-view .dashboard-auto-task.danger .task-auto-icon {
-  background: #FFF0EC;
-  color: #F07864;
+#home-view .task-auto-body,
+#home-view .auto-task-body {
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
 }
 
-#home-view .dashboard-auto-task .task-auto-body strong {
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #17333B;
+#home-view .task-auto-body strong,
+#home-view .auto-task-title strong {
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    color: #0D2B33 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
-#home-view .dashboard-auto-task .task-auto-body small {
-  font-size: 10px;
-  color: #789097;
+#home-view .task-auto-body small,
+#home-view .auto-task-sub {
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    color: #46626B !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
-#home-view .dashboard-status {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
+#home-view .dashboard-auto-task .dashboard-status,
+#home-view .auto-task-countdown {
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    color: #DD9426 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    font-variant-numeric: tabular-nums !important;
+    white-space: nowrap !important;
 }
 
-#home-view .dashboard-status.danger {
-  background: #FFF0EC;
-  color: #F07864;
+#home-view .dashboard-auto-task .dashboard-status.danger,
+#home-view .dashboard-auto-task.danger .dashboard-status,
+#home-view .dashboard-auto-task.expired .auto-task-countdown {
+    color: #E4572E !important;
 }
 
-#home-view .dashboard-status.warning {
-  background: #FFF5DE;
-  color: #E9A33A;
-}
-
-#home-view .dashboard-status.neutral {
-  background: #EFF8F8;
-  color: #789097;
-}
-
-#home-view .dashboard-task-item.manual {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  background: #F8FBFB !important;
-  border: 1px solid #E9F0F0;
-  border-radius: 6px;
-  font-size: 11.5px;
-  margin-bottom: 4px;
-}
-
-#home-view .task-empty-line {
-  font-size: 11px;
-  color: #789097;
-  padding: 6px 0;
-}
-
-/* Expiring Passports (< 6 Months) in Dashboard */
 #home-view .passport-filter-pills {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px !important;
 }
 
 #home-view .passport-filter-pill {
-  border: 1px solid #E9F0F0;
-  background: #FFFFFF;
-  color: #789097;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 999px;
-  cursor: pointer;
-  line-height: 1.3;
-  transition: all 0.15s ease;
-}
-
-#home-view .passport-filter-pill:hover {
-  border-color: #F07864;
-  color: #F07864;
+    height: 20px !important;
+    padding: 0 7px !important;
+    border-radius: 999px !important;
+    border: 1px solid #E2EAEC !important;
+    background: #FFFFFF !important;
+    color: #8299A1 !important;
+    font-size: 9.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
 }
 
 #home-view .passport-filter-pill.active {
-  background: #F07864;
-  border-color: #F07864;
-  color: #FFFFFF;
+    background: #E2F2F3 !important;
+    border-color: transparent !important;
+    color: #0C6B7A !important;
 }
 
-#home-view .passport-filter-pill i {
-  font-size: 9px;
-  margin-right: 2px;
+#home-view #openTaskModalBtn {
+    background: #0C6B7A !important;
+    border-color: #0C6B7A !important;
+    color: #FFFFFF !important;
+    box-shadow: none !important;
 }
 
-#home-view .passport-expiry-task {
-  border-left: 3px solid #F07864 !important;
-  background: #FFF0EC !important;
+#home-view .task-empty-line,
+#home-view .dashboard-empty-panel {
+    padding: 10px !important;
+    border-radius: 9px !important;
+    background: #F8FBFB !important;
+    border: 1px dashed #E2EAEC !important;
+    text-align: center !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #8299A1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 2px !important;
 }
 
-#home-view .passport-expiry-task .passport-alert-icon {
-  color: #F07864;
-  background: #FDEBEC;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+#home-view .dashboard-empty-panel strong {
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    color: #46626B !important;
 }
 
-#home-view .passport-vip-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 9.5px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 999px;
-  margin-left: 4px;
-  vertical-align: middle;
-}
-
-#home-view .passport-vip-badge.is-featured {
-  background: #FFF5DE;
-  color: #E9A33A;
-  border: 1px solid #FFF0EC;
-}
-
-#home-view .passport-vip-badge.is-frequent {
-  background: #DDF1F1;
-  color: #0F7781;
-  border: 1px solid #DCE8E7;
-}
-
-#home-view .passport-show-more-btn {
-  width: 100%;
-  margin-top: 2px;
-  padding: 5px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #0F7781;
-  background: transparent;
-  border: 1px dashed #DCE8E7;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-#home-view .passport-show-more-btn:hover {
-  background: #EFF8F8;
-  border-color: #0F7781;
+#home-view .dashboard-empty-panel span {
+    font-size: 10.5px !important;
+    font-weight: 400 !important;
+    color: #8299A1 !important;
 }
 
 /* ==========================================================================
-   6. Responsive Breakpoints
+   11. RESPONSIVE BREAKPOINTS
    ========================================================================== */
-
-@media (min-width: 1200px) {
-  #home-view .dashboard-kpis {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  }
-  #home-view .dashboard-primary-row,
-  #home-view .dashboard-operations-row,
-  #home-view .dashboard-grid-row-2col-wide,
-  #home-view .dashboard-grid-row-2col-equal {
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr) !important;
-  }
+@media (max-width: 1199px) {
+    #home-view .dashboard-kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
 }
 
-@media (min-width: 900px) and (max-width: 1199px) {
-  #home-view .dashboard-kpis {
-    grid-template-columns: repeat(3, 1fr) !important;
-  }
-  #home-view .dashboard-primary-row,
-  #home-view .dashboard-operations-row,
-  #home-view .dashboard-grid-row-2col-wide,
-  #home-view .dashboard-grid-row-2col-equal {
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr) !important;
-  }
-}
+@media (max-width: 899px) {
+    .app-body,
+    body.material-theme .app-body {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
 
-@media (min-width: 640px) and (max-width: 899px) {
-  #home-view .dashboard-kpis {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  #home-view .dashboard-primary-row,
-  #home-view .dashboard-operations-row,
-  #home-view .dashboard-grid-row-2col-wide,
-  #home-view .dashboard-grid-row-2col-equal {
-    grid-template-columns: 1fr !important;
-  }
+    .main-content,
+    body.material-theme .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 12px 14px 20px !important;
+    }
+
+    #home-view .dashboard-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    #home-view .dashboard-primary-row,
+    #home-view .dashboard-operations-row,
+    #home-view .dashboard-grid-row {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 @media (max-width: 639px) {
-  #home-view .dashboard-kpis {
-    grid-template-columns: 1fr !important;
-  }
-  #home-view .dashboard-primary-row,
-  #home-view .dashboard-operations-row,
-  #home-view .dashboard-grid-row-2col-wide,
-  #home-view .dashboard-grid-row-2col-equal {
-    grid-template-columns: 1fr !important;
-  }
-  #home-view .dashboard-table-wrap,
-  #home-view .dashboard-unpaid-content {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-  }
-  #home-view .dashboard-new-sale-btn {
-    width: 100%;
-    justify-content: center;
-  }
+    #home-view .dashboard-kpis {
+        grid-template-columns: 1fr !important;
+    }
+
+    #home-view .unpaid-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    #home-view .dashboard-compact-header,
+    #home-view .dashboard-command-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    #home-view .dashboard-new-sale-btn {
+        width: 100% !important;
+        justify-content: center !important;
+    }
 }
-
-/* Payment Reminder Card Modal & Sheet */
-#modal .modal-content.prc-dialog-modal {
-  max-width: 890px;
-  width: 96vw;
-  padding: 20px;
-  border-radius: 18px;
-}
-
-.prc-modal-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.prc-modal-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.prc-modal-toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.prc-modal-title {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #17333B;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.prc-modal-title i {
-  color: #0C6670;
-}
-
-.prc-scope-switch {
-  display: inline-flex;
-  background: #F1F5F9;
-  border: 1px solid #E9F0F0;
-  border-radius: 8px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.prc-scope-btn {
-  padding: 4px 10px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: #789097;
-  cursor: pointer;
-}
-
-.prc-scope-btn.active {
-  background: #0F7781;
-  color: #FFFFFF;
-}
-
-.prc-controls-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
-  background: #F8FBFB;
-  border: 1px solid #E9F0F0;
-  border-radius: 12px;
-}
-
-.prc-inputs-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.prc-paid-input-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.prc-paid-input-group label {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #334155;
-  margin: 0;
-}
-
-.prc-paid-input-group input {
-  width: 115px;
-  height: 32px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  border: 1px solid #CBD5E1;
-  background: #FFFFFF;
-  color: #17333B;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.prc-export-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.prc-action-btn {
-  height: 34px;
-  padding: 0 12px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.prc-preview-scroll-viewport {
-  overflow-x: auto;
-  max-height: 75vh;
-  overflow-y: auto;
-  padding: 18px 12px;
-  background: #CBD5E1;
-  border-radius: 12px;
-  display: flex;
-  justify-content: center;
-}
-
-/* Printable / Exportable Card Sheet (A4 Portrait Receipt Layout) */
-.payment-reminder-card-sheet {
-  width: 794px;
-  min-width: 794px;
-  max-width: 794px;
-  min-height: 1123px;
-  box-sizing: border-box;
-  margin: 0 auto;
-  padding: 44px 56px 40px;
-  background: #FFFFFF;
-  color: #232323;
-  border-radius: 2px;
-  border: 1px solid #E9F0F0;
-  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.12);
-  font-family: Arial, Helvetica, -apple-system, BlinkMacSystemFont, sans-serif;
-  display: flex;
-  flex-direction: column;
-}
-
-.prc-sheet-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.prc-inv-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.prc-brand {
-  width: 220px;
-}
-
-.prc-brand img.prc-brand-logo {
-  display: block;
-  width: 200px;
-  max-height: 65px;
-  height: auto;
-  object-fit: contain;
-  object-position: left top;
-}
-
-.prc-top-right {
-  text-align: right;
-}
-
-.prc-doc-type {
-  margin: 0 0 4px;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #232323;
-}
-
-.prc-doc-id {
-  margin: 0 0 3px;
-  font-size: 13px;
-  color: #5F6B78;
-  font-weight: 600;
-}
-
-.prc-doc-date {
-  margin: 0;
-  font-size: 13px;
-  color: #5F6B78;
-}
-
-.prc-company-lines {
-  margin-top: 14px;
-}
-
-.prc-company-lines p {
-  margin: 0 0 3px;
-  font-size: 10.5px;
-  color: #5F6B78;
-  line-height: 1.4;
-}
-
-.prc-header-rule {
-  height: 2.5px;
-  background: #AA0F11;
-  margin: 12px 0 18px;
-  border: none;
-}
-
-.prc-billing-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 22px;
-}
-
-.prc-billed-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #AA0F11;
-  margin-bottom: 4px;
-  letter-spacing: 0.05em;
-}
-
-.prc-client-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #232323;
-  margin-bottom: 4px;
-}
-
-.prc-pnr-line {
-  font-size: 11.5px;
-  color: #232323;
-  line-height: 1.4;
-}
-
-.prc-platform-badge {
-  display: inline-block;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: #F1F5F9;
-  border: 1px solid #CBD5E1;
-  color: #17333B;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.prc-meta-right {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 200px;
-}
-
-.prc-meta-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11.5px;
-}
-
-.prc-meta-label {
-  color: #5F6B78;
-}
-
-.prc-meta-val {
-  font-weight: 700;
-  color: #232323;
-}
-
-.prc-status-pending {
-  color: #AA0F11 !important;
-}
-
-/* Items Table */
-.prc-inv-table {
-  width: 100% !important;
-  border-collapse: collapse !important;
-  margin-bottom: 16px !important;
-  background: #FFFFFF !important;
-  table-layout: fixed !important;
-}
-
-.prc-inv-table thead th {
-  padding: 8px 6px !important;
-  border-bottom: 1px solid #E2E6EA !important;
-  font-size: 10.5px !important;
-  font-weight: 700 !important;
-  color: #5F6B78 !important;
-  letter-spacing: 0.03em;
-  background: transparent !important;
-  text-align: left;
-}
-
-.prc-inv-table tbody td {
-  padding: 9px 6px !important;
-  border-bottom: 1px solid #E2E6EA !important;
-  font-size: 11.5px !important;
-  color: #232323 !important;
-  background: #FFFFFF !important;
-  vertical-align: middle !important;
-  word-break: break-word;
-}
-
-.prc-inv-table tbody tr:nth-child(even) td {
-  background: #F7F8F9 !important;
-}
-
-.prc-inv-table th.col-idx,
-.prc-inv-table td.col-idx {
-  text-align: center !important;
-  width: 28px;
-  color: #5F6B78 !important;
-  font-size: 11px;
-}
-
-.prc-inv-table th.col-pnr,
-.prc-inv-table td.col-pnr {
-  text-align: left !important;
-  width: 95px;
-}
-
-.prc-cell-pnr {
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
-  color: #17333B;
-  font-size: 11.5px;
-}
-
-.prc-inv-table th.col-desc,
-.prc-inv-table td.col-desc {
-  text-align: left !important;
-  width: 130px;
-}
-
-.prc-cell-pax {
-  font-weight: 700;
-  color: #232323;
-  font-size: 11.5px;
-}
-
-.prc-inv-table th.col-route,
-.prc-inv-table td.col-route {
-  text-align: left !important;
-  width: 165px;
-}
-
-.prc-cell-route {
-  font-weight: 600;
-  color: #232323;
-  font-size: 11.5px;
-}
-
-.prc-cell-sub {
-  font-size: 10px;
-  color: #5F6B78;
-  margin-top: 2px;
-}
-
-.prc-fee-badge {
-  display: inline-block;
-  margin-top: 2px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: #FEF3C7;
-  color: #B45309;
-  font-size: 9.5px;
-  font-weight: 700;
-}
-
-.prc-inv-table th.col-num,
-.prc-inv-table td.col-num {
-  text-align: right !important;
-  width: 86px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
-.prc-inv-table td.prc-cell-paid {
-  color: #059669 !important;
-}
-
-.prc-inv-table td.prc-cell-due {
-  color: #AA0F11 !important;
-  font-weight: 700 !important;
-}
-
-/* Totals Section */
-.prc-totals-section {
-  width: 290px;
-  margin-left: auto;
-  margin-top: 4px;
-  margin-bottom: 22px;
-}
-
-.prc-total-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: #5F6B78;
-  padding: 4px 0;
-}
-
-.prc-total-line span:last-child {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  color: #232323;
-}
-
-.prc-balance-pill {
-  background: #AA0F11;
-  border-radius: 6px;
-  padding: 9px 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #FFFFFF;
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.03em;
-  margin-top: 8px;
-}
-
-.prc-balance-pill span:last-child {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
-.prc-thank-you {
-  text-align: center;
-  font-style: italic;
-  font-size: 12.5px;
-  color: #5F6B78;
-  margin-top: auto;
-  margin-bottom: auto;
-  padding: 24px 0;
-}
-
-/* Payment Methods */
-.prc-payment-section {
-  margin-top: auto;
-  margin-bottom: 24px;
-}
-
-.prc-payment-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #232323;
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
-}
-
-.prc-account-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: #AA0F11;
-  margin-bottom: 12px;
-}
-
-.prc-bank-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.prc-bank-card {
-  background: #F7F8F9;
-  border: 1px solid #E2E6EA;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.prc-bank-card-header {
-  background: #232323;
-  color: #FFFFFF;
-  font-weight: 700;
-  font-size: 11.5px;
-  padding: 6px 12px;
-  border-bottom: 2px solid #AA0F11;
-}
-
-.prc-bank-card-body {
-  padding: 8px 12px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.prc-bank-row {
-  line-height: 1.35;
-}
-
-.prc-bank-label {
-  font-size: 9.5px;
-  color: #5F6B78;
-}
-
-.prc-bank-acc {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #232323;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* Footer */
-.prc-footer {
-  margin-top: auto;
-  text-align: center;
-  padding-top: 22px;
-}
-
-.prc-footer-tagline {
-  font-size: 11px;
-  font-weight: 700;
-  color: #AA0F11;
-  letter-spacing: 0.08em;
-  margin-bottom: 5px;
-}
-
-.prc-footer-line {
-  width: 70px;
-  height: 1px;
-  background: #E2E6EA;
-  margin: 0 auto 6px;
-}
-
-.prc-footer-contact {
-  font-size: 10px;
-  color: #5F6B78;
-}
-
-
-

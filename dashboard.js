@@ -31,7 +31,7 @@ import {
     getPnrTravelDateDisplay
 } from "./utils.js";
 import { updateUnpaidCount, displayTickets } from "./tickets.js";
-import { getSettlementSummary } from "./settlement.js";
+import { getSettlementSummary, updateSettlementDashboard } from "./settlement.js";
 import { loadFeaturedClients, getExpiringPassportClients, viewClientHistory } from "./clients.js";
 import { findTicketForManage } from "./manage.js";
 import { generateInvoice, generateInvoiceImage, analyzeInvoiceScenario } from "./invoice.js";
@@ -1244,7 +1244,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
                     </div>
                     <div class="pnr-settlement-cell">
                         <span class="pnr-settlement-label">Total Profit</span>
-                        <strong class="pnr-settlement-val ${totalProfit < 0 ? 'pnr-val-outstanding' : 'pnr-val-profit'}" style="color: ${totalProfit < 0 ? '#dc2626' : '#059669'};">
+                        <strong class="pnr-settlement-val ${totalProfit < 0 ? 'pnr-val-outstanding' : 'pnr-val-profit'}" style="color: ${totalProfit < 0 ? '#E4572E' : '#5F9E7D'};">
                             ${formatDashboardAmount(totalProfit)} <span class="pnr-settlement-curr">MMK</span>
                         </strong>
                     </div>
@@ -1558,6 +1558,21 @@ function renderDashboardUnpaidTickets(groups) {
     const consolidatedAccounts = consolidateUnpaidByAccount(filteredGroups);
     const multiTicketAccountCount = consolidateUnpaidByAccount(groups).filter(a => (a.pnrGroups.length + a.hotelCount) > 1).length;
 
+    const getUnpaidStatusBadge = (group) => {
+        if (group.dueDate?.getTime?.()) {
+            if (group.dueDate < today) {
+                return `<span class="unpaid-status-pill is-overdue">Overdue</span>`;
+            }
+            if (daysBetween(today, group.dueDate) === 0) {
+                return `<span class="unpaid-status-pill is-due-today">Due today</span>`;
+            }
+            if (group.dueDate >= today && group.dueDate <= weekEnd) {
+                return `<span class="unpaid-status-pill is-due-week">Due this week</span>`;
+            }
+        }
+        return `<span class="unpaid-status-pill is-due-week">Due this week</span>`;
+    };
+
     let tableHeadHtml = '';
     let tableRowsHtml = '';
 
@@ -1578,7 +1593,7 @@ function renderDashboardUnpaidTickets(groups) {
             const extraPnrs = acc.pnrList.length > 4 ? ` <small>+${acc.pnrList.length - 4}</small>` : '';
 
             const hotelBadges = (acc.hotelGroups || []).slice(0, 3).map(h =>
-                `<a href="#" class="clickable-hotel-ref" data-hotel-id="${h.hotelId}" style="display:inline-flex; align-items:center; gap:3px; background:rgba(13,110,119,0.12); color:#0D6E77; border-radius:4px; padding:2px 6px; font-weight:600; font-size:11px;"><i class="fa-solid fa-hotel"></i> ${dashboardEscapeHtml(h.pnr || h.hotelName)}</a>`
+                `<a href="#" class="clickable-hotel-ref" data-hotel-id="${h.hotelId}" style="display:inline-flex; align-items:center; gap:3px; background:#E2F2F3; color:#0C6B7A; border-radius:4px; padding:2px 6px; font-weight:600; font-size:11px;"><i class="fa-solid fa-hotel"></i> ${dashboardEscapeHtml(h.pnr || h.hotelName)}</a>`
             ).join(' ');
             const extraHotels = (acc.hotelGroups || []).length > 3 ? ` <small>+${acc.hotelGroups.length - 3}</small>` : '';
 
@@ -1603,8 +1618,8 @@ function renderDashboardUnpaidTickets(groups) {
                     </td>
                     <td class="num">
                         <div style="font-size:0.75rem; color:var(--dash-text-muted);">Total: ${formatDashboardAmount(acc.totalGross)}</div>
-                        ${acc.agentFareAmount > 0 ? `<div style="font-size:0.75rem; color:#D97706;">Agent Fare: -${formatDashboardAmount(acc.agentFareAmount)}</div>` : ''}
-                        <div style="font-size:0.75rem; color:#059669;">Paid: ${formatDashboardAmount(acc.paidAmount)}</div>
+                        ${acc.agentFareAmount > 0 ? `<div style="font-size:0.75rem; color:#DD9426;">Agent Fare: -${formatDashboardAmount(acc.agentFareAmount)}</div>` : ''}
+                        <div style="font-size:0.75rem; color:#5F9E7D;">Paid: ${formatDashboardAmount(acc.paidAmount)}</div>
                     </td>
                     <td class="num"><strong>${formatDashboardAmount(acc.unpaidAmount)} MMK</strong></td>
                     <td>
@@ -1620,9 +1635,10 @@ function renderDashboardUnpaidTickets(groups) {
     } else {
         tableHeadHtml = `
             <tr>
-                <th>PNR / REF</th>
-                <th>CLIENT / ACCOUNT</th>
-                <th>ROUTE / HOTEL</th>
+                <th>PNR</th>
+                <th>CLIENT</th>
+                <th>ROUTE</th>
+                <th>STATUS</th>
                 <th>AMOUNT DUE</th>
                 <th>ACTION</th>
             </tr>
@@ -1646,13 +1662,14 @@ function renderDashboardUnpaidTickets(groups) {
                         <td>
                             <div class="unpaid-route-stack">
                                 <div class="unpaid-route-line" title="${dashboardEscapeHtml(group.hotelName)}">
-                                    <i class="fa-solid fa-hotel" style="color:#0D6E77; margin-right:4px;"></i> <strong>${dashboardEscapeHtml(group.hotelName)}</strong>${group.city ? ` <small style="color:var(--dash-text-muted);">(${dashboardEscapeHtml(group.city)})</small>` : ''}
+                                    <i class="fa-solid fa-hotel" style="color:#0C6B7A; margin-right:4px;"></i> <strong>${dashboardEscapeHtml(group.hotelName)}</strong>${group.city ? ` <small style="color:var(--dash-text-muted);">(${dashboardEscapeHtml(group.city)})</small>` : ''}
                                 </div>
                                 <div class="unpaid-route-line return-line" style="font-size:0.75rem; color:var(--dash-text-muted);">
                                     <i class="fa-regular fa-calendar-days" style="margin-right:4px;"></i> ${dashboardEscapeHtml(group.travelDateStr || 'Stay')}
                                 </div>
                             </div>
                         </td>
+                        <td>${getUnpaidStatusBadge(group)}</td>
                         <td class="num">
                             <strong>${formatDashboardAmount(group.amount)} MMK</strong>
                             <span class="payment-badge payment-${group.hotelRow?.paid || 'unpaid'}" style="font-size:10px; margin-left:4px; padding:2px 6px; text-transform:capitalize;">${group.hotelRow?.paid === 'partial' ? 'Partial' : 'Unpaid'}</span>
@@ -1697,6 +1714,7 @@ function renderDashboardUnpaidTickets(groups) {
                             `).join('')}
                         </div>
                     </td>
+                    <td>${getUnpaidStatusBadge(group)}</td>
                     <td class="num">${formatDashboardAmount(group.amount)} MMK ${feeBadge}</td>
                     <td>
                         <div class="unpaid-row-actions">
@@ -1748,7 +1766,7 @@ function renderDashboardUnpaidTickets(groups) {
                     ${tableHeadHtml}
                 </thead>
                 <tbody>
-                    ${tableRowsHtml || `<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--dash-text-muted);">No unpaid bookings matching "${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}"</td></tr>`}
+                    ${tableRowsHtml || `<tr><td colspan="6" style="text-align:center; padding:16px; color:var(--dash-text-muted);">No unpaid bookings matching "${dashboardEscapeHtml(dashboardUnpaidSearchTerm)}"</td></tr>`}
                 </tbody>
             </table>
         </div>
@@ -1936,9 +1954,9 @@ const REMINDER_CARD_STYLE_CSS = `
         display: inline-block !important;
         padding: 1px 7px !important;
         border-radius: 999px !important;
-        background: #F1F5F9 !important;
-        border: 1px solid #CBD5E1 !important;
-        color: #0F172A !important;
+        background: #EEF4F5 !important;
+        border: 1px solid #D3DFE2 !important;
+        color: #0D2B33 !important;
         font-size: 10px !important;
         font-weight: 700 !important;
     }
@@ -2329,7 +2347,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                     <div>
                         <div class="prc-billed-label" style="font-size: 10px; font-weight: 700; color: #AA0F11; margin-bottom: 4px; letter-spacing: 0.05em;">BILLED TO</div>
                         <div class="prc-client-name" style="font-size: 18px; font-weight: 700; color: #232323; margin-bottom: 4px;">${dashboardEscapeHtml(activeDisplayName)}</div>
-                        ${activeLead.socialAccount ? `<div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">Account: ${dashboardEscapeHtml(activeLead.socialAccount)}${activeLead.accountType ? ` · <span class="prc-platform-badge" style="display: inline-block; padding: 1px 7px; border-radius: 999px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #0F172A; font-size: 10px; font-weight: 700;">${dashboardEscapeHtml(activeLead.accountType)}</span>` : ''}</div>` : ''}
+                        ${activeLead.socialAccount ? `<div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">Account: ${dashboardEscapeHtml(activeLead.socialAccount)}${activeLead.accountType ? ` · <span class="prc-platform-badge" style="display: inline-block; padding: 1px 7px; border-radius: 999px; background: #EEF4F5; border: 1px solid #D3DFE2; color: #0D2B33; font-size: 10px; font-weight: 700;">${dashboardEscapeHtml(activeLead.accountType)}</span>` : ''}</div>` : ''}
                         <div class="prc-pnr-line" style="font-size: 11.5px; color: #232323; line-height: 1.4;">${scopeMode === 'single' ? `Booking: PNR ${dashboardEscapeHtml(activeLead.pnr)}` : `Unpaid Bookings: ${groupsToUse.length} PNR${groupsToUse.length > 1 ? 's' : ''}`} (${items.length} Item${items.length > 1 ? 's' : ''})</div>
                     </div>
                     <div class="prc-meta-right" style="display: flex; flex-direction: column; gap: 5px; min-width: 200px;">
@@ -2364,7 +2382,7 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                     ${effectiveAgentFare > 0 ? `
                     <div class="prc-total-line prc-agent-fare-line" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #5F6B78; padding: 4px 0;">
                         <span>Agent Fare</span>
-                        <span style="font-variant-numeric: tabular-nums; font-weight: 700; color: #D97706;">- ${formatDashboardAmount(effectiveAgentFare)} MMK</span>
+                        <span style="font-variant-numeric: tabular-nums; font-weight: 700; color: #DD9426;">- ${formatDashboardAmount(effectiveAgentFare)} MMK</span>
                     </div>
                     ` : ''}
                     <div class="prc-total-line prc-paid-line" style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #5F6B78; padding: 4px 0;">
@@ -3111,13 +3129,13 @@ function renderOwnerSettlementSnapshot(ticketsInPeriod, range) {
 function dashboardChartPalette() {
     const computed = getComputedStyle(document.body);
     return {
-        text: (computed.getPropertyValue('--chart-text') || '').trim() || '#789097',
-        grid: (computed.getPropertyValue('--chart-grid') || '').trim() || '#E9F0F0',
-        coral: (computed.getPropertyValue('--coral') || '').trim() || '#F07864',
-        mint: (computed.getPropertyValue('--mint') || '').trim() || '#2FAE7B',
-        butter: (computed.getPropertyValue('--amber') || '').trim() || '#E9A33A',
-        lavender: (computed.getPropertyValue('--violet') || '').trim() || '#8A78D6',
-        ink: (computed.getPropertyValue('--text-strong') || '').trim() || '#17333B',
+        text: (computed.getPropertyValue('--chart-text') || '').trim() || '#8299A1',
+        grid: (computed.getPropertyValue('--chart-grid') || '').trim() || '#E2EAEC',
+        coral: (computed.getPropertyValue('--coral') || '').trim() || '#E4572E',
+        mint: (computed.getPropertyValue('--sage') || computed.getPropertyValue('--mint') || '').trim() || '#5F9E7D',
+        butter: (computed.getPropertyValue('--amber') || '').trim() || '#DD9426',
+        lavender: (computed.getPropertyValue('--sky') || '').trim() || '#3F9BC4',
+        ink: (computed.getPropertyValue('--ink') || computed.getPropertyValue('--text-strong') || '').trim() || '#0D2B33',
         surface: (computed.getPropertyValue('--surface') || '').trim() || '#FFFFFF'
     };
 }
@@ -3361,7 +3379,7 @@ export function updateAirlineChart() {
     if (state.charts.airlineChart) {
         state.charts.airlineChart.data.labels = labels;
         state.charts.airlineChart.data.datasets[0].data = data;
-        state.charts.airlineChart.data.datasets[0].backgroundColor = labels[0] === "No Data" ? ['#e2e8f0'] : colors.slice(0, labels.length);
+        state.charts.airlineChart.data.datasets[0].backgroundColor = labels[0] === "No Data" ? ['#E2EAEC'] : colors.slice(0, labels.length);
         state.charts.airlineChart.data.datasets[0].borderColor = palette.surface;
         if (state.charts.airlineChart.options.plugins?.legend?.labels) {
             state.charts.airlineChart.options.plugins.legend.labels.color = textColor;
@@ -3376,7 +3394,7 @@ export function updateAirlineChart() {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: labels[0] === "No Data" ? ['#e2e8f0'] : colors.slice(0, labels.length),
+                backgroundColor: labels[0] === "No Data" ? ['#E2EAEC'] : colors.slice(0, labels.length),
                 borderWidth: 2,
                 borderColor: palette.surface
             }]
@@ -3393,7 +3411,7 @@ export function updateAirlineChart() {
                         padding: 10,
                         font: {
                             size: 11,
-                            family: 'Inter',
+                            family: '"Manrope", "Noto Sans Myanmar", system-ui, sans-serif',
                             weight: '600'
                         }
                     }
@@ -3488,11 +3506,12 @@ export function updateComparisonChart() {
     });
 
     const computed = getComputedStyle(document.body);
-    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#789097';
-    const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || '#E9F0F0';
-    const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#0F7781';
-    const profitBase = (computed.getPropertyValue('--chart-profit') || computed.getPropertyValue('--chart-tickets') || '').trim() || '#F07864';
-    const cancelBase = (computed.getPropertyValue('--coral') || '').trim() || '#E65353';
+    const textColor = (computed.getPropertyValue('--chart-text') || '').trim() || '#8299A1';
+    const gridColor = (computed.getPropertyValue('--chart-grid') || '').trim() || '#E2EAEC';
+    const revenueBase = (computed.getPropertyValue('--chart-revenue') || '').trim() || '#0C6B7A';
+    const profitBase = (computed.getPropertyValue('--chart-profit') || computed.getPropertyValue('--chart-tickets') || '').trim() || '#E4572E';
+    const cancelBase = (computed.getPropertyValue('--coral') || '').trim() || '#E4572E';
+    const chartFontFamily = '"Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif';
 
     const withAlpha = (color, alpha) => {
         const c = String(color).trim();
@@ -3516,14 +3535,9 @@ export function updateComparisonChart() {
 
     const ctx = canvas.getContext('2d');
     const revenueFill = ctx.createLinearGradient(0, 0, 0, 240);
-    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.14));
+    revenueFill.addColorStop(0, withAlpha(revenueBase, 0.12));
     revenueFill.addColorStop(0.65, withAlpha(revenueBase, 0.03));
     revenueFill.addColorStop(1, withAlpha(revenueBase, 0.00));
-
-    const profitFill = ctx.createLinearGradient(0, 0, 0, 240);
-    profitFill.addColorStop(0, withAlpha(profitBase, 0.08));
-    profitFill.addColorStop(0.65, withAlpha(profitBase, 0.01));
-    profitFill.addColorStop(1, withAlpha(profitBase, 0.00));
 
     const hasCancellations = buckets.some(b => b.cancellations > 0);
     const datasets = [{
@@ -3531,9 +3545,9 @@ export function updateComparisonChart() {
         data: buckets.map(bucket => bucket.revenue),
         borderColor: revenueBase,
         backgroundColor: revenueFill,
-        borderWidth: 2.5,
+        borderWidth: 2,
         pointRadius: 0,
-        pointHoverRadius: 5,
+        pointHoverRadius: 4,
         pointHoverBackgroundColor: '#ffffff',
         pointHoverBorderColor: revenueBase,
         pointHoverBorderWidth: 2,
@@ -3545,15 +3559,15 @@ export function updateComparisonChart() {
         data: buckets.map(bucket => bucket.profit),
         type: 'line',
         borderColor: profitBase,
-        backgroundColor: profitFill,
-        borderWidth: 1.5,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
         pointHoverBackgroundColor: '#ffffff',
         pointHoverBorderColor: profitBase,
-        pointHoverBorderWidth: 1.5,
+        pointHoverBorderWidth: 2,
         tension: 0.35,
-        fill: true,
+        fill: false,
         yAxisID: 'y1'
     }];
     if (hasCancellations) {
@@ -3592,16 +3606,16 @@ export function updateComparisonChart() {
                 intersect: false,
             },
             layout: {
-                padding: { left: 4, right: 12, top: 12, bottom: 4 }
+                padding: { left: 4, right: 12, top: 8, bottom: 2 }
             },
             scales: {
                 x: {
                     ticks: {
-                        color: withAlpha(textColor, 0.7),
+                        color: textColor,
                         autoSkip: true,
                         maxRotation: 0,
                         maxTicksLimit: 8,
-                        font: { size: 11, family: "'Inter', sans-serif", weight: '500' }
+                        font: { size: 11, family: chartFontFamily, weight: '500' }
                     },
                     grid: { display: false }
                 },
@@ -3612,14 +3626,14 @@ export function updateComparisonChart() {
                     title: { display: false },
                     border: { display: false },
                     ticks: {
-                        color: withAlpha(textColor, 0.7),
+                        color: textColor,
                         maxTicksLimit: 6,
                         callback: value => {
                             if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
                             if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
                             return Number(value).toLocaleString();
                         },
-                        font: { size: 11, family: "'Inter', sans-serif" }
+                        font: { size: 11, family: chartFontFamily }
                     },
                     grid: { color: gridColor, borderDash: [4, 4] },
                     beginAtZero: true
@@ -3632,14 +3646,14 @@ export function updateComparisonChart() {
                     border: { display: false },
                     grid: { display: false },
                     ticks: {
-                        color: withAlpha(textColor, 0.7),
+                        color: textColor,
                         maxTicksLimit: 5,
                         callback: value => {
                             if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
                             if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
                             return Number(value).toLocaleString();
                         },
-                        font: { size: 11, family: "'Inter', sans-serif" }
+                        font: { size: 11, family: chartFontFamily }
                     },
                     beginAtZero: true
                 }
@@ -3653,16 +3667,16 @@ export function updateComparisonChart() {
                         pointStyle: 'circle',
                         boxWidth: 7,
                         padding: 16,
-                        font: { size: 11, family: "'Inter', sans-serif", weight: '600' }
+                        font: { size: 11, family: chartFontFamily, weight: '600' }
                     }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(255, 255, 255, 0.98)',
-                    titleColor: '#17333B',
-                    bodyColor: '#294A52',
-                    titleFont: { size: 12, weight: '700', family: "'Inter', sans-serif" },
-                    bodyFont: { size: 11, family: "'Inter', sans-serif", weight: '600' },
-                    borderColor: '#E9F0F0',
+                    titleColor: '#0D2B33',
+                    bodyColor: '#46626B',
+                    titleFont: { size: 12, weight: '700', family: chartFontFamily },
+                    bodyFont: { size: 11, family: chartFontFamily, weight: '600' },
+                    borderColor: '#E2EAEC',
                     borderWidth: 1,
                     padding: 10,
                     boxPadding: 6,

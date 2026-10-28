@@ -49,11 +49,18 @@ async function run() {
     });
     const page = await context.newPage();
 
-    // Navigate to page
-    await page.goto(`http://localhost:${PORT}`, { waitUntil: 'domcontentloaded' });
+    const consoleErrors = [];
+    page.on('console', msg => {
+        if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+    page.on('pageerror', err => {
+        consoleErrors.push(String(err));
+    });
 
-    // Simulate authenticated session and active dashboard view
-    await page.evaluate(() => {
+    await page.goto(`http://localhost:${PORT}`, { waitUntil: 'networkidle' });
+
+    // Simulate authenticated session and invoke real renderDashboardData() with sample tickets
+    await page.evaluate(async () => {
         const authContainer = document.getElementById('auth-container');
         const loading = document.getElementById('loading');
         const dashboardContent = document.getElementById('dashboard-content');
@@ -68,126 +75,250 @@ async function run() {
         if (mainHeader) mainHeader.style.display = 'flex';
         if (mainSidebar) mainSidebar.style.display = 'flex';
         if (dashboardContent) dashboardContent.style.display = 'flex';
-        if (homeView) homeView.classList.add('active');
-
-        // Populate sample data for cards if empty
-        const revVal = document.getElementById('monthly-revenue-value');
-        if (revVal && revVal.textContent === '0') revVal.textContent = '12,450,000';
-        const tktVal = document.getElementById('total-tickets-value');
-        if (tktVal && tktVal.textContent === '0') tktVal.textContent = '48';
-        const pftVal = document.getElementById('total-profit-value');
-        if (pftVal && pftVal.textContent === '0') pftVal.textContent = '1,820,000';
-        const ownVal = document.getElementById('owner-payable-value');
-        if (ownVal && ownVal.textContent === '0') ownVal.textContent = '3,200,000';
-        const slfVal = document.getElementById('self-profit-value');
-        if (slfVal && slfVal.textContent === '0') slfVal.textContent = '650,000';
-
-        const revTrend = document.getElementById('revenue-trend-wrapper');
-        if (revTrend && !revTrend.innerHTML) revTrend.innerHTML = '<span class="trend-badge positive"><i class="fa-solid fa-arrow-trend-up"></i> +12%</span>';
-        const tktTrend = document.getElementById('tickets-trend-wrapper');
-        if (tktTrend && !tktTrend.innerHTML) tktTrend.innerHTML = '<span class="trend-badge positive"><i class="fa-solid fa-arrow-trend-up"></i> +4</span>';
-        const pftTrend = document.getElementById('profit-trend-wrapper');
-        if (pftTrend && !pftTrend.innerHTML) pftTrend.innerHTML = '<span class="trend-badge positive"><i class="fa-solid fa-arrow-trend-up"></i> +8.5%</span>';
-        const ownTrend = document.getElementById('owner-payable-trend-wrapper');
-        if (ownTrend && !ownTrend.innerHTML) ownTrend.innerHTML = '<span class="trend-badge negative"><i class="fa-solid fa-circle-exclamation"></i> outstanding</span>';
-        const slfTrend = document.getElementById('self-profit-trend-wrapper');
-        if (slfTrend && !slfTrend.innerHTML) slfTrend.innerHTML = '<span class="trend-badge positive"><i class="fa-solid fa-arrow-trend-up"></i> +15%</span>';
-
-        // Update booking badge
-        const badge = document.getElementById('sidebarBookingBadge');
-        if (badge) {
-            badge.textContent = '3';
-            badge.style.display = 'inline-flex';
+        document.querySelectorAll('.view').forEach(v => {
+            v.classList.remove('active');
+            v.style.display = 'none';
+        });
+        if (homeView) {
+            homeView.classList.add('active');
+            homeView.style.display = 'block';
         }
+
+        const { state } = await import('./state.js');
+        const dash = await import('./dashboard.js');
+
+        const now = new Date();
+        const fmt = (d) => {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${String(d.getDate()).padStart(2, '0')}/${months[d.getMonth()]}/${d.getFullYear()}`;
+        };
+        const d1 = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 5));
+        const d2 = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 3));
+        const d3 = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 1));
+        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 10);
+        const t1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const t2 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3);
+        const t3 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5);
+
+        state.allTickets = [
+            {
+                id: 't0',
+                booking_reference: 'A1B2C3',
+                name: 'HLA HLA MYINT (MRS)',
+                departure: 'Yangon (RGN)',
+                destination: 'Bangkok (BKK)',
+                airline: 'MAI',
+                issued_date: fmt(prevMonth),
+                departing_on: fmt(prevMonth),
+                base_fare: 2100000,
+                net_amount: 1900000,
+                commission: 200000,
+                paid: true,
+                account_name: 'Hla Hla Myint',
+                remarks: ''
+            },
+            {
+                id: 't1',
+                booking_reference: 'X8K2LP',
+                name: 'AUNG KYAW MOE (MR)',
+                departure: 'Yangon (RGN)',
+                destination: 'Bangkok (BKK)',
+                airline: 'MAI',
+                issued_date: fmt(d1),
+                departing_on: fmt(t1),
+                base_fare: 850000,
+                net_amount: 760000,
+                commission: 90000,
+                paid: false,
+                account_name: 'Aung Kyaw Moe',
+                remarks: ''
+            },
+            {
+                id: 't2',
+                booking_reference: 'M4N9QR',
+                name: 'SU SU WIN (MS)',
+                departure: 'Mandalay (MDL)',
+                destination: 'Chiang Mai (CNX)',
+                airline: 'Myanmar National Airlines',
+                issued_date: fmt(d2),
+                departing_on: fmt(t2),
+                base_fare: 720000,
+                net_amount: 645000,
+                commission: 75000,
+                paid: false,
+                account_name: 'Su Su Win',
+                remarks: ''
+            },
+            {
+                id: 't3',
+                booking_reference: 'P7T4VW',
+                name: 'THIDA AUNG (MRS)',
+                departure: 'Yangon (RGN)',
+                destination: 'Singapore (SIN)',
+                airline: 'Singapore Airlines',
+                issued_date: fmt(d3),
+                departing_on: fmt(t3),
+                base_fare: 1480000,
+                net_amount: 1320000,
+                commission: 160000,
+                paid: true,
+                account_name: 'Thida Aung',
+                source: 'self',
+                remarks: 'self-ticket'
+            }
+        ];
+        state.allBookings = [
+            {
+                id: 'b1',
+                pnr: 'H9L3KP',
+                name: 'KYAW ZIN HEIN',
+                departure: 'Yangon (RGN)',
+                destination: 'Bangkok (DMK)',
+                airline: 'Thai AirAsia',
+                status: 'active',
+                deadlineAt: new Date(now.getTime() - 3600 * 1000).toISOString()
+            }
+        ];
+
+        dash.initializeDashboardSelectors();
+        dash.renderDashboardData();
     });
 
-    // Wait a brief moment for styles/layout to settle
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
 
-    // Extract computed styles
-    const styles = await page.evaluate(() => {
-        const getStyles = (selector) => {
-            const el = document.querySelector(selector);
+    // Extract computed styles for Section 7 Verification Checklist
+    const report = await page.evaluate(() => {
+        const cs = (sel) => {
+            const el = document.querySelector(sel);
             if (!el) return null;
-            const cs = window.getComputedStyle(el);
+            const s = window.getComputedStyle(el);
+            const rect = el.getBoundingClientRect();
             return {
-                display: cs.display,
-                width: cs.width,
-                height: cs.height,
-                background: cs.backgroundColor,
-                color: cs.color,
-                fontSize: cs.fontSize,
-                fontWeight: cs.fontWeight,
-                padding: `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`,
-                borderRadius: cs.borderRadius,
-                borderColor: cs.borderColor,
-                borderWidth: cs.borderWidth,
-                boxShadow: cs.boxShadow,
-                fontFamily: cs.fontFamily
+                width: s.width,
+                height: s.height,
+                backgroundColor: s.backgroundColor,
+                color: s.color,
+                fontFamily: s.fontFamily,
+                fontSize: s.fontSize,
+                fontWeight: s.fontWeight,
+                letterSpacing: s.letterSpacing,
+                textTransform: s.textTransform,
+                borderRadius: s.borderRadius,
+                padding: `${s.paddingTop} ${s.paddingRight} ${s.paddingBottom} ${s.paddingLeft}`,
+                border: `${s.borderTopWidth} ${s.borderTopStyle} ${s.borderTopColor}`,
+                boxShadow: s.boxShadow,
+                overflow: s.overflow,
+                rect: { top: Math.round(rect.top), left: Math.round(rect.left), width: Math.round(rect.width), height: Math.round(rect.height) }
             };
         };
 
-        const gridStyles = (selector) => {
-            const el = document.querySelector(selector);
+        const gridInfo = (sel) => {
+            const el = document.querySelector(sel);
             if (!el) return null;
-            const cs = window.getComputedStyle(el);
+            const s = window.getComputedStyle(el);
             return {
-                display: cs.display,
-                gridTemplateColumns: cs.gridTemplateColumns,
-                gap: cs.gap
+                display: s.display,
+                gridTemplateColumns: s.gridTemplateColumns,
+                gap: s.gap
             };
         };
 
-        const sidebarMatched = [];
-        const sidebarEl = document.querySelector('.sidebar');
-        if (sidebarEl) {
-            for (const sheet of document.styleSheets) {
-                try {
-                    for (const rule of sheet.cssRules) {
-                        if (rule.selectorText && sidebarEl.matches(rule.selectorText) && rule.style && rule.style.backgroundColor) {
-                            sidebarMatched.push({ selector: rule.selectorText, bg: rule.style.backgroundColor });
-                        }
-                    }
-                } catch(e) {}
-            }
-        }
+        // Check if any KPI trend pill is clipped by its parent card
+        const kpiCards = [...document.querySelectorAll('#home-view .dashboard-kpis .info-card')];
+        const trendClipChecks = kpiCards.map((card, idx) => {
+            const cardRect = card.getBoundingClientRect();
+            const trend = card.querySelector('.trend-badge');
+            const spark = card.querySelector('.kpi-sparkline');
+            const trendRect = trend ? trend.getBoundingClientRect() : null;
+            const sparkRect = spark ? spark.getBoundingClientRect() : null;
+            const clipped = trendRect
+                ? (trendRect.bottom > cardRect.bottom + 1 || trendRect.right > cardRect.right + 1 || trendRect.left < cardRect.left - 1)
+                : false;
+            return {
+                cardIndex: idx,
+                cardOverflow: window.getComputedStyle(card).overflow,
+                clipped,
+                hasSparkline: Boolean(spark && sparkRect.width > 0)
+            };
+        });
 
         return {
-            sidebar: getStyles('.sidebar'),
-            appBody: getStyles('.app-body'),
-            header: getStyles('.header'),
-            pageTitle: getStyles('#home-view .dashboard-compact-title'),
-            kpiCard: getStyles('#home-view .dashboard-kpis .info-card'),
-            kpiLabel: getStyles('#home-view .dashboard-kpis .stat-head h3'),
-            kpiValue: getStyles('#home-view .dashboard-kpis .main-value'),
-            kpiGrid: gridStyles('#home-view .dashboard-kpis'),
-            primaryRow: gridStyles('#home-view .dashboard-primary-row'),
-            operationsRow: gridStyles('#home-view .dashboard-operations-row'),
-            chartPanelHeader: getStyles('#booking-revenue-overview-box .panel-header h3'),
-            travelPanelHeader: getStyles('#travel-schedule-box .panel-header h3'),
-            unpaidPanelHeader: getStyles('#dashboard-unpaid-box .panel-header h3'),
-            tasksPanelHeader: getStyles('#tasks-reminders-box .panel-header h3'),
-            activeNavBtn: getStyles('.sidebar-nav .nav-btn.active'),
-            bookingBadge: getStyles('.sidebar-badge.booking-badge'),
-            newSaleBtn: getStyles('#home-view .dashboard-new-sale-btn'),
-            periodControls: getStyles('#home-view .dashboard-period-controls'),
-            periodBtnActive: getStyles('#home-view .dashboard-period-btn.active')
+            bodyBg: window.getComputedStyle(document.body).backgroundColor,
+            appBodyBg: cs('.app-body')?.backgroundColor,
+            mainContentBg: cs('.main-content')?.backgroundColor,
+            homeViewBg: cs('#home-view')?.backgroundColor,
+            sidebar: cs('.sidebar'),
+            activeNav: cs('.sidebar-nav .nav-btn.active'),
+            header: cs('.header'),
+            pageTitle: cs('#home-view .dashboard-compact-title'),
+            pageSubtitle: cs('#home-view .dashboard-compact-subtitle'),
+            periodContainer: cs('#home-view .dashboard-period-controls'),
+            activePeriodPill: cs('#home-view .dashboard-period-btn.active'),
+            inactivePeriodPill: cs('#home-view .dashboard-period-btn:not(.active)'),
+            newSaleBtn: cs('#home-view .dashboard-new-sale-btn'),
+            dashboardContentGap: window.getComputedStyle(document.querySelector('#home-view #dashboard-content')).gap,
+            kpiGrid: gridInfo('#home-view .dashboard-kpis'),
+            kpiCard: cs('#home-view .dashboard-kpis .info-card'),
+            kpiLabel: cs('#home-view .dashboard-kpis .stat-head h3'),
+            kpiValue: cs('#home-view .dashboard-kpis .main-value'),
+            kpiSuffix: cs('#home-view .dashboard-kpis .currency-label'),
+            kpiSubText: cs('#home-view .dashboard-kpis .sub-value'),
+            kpiTrendBadge: cs('#home-view .dashboard-kpis .trend-badge'),
+            trendClipChecks,
+            primaryRow: gridInfo('#home-view .dashboard-primary-row'),
+            operationsRow: gridInfo('#home-view .dashboard-operations-row'),
+            panelCard: cs('#home-view .dashboard-panel'),
+            sectionTitle: cs('#home-view .panel-header h3'),
+            upcomingDateChip: cs('#home-view .travel-date-chip'),
+            upcomingAirlinePill: cs('#home-view .travel-progress small'),
+            unpaidTotalValue: cs('#home-view .unpaid-summary-grid > div:first-child strong'),
+            tableHeader: cs('#home-view .dashboard-mini-table thead th'),
+            tableCell: cs('#home-view .dashboard-mini-table tbody td'),
+            unpaidPnr: cs('#home-view #dashboardUnpaidTickets .clickable-pnr'),
+            unpaidClient: cs('#home-view .unpaid-client-primary'),
+            unpaidStatusPill: cs('#home-view .unpaid-status-pill'),
+            deadlineCard: cs('#home-view .dashboard-auto-task'),
+            deadlineStatus: cs('#home-view .dashboard-auto-task .dashboard-status'),
+            chartColors: {
+                revenueVar: window.getComputedStyle(document.body).getPropertyValue('--chart-revenue').trim(),
+                profitVar: window.getComputedStyle(document.body).getPropertyValue('--chart-profit').trim()
+            }
         };
     });
 
-    console.log('--- COMPUTED STYLES ---');
-    console.log(JSON.stringify(styles, null, 2));
+    console.log('--- SECTION 7 COMPUTED STYLES REPORT ---');
+    console.log(JSON.stringify(report, null, 2));
 
-    // Save screenshot
+    // Save 1440x900 screenshot
     const screenshotPath = path.join(ROOT, 'dashboard-exact-match-1440x900.png');
     await page.screenshot({ path: screenshotPath, fullPage: false });
     console.log(`Screenshot saved to: ${screenshotPath}`);
 
-    // Also copy to artifacts directory
     const artifactDir = '/Users/tashido/.gemini/antigravity/brain/77e92fe5-aee9-43c1-ae67-c6f5b5b70a77';
     if (fs.existsSync(artifactDir)) {
         fs.copyFileSync(screenshotPath, path.join(artifactDir, 'dashboard-exact-match-1440x900.png'));
         console.log(`Screenshot copied to artifact dir: ${path.join(artifactDir, 'dashboard-exact-match-1440x900.png')}`);
+    }
+
+    // Check responsive widths for horizontal page overflow
+    const viewports = [
+        { width: 1440, height: 900 },
+        { width: 1280, height: 800 },
+        { width: 768, height: 1024 },
+        { width: 390, height: 844 }
+    ];
+    for (const vp of viewports) {
+        await page.setViewportSize(vp);
+        await page.waitForTimeout(150);
+        const overflow = await page.evaluate(() => {
+            return document.documentElement.scrollWidth > window.innerWidth;
+        });
+        console.log(`Viewport ${vp.width}x${vp.height} horizontal page overflow: ${overflow}`);
+    }
+
+    console.log(`Console errors count: ${consoleErrors.length}`);
+    if (consoleErrors.length > 0) {
+        console.log('Console errors:', consoleErrors);
     }
 
     await browser.close();
