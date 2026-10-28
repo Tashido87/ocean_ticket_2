@@ -442,6 +442,7 @@ body.material-theme .header .search-bar {
     justify-content: center !important;
 }
 
+body .header .global-search-box #globalSearchInput,
 .header #globalSearchInput,
 .header .search-bar input {
     font-size: 12.5px !important;
@@ -449,10 +450,12 @@ body.material-theme .header .search-bar {
     color: #0D2B33 !important;
     background: transparent !important;
     border: none !important;
+    border-radius: 0 !important;
     outline: none !important;
     box-shadow: none !important;
     width: 100% !important;
     height: 100% !important;
+    min-height: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
 }

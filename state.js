@@ -23,7 +23,7 @@ export const state = {
         airlineChart: null
     },
     isSubmitting: false,
-    rowsPerPage: 15,
+    rowsPerPage: 20,
     currentPage: 1,
     bookingCurrentPage: 1,
     historyPage: 1,
