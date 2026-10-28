@@ -192,7 +192,7 @@ body.material-theme .sidebar-header {
     text-transform: uppercase !important;
     letter-spacing: 0.05em !important;
     color: #8299A1 !important;
-    padding: 6px 8px 4px !important;
+    padding: 6px 8px 10px !important;
     margin: 0 !important;
 }
 
@@ -202,7 +202,7 @@ body.material-theme .sidebar-nav,
 body.material-theme .sidebar-menu {
     display: flex !important;
     flex-direction: column !important;
-    gap: 3px !important;
+    gap: 8px !important;
     padding: 0 !important;
     margin: 0 !important;
     list-style: none !important;
@@ -215,13 +215,13 @@ body.material-theme .sidebar-menu li a {
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
-    height: 34px !important;
-    min-height: 34px !important;
+    height: 38px !important;
+    min-height: 38px !important;
     padding: 0 9px !important;
     border-radius: 8px !important;
     font-size: 13px !important;
     font-weight: 500 !important;
-    color: #46626B !important;
+    color: #000000 !important;
     background: transparent !important;
     border: 1px solid transparent !important;
     box-shadow: none !important;
@@ -239,7 +239,7 @@ body.material-theme .sidebar-menu li a i {
     width: 16px !important;
     font-size: 13px !important;
     text-align: center !important;
-    color: #8299A1 !important;
+    color: #1F2D33 !important;
     background: transparent !important;
     box-shadow: none !important;
 }
@@ -249,7 +249,7 @@ body.material-theme .sidebar-menu li a i {
 body.material-theme .sidebar-nav .nav-btn:hover,
 body.material-theme .sidebar-menu li a:hover {
     background: #F8FBFB !important;
-    color: #0D2B33 !important;
+    color: #000000 !important;
     transform: none !important;
 }
 
