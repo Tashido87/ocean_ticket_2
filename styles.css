@@ -4414,9 +4414,10 @@ body.material-theme.dark-theme .notification-count {
 
 /* ---------- Dashboard grid ---------- */
 #services-view {
-    padding: 1.5rem 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
+    padding: 0.25rem 0 1.5rem;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
 }
 
 .services-dashboard {

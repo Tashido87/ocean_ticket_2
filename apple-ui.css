@@ -3098,6 +3098,14 @@ body.material-theme .datepicker-cell.disabled {
    Minimal Dropzone & Action Button Standard across Invoice, Agoda, AirAsia
    ========================================================================== */
 
+#services-view {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 4px 0 24px !important;
+    box-sizing: border-box !important;
+}
+
 #services-view .service-panel {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
@@ -3263,29 +3271,43 @@ body.material-theme .datepicker-cell.disabled {
 
 .service-quick-grid {
     display: grid;
-    grid-template-columns: minmax(170px, 1.35fr) minmax(130px, 1.1fr) minmax(120px, 1fr) minmax(70px, 0.65fr) minmax(110px, 0.95fr) minmax(110px, 0.95fr);
-    gap: 10px;
+    grid-template-columns: 1.4fr 1.15fr 1.15fr 0.85fr 1fr 1fr;
+    gap: 12px;
     margin-bottom: 8px;
+    align-items: end;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1080px) {
     .service-quick-grid {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .service-quick-grid {
+        grid-template-columns: 1fr;
     }
 }
 
 .service-quick-grid .form-group {
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-width: 0;
 }
 
 .service-quick-grid label {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-weight: 600;
     color: #64748B;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .service-quick-grid input,

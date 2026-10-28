@@ -2647,8 +2647,22 @@ function initializeAirAsiaGenerator() {
 }
 
 // --- CHINA VISA HOTEL BOOKING (AGODA) GENERATOR LOGIC ---
+function ensureServiceHotelCountryInput() {
+    const quickClientGroup = document.getElementById('service_hotel_client_name')?.closest('.form-group');
+    if (quickClientGroup && !document.getElementById('service_hotel_country')) {
+        const countryGroup = document.createElement('div');
+        countryGroup.className = 'form-group';
+        countryGroup.innerHTML = `
+            <label for="service_hotel_country">Country of Resident</label>
+            <input type="text" id="service_hotel_country" value="Myanmar" placeholder="Myanmar">
+        `;
+        quickClientGroup.insertAdjacentElement('afterend', countryGroup);
+    }
+}
+
 let chinaHotelGeneratorInitialized = false;
 function initializeChinaHotelGenerator() {
+    ensureServiceHotelCountryInput();
     if (chinaHotelGeneratorInitialized) return;
     chinaHotelGeneratorInitialized = true;
     loadDocumentLibraries('pdf').catch(() => {});
@@ -3184,6 +3198,7 @@ window.onload = async () => {
     resetBookingPassengerForms();
     initializePaymentMethodEnhancements();
     initializeSellFormEnhancements();
+    ensureServiceHotelCountryInput();
 
     // Register PWA Service Worker with updateViaCache: 'none' so deploys take effect immediately
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
