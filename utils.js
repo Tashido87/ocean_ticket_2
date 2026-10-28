@@ -672,9 +672,9 @@ export function renderAirlineName(airline, options = {}) {
         : '';
 
     return `
-        <span class="${classes.join(' ')}">
+        <span class="${classes.join(' ')}" title="${escapeHtml(label)}">
             <span class="airline-logo-mark ${logoUrl ? '' : 'is-fallback'}" data-initials="${escapeHtml(initials)}">${logo}</span>
-            <span class="airline-name-text">${escapeHtml(label)}</span>
+            <span class="airline-name-text" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
         </span>
     `;
 }

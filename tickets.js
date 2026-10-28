@@ -187,7 +187,7 @@ const RECORDS_OPTIONAL_COLUMNS = [
 ];
 
 function getDefaultColumnVisibility() {
-    const isCompactLaptop = typeof window !== 'undefined' && window.innerWidth <= 1440;
+    const isCompactLaptop = typeof window !== 'undefined' && window.innerWidth < 1200;
     return {
         issued_date: true,
         route: true,
@@ -466,12 +466,16 @@ export function displayTickets(tickets, page = 1) {
                 ? escapeHtml(`${ticket.hotel_name} (${ticket.city}, ${ticket.country})`) 
                 : escapeHtml(routeShort(ticket)));
 
+        const rawAirlineLabel = isGroup
+            ? (ticket.tickets[0]?._isHotel ? 'Hotel' : String(ticket.tickets[0]?.airline || '').trim() || '—')
+            : (ticket._isHotel ? 'Hotel' : String(ticket.airline || '').trim() || '—');
+
         const airlineText = isGroup 
             ? (ticket.tickets[0]?._isHotel 
-                ? `<span style="font-weight:600; color:#0D6E77;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
+                ? `<span style="font-weight:600; color:#0F7781;" title="Hotel"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
                 : renderAirlineName(ticket.tickets[0]?.airline || ''))
             : (ticket._isHotel 
-                ? `<span style="font-weight:600; color:#0D6E77;"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
+                ? `<span style="font-weight:600; color:#0F7781;" title="Hotel"><i class="fa-solid fa-hotel"></i> Hotel</span>` 
                 : renderAirlineName(ticket.airline || ''));
 
         let netAmountHtml;
@@ -561,7 +565,7 @@ export function displayTickets(tickets, page = 1) {
             <td class="col-name col-pinned" title="${escapeHtml(isGroup ? (ticket.tickets[0]?.name || '') : (ticket.name || ''))}">${nameCell}</td>
             <td class="col-pnr col-pinned">${pnrCellHtml}</td>
             <td class="route-cell col-route" data-col="route" title="${routeText}">${routeText}</td>
-            <td class="col-airline" data-col="airline">${airlineText}</td>
+            <td class="col-airline" data-col="airline" title="${escapeHtml(rawAirlineLabel)}">${airlineText}</td>
             <td class="num-cell col-net-amount" data-col="net_amount">${netAmountHtml}</td>
             <td class="num-cell commission-td col-commission" data-col="commission">${commissionHtml}</td>
             <td class="num-cell col-extra-fare" data-col="extra_fare">${extraFareHtml}</td>
@@ -936,7 +940,7 @@ export function showDetails(docId) {
         <style>
             /* Styling for the aesthetic details modal */
             .solid-modal {
-                background: #F8FAFC !important;
+                background: #F8FBFB !important;
                 padding: 0 !important;
                 border-radius: 18px !important;
                 overflow: hidden !important;
@@ -951,15 +955,15 @@ export function showDetails(docId) {
 
             .aesthetic-details-container {
                 font-family: 'Inter', system-ui, -apple-system, sans-serif;
-                color: #1e293b;
-                background: #f8fafc;
+                color: #17333B;
+                background: #F8FBFB;
                 display: flex;
                 flex-direction: column;
             }
 
             /* Ocean Teal gradient header */
             .aesthetic-header-banner {
-                background: linear-gradient(135deg, #0D6E77 0%, #06393E 100%);
+                background: linear-gradient(135deg, #0F7781 0%, #0C6670 100%);
                 padding: 1.75rem 1.5rem;
                 display: flex;
                 align-items: center;
@@ -980,7 +984,7 @@ export function showDetails(docId) {
 
             .aesthetic-header-banner .city-name {
                 font-size: 1.5rem;
-                font-weight: 800;
+                font-weight: 700;
                 letter-spacing: -0.02em;
                 line-height: 1.15;
             }
@@ -1027,14 +1031,14 @@ export function showDetails(docId) {
                 background: #ffffff;
                 border-radius: 14px;
                 padding: 1.1rem 1.25rem;
-                border: 1px solid rgba(226, 232, 240, 0.8);
+                border: 1px solid #E9F0F0;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
             }
 
             .aesthetic-card .card-label-tiny {
                 font-size: 0.68rem;
                 font-weight: 700;
-                color: #94a3b8;
+                color: #789097;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
                 margin-bottom: 0.5rem;
@@ -1051,8 +1055,8 @@ export function showDetails(docId) {
 
             .aesthetic-card .pnr-value {
                 font-size: 1.35rem;
-                font-weight: 800;
-                color: #0D6E77;
+                font-weight: 700;
+                color: #0C6670;
                 letter-spacing: 0.02em;
                 font-family: monospace;
             }
@@ -1078,7 +1082,7 @@ export function showDetails(docId) {
             .grid-col-item .grid-label {
                 font-size: 0.68rem;
                 font-weight: 700;
-                color: #94a3b8;
+                color: #789097;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
             }
@@ -1086,14 +1090,14 @@ export function showDetails(docId) {
             .grid-col-item .grid-val-bold {
                 font-size: 0.95rem;
                 font-weight: 700;
-                color: #1e293b;
+                color: #17333B;
                 display: flex;
                 align-items: center;
                 gap: 0.4rem;
             }
 
             .grid-col-item .grid-val-bold i {
-                color: #64748b;
+                color: #789097;
                 font-size: 0.85rem;
             }
 
@@ -1114,7 +1118,7 @@ export function showDetails(docId) {
                 width: 38px;
                 height: 38px;
                 border-radius: 50%;
-                background: #0D6E77;
+                background: #0F7781;
                 color: #ffffff;
                 font-weight: 700;
                 font-size: 0.9rem;
@@ -1134,7 +1138,7 @@ export function showDetails(docId) {
             .roster-info .name {
                 font-size: 0.9rem;
                 font-weight: 700;
-                color: #0f172a;
+                color: #17333B;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -1142,7 +1146,7 @@ export function showDetails(docId) {
 
             .roster-info .sub {
                 font-size: 0.72rem;
-                color: #64748b;
+                color: #789097;
                 margin-top: 0.1rem;
                 line-height: 1.3;
             }
@@ -1158,7 +1162,7 @@ export function showDetails(docId) {
             .roster-price-status .price {
                 font-size: 0.85rem;
                 font-weight: 700;
-                color: #0f172a;
+                color: #17333B;
             }
 
             .status-badge-pill {
@@ -1170,29 +1174,29 @@ export function showDetails(docId) {
             }
 
             .status-badge-pill.is-paid {
-                background: #ecfdf5;
-                color: #047857;
-                border: 1px solid #a7f3d0;
+                background: #E8F8F0;
+                color: #2FAE7B;
+                border: 1px solid #E8F8F0;
             }
 
             .status-badge-pill.is-partial {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
+                background: #FFF5DE;
+                color: #E9A33A;
+                border: 1px solid #FFF5DE;
             }
 
             .status-badge-pill.is-unpaid {
-                background: #fef2f2;
-                color: #b91c1c;
-                border: 1px solid #fecaca;
+                background: #FFF0EC;
+                color: #F07864;
+                border: 1px solid #FFF0EC;
             }
 
             /* Outstanding / Profit color */
             .outstanding-text, .profit-text {
                 font-weight: 700;
             }
-            .outstanding-text.green, .profit-text.green { color: #047857; }
-            .outstanding-text.red, .profit-text.red { color: #b91c1c; }
+            .outstanding-text.green, .profit-text.green { color: #2FAE7B; }
+            .outstanding-text.red, .profit-text.red { color: #F07864; }
 
             /* Roster item list */
             .aesthetic-body-content::-webkit-scrollbar {
@@ -1202,7 +1206,7 @@ export function showDetails(docId) {
                 background: transparent;
             }
             .aesthetic-body-content::-webkit-scrollbar-thumb {
-                background: #cbd5e1;
+                background: #DCE8E7;
                 border-radius: 3px;
             }
 
@@ -1210,7 +1214,7 @@ export function showDetails(docId) {
             .aesthetic-actions {
                 padding: 1rem 1.25rem 1.25rem;
                 background: #ffffff;
-                border-top: 1px solid #f1f5f9;
+                border-top: 1px solid #E9F0F0;
                 display: flex;
                 gap: 0.75rem;
                 justify-content: center;
@@ -1221,8 +1225,8 @@ export function showDetails(docId) {
                 padding: 0.625rem 1.5rem;
                 border-radius: 9999px;
                 background: #ffffff;
-                border: 1px solid #cbd5e1;
-                color: #475569;
+                border: 1px solid #DCE8E7;
+                color: #294A52;
                 font-size: 0.875rem;
                 font-weight: 600;
                 cursor: pointer;
@@ -1231,15 +1235,15 @@ export function showDetails(docId) {
             }
 
             .btn-aesthetic-close:hover {
-                background: #f8fafc;
-                border-color: #94a3b8;
-                color: #1e293b;
+                background: #F8FBFB;
+                border-color: #9BAEB3;
+                color: #17333B;
             }
 
             .btn-aesthetic-edit {
                 padding: 0.625rem 1.5rem;
                 border-radius: 9999px;
-                background: #0D6E77;
+                background: #0F7781;
                 border: none;
                 color: #ffffff;
                 font-size: 0.875rem;
@@ -1249,13 +1253,13 @@ export function showDetails(docId) {
                 align-items: center;
                 gap: 0.4rem;
                 transition: all 0.2s ease;
-                box-shadow: 0 4px 12px rgba(13, 110, 119, 0.2);
+                box-shadow: 0 4px 12px rgba(15, 119, 129, 0.2);
                 outline: none;
             }
 
             .btn-aesthetic-edit:hover {
-                background: #094F56;
-                box-shadow: 0 4px 16px rgba(13, 110, 119, 0.3);
+                background: #0C6670;
+                box-shadow: 0 4px 16px rgba(15, 119, 129, 0.3);
             }
         </style>
 
@@ -1379,7 +1383,7 @@ export function showDetails(docId) {
                                     <i class="${clientSocialMeta.icon}"></i>
                                     <span class="pnr-social-link-label">${escapeHtml(clientSocialMeta.label)}</span>
                                     <i class="fa-solid fa-arrow-up-right-from-square pnr-social-link-arrow"></i>
-                                </a>` : (clientAccType ? `<div style="font-size:0.75rem; color:#64748b; font-weight:500;">${escapeHtml(clientAccType)}</div>` : '')}
+                                </a>` : (clientAccType ? `<div style="font-size:0.75rem; color:#789097; font-weight:500;">${escapeHtml(clientAccType)}</div>` : '')}
                             </span>
                         </div>
                         <div class="grid-col-item">

@@ -28,10 +28,10 @@ body.dark-theme {
 
 html,
 body,
-input,
-button,
-select,
-textarea {
+input:not(#records-view *),
+button:not(#records-view *),
+select:not(#records-view *),
+textarea:not(#records-view *) {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Padauk', 'Pyidaungsu', 'Myanmar Text', sans-serif !important;
 }
 
@@ -82,14 +82,14 @@ button:active,
 }
 
 /* Primary buttons */
-.btn-primary,
+.btn-primary:not(#records-view *),
 .manage-action-btn.primary {
     background-color: var(--primary-accent) !important;
     border-color: var(--primary-accent) !important;
     color: #ffffff !important;
 }
 
-.btn-primary:hover,
+.btn-primary:not(#records-view *):hover,
 .manage-action-btn.primary:hover {
     background-color: var(--primary-accent-dark);
     border-color: var(--primary-accent-dark);
@@ -97,21 +97,21 @@ button:active,
 }
 
 /* Secondary buttons */
-.btn-secondary,
+.btn-secondary:not(#records-view *),
 .btn-service.btn-secondary {
     background-color: var(--surface-2);
     border-color: var(--border-color);
     color: var(--text-primary);
 }
 
-.btn-secondary:hover,
+.btn-secondary:not(#records-view *):hover,
 .btn-service.btn-secondary:hover {
     background-color: var(--surface-3, var(--border-color));
     color: var(--text-primary);
 }
 
 /* Dark mode button contrast */
-body.dark-theme .btn-secondary,
+body.dark-theme .btn-secondary:not(#records-view *),
 body.dark-theme .btn-service.btn-secondary,
 body.dark-theme .btn-clear {
     background-color: var(--surface-2);
@@ -120,9 +120,9 @@ body.dark-theme .btn-clear {
 }
 
 /* 4. Unified Inputs, Selects & Textareas (15px desktop, 16px mobile, comfortable height) */
-input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
-select,
-textarea {
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(#records-view *),
+select:not(#records-view *),
+textarea:not(#records-view *) {
     font-size: 15px !important;
     line-height: 1.4 !important;
     min-height: 38px;
@@ -134,30 +134,30 @@ textarea {
     transition: border-color 140ms ease, box-shadow 140ms ease !important;
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus,
-select:focus,
-textarea:focus {
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(#records-view *):focus,
+select:not(#records-view *):focus,
+textarea:not(#records-view *):focus {
     border-color: var(--primary-accent);
     outline: 2px solid var(--primary-accent);
     outline-offset: 1px;
 }
 
-body.dark-theme input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
-body.dark-theme select,
-body.dark-theme textarea {
+body.dark-theme input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(#records-view *),
+body.dark-theme select:not(#records-view *),
+body.dark-theme textarea:not(#records-view *) {
     background-color: var(--surface) !important;
     color: var(--text-primary) !important;
     border-color: var(--border-color) !important;
 }
 
-input::placeholder,
-textarea::placeholder {
+input:not(#records-view *)::placeholder,
+textarea:not(#records-view *)::placeholder {
     color: var(--text-faint, #64748B);
     font-size: 14px;
 }
 
-body.dark-theme input::placeholder,
-body.dark-theme textarea::placeholder {
+body.dark-theme input:not(#records-view *)::placeholder,
+body.dark-theme textarea:not(#records-view *)::placeholder {
     color: var(--text-faint, #94A3B8);
     font-size: 14px;
 }
@@ -212,9 +212,9 @@ body.dark-theme textarea::placeholder {
 
 /* Mobile form inputs: strictly 16px (no iOS auto-zoom, clear readability) */
 @media (max-width: 768px) {
-    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
-    select,
-    textarea {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(#records-view *),
+    select:not(#records-view *),
+    textarea:not(#records-view *) {
         font-size: 16px;
         min-height: 42px;
     }
@@ -223,7 +223,7 @@ body.dark-theme textarea::placeholder {
 /* 5. Unified Cards & Panels */
 .dashboard-card,
 .form-container,
-.results-section,
+.results-section:not(#recordsSection),
 .booking-kpi-card,
 .manage-kpi,
 .pax-panel,
@@ -237,7 +237,7 @@ body.dark-theme textarea::placeholder {
 
 body.dark-theme .dashboard-card,
 body.dark-theme .form-container,
-body.dark-theme .results-section,
+body.dark-theme .results-section:not(#recordsSection),
 body.dark-theme .booking-kpi-card,
 body.dark-theme .manage-kpi,
 body.dark-theme .pax-panel,
@@ -294,46 +294,46 @@ body.dark-theme .dialog-content {
 }
 
 /* 7. Unified Tables */
-table,
-.table {
+table:not(#records-view *),
+.table:not(#records-view *) {
     background-color: var(--surface);
     color: var(--text-primary);
 }
 
-th {
+th:not(#records-view *) {
     background-color: var(--surface-2);
     color: var(--text-secondary);
     border-bottom: 1px solid var(--border-color);
 }
 
-td {
+td:not(#records-view *) {
     color: var(--text-primary) !important;
     border-bottom: 1px solid var(--border-color) !important;
 }
 
-tbody tr:hover td {
+tbody tr:hover td:not(#records-view *) {
     background-color: var(--surface-2) !important;
 }
 
-body.dark-theme th {
+body.dark-theme th:not(#records-view *) {
     background-color: var(--surface-2);
     color: var(--text-secondary);
     border-color: var(--border-color);
 }
 
-body.dark-theme td {
+body.dark-theme td:not(#records-view *) {
     color: var(--text-primary) !important;
     border-color: var(--border-color) !important;
 }
 
-body.dark-theme tbody tr:hover td {
+body.dark-theme tbody tr:hover td:not(#records-view *) {
     background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
 /* 8. Unified Status Badges & Chips */
-.badge,
-.status-badge,
-.tag {
+.badge:not(#records-view *),
+.status-badge:not(#records-view *),
+.tag:not(#records-view *) {
     border-radius: var(--radius-pill, 999px) !important;
     font-weight: 600 !important;
     font-size: 11px !important;
@@ -342,7 +342,7 @@ body.dark-theme tbody tr:hover td {
 }
 
 .badge-success,
-.status-paid,
+.status-paid:not(#records-view *),
 .status-confirmed,
 .status-verified {
     background-color: var(--success-soft);
@@ -352,14 +352,14 @@ body.dark-theme tbody tr:hover td {
 
 .badge-warning,
 .status-pending,
-.status-partial {
+.status-partial:not(#records-view *) {
     background-color: var(--warning-soft);
     color: var(--warning);
     border: 1px solid rgba(217, 119, 6, 0.25);
 }
 
 .badge-danger,
-.status-unpaid,
+.status-unpaid:not(#records-view *),
 .status-cancelled {
     background-color: var(--danger-soft);
     color: var(--danger);
@@ -399,15 +399,15 @@ h1:not(#home-view *),
 }
 
 /* Section heading: 17–20px */
-h2,
-h3,
-.section-heading,
-.section-title,
-.card-title,
+h2:not(#records-view *),
+h3:not(#records-view *),
+.section-heading:not(#records-view *),
+.section-title:not(#records-view *),
+.card-title:not(#records-view *),
 .dashboard-card-title,
 .service-panel-header h2,
 .form-container h2,
-.results-section h3,
+.results-section:not(#recordsSection) h3,
 #manage-view h2,
 #manage-view h3,
 #services-view h2,
@@ -422,10 +422,10 @@ h3,
 
 /* Body / table: 14–16px */
 body,
-p:not(#home-view *),
-table td:not(#home-view *),
-.table td:not(#home-view *),
-.data-cell:not(#home-view *),
+p:not(#home-view *):not(#records-view *),
+table td:not(#home-view *):not(#records-view *),
+.table td:not(#home-view *):not(#records-view *),
+.data-cell:not(#home-view *):not(#records-view *),
 .document-card,
 .doc-info,
 #modificationHistoryTable td,
@@ -435,18 +435,18 @@ table td:not(#home-view *),
 }
 
 /* Secondary labels: 12–13px (with guaranteed >= 4.5:1 contrast) */
-.secondary-label:not(#home-view *),
-.text-muted:not(#home-view *),
-.form-hint:not(#home-view *),
-.section-subtitle:not(#home-view *),
-.service-panel-desc:not(#home-view *),
-.form-group label:not(#home-view *),
-.form-label:not(#home-view *),
-.doc-meta:not(#home-view *),
-.activity-meta:not(#home-view *),
-.audit-note:not(#home-view *),
-.settle-section-subtitle:not(#home-view *),
-small:not(#home-view *) {
+.secondary-label:not(#home-view *):not(#records-view *),
+.text-muted:not(#home-view *):not(#records-view *),
+.form-hint:not(#home-view *):not(#records-view *),
+.section-subtitle:not(#home-view *):not(#records-view *),
+.service-panel-desc:not(#home-view *):not(#records-view *),
+.form-group label:not(#home-view *):not(#records-view *),
+.form-label:not(#home-view *):not(#records-view *),
+.doc-meta:not(#home-view *):not(#records-view *),
+.activity-meta:not(#home-view *):not(#records-view *),
+.audit-note:not(#home-view *):not(#records-view *),
+.settle-section-subtitle:not(#home-view *):not(#records-view *),
+small:not(#home-view *):not(#records-view *) {
     font-size: 13px !important;
     line-height: 1.4 !important;
     color: var(--text-secondary);

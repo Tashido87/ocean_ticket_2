@@ -1726,3 +1726,1227 @@ body.material-theme .header .search-bar {
         justify-content: center !important;
     }
 }
+
+
+/* ==========================================================================
+   12. RECORDS PAGE — CONSOLIDATED DASHBOARD-ALIGNED SYSTEM (#records-view)
+   Sections 2–6: Exact teal-tinted tokens, Inter compact typography,
+   single table card, 38–42px rows, and responsive breakpoints.
+   ========================================================================== */
+
+#records-view {
+    /* Section 2: Exact colour system — Neutrals (teal-tinted, NOT slate) */
+    --app-bg: #F3F7F7;
+    --surface: #FFFFFF;
+    --surface-soft: #F8FBFB;
+    --sidebar-bg: #FAFCFC;
+    --border: #DCE8E7;
+    --border-soft: #E9F0F0;
+
+    /* Text — teal-slate, NOT slate-900/600/500 */
+    --text-strong: #17333B;
+    --text: #294A52;
+    --text-muted: #789097;
+    --text-faint: #9BAEB3;
+
+    /* Primary */
+    --teal-700: #0C6670;
+    --teal-600: #0F7781;
+    --teal-500: #238E98;
+    --teal-100: #DDF1F1;
+    --teal-050: #EFF8F8;
+
+    /* Semantic accents — restrained, small areas only */
+    --mint: #2FAE7B;
+    --mint-soft: #E8F8F0;
+    --coral: #F07864;
+    --coral-soft: #FFF0EC;
+    --amber: #E9A33A;
+    --amber-soft: #FFF5DE;
+    --sky: #55AFCB;
+    --sky-soft: #EAF7FB;
+    --violet: #8A78D6;
+    --violet-soft: #F0EDFF;
+
+    --danger: #E65353;
+    --danger-soft: #FDEBEC;
+
+    --shadow-sm: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05);
+    --shadow-hover: 0 8px 24px rgba(23, 51, 59, 0.09);
+    --records-focus-ring: 0 0 0 3px rgba(15, 119, 129, 0.18);
+
+    /* Section 3: Exact typography — Inter only */
+    --records-font: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    font-family: var(--records-font);
+    color: var(--text);
+    background-color: var(--app-bg);
+}
+
+/* Defeats global body/main-content #FFFFFF !important rule in Section 1 above when #records-view is active */
+body:has(#records-view.active),
+body.material-theme:has(#records-view.active),
+body:has(#records-view.active) .main-container,
+body:has(#records-view.active) .app-container,
+body:has(#records-view.active) .app-body,
+body:has(#records-view.active) .main-content,
+body.material-theme:has(#records-view.active) .main-content,
+#records-view,
+#records-view .records-view-wrapper {
+    background: #F3F7F7 !important;
+    background-color: #F3F7F7 !important;
+    background-image: none !important;
+}
+
+body:has(#records-view.active) .main-content,
+body.material-theme:has(#records-view.active) .main-content {
+    padding: 14px 16px !important;
+}
+
+#records-view,
+#records-view *:not(i):not(.fa-solid):not(.fa-regular):not(.fa-brands):not(.fas):not(.far):not(.fab) {
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    box-sizing: border-box;
+}
+
+#records-view *::before,
+#records-view *::after {
+    box-sizing: border-box;
+}
+
+#records-view i.fa-solid,
+#records-view i.fa-solid::before,
+#records-view i.fas,
+#records-view i.fas::before {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+}
+
+#records-view i.fa-regular,
+#records-view i.fa-regular::before,
+#records-view i.far,
+#records-view i.far::before {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 400 !important;
+}
+
+#records-view i.fa-brands,
+#records-view i.fa-brands::before,
+#records-view i.fab,
+#records-view i.fab::before {
+    font-family: "Font Awesome 6 Brands" !important;
+    font-weight: 400 !important;
+}
+
+/* Main Records layout wrapper — no outer double card */
+#records-view .records-view-wrapper {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+#records-view #recordsSection.results-section {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 12.1 Page Header (Plain background, left icon + title/subtitle, right presets + actions) */
+#records-view .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    flex-wrap: wrap;
+}
+
+#records-view .records-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+#records-view .records-header-icon {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 9px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+#records-view .results-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: var(--text-strong);
+    margin: 0;
+    padding: 0;
+}
+
+#records-view .records-subtitle {
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--text-muted);
+    margin: 2px 0 0 0;
+    padding: 0;
+}
+
+/* Period Segmented Control (This Month, Last Month, All Time) */
+#records-view .records-presets {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 2px;
+    gap: 2px;
+    margin-left: auto;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+#records-view .records-preset-btn {
+    height: 26px;
+    min-height: 26px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 26px;
+    letter-spacing: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    box-shadow: none;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+#records-view .records-preset-btn:hover:not(.active) {
+    background: var(--teal-050);
+    color: var(--text-strong);
+}
+
+#records-view .records-preset-btn.active {
+    background: var(--teal-600);
+    color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(23, 51, 59, 0.08);
+}
+
+/* Header Action Controls (Edit Mode, Columns, Export) */
+#records-view .records-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+#records-view #editModeBtn,
+#records-view #recordsColumnsDropdownBtn {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 11px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: none;
+    white-space: nowrap;
+}
+
+#records-view #editModeBtn:hover,
+#records-view #recordsColumnsDropdownBtn:hover {
+    background: var(--teal-050);
+    border-color: var(--border);
+    color: var(--teal-700);
+}
+
+#records-view #editModeBtn.active {
+    background: var(--teal-600);
+    border-color: var(--teal-600);
+    color: #FFFFFF;
+    box-shadow: var(--records-focus-ring);
+}
+
+#records-view #recordsExportDropdownBtn {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: var(--teal-600);
+    background-image: none;
+    border: 1px solid var(--teal-600);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: none;
+    white-space: nowrap;
+}
+
+#records-view #recordsExportDropdownBtn:hover {
+    background: var(--teal-700);
+    background-image: none;
+    border-color: var(--teal-700);
+    color: #FFFFFF;
+}
+
+#records-view .dropdown-chevron {
+    font-size: 9px;
+    margin-left: 1px;
+    opacity: 0.8;
+    transition: transform 0.16s ease;
+}
+
+#records-view .export-dropdown.is-open .dropdown-chevron,
+#records-view .columns-dropdown.is-open .dropdown-chevron {
+    transform: rotate(180deg);
+}
+
+#records-view .records-col-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    background: var(--teal-100);
+    color: var(--teal-700);
+}
+
+/* Columns & Export Dropdown Menus */
+#records-view .columns-dropdown,
+#records-view .export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+#records-view .columns-dropdown-menu,
+#records-view .export-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-hover);
+    z-index: 80;
+}
+
+#records-view .columns-dropdown-menu {
+    min-width: 240px;
+    padding: 10px 12px;
+}
+
+#records-view .export-dropdown-menu {
+    min-width: 215px;
+    padding: 5px;
+}
+
+#records-view .columns-dropdown.is-open .columns-dropdown-menu,
+#records-view .export-dropdown.is-open .export-dropdown-menu {
+    display: block;
+}
+
+#records-view .columns-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+#records-view .columns-dropdown-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+#records-view .columns-preset-btns {
+    display: inline-flex;
+    gap: 4px;
+}
+
+#records-view .columns-preset-btn {
+    padding: 3px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
+    color: var(--text);
+    cursor: pointer;
+}
+
+#records-view .columns-preset-btn:hover {
+    background: var(--teal-600);
+    border-color: var(--teal-600);
+    color: #FFFFFF;
+}
+
+#records-view .columns-pinned-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface-soft);
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    line-height: 1.35;
+}
+
+#records-view .columns-pinned-note i {
+    color: var(--teal-600);
+    margin-top: 2px;
+}
+
+#records-view .columns-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+#records-view .column-toggle-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+}
+
+#records-view .column-toggle-item:hover {
+    background: var(--teal-050);
+}
+
+#records-view .column-toggle-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--teal-600);
+    cursor: pointer;
+    margin: 0;
+}
+
+#records-view .export-dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+}
+
+#records-view .export-dropdown-menu .dropdown-item:hover {
+    background: var(--teal-050);
+}
+
+#records-view .export-icon-excel { color: var(--mint); font-size: 14px; }
+#records-view .export-icon-agent { color: var(--sky); font-size: 14px; }
+#records-view .export-icon-private { color: var(--teal-600); font-size: 14px; }
+
+#records-view .dropdown-item-title {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1.25;
+}
+
+#records-view .dropdown-item-desc {
+    display: block;
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+/* 12.2 Filter Bar (One compact row, 32–34px controls, 8px radius, soft border, teal focus ring) */
+#records-view .records-filter-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    flex-wrap: wrap;
+}
+
+#records-view .filter-search-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 33px;
+    min-height: 33px;
+    padding: 0 10px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    flex: 2 1 190px;
+    min-width: 160px;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+#records-view .filter-pnr-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 33px;
+    min-height: 33px;
+    padding: 0 10px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    flex: 1 1 115px;
+    min-width: 100px;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+#records-view .filter-search-group:focus-within,
+#records-view .filter-pnr-group:focus-within {
+    border-color: var(--teal-600);
+    box-shadow: var(--records-focus-ring);
+}
+
+#records-view .filter-search-group .filter-icon,
+#records-view .filter-pnr-group .filter-icon {
+    color: var(--text-muted);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+#records-view .filter-search-group input,
+#records-view .filter-pnr-group input {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 31px;
+    min-height: 31px;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--text);
+    outline: none;
+    box-shadow: none;
+}
+
+#records-view .filter-pnr-group input {
+    font-weight: 500;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+}
+
+#records-view .filter-search-group input::placeholder,
+#records-view .filter-pnr-group input::placeholder {
+    color: var(--text-faint);
+    font-size: 11.5px;
+    font-weight: 400;
+    text-transform: none;
+}
+
+#records-view .filter-select-group {
+    flex: 1 1 125px;
+    min-width: 110px;
+}
+
+#records-view .filter-select-group select {
+    width: 100%;
+    height: 33px;
+    min-height: 33px;
+    padding: 0 26px 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+    background-color: var(--surface);
+    color: var(--text);
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    box-shadow: none;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+#records-view .filter-select-group select:focus,
+#records-view #searchName:focus,
+#records-view #searchBooking:focus {
+    border-color: var(--teal-600);
+    box-shadow: var(--records-focus-ring);
+    outline: none;
+}
+
+#records-view .filter-search-group input:focus,
+#records-view .filter-pnr-group input:focus {
+    box-shadow: none;
+}
+
+#records-view .filter-actions-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+#records-view .filter-toggle-btn {
+    height: 33px;
+    min-height: 33px;
+    padding: 0 11px;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#records-view .filter-toggle-btn:hover {
+    background: var(--teal-050);
+    border-color: var(--border);
+    color: var(--teal-700);
+}
+
+#records-view .records-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+    font-size: 10px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+#records-view .filter-reset-btn {
+    width: 33px;
+    height: 33px;
+    min-width: 33px;
+    min-height: 33px;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+#records-view .filter-reset-btn:hover {
+    background: var(--teal-050);
+    border-color: var(--border);
+    color: var(--teal-700);
+}
+
+/* Advanced Filters Drawer */
+#records-view .records-advanced-filters {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 0;
+    box-shadow: var(--shadow-sm);
+}
+
+#records-view .records-advanced-filters .records-filter-grid {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+#records-view .records-advanced-filters .filter-field label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+#records-view .records-advanced-filters .date-range-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#records-view .records-advanced-filters .date-sep {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+#records-view .records-advanced-filters input[type="text"] {
+    height: 33px;
+    min-height: 33px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 400;
+    padding: 0 10px;
+    background: var(--surface);
+    color: var(--text);
+}
+
+#records-view .records-advanced-filters input[type="text"]:focus {
+    border-color: var(--teal-600);
+    box-shadow: var(--records-focus-ring);
+    outline: none;
+}
+
+#records-view .records-advanced-filters .records-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-soft);
+}
+
+#records-view #recordsSearchBtn {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: var(--teal-600);
+    border: 1px solid var(--teal-600);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+#records-view .records-quick-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--coral-soft);
+    color: var(--coral);
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+#records-view .records-quick-clear-btn:hover {
+    background: var(--coral);
+    color: #FFFFFF;
+}
+
+/* 12.3 Single Table Card & Table Typography / Rhythm */
+#records-view #resultsBodyContainer.table-container {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+/* Instant Column Visibility Toggle Rules */
+#records-view #resultsBodyContainer.hide-col-issued_date [data-col="issued_date"],
+#records-view #resultsBodyContainer.hide-col-route [data-col="route"],
+#records-view #resultsBodyContainer.hide-col-airline [data-col="airline"],
+#records-view #resultsBodyContainer.hide-col-net_amount [data-col="net_amount"],
+#records-view #resultsBodyContainer.hide-col-commission [data-col="commission"],
+#records-view #resultsBodyContainer.hide-col-extra_fare [data-col="extra_fare"],
+#records-view #resultsBodyContainer.hide-col-date_change [data-col="date_change"] {
+    display: none;
+}
+
+#records-view #resultsTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+    background: var(--surface);
+    font-size: 11.5px;
+    color: var(--text);
+}
+
+#records-view #resultsTable thead th {
+    background: var(--surface-soft);
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1.25;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-soft);
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#records-view #resultsTable tbody tr {
+    height: 40px;
+    background: var(--surface);
+    transition: background-color 120ms ease;
+}
+
+#records-view #resultsTable tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-soft);
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 11.5px;
+    font-weight: 400;
+    line-height: 1.35;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+#records-view #resultsTable tbody tr:nth-child(even) td {
+    background: var(--surface);
+}
+
+#records-view #resultsTable tbody tr:hover td,
+#records-view #resultsTable tbody tr:hover td.col-actions {
+    background: var(--teal-050);
+}
+
+#records-view #resultsTable tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Column Specific Rules (Sections 3 & 5) */
+#records-view #resultsTable th.col-issued-date {
+    min-width: 84px;
+}
+
+#records-view #resultsTable td.col-issued-date {
+    min-width: 84px;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+#records-view #resultsTable td.col-name {
+    min-width: 120px;
+    max-width: 170px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-strong);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#records-view #resultsTable .col-pnr {
+    min-width: 72px;
+    text-align: center;
+}
+
+#records-view #resultsTable .clickable-pnr,
+#records-view #resultsTable .clickable-hotel-ref {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+    border: none;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+#records-view #resultsTable .clickable-pnr:hover,
+#records-view #resultsTable .clickable-hotel-ref:hover {
+    background: var(--teal-600);
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+#records-view #resultsTable td.col-route {
+    min-width: 92px;
+    max-width: 140px;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Airline Column — min-width ~140px, 20–22px soft circular logo, 11.5px text + tooltip */
+#records-view #resultsTable th.col-airline {
+    min-width: 140px;
+    max-width: 175px;
+}
+
+#records-view #resultsTable td.col-airline {
+    min-width: 140px;
+    max-width: 175px;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#records-view #resultsTable .col-airline .airline-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    min-width: 0;
+    vertical-align: middle;
+}
+
+#records-view #resultsTable .col-airline .airline-logo-mark {
+    width: 21px;
+    height: 21px;
+    flex: 0 0 21px;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    border: 1px solid var(--border-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 2px;
+}
+
+#records-view #resultsTable .col-airline .airline-logo-mark::after {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--teal-700);
+    line-height: 1;
+}
+
+#records-view #resultsTable .col-airline .airline-logo-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+#records-view #resultsTable .col-airline .airline-name-text {
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--text);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Money / Numbers Columns (Right-aligned, tabular numerals) */
+#records-view #resultsTable th.num-header,
+#records-view #resultsTable td.num-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+#records-view #resultsTable td.col-net-amount,
+#records-view #resultsTable td.col-commission,
+#records-view #resultsTable td.col-extra-fare,
+#records-view #resultsTable td.col-date-change {
+    min-width: 72px;
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+#records-view #resultsTable td.col-total {
+    min-width: 80px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-strong);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* Status Pill Column */
+#records-view #resultsTable .col-status {
+    min-width: 72px;
+    text-align: center;
+}
+
+#records-view .records-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.4;
+    border: none;
+    white-space: nowrap;
+}
+
+#records-view .records-status-badge i {
+    font-size: 9px;
+}
+
+#records-view .records-status-badge.status-paid {
+    background: var(--mint-soft);
+    color: var(--mint);
+}
+
+#records-view .records-status-badge.status-unpaid {
+    background: var(--amber-soft);
+    color: var(--amber);
+}
+
+#records-view .records-status-badge.status-partial {
+    background: var(--sky-soft);
+    color: var(--sky);
+}
+
+#records-view .records-status-badge.status-canceled {
+    background: var(--coral-soft);
+    color: var(--coral);
+}
+
+/* Actions Column — Right-aligned, three 28px ghost circles, ~6px gap */
+#records-view #resultsTable th.col-actions,
+#records-view #resultsTable td.col-actions {
+    min-width: 106px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+#records-view #resultsTable td.actions-cell .icon-btn.icon-btn-table {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    margin: -3px 0 -3px 6px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    color: var(--text-muted);
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+#records-view #resultsTable td.actions-cell .icon-btn.icon-btn-table:first-child {
+    margin-left: 0;
+}
+
+#records-view #resultsTable td.actions-cell .icon-btn.icon-btn-table[data-action="view"]:hover,
+#records-view #resultsTable td.actions-cell .icon-btn.icon-btn-table[data-action="edit"]:hover {
+    background: var(--teal-100);
+    border-color: var(--teal-100);
+    color: var(--teal-700);
+}
+
+#records-view #resultsTable td.actions-cell .icon-btn.icon-btn-table[data-action="delete"]:hover {
+    background: var(--coral-soft);
+    border-color: var(--coral-soft);
+    color: var(--coral);
+}
+
+/* 12.4 Pagination (Centred below table, 4–6px gap, 30px square buttons, 8px radius, 11px/600) */
+#records-view #pagination.pagination-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 2px 0 0 0;
+    margin: 0;
+}
+
+#records-view #pagination .pagination-btn {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: none;
+    transform: none;
+    transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+#records-view #pagination .pagination-btn:hover:not(:disabled):not(.active) {
+    background: var(--teal-050);
+    border-color: var(--border);
+    color: var(--teal-700);
+    transform: none;
+    box-shadow: none;
+}
+
+#records-view #pagination .pagination-btn.active {
+    background: var(--teal-600);
+    border-color: var(--teal-600);
+    color: #FFFFFF;
+    font-weight: 600;
+    transform: none;
+    box-shadow: none;
+}
+
+#records-view #pagination .pagination-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* 12.5 Empty / Helper States */
+#records-view .empty-state {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 400;
+}
+
+#records-view .empty-state h4,
+#records-view .empty-state p {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin: 4px 0;
+}
+
+/* 12.6 Responsive Behaviour (Section 6) */
+@media (max-width: 1199px) {
+    #records-view .records-filter-toolbar {
+        flex-wrap: wrap;
+    }
+
+    #records-view #resultsBodyContainer.table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #records-view #resultsTable {
+        min-width: 1080px;
+    }
+}
+
+@media (max-width: 899px) {
+    #records-view .results-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    #records-view .records-presets {
+        margin-left: 0;
+    }
+
+    #records-view .records-header-actions {
+        flex-wrap: wrap;
+    }
+
+    #records-view #resultsBodyContainer.table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #records-view #resultsTable {
+        min-width: 1080px;
+    }
+
+    #records-view #pagination.pagination-container {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
