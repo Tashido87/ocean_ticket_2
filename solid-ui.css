@@ -82,22 +82,20 @@ button:active,
 }
 
 /* Primary buttons */
-.btn-primary:not(#records-view *),
-.manage-action-btn.primary {
+.btn-primary:not(#records-view *):not(#manage-view *) {
     background-color: var(--primary-accent) !important;
     border-color: var(--primary-accent) !important;
     color: #ffffff !important;
 }
 
-.btn-primary:not(#records-view *):hover,
-.manage-action-btn.primary:hover {
+.btn-primary:not(#records-view *):not(#manage-view *):hover {
     background-color: var(--primary-accent-dark);
     border-color: var(--primary-accent-dark);
     color: #ffffff;
 }
 
 /* Secondary buttons */
-.btn-secondary:not(#records-view *),
+.btn-secondary:not(#records-view *):not(#manage-view *) {
 .btn-service.btn-secondary {
     background-color: var(--surface-2);
     border-color: var(--border-color);
@@ -222,12 +220,10 @@ body.dark-theme textarea:not(#records-view *)::placeholder {
 
 /* 5. Unified Cards & Panels */
 .dashboard-card,
-.form-container,
-.results-section:not(#recordsSection),
+.form-container:not(#manage-view *),
+.results-section:not(#recordsSection):not(#manage-view *),
 .booking-kpi-card,
-.manage-kpi,
-.pax-panel,
-.manage-pnr-dashboard {
+.pax-panel {
     background: var(--surface) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: var(--radius-lg, 12px) !important;
@@ -236,12 +232,10 @@ body.dark-theme textarea:not(#records-view *)::placeholder {
 }
 
 body.dark-theme .dashboard-card,
-body.dark-theme .form-container,
-body.dark-theme .results-section:not(#recordsSection),
+body.dark-theme .form-container:not(#manage-view *),
+body.dark-theme .results-section:not(#recordsSection):not(#manage-view *),
 body.dark-theme .booking-kpi-card,
-body.dark-theme .manage-kpi,
-body.dark-theme .pax-panel,
-body.dark-theme .manage-pnr-dashboard {
+body.dark-theme .pax-panel {
     background: var(--surface);
     border-color: var(--border-color);
     color: var(--text-primary);
@@ -402,14 +396,12 @@ h1:not(#home-view *),
 h2:not(#records-view *),
 h3:not(#records-view *),
 .section-heading:not(#records-view *),
-.section-title:not(#records-view *),
-.card-title:not(#records-view *),
+.section-title:not(#records-view *):not(#manage-view *),
+.card-title:not(#records-view *):not(#manage-view *),
 .dashboard-card-title,
 .service-panel-header h2,
-.form-container h2,
-.results-section:not(#recordsSection) h3,
-#manage-view h2,
-#manage-view h3,
+.form-container:not(#manage-view) h2,
+.results-section:not(#recordsSection):not(#manage-view *) h3,
 #services-view h2,
 #services-view h3,
 .modal-title {
@@ -422,31 +414,29 @@ h3:not(#records-view *),
 
 /* Body / table: 14–16px */
 body,
-p:not(#home-view *):not(#records-view *),
-table td:not(#home-view *):not(#records-view *),
-.table td:not(#home-view *):not(#records-view *),
-.data-cell:not(#home-view *):not(#records-view *),
+p:not(#home-view *):not(#records-view *):not(#manage-view *),
+table td:not(#home-view *):not(#records-view *):not(#manage-view *),
+.table td:not(#home-view *):not(#records-view *):not(#manage-view *),
+.data-cell:not(#home-view *):not(#records-view *):not(#manage-view *),
 .document-card,
 .doc-info,
-#modificationHistoryTable td,
 .ticket-row td {
     font-size: 15px !important;
     line-height: 1.5 !important;
 }
 
 /* Secondary labels: 12–13px (with guaranteed >= 4.5:1 contrast) */
-.secondary-label:not(#home-view *):not(#records-view *),
-.text-muted:not(#home-view *):not(#records-view *),
-.form-hint:not(#home-view *):not(#records-view *),
-.section-subtitle:not(#home-view *):not(#records-view *),
-.service-panel-desc:not(#home-view *):not(#records-view *),
-.form-group label:not(#home-view *):not(#records-view *),
-.form-label:not(#home-view *):not(#records-view *),
-.doc-meta:not(#home-view *):not(#records-view *),
-.activity-meta:not(#home-view *):not(#records-view *),
-.audit-note:not(#home-view *):not(#records-view *),
-.settle-section-subtitle:not(#home-view *):not(#records-view *),
-small:not(#home-view *):not(#records-view *) {
+.secondary-label:not(#home-view *):not(#records-view *):not(#manage-view *),
+.text-muted:not(#home-view *):not(#records-view *):not(#manage-view *),
+.form-hint:not(#home-view *):not(#records-view *):not(#manage-view *),
+.section-subtitle:not(#home-view *):not(#records-view *):not(#manage-view *),
+.service-panel-desc:not(#home-view *):not(#records-view *):not(#manage-view *),
+.form-group label:not(#home-view *):not(#records-view *):not(#manage-view *),
+.form-label:not(#home-view *):not(#records-view *):not(#manage-view *),
+.doc-meta:not(#home-view *):not(#records-view *):not(#manage-view *),
+.activity-meta:not(#home-view *):not(#records-view *):not(#manage-view *),
+.settle-section-subtitle:not(#home-view *):not(#records-view *):not(#manage-view *),
+small:not(#home-view *):not(#records-view *):not(#manage-view *) {
     font-size: 13px !important;
     line-height: 1.4 !important;
     color: var(--text-secondary);

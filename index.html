@@ -12,8 +12,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Ocean Travel">
-    <link rel="stylesheet" href="app-styles.min.css?v=00e6705d">
-    <link rel="stylesheet" href="dashboard-exact.css?v=9">
+    <link rel="stylesheet" href="app-styles.min.css?v=400a66ad">
+    <link rel="stylesheet" href="dashboard-exact.css?v=10">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1187,9 +1187,11 @@
             </section>
             
             <section id="manage-view" class="view" style="display: none;">
-                 <div class="form-container glass-card">
-                    <h2><i class="fa-solid fa-wrench"></i> Manage Ticket</h2>
-                    <p class="section-subtitle" style="text-align: center; margin: 0 0 0.75rem;">Search a PNR to update financials, payments, fees, refunds, and review history.</p>
+                 <div class="form-container">
+                    <div class="manage-page-header">
+                        <h2><span class="manage-title-icon"><i class="fa-solid fa-wrench"></i></span> Manage Ticket</h2>
+                        <p class="section-subtitle">Search a PNR to update financials, payments, fees, refunds, and review history.</p>
+                    </div>
                     <form class="centered-form" onsubmit="return false;">
                         <div class="form-group">
                             <label for="managePnr">Enter PNR Code to Manage</label>
@@ -1202,8 +1204,8 @@
                     </form>
                     <div id="manageResultsContainer" class="results-section" style="padding: 1rem 0 0 0; background: transparent; border: none; box-shadow: none;"></div>
                     
-                    <div id="modificationHistoryContainer" class="results-section" style="margin-top: 2rem; display: none; background: var(--bg-color);">
-                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Modification & Cancellation History</h3>
+                    <div id="modificationHistoryContainer" class="results-section" style="display: none;">
+                        <h3><span class="history-title-icon"><i class="fa-solid fa-clock-rotate-left"></i></span> Modification & Cancellation History</h3>
                         <div class="table-container">
                             <table id="modificationHistoryTable">
                                 <thead>
@@ -2041,7 +2043,7 @@
     "./document-libraries.js": "./document-libraries.js?v=7c5a726d",
     "./documents.js": "./documents.js?v=cfee9d8d",
     "./firebase-config.js": "./firebase-config.js?v=aab230c1",
-    "./history.js": "./history.js?v=522209bc",
+    "./history.js": "./history.js?v=e9920af2",
     "./hotel.js": "./hotel.js?v=2f4fea86",
     "./invoice-selection.mjs": "./invoice-selection.mjs?v=2d426669",
     "./invoice.js": "./invoice.js?v=8c3cc9bd",

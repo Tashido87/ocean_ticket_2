@@ -82,6 +82,54 @@ export async function saveHistory(ticket, details, opts = {}) {
 }
 
 /**
+ * Determines whether a history note should be rendered or suppressed as duplicate / empty.
+ * @param {string} details Stored history detail string.
+ * @param {Array<{field: string, from: any, to: any}>} [changes=[]] Structured field diffs.
+ * @returns {string|null} Note text to show, or null if suppressed.
+ */
+export function getCleanAuditNote(details, changes = []) {
+    if (!details || typeof details !== 'string') return null;
+    const trimmed = details.trim();
+    if (!trimmed) return null;
+
+    // Suppress if the note is only an action label plus punctuation (e.g. "FINANCIAL & DATE UPDATE: .", "MODIFIED:", "UPDATE:")
+    const strippedAction = trimmed.replace(/^[A-Z0-9\s&_\-]+:\s*/i, '').trim();
+    if (strippedAction === '' || /^[\s.,;:|\-–—]+$/.test(strippedAction)) {
+        return null;
+    }
+
+    if (!Array.isArray(changes) || changes.length === 0) {
+        return trimmed;
+    }
+
+    // Normalise to lowercase alphanumeric tokens
+    const tokenize = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, ' ').split(/\s+/).filter(Boolean);
+
+    // Stop words that are connective or generic action words
+    const stopWords = new Set([
+        'payment', 'financial', 'date', 'update', 'modified', 'change', 'fee', 'added', 'ticket', 'updated',
+        'paid', 'unpaid', 'via', 'on', 'to', 'from', 'for', 'in', 'and', 'by', 'the', 'with', 'marked', 'true', 'false', 'is'
+    ]);
+
+    const changeTokens = new Set();
+    changes.forEach(c => {
+        tokenize(c.field).forEach(t => changeTokens.add(t));
+        tokenize(c.from).forEach(t => changeTokens.add(t));
+        tokenize(c.to).forEach(t => changeTokens.add(t));
+    });
+
+    const noteTokens = tokenize(strippedAction).filter(t => !stopWords.has(t));
+    const novelTokens = noteTokens.filter(t => !changeTokens.has(t));
+
+    // If every significant token in the note is already represented in the changes, suppress the duplicate note
+    if (novelTokens.length === 0) {
+        return null;
+    }
+
+    return trimmed;
+}
+
+/**
  * Displays the modification history with pagination and structured diffs.
  * @param {number} page The page number to display.
  * @param {Array<Object>} [historyToShow=state.history] The history records to display.
@@ -115,13 +163,13 @@ export function displayHistory(page, historyToShow = state.history) {
         const pnrCell = row.insertCell(3);
         const detailsCell = row.insertCell(4);
 
-        // Date badge
+        // Date badge: plain text tabular 11.5px --text-muted
         const dateBadge = document.createElement('span');
         dateBadge.className = 'audit-date-badge';
         dateBadge.textContent = entry.date || '';
         dateCell.appendChild(dateBadge);
 
-        // User badge
+        // User badge: pale teal, capitalize name in CSS, hover title preserved
         const userBadge = document.createElement('span');
         userBadge.className = 'audit-user-badge';
         userBadge.title = userName + userEmail;
@@ -135,7 +183,7 @@ export function displayHistory(page, historyToShow = state.history) {
         nameCell.appendChild(nameStrong);
 
         // PNR cell
-        if (entry.pnr) {
+        if (entry.pnr && entry.pnr !== '—') {
             const pnrLink = document.createElement('a');
             pnrLink.href = '#';
             pnrLink.className = 'clickable-pnr';
@@ -156,18 +204,35 @@ export function displayHistory(page, historyToShow = state.history) {
                 const fieldName = String(c.field || '').replace(/_/g, ' ');
                 const fromVal = String(c.from ?? '—');
                 const toVal = String(c.to ?? '—');
-                chip.innerHTML = `<strong>${escapeHtml(fieldName)}:</strong> <span class="diff-from">${escapeHtml(fromVal)}</span> <i class="fa-solid fa-arrow-right-long"></i> <span class="diff-to">${escapeHtml(toVal)}</span>`;
+
+                let toClass = 'diff-to';
+                const fieldLower = fieldName.toLowerCase();
+                const toLower = toVal.toLowerCase();
+                if (fieldLower.includes('paid')) {
+                    if (toLower === 'true' || toLower === 'paid') {
+                        toClass += ' diff-to-paid';
+                    } else if (toLower === 'false' || toLower === 'unpaid') {
+                        toClass += ' diff-to-unpaid';
+                    }
+                }
+
+                chip.innerHTML = `<strong>${escapeHtml(fieldName)}:</strong> <span class="diff-from">${escapeHtml(fromVal)}</span> <i class="fa-solid fa-arrow-right-long"></i> <span class="${toClass}">${escapeHtml(toVal)}</span>`;
                 diffContainer.appendChild(chip);
             });
             detailsCell.appendChild(diffContainer);
-            if (entry.details) {
+
+            // Deduplication rule: show note only if it adds a genuinely new fact
+            const noteToShow = getCleanAuditNote(entry.details, entry.changes);
+            if (noteToShow) {
                 const note = document.createElement('div');
                 note.className = 'audit-note';
-                note.textContent = entry.details;
+                note.textContent = noteToShow;
                 detailsCell.appendChild(note);
             }
         } else {
-            detailsCell.textContent = entry.details || '';
+            // Plain-text detail rows: suppress empty/dangling labels
+            const noteToShow = getCleanAuditNote(entry.details, []);
+            detailsCell.textContent = noteToShow || '—';
         }
     });
 
