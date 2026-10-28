@@ -7173,17 +7173,18 @@ body.material-theme .global-search-clear:hover {
 
 body.material-theme .global-search-suggestions {
     position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
+    top: calc(100% + 6px);
+    left: 0;
+    right: auto;
     z-index: 1600;
-    width: min(440px, 92vw);
-    max-height: min(68vh, 620px);
+    width: min(420px, 90vw);
+    max-height: min(68vh, 520px);
     overflow: auto;
-    padding: 0.55rem;
-    border: 1px solid rgba(38, 37, 30, 0.11);
-    border-radius: 18px;
+    padding: 8px;
+    border: 1px solid #DCE8E7;
+    border-radius: 12px;
     background: #ffffff;
-    box-shadow: 0 24px 70px rgba(38, 37, 30, 0.18);
+    box-shadow: 0 8px 24px rgba(23, 51, 59, 0.12), 0 1px 2px rgba(23, 51, 59, 0.05);
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     animation: searchDrop 180ms var(--ease-spring) both;
@@ -9312,7 +9313,7 @@ body.material-theme .btn.btn-ghost:not(#records-view *) {
     border-color: rgba(36, 36, 43, 0.10) !important;
 }
 
-body.material-theme input:not(#records-view *),
+body.material-theme input:not(#globalSearchInput):not(#records-view *),
 body.material-theme select:not(#records-view *),
 body.material-theme textarea:not(#records-view *),
 body.material-theme .global-search-box {
@@ -9324,7 +9325,7 @@ body.material-theme .global-search-box {
     font-weight: 800 !important;
 }
 
-body.material-theme input:not(#records-view *):focus,
+body.material-theme input:not(#globalSearchInput):not(#records-view *):focus,
 body.material-theme select:not(#records-view *):focus,
 body.material-theme textarea:not(#records-view *):focus {
     border-color: var(--teal);

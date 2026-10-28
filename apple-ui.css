@@ -617,7 +617,7 @@ body.material-theme .settings-title {
 }
 
 /* Native control language — Apple / Modern SaaS */
-body.material-theme :is(input, select, textarea):not(#records-view *),
+body.material-theme :is(input, select, textarea):not(#globalSearchInput):not(#records-view *),
 body.material-theme .search-inputs :is(input, select),
 body.material-theme .form-group :is(input, select, textarea),
 body.material-theme .booking-search-section select,
@@ -641,7 +641,7 @@ body.material-theme .search-more-grid input {
     transition: background-color 160ms var(--apple-ease), box-shadow 160ms var(--apple-ease), border-color 160ms var(--apple-ease);
 }
 
-body.material-theme.dark-theme :is(input, select, textarea):not(#records-view *),
+body.material-theme.dark-theme :is(input, select, textarea):not(#globalSearchInput):not(#records-view *),
 body.material-theme.dark-theme .search-inputs :is(input, select),
 body.material-theme.dark-theme .form-group :is(input, select, textarea),
 body.material-theme.dark-theme .booking-search-section select,
@@ -651,7 +651,7 @@ body.material-theme.dark-theme :is(.settle-search-input, .settle-select) {
     background: rgba(255, 255, 255, 0.06);
 }
 
-body.material-theme :is(input, select, textarea):not(#records-view *)::placeholder {
+body.material-theme :is(input, select, textarea):not(#globalSearchInput):not(#records-view *)::placeholder {
     color: #98989d;
     font-weight: 400;
     letter-spacing: 0;
@@ -659,17 +659,17 @@ body.material-theme :is(input, select, textarea):not(#records-view *)::placehold
     opacity: 1;
 }
 
-body.material-theme :is(input, select, textarea):not(#records-view *):hover {
+body.material-theme :is(input, select, textarea):not(#globalSearchInput):not(#records-view *):hover {
     background: rgba(0, 0, 0, 0.055);
     border-color: rgba(0, 0, 0, 0.14);
 }
 
-body.material-theme.dark-theme :is(input, select, textarea):not(#records-view *):hover {
+body.material-theme.dark-theme :is(input, select, textarea):not(#globalSearchInput):not(#records-view *):hover {
     background: rgba(255, 255, 255, 0.09);
     border-color: rgba(255, 255, 255, 0.16);
 }
 
-body.material-theme :is(input, select, textarea):not(#records-view *):focus,
+body.material-theme :is(input, select, textarea):not(#globalSearchInput):not(#records-view *):focus,
 body.material-theme .search-inputs :is(input, select):focus,
 body.material-theme .form-group :is(input, select, textarea):focus,
 body.material-theme :is(.settle-search-input, .settle-select):focus,
