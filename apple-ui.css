@@ -3263,9 +3263,15 @@ body.material-theme .datepicker-cell.disabled {
 
 .service-quick-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: minmax(170px, 1.35fr) minmax(130px, 1.1fr) minmax(120px, 1fr) minmax(70px, 0.65fr) minmax(110px, 0.95fr) minmax(110px, 0.95fr);
     gap: 10px;
     margin-bottom: 8px;
+}
+
+@media (max-width: 960px) {
+    .service-quick-grid {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    }
 }
 
 .service-quick-grid .form-group {
