@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-e55cd72f';
+const CACHE_NAME = 'ocean-travel-667509db';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -9,14 +9,17 @@ const CORE_ASSETS = [
     './settle-exact.css?v=2',
     './hotel-exact.css?v=1',
     './search-exact.css?v=1',
+    './vendor/datepicker.min.css',
+    './vendor/datepicker-full.min.js',
+    './vendor/chart.min.js',
     './document-libraries.js?v=7c5a726d',
-    './main.js?v=4722dfbc',
+    './main.js?v=bdb064d3',
     './dashboard.js?v=c8baa4fe',
     './auth.js?v=625c50ce',
     './firebase-config.js?v=aab230c1',
     './utils.js?v=83eec376',
     './state.js?v=24a8744d',
-    './db.js?v=00aef24a',
+    './db.js?v=944a0ed0',
     './ui.js?v=ee8df8bb',
     './tickets.js?v=f2098800',
     './booking.js?v=f81a1350',
@@ -90,24 +93,60 @@ self.addEventListener('fetch', (event) => {
     }
 
     const isSameOrigin = url.origin === self.location.origin;
-    const isCodeOrDoc = isSameOrigin && (
-        event.request.mode === 'navigate' ||
-        /\.(?:html|m?js|css|json)$/i.test(url.pathname) ||
-        url.pathname === '/'
+
+    // Strategy A: Fast Stale-While-Revalidate for HTML Navigation
+    // Instant boot from cache on reload, with background update
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            caches.match('./index.html').then((cachedHtml) => {
+                const networkFetch = fetch(event.request, { cache: 'no-cache' })
+                    .then((response) => {
+                        if (response && response.status === 200) {
+                            const clone = response.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', clone)).catch(() => {});
+                        }
+                        return response;
+                    })
+                    .catch(() => cachedHtml);
+
+                return cachedHtml || networkFetch;
+            })
+        );
+        return;
+    }
+
+    // Strategy B: Cache-First for versioned static assets & vendor files
+    const isCacheFirstAsset = isSameOrigin && (
+        url.search.includes('v=') ||
+        url.pathname.includes('/vendor/') ||
+        url.pathname.endsWith('.png') ||
+        url.pathname.endsWith('.woff2') ||
+        url.pathname.endsWith('.json')
     );
 
-    const networkFetch = isCodeOrDoc
-        ? fetch(event.request, { cache: 'no-cache' })
-        : fetch(event.request);
+    if (isCacheFirstAsset) {
+        event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+                if (cachedResponse) return cachedResponse;
+                return fetch(event.request).then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+                        const clone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+                    }
+                    return networkResponse;
+                });
+            })
+        );
+        return;
+    }
 
+    // Strategy C: Network-First with cache fallback for everything else
     event.respondWith(
-        networkFetch
+        fetch(event.request)
             .then((response) => {
                 if (response && response.status === 200 && response.type === 'basic' && isSameOrigin) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone).catch(() => {});
-                    }).catch(() => {});
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
                 }
                 return response;
             })

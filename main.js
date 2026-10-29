@@ -1510,8 +1510,15 @@ function setupEventListeners() {
         }
     });
 
-    // Initial load
-    refreshDocuments();
+    // Lazy load documents only when Services tab is actually opened (saves startup bandwidth)
+    window._loadServicesDocumentsIfNeeded = () => {
+        if (docFetchState === 'idle') {
+            refreshDocuments();
+        }
+    };
+    if (window.location.hash.startsWith('#/services')) {
+        window._loadServicesDocumentsIfNeeded();
+    }
 
     // Document view toggle
     document.querySelectorAll('input[name="doc_view"]').forEach(radio => {
@@ -3163,6 +3170,11 @@ document.addEventListener('ocean:viewchange', event => {
     const viewName = event.detail;
     void loadPageFeatures(viewName);
     if (viewName === 'home') updateDashboardData();
+    if (viewName === 'services') {
+        if (typeof window._loadServicesDocumentsIfNeeded === 'function') {
+            window._loadServicesDocumentsIfNeeded();
+        }
+    }
     if (viewName === 'records' && state.recordsDirty) {
         state.recordsDirty = false;
         displayInitialTickets(state.currentPage);
@@ -3178,7 +3190,12 @@ document.addEventListener('ocean:viewchange', event => {
     }
 });
 window.addEventListener('ocean:document-load-error', event => showToast(event.detail, 'error'));
-window.onload = async () => {
+
+let appBootstrapped = false;
+async function bootstrapApp() {
+    if (appBootstrapped) return;
+    appBootstrapped = true;
+
     // Initialize UI components that don't depend on data
     initializeDatepickers();
     initializeTimePicker();
@@ -3228,7 +3245,7 @@ window.onload = async () => {
         });
     }
 
-    // Initialize Firebase Auth
+    // Initialize Firebase Auth immediately
     initAuth(
         (user) => {
             setCurrentUser(user);
@@ -3236,7 +3253,15 @@ window.onload = async () => {
         },
         () => {
             setCurrentUser(null);
-            document.getElementById('loading').style.display = 'none';
+            const loading = document.getElementById('loading');
+            if (loading) loading.style.display = 'none';
         }
     );
-};
+}
+
+// Fast startup: boot immediately when DOM is parsed, don't wait for all images/fonts to finish
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrapApp);
+} else {
+    bootstrapApp();
+}

@@ -155,6 +155,9 @@ const coreAssetsList = [
     './settle-exact.css?v=2',
     './hotel-exact.css?v=1',
     './search-exact.css?v=1',
+    './vendor/datepicker.min.css',
+    './vendor/datepicker-full.min.js',
+    './vendor/chart.min.js',
     ...corePrecacheModules.map(mod => `./${mod}?v=${moduleHashes.get(mod)}`)
 ];
 

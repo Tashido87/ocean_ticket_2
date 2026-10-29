@@ -225,6 +225,30 @@ function subscribeProgressiveCollection({
         ? maxLimit
         : activeLimit;
 
+    // Tier 0: Instant Cache Hydration from IndexedDB (Stale-While-Revalidate)
+    // Emits local cached records immediately (20-50ms) so the UI appears instantly without waiting for remote Firestore!
+    void (async () => {
+        try {
+            const cached = await archiveCachePromise;
+            if (unmounted || initialActiveDelivered) return;
+            if (cached?.itemsById && typeof cached.itemsById === 'object') {
+                const keys = Object.keys(cached.itemsById);
+                if (keys.length > 0) {
+                    for (const [id, rawItem] of Object.entries(cached.itemsById)) {
+                        if (!recordsMap.has(id)) {
+                            recordsMap.set(id, reviveTimestamps(rawItem));
+                        }
+                    }
+                    if (!unmounted && !initialActiveDelivered) {
+                        emit();
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn(`Instant cache hydration warning (${collectionName}):`, err);
+        }
+    })();
+
     // Tier 1: Real-time listener on the active newest window
     const activeQuery = query(colRef, orderBy('createdAt', 'desc'), limit(effectiveActiveLimit));
     const unsubActive = onSnapshot(activeQuery, (snapshot) => {
