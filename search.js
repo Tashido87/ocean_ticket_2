@@ -223,14 +223,68 @@ function dateWithin(value, start, end) {
     return true;
 }
 
-function hasAllTokensInField(field, tokens) {
-    const text = normalize(field);
-    return tokens.length > 0 && tokens.every(token => text.includes(token));
+function cleanEntityName(value) {
+    let s = normalize(value);
+    s = s.replace(/\s*\([^)]*\)\s*$/g, '');
+    s = s.replace(/[\/\s]+(MR|MRS|MS|MISS|MSTR)$/g, '');
+    s = s.replace(/^(MR|MRS|MS|MISS|MSTR)\s+/g, '');
+    return s.trim();
 }
 
-function hasAnyTokenInField(field, tokens) {
-    const text = normalize(field);
-    return tokens.some(token => text.includes(token));
+function getWords(text) {
+    return normalize(text).split(/[^A-Z0-9]+/).filter(Boolean);
+}
+
+function evaluateTokenMatch(queryTokens, targetWords) {
+    if (!queryTokens.length || !targetWords.length) {
+        return {
+            matchedTokens: 0,
+            exactWordMatches: 0,
+            prefixMatches: 0,
+            allTokensMatched: false,
+            allExactWords: false,
+            ratio: 0
+        };
+    }
+
+    const availableWords = [...targetWords];
+    let exactWordMatches = 0;
+    const unmatchedTokens = [];
+
+    for (const token of queryTokens) {
+        const wordIdx = availableWords.indexOf(token);
+        if (wordIdx !== -1) {
+            exactWordMatches++;
+            availableWords.splice(wordIdx, 1);
+        } else {
+            unmatchedTokens.push(token);
+        }
+    }
+
+    let prefixMatches = 0;
+    for (const token of unmatchedTokens) {
+        if (token.length >= 2) {
+            const wordIdx = availableWords.findIndex(w => w.startsWith(token));
+            if (wordIdx !== -1) {
+                prefixMatches++;
+                availableWords.splice(wordIdx, 1);
+            }
+        }
+    }
+
+    const totalMatches = exactWordMatches + prefixMatches;
+    const allTokensMatched = totalMatches === queryTokens.length;
+    const allExactWords = exactWordMatches === queryTokens.length;
+    const ratio = totalMatches / queryTokens.length;
+
+    return {
+        matchedTokens: totalMatches,
+        exactWordMatches,
+        prefixMatches,
+        allTokensMatched,
+        allExactWords,
+        ratio
+    };
 }
 
 function initialsOf(name) {
@@ -261,22 +315,69 @@ function fmtDateOrDash(value) {
 /* --------------------------- ranking ----------------------------------- */
 
 function scoreTextField(value, query, tokens) {
-    const text = normalize(value);
-    if (!text || !query) return 0;
-    if (text === query) return 1000;
-    if (text.startsWith(query)) return 900;
-    if (text.includes(query)) return 820;
-    if (tokens.length && tokens.every(token => text.includes(token))) return 720;
+    const rawText = normalize(value);
+    const cleanedText = cleanEntityName(value);
+    const q = normalize(query);
+    if (!rawText || !q) return 0;
 
-    const matched = tokens.filter(token => text.includes(token)).length;
-    if (!matched) return 0;
-    if (tokens.length > 1) return Math.round((matched / tokens.length) * 260);
-    return 220;
+    // 1. Exact full field match
+    if (cleanedText === q || rawText === q) return 1500;
+
+    // 2. Starts with query phrase at word boundary
+    if (cleanedText.startsWith(q + ' ') || rawText.startsWith(q + ' ')) return 1350;
+
+    // 3. Contains exact query phrase at word boundaries
+    if (cleanedText.endsWith(' ' + q) || cleanedText.includes(' ' + q + ' ') ||
+        rawText.endsWith(' ' + q) || rawText.includes(' ' + q + ' ')) {
+        return 1250;
+    }
+
+    const words = getWords(cleanedText || rawText);
+
+    // 4. Multi-token queries (tokens.length > 1)
+    if (tokens.length > 1) {
+        if (cleanedText.includes(q) || rawText.includes(q)) {
+            return 1150;
+        }
+
+        const match = evaluateTokenMatch(tokens, words);
+
+        if (match.allTokensMatched && match.allExactWords) {
+            return 950;
+        }
+
+        if (match.allTokensMatched) {
+            return 820;
+        }
+
+        if (match.matchedTokens > 0) {
+            return Math.round(match.ratio * 320);
+        }
+
+        return 0;
+    }
+
+    // 5. Single-token query (tokens.length === 1)
+    const singleToken = tokens[0] || q;
+
+    if (words.includes(singleToken)) {
+        return 1200;
+    }
+
+    if (words.some(w => w.startsWith(singleToken))) {
+        return 850;
+    }
+
+    if (cleanedText.includes(singleToken) || rawText.includes(singleToken)) {
+        return 250;
+    }
+
+    return 0;
 }
 
 function qualityFromScore(score) {
-    if (score >= 500) return 'best';
-    if (score > 0) return 'related';
+    if (score >= 700) return 'best';
+    if (score >= 150) return 'related';
     return 'none';
 }
 
@@ -296,23 +397,30 @@ function rankRecord(record, type, query) {
     const reasons = [];
 
     if (type === 'ticket') {
-        const pnr = normalize(record.booking_reference);
-        if (pnr && pnr === q) return { score: 1400, quality: 'best', reasons: ['Exact PNR'] };
-        if (pnr && pnr.startsWith(q)) {
-            score = Math.max(score, 1250);
-            reasons.push('PNR starts with query');
-        } else if (pnr && pnr.includes(q)) {
-            score = Math.max(score, 1100);
-            reasons.push('PNR contains query');
+        const rawPnr = record.booking_reference || '';
+        const pnr = normalize(rawPnr).replace(/\s/g, '');
+        const compactQ = q.replace(/\s/g, '');
+        if (pnr && compactQ) {
+            if (pnr === compactQ) return { score: 2000, quality: 'best', reasons: ['Exact PNR'] };
+            if (pnr.startsWith(compactQ) && compactQ.length >= 3) {
+                score = Math.max(score, 1500);
+                reasons.push('PNR starts with query');
+            } else if (pnr.includes(compactQ) && compactQ.length >= 4) {
+                score = Math.max(score, 1200);
+                reasons.push('PNR contains query');
+            }
         }
     }
 
-    if (phone && qDigits) {
+    if (phone && qDigits && qDigits.length >= 4) {
         if (phone === qDigits) {
-            score = Math.max(score, 1200);
+            score = Math.max(score, 1800);
             reasons.push('Exact phone');
+        } else if (phone.endsWith(qDigits)) {
+            score = Math.max(score, 1200);
+            reasons.push('Phone ends with query');
         } else if (phone.includes(qDigits)) {
-            score = Math.max(score, 650);
+            score = Math.max(score, 850);
             reasons.push('Phone contains query');
         }
     }
@@ -320,17 +428,18 @@ function rankRecord(record, type, query) {
     const weightedFields = type === 'client'
         ? [
             ['Name', record.name, 1.0],
-            ['Account', record.account_name, 0.82],
+            ['Account', record.account_name, 0.80],
             ['Account type', record.account_type, 0.35]
         ]
         : [
-            ['Passenger', record.name, 0.82],
-            ['Account', record.account_name, 0.55],
-            ['Route', `${record.departure || ''} ${record.destination || ''}`, 0.45],
-            ['Airline', record.airline, 0.42]
+            ['Passenger', record.name, 1.0],
+            ['Account', record.account_name, 0.65],
+            ['Route', `${record.departure || ''} ${record.destination || ''}`.trim(), 0.40],
+            ['Airline', record.airline, 0.35]
         ];
 
     weightedFields.forEach(([label, value, weight]) => {
+        if (!value) return;
         const fieldScore = Math.round(scoreTextField(value, q, tokens) * weight);
         if (fieldScore > score) {
             score = fieldScore;
@@ -339,10 +448,17 @@ function rankRecord(record, type, query) {
         }
     });
 
-    const haystack = weightedFields.map(([, value]) => normalize(value)).join(' ');
-    if (tokens.length > 1 && tokens.every(token => haystack.includes(token))) {
-        score = Math.max(score, type === 'client' ? 690 : 520);
-        reasons.push('All words across fields');
+    if (tokens.length > 1 && score < 700) {
+        const allWords = weightedFields.flatMap(([, value]) => getWords(value));
+        const crossMatch = evaluateTokenMatch(tokens, allWords);
+        if (crossMatch.allTokensMatched) {
+            const crossScore = crossMatch.allExactWords ? 340 : 260;
+            if (crossScore > score) {
+                score = crossScore;
+                reasons.length = 0;
+                reasons.push('Words across different fields');
+            }
+        }
     }
 
     return { score, quality: qualityFromScore(score), reasons };
@@ -2661,13 +2777,9 @@ function buildSuggestions(query) {
     const clientsFromRank = all.filter(r => r.kind === 'client' && !topIds.has(getResultId(r)));
 
     const directClientMatches = state.allClients
-        .filter(c => {
-            if (String(c.name || '').includes('(Fees)')) return false;
-            const text = [c.name, c.account_name, c.phone].map(normalize).join(' ');
-            return tokens.length ? tokens.every(token => text.includes(token)) : false;
-        })
+        .filter(c => !String(c.name || '').includes('(Fees)'))
         .map(c => buildClientResult(c, q))
-        .filter(Boolean)
+        .filter(r => r && r.score >= 150)
         .sort((a, b) => b.score - a.score || getSortDate(b) - getSortDate(a));
 
     const clientMap = new Map();
