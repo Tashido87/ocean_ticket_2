@@ -49,9 +49,48 @@ body.material-theme,
    1. FONT & TYPOGRAPHY IN HOTEL SCOPE
    ========================================================================== */
 html body #hotel-view,
-html body #hotel-view *,
-html body #hotel-view :not(i):not([class*="fa-"]) {
+html body #hotel-view :not(i):not([class*="fa-"]):not([class*="fas"]):not([class*="far"]):not([class*="fab"]):not([class*="fa"]):not([class*="fa-solid"]):not([class*="fa-regular"]):not([class*="fa-brands"]) {
     font-family: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}
+
+/* Explicitly protect Font Awesome icons */
+html body #hotel-view i.fa-solid,
+html body #hotel-view i.fa-solid::before,
+html body #hotel-view i.fas,
+html body #hotel-view i.fas::before,
+html body #hotel-view .fa-solid,
+html body #hotel-view .fa-solid::before,
+html body #hotel-view .fas,
+html body #hotel-view .fas::before {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    font-style: normal !important;
+}
+
+html body #hotel-view i.fa-regular,
+html body #hotel-view i.fa-regular::before,
+html body #hotel-view i.far,
+html body #hotel-view i.far::before,
+html body #hotel-view .fa-regular,
+html body #hotel-view .fa-regular::before,
+html body #hotel-view .far,
+html body #hotel-view .far::before {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
+}
+
+html body #hotel-view i.fa-brands,
+html body #hotel-view i.fa-brands::before,
+html body #hotel-view i.fab,
+html body #hotel-view i.fab::before,
+html body #hotel-view .fa-brands,
+html body #hotel-view .fa-brands::before,
+html body #hotel-view .fab,
+html body #hotel-view .fab::before {
+    font-family: "Font Awesome 6 Brands" !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
 }
 
 /* ==========================================================================

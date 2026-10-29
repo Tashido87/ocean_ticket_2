@@ -64,9 +64,48 @@ body.material-theme,
    1. FONT & TYPOGRAPHY IN SETTLE SCOPE
    ========================================================================== */
 #settle-view,
-#settle-view *,
-#settle-view :not(i):not([class*="fa-"]) {
+#settle-view :not(i):not([class*="fa-"]):not([class*="fas"]):not([class*="far"]):not([class*="fab"]):not([class*="fa"]):not([class*="fa-solid"]):not([class*="fa-regular"]):not([class*="fa-brands"]) {
     font-family: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}
+
+/* Explicitly protect Font Awesome icons */
+#settle-view i.fa-solid,
+#settle-view i.fa-solid::before,
+#settle-view i.fas,
+#settle-view i.fas::before,
+#settle-view .fa-solid,
+#settle-view .fa-solid::before,
+#settle-view .fas,
+#settle-view .fas::before {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 900 !important;
+    font-style: normal !important;
+}
+
+#settle-view i.fa-regular,
+#settle-view i.fa-regular::before,
+#settle-view i.far,
+#settle-view i.far::before,
+#settle-view .fa-regular,
+#settle-view .fa-regular::before,
+#settle-view .far,
+#settle-view .far::before {
+    font-family: "Font Awesome 6 Free" !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
+}
+
+#settle-view i.fa-brands,
+#settle-view i.fa-brands::before,
+#settle-view i.fab,
+#settle-view i.fab::before,
+#settle-view .fa-brands,
+#settle-view .fa-brands::before,
+#settle-view .fab,
+#settle-view .fab::before {
+    font-family: "Font Awesome 6 Brands" !important;
+    font-weight: 400 !important;
+    font-style: normal !important;
 }
 
 /* ==========================================================================
