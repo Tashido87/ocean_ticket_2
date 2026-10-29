@@ -1,0 +1,830 @@
+/* ==========================================================================
+   OCEAN TRAVEL HOTEL VIEW — CANONICAL EXACT-MATCH OVERRIDE (hotel-exact.css?v=1)
+   Loaded AFTER app-styles.min.css, dashboard-exact.css, and settle-exact.css.
+   - Pure white (#FFFFFF) page, app shell, main content, and hotel container
+   - Manrope + Noto Sans Myanmar font stack across hotel scope
+   - Canonical v3 token system (literal hex: #0C6B7A, #0D2B33, #46626B, #8299A1, #E2EAEC)
+   - Strict size & rhythm:
+     * Title: 20px / 700 #0D2B33
+     * Section headers: 13.5px / 700 with small teal icon chip
+     * KPI labels: 11px / 600 uppercase grey (#8299A1)
+     * KPI values: 21px / 700 #0D2B33
+     * Table header: 11px / 600 uppercase on #F8FBFB with #E2EAEC border
+     * Table rows: 12px, compact 9px vertical padding, #EEF4F5 row borders
+     * Commission: 12.5px / 700 #0C6B7A
+     * Status pills: Paid (sage #E9F4EC / #5F9E7D), Unpaid (coral #FDEEE7 / #E4572E), Partial (amber #FDF3E0 / #DD9426)
+     * Action icon buttons: 28px square, 1px solid #E2EAEC, radius 7px, white bg
+     * Primary action buttons: solid #0C6B7A, radius 9px, height 34-36px
+     * Secondary buttons: white bg with 1px solid #E2EAEC border
+   ========================================================================== */
+
+:root,
+body,
+body.material-theme,
+#hotel-view {
+    --hotel-app-bg: #FFFFFF;
+    --hotel-surface: #FFFFFF;
+    --hotel-surface-2: #F8FBFB;
+    --hotel-surface-3: #EEF4F5;
+    --hotel-border: #E2EAEC;
+    --hotel-border-strong: #D3DFE2;
+    --hotel-ink: #0D2B33;
+    --hotel-ink-2: #46626B;
+    --hotel-ink-3: #8299A1;
+    --hotel-teal: #0C6B7A;
+    --hotel-teal-bright: #12919F;
+    --hotel-teal-soft: #E2F2F3;
+    --hotel-coral: #E4572E;
+    --hotel-coral-soft: #FDEEE7;
+    --hotel-amber: #DD9426;
+    --hotel-amber-soft: #FDF3E0;
+    --hotel-sage: #5F9E7D;
+    --hotel-sage-soft: #E9F4EC;
+    --hotel-shadow: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07);
+    --hotel-radius: 14px;
+    --hotel-font: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ==========================================================================
+   1. FONT & TYPOGRAPHY IN HOTEL SCOPE
+   ========================================================================== */
+html body #hotel-view,
+html body #hotel-view *,
+html body #hotel-view :not(i):not([class*="fa-"]) {
+    font-family: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}
+
+/* ==========================================================================
+   2. PURE WHITE PAGE BACKGROUND & SHELL
+   ========================================================================== */
+html body:has(#hotel-view:not([style*="display: none"])),
+html body.material-theme:has(#hotel-view:not([style*="display: none"])),
+html body:has(#hotel-view:not([style*="display: none"])) .main-container,
+html body:has(#hotel-view:not([style*="display: none"])) .app-container,
+html body:has(#hotel-view:not([style*="display: none"])) .app-body,
+html body:has(#hotel-view:not([style*="display: none"])) .main-content,
+html body #hotel-view,
+html body #hotel-view.view {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+}
+
+#hotel-view:not([style*="display: none"]) {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 2px 24px !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+}
+
+/* ==========================================================================
+   3. UNIVERSAL DASHBOARD CARD LANGUAGE FOR HOTEL
+   ========================================================================== */
+html body #hotel-view .glass-card,
+html body #hotel-view .form-container,
+html body #hotel-view .results-section,
+html body #hotel-view #hotel-form-container,
+html body #hotel-view #hotel-display-container {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 14px !important;
+    box-shadow: 0 1px 2px rgba(9, 44, 53, 0.05), 0 4px 16px -6px rgba(9, 44, 53, 0.07) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* ==========================================================================
+   4. HOTEL DISPLAY CONTAINER & HEADER
+   ========================================================================== */
+html body #hotel-view #hotel-display-container {
+    padding: 18px 20px !important;
+    margin: 0 !important;
+}
+
+html body #hotel-view .table-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 16px !important;
+    padding: 0 !important;
+    border-bottom: none !important;
+}
+
+html body #hotel-view .table-header h3 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    letter-spacing: -0.02em !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+    margin: 0 !important;
+}
+
+html body #hotel-view .table-header h3 i {
+    color: #0C6B7A !important;
+    font-size: 17px !important;
+}
+
+html body.material-theme section#hotel-view #hotel-display-container #newHotelResBtn,
+html body section#hotel-view #newHotelResBtn {
+    height: 34px !important;
+    padding: 0 15px !important;
+    background: #0C6B7A !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 9px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    box-shadow: 0 1px 2px rgba(12, 107, 122, 0.2) !important;
+    transition: background 0.15s ease !important;
+}
+
+html body section#hotel-view #newHotelResBtn:hover {
+    background: #094F56 !important;
+}
+
+/* ==========================================================================
+   5. HOTEL KPI SUMMARY CARDS
+   ========================================================================== */
+html body #hotel-view #hotelKpiGrid,
+html body #hotel-view .booking-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+}
+
+html body #hotel-view .kpi-card {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 12px !important;
+    padding: 12px 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    box-shadow: 0 1px 2px rgba(9, 44, 53, 0.04) !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+}
+
+html body #hotel-view .kpi-icon {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 9px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    font-size: 15px !important;
+}
+
+html body #hotel-view .kpi-icon.kpi-teal {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+}
+
+html body #hotel-view .kpi-icon.kpi-coral {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
+}
+
+html body #hotel-view .kpi-icon.kpi-amber {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+}
+
+html body #hotel-view .kpi-icon.kpi-green {
+    background: #E9F4EC !important;
+    color: #5F9E7D !important;
+}
+
+html body #hotel-view .kpi-body {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+}
+
+html body #hotel-view .kpi-label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #8299A1 !important;
+    margin-bottom: 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+html body #hotel-view .kpi-value {
+    font-size: 21px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.02em !important;
+    font-variant-numeric: tabular-nums !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* ==========================================================================
+   6. SEARCH & FILTER STRIP
+   ========================================================================== */
+html body #hotel-view .booking-search-section {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    flex-wrap: wrap !important;
+}
+
+html body.material-theme section#hotel-view #hotel-display-container input#hotelResSearchText,
+html body section#hotel-view input#hotelResSearchText,
+html body #hotel-view #hotelResSearchText {
+    flex: 1 1 220px !important;
+    max-width: none !important;
+    min-width: 200px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #0D2B33 !important;
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    padding: 0 12px !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+html body #hotel-view #hotelResSearchText::placeholder {
+    color: #8299A1 !important;
+    font-weight: 400 !important;
+}
+
+html body section#hotel-view #hotelResSearchText:focus {
+    border-color: #0C6B7A !important;
+    box-shadow: 0 0 0 3px rgba(12, 107, 122, 0.15) !important;
+}
+
+html body.material-theme section#hotel-view #hotel-display-container select#hotelResStatusFilter,
+html body section#hotel-view select#hotelResStatusFilter,
+html body #hotel-view #hotelResStatusFilter {
+    height: 34px !important;
+    min-height: 34px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #46626B !important;
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    padding: 0 10px !important;
+    cursor: pointer !important;
+    outline: none !important;
+}
+
+html body section#hotel-view #hotelResStatusFilter:focus {
+    border-color: #0C6B7A !important;
+    box-shadow: 0 0 0 3px rgba(12, 107, 122, 0.15) !important;
+}
+
+html body.material-theme section#hotel-view #hotel-display-container #hotelResSearchBtn,
+html body section#hotel-view #hotelResSearchBtn {
+    height: 34px !important;
+    padding: 0 14px !important;
+    background: #0C6B7A !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: background 0.15s ease !important;
+}
+
+html body section#hotel-view #hotelResSearchBtn:hover {
+    background: #094F56 !important;
+}
+
+html body.material-theme section#hotel-view #hotel-display-container #hotelResClearBtn,
+html body section#hotel-view #hotelResClearBtn {
+    height: 34px !important;
+    padding: 0 12px !important;
+    background: #FFFFFF !important;
+    color: #46626B !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.15s ease !important;
+}
+
+html body section#hotel-view #hotelResClearBtn:hover {
+    background: #F8FBFB !important;
+    color: #0D2B33 !important;
+    border-color: #D3DFE2 !important;
+}
+
+/* ==========================================================================
+   7. HOTEL RESERVATIONS TABLE
+   ========================================================================== */
+html body #hotel-view #hotelResTableContainer,
+html body #hotel-view .table-container {
+    border: 1px solid #E2EAEC !important;
+    border-radius: 10px !important;
+    overflow-x: auto !important;
+    background: #FFFFFF !important;
+    margin: 0 !important;
+}
+
+html body #hotel-view .sell-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: #FFFFFF !important;
+    margin: 0 !important;
+}
+
+html body #hotel-view .sell-table th {
+    background: #F8FBFB !important;
+    color: #8299A1 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 9px 12px !important;
+    border-bottom: 1px solid #E2EAEC !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    white-space: nowrap !important;
+}
+
+html body #hotel-view .sell-table td {
+    padding: 9px 12px !important;
+    font-size: 12px !important;
+    color: #46626B !important;
+    border-bottom: 1px solid #EEF4F5 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    vertical-align: middle !important;
+}
+
+html body #hotel-view .sell-table tr:hover td {
+    background: #F8FBFB !important;
+}
+
+html body #hotel-view .sell-table tr:last-child td {
+    border-bottom: none !important;
+}
+
+html body #hotel-view .sell-table [style*="color: var(--ink)"],
+html body #hotel-view .sell-table [style*="color: #0D6E77"] {
+    color: #0D2B33 !important;
+}
+
+html body #hotel-view .sell-table td div[style*="font-weight: 700"] {
+    font-weight: 600 !important;
+    color: #0D2B33 !important;
+}
+
+html body #hotel-view .sell-table td [style*="color: #0D6E77"] {
+    color: #0C6B7A !important;
+}
+
+html body #hotel-view .sell-table i.fa-hotel {
+    color: #0C6B7A !important;
+}
+
+/* ==========================================================================
+   8. STATUS BADGES & ACTION BUTTONS
+   ========================================================================== */
+html body #hotel-view .payment-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2px 8px !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: capitalize !important;
+    letter-spacing: 0.02em !important;
+    min-width: 52px !important;
+    line-height: 1.3 !important;
+}
+
+html body #hotel-view .payment-badge.payment-paid {
+    background: #E9F4EC !important;
+    color: #5F9E7D !important;
+    border: 1px solid rgba(95, 158, 125, 0.22) !important;
+}
+
+html body #hotel-view .payment-badge.payment-unpaid {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
+    border: 1px solid rgba(228, 87, 46, 0.22) !important;
+}
+
+html body #hotel-view .payment-badge.payment-partial {
+    background: #FDF3E0 !important;
+    color: #DD9426 !important;
+    border: 1px solid rgba(221, 148, 38, 0.25) !important;
+}
+
+html body.material-theme section#hotel-view .search-row-actions .icon-btn,
+html body section#hotel-view .search-row-actions .icon-btn {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+    border: 1px solid #E2EAEC !important;
+    background: #FFFFFF !important;
+    color: #8299A1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    font-size: 11.5px !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    transition: all 0.15s ease !important;
+}
+
+html body #hotel-view .search-row-actions {
+    white-space: nowrap !important;
+    min-width: 160px !important;
+}
+
+html body #hotel-view .search-row-actions > div {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    justify-content: center !important;
+    flex-wrap: nowrap !important;
+}
+
+html body section#hotel-view .search-row-actions .icon-btn:hover {
+    background: #F8FBFB !important;
+    color: #0C6B7A !important;
+    border-color: #D3DFE2 !important;
+}
+
+html body section#hotel-view .search-row-actions .icon-btn.btn-danger:hover {
+    background: #FDEEE7 !important;
+    color: #E4572E !important;
+    border-color: rgba(228, 87, 46, 0.3) !important;
+}
+
+/* ==========================================================================
+   9. PAGINATION
+   ========================================================================== */
+html body #hotel-view #hotelResPagination,
+html body #hotel-view .pagination-container {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 14px !important;
+    padding: 0 !important;
+}
+
+html body #hotel-view .btn-page {
+    min-width: 30px !important;
+    height: 30px !important;
+    padding: 0 8px !important;
+    border: 1px solid #E2EAEC !important;
+    background: #FFFFFF !important;
+    color: #46626B !important;
+    border-radius: 7px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.15s ease !important;
+}
+
+html body #hotel-view .btn-page:hover:not(:disabled) {
+    background: #F8FBFB !important;
+    color: #0D2B33 !important;
+    border-color: #D3DFE2 !important;
+}
+
+html body #hotel-view .btn-page.active {
+    background: #0C6B7A !important;
+    color: #FFFFFF !important;
+    border-color: #0C6B7A !important;
+    font-weight: 700 !important;
+}
+
+html body #hotel-view .btn-page:disabled {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+}
+
+/* ==========================================================================
+   10. NEW HOTEL RESERVATION FORM
+   ========================================================================== */
+html body #hotel-view #hotel-form-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 20px 22px !important;
+    box-sizing: border-box !important;
+    margin-bottom: 16px !important;
+}
+
+html body #hotel-view #hotel-form-container h2 {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    letter-spacing: -0.02em !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 0 16px 0 !important;
+    padding-bottom: 12px !important;
+    border-bottom: 1px solid #E2EAEC !important;
+}
+
+html body #hotel-view #hotel-form-container h2 i {
+    color: #0C6B7A !important;
+    font-size: 16px !important;
+}
+
+html body #hotel-view .sell-section-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-top: 18px !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+}
+
+html body #hotel-view .section-icon {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+}
+
+html body #hotel-view .section-titles h3 {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: #0D2B33 !important;
+    margin: 0 !important;
+}
+
+html body #hotel-view .section-subtitle {
+    font-size: 11.5px !important;
+    color: #8299A1 !important;
+    margin: 1px 0 0 0 !important;
+}
+
+html body #hotel-view .form-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px 14px !important;
+}
+
+html body #hotel-view .form-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+}
+
+html body #hotel-view .form-group-wide {
+    grid-column: 1 / -1 !important;
+}
+
+html body #hotel-view .form-group > label {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.03em !important;
+    color: #46626B !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    margin: 0 !important;
+}
+
+html body #hotel-view .form-group .req {
+    color: #E4572E !important;
+    font-weight: 700 !important;
+}
+
+html body.material-theme section#hotel-view #hotel-form-container form#newHotelResForm input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]),
+html body.material-theme section#hotel-view #hotel-form-container form#newHotelResForm select,
+html body.material-theme section#hotel-view #hotel-form-container form#newHotelResForm textarea,
+html body section#hotel-view #hotel-form-container input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]),
+html body section#hotel-view #hotel-form-container select,
+html body section#hotel-view #hotel-form-container textarea {
+    font-family: "Manrope", "Noto Sans Myanmar", system-ui, -apple-system, "Segoe UI", sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #0D2B33 !important;
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    padding: 7px 11px !important;
+    min-height: 36px !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+html body #hotel-view textarea {
+    min-height: 72px !important;
+    resize: vertical !important;
+}
+
+html body #hotel-view input:focus,
+html body #hotel-view select:focus,
+html body #hotel-view textarea:focus {
+    border-color: #0C6B7A !important;
+    box-shadow: 0 0 0 3px rgba(12, 107, 122, 0.15) !important;
+}
+
+html body #hotel-view .trip-type-segment {
+    display: inline-flex !important;
+    background: #F8FBFB !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    padding: 2px !important;
+    gap: 2px !important;
+    width: fit-content !important;
+}
+
+html body #hotel-view .trip-type-segment input[type="radio"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+html body #hotel-view .trip-type-segment label {
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #46626B !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 0 !important;
+    transition: all 0.15s ease !important;
+}
+
+html body #hotel-view .trip-type-segment input[type="radio"]:checked + label {
+    background: #FFFFFF !important;
+    color: #0C6B7A !important;
+    box-shadow: 0 1px 3px rgba(9, 44, 53, 0.08) !important;
+}
+
+html body #hotel-view #hotel_res_nights_badge,
+html body #hotel-view .nights-pill {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 2px 7px !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(12, 107, 122, 0.15) !important;
+}
+
+html body #hotel-view .form-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-top: 20px !important;
+    padding-top: 14px !important;
+    border-top: 1px solid #EEF4F5 !important;
+}
+
+html body.material-theme section#hotel-view #hotel-form-container form#newHotelResForm #saveHotelResBtn,
+html body section#hotel-view #saveHotelResBtn {
+    height: 36px !important;
+    padding: 0 18px !important;
+    background: #0C6B7A !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 9px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    box-shadow: 0 1px 2px rgba(12, 107, 122, 0.2) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: background 0.15s ease !important;
+}
+
+html body section#hotel-view #saveHotelResBtn:hover {
+    background: #094F56 !important;
+}
+
+html body.material-theme section#hotel-view #hotel-form-container form#newHotelResForm #cancelHotelResBtn,
+html body section#hotel-view #cancelHotelResBtn {
+    height: 36px !important;
+    padding: 0 16px !important;
+    background: #FFFFFF !important;
+    color: #46626B !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 9px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.15s ease !important;
+}
+
+html body section#hotel-view #cancelHotelResBtn:hover {
+    background: #F8FBFB !important;
+    color: #0D2B33 !important;
+    border-color: #D3DFE2 !important;
+}
+
+html body #hotel-view .autosuggest-box {
+    background: #FFFFFF !important;
+    border: 1px solid #E2EAEC !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(9, 44, 53, 0.1) !important;
+    font-size: 12.5px !important;
+    overflow: hidden !important;
+}
+
+html body #hotel-view .autosuggest-box div {
+    padding: 7px 11px !important;
+    color: #0D2B33 !important;
+    cursor: pointer !important;
+}
+
+html body #hotel-view .autosuggest-box div:hover {
+    background: #E2F2F3 !important;
+    color: #0C6B7A !important;
+}
+
+/* ==========================================================================
+   11. RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 980px) {
+    html body #hotel-view #hotelKpiGrid,
+    html body #hotel-view .booking-kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    html body #hotel-view #hotelKpiGrid,
+    html body #hotel-view .booking-kpi-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    html body #hotel-view .table-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    html body #hotel-view .booking-search-section {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    html body #hotel-view #hotelResSearchText {
+        width: 100% !important;
+    }
+}

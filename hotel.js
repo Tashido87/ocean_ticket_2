@@ -1271,15 +1271,15 @@ export function renderHotelReservations() {
 
             rowsHtml += `
                 <tr data-id="${res.id}">
-                    <td style="padding: 1rem 0.75rem; vertical-align: top;">${bookingDateHtml}</td>
-                    <td style="padding: 1rem 0.75rem; vertical-align: top;">${guestCell}</td>
-                    <td style="padding: 1rem 0.75rem; vertical-align: top;">${hotelCell}</td>
-                    <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${dateCell}</td>
-                    <td style="padding: 1rem 0.75rem; vertical-align: top;">${costCell}</td>
-                    <td style="padding: 1rem 0.75rem; vertical-align: top; font-weight: 700; color: #0D6E77; text-align: right;">${(res.commission || 0).toLocaleString()} MMK</td>
-                    <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;">${statusBadge}</td>
-                    <td style="padding: 1rem 0.75rem; vertical-align: top; text-align: center;" class="search-row-actions">
-                        <div style="display: flex; gap: 0.25rem; justify-content: center;">
+                    <td style="padding: 9px 12px; vertical-align: middle;">${bookingDateHtml}</td>
+                    <td style="padding: 9px 12px; vertical-align: middle;">${guestCell}</td>
+                    <td style="padding: 9px 12px; vertical-align: middle;">${hotelCell}</td>
+                    <td style="padding: 9px 12px; vertical-align: middle; text-align: center;">${dateCell}</td>
+                    <td style="padding: 9px 12px; vertical-align: middle;">${costCell}</td>
+                    <td style="padding: 9px 12px; vertical-align: middle; font-weight: 700; color: #0C6B7A; text-align: right;">${(res.commission || 0).toLocaleString()} MMK</td>
+                    <td style="padding: 9px 12px; vertical-align: middle; text-align: center;">${statusBadge}</td>
+                    <td style="padding: 9px 12px; vertical-align: middle; text-align: center;" class="search-row-actions">
+                        <div style="display: flex; gap: 0.25rem; justify-content: center; flex-wrap: nowrap;">
                             <button class="icon-btn" title="Download Voucher" onclick="window.exportHotelVoucher('${res.id}', false)"><i class="fa-solid fa-file-arrow-down"></i></button>
                             <button class="icon-btn" title="Share Voucher" onclick="window.exportHotelVoucher('${res.id}', true)"><i class="fa-solid fa-share-nodes"></i></button>
                             <button class="icon-btn" title="View Details" onclick="window.showHotelDetailsAction('${res.id}')"><i class="fa-solid fa-eye"></i></button>
@@ -1296,14 +1296,14 @@ export function renderHotelReservations() {
         <table class="sell-table" style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th style="width: 12%; text-align: left;">Booking Date</th>
-                    <th style="width: 18%; text-align: left;">Guest</th>
-                    <th style="width: 23%; text-align: left;">Hotel</th>
-                    <th style="width: 12%; text-align: center;">Stay Dates</th>
-                    <th style="width: 13%; text-align: left;">Cost Breakdown</th>
-                    <th style="width: 11%; text-align: right;">Commission</th>
-                    <th style="width: 6%; text-align: center;">Payment</th>
-                    <th style="width: 5%; text-align: center;">Actions</th>
+                    <th style="width: 10%; text-align: left;">Booking Date</th>
+                    <th style="width: 15%; text-align: left;">Guest</th>
+                    <th style="width: 18%; text-align: left;">Hotel</th>
+                    <th style="width: 11%; text-align: center;">Stay Dates</th>
+                    <th style="width: 11%; text-align: left;">Cost Breakdown</th>
+                    <th style="width: 10%; text-align: right;">Commission</th>
+                    <th style="width: 9%; min-width: 85px; text-align: center;">Payment</th>
+                    <th style="width: 16%; min-width: 170px; text-align: center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
