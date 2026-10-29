@@ -393,11 +393,11 @@ h1:not(#home-view *),
 }
 
 /* Section heading: 17–20px */
-h2:not(#records-view *),
-h3:not(#records-view *),
-.section-heading:not(#records-view *),
-.section-title:not(#records-view *):not(#manage-view *),
-.card-title:not(#records-view *):not(#manage-view *),
+h2:not(#records-view *):not(#search-view *),
+h3:not(#records-view *):not(#search-view *),
+.section-heading:not(#records-view *):not(#search-view *),
+.section-title:not(#records-view *):not(#manage-view *):not(#search-view *),
+.card-title:not(#records-view *):not(#manage-view *):not(#search-view *),
 .dashboard-card-title,
 .service-panel-header h2,
 .form-container:not(#manage-view) h2,
@@ -414,10 +414,10 @@ h3:not(#records-view *),
 
 /* Body / table: 14–16px */
 body,
-p:not(#home-view *):not(#records-view *):not(#manage-view *),
-table td:not(#home-view *):not(#records-view *):not(#manage-view *),
-.table td:not(#home-view *):not(#records-view *):not(#manage-view *),
-.data-cell:not(#home-view *):not(#records-view *):not(#manage-view *),
+p:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+table td:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.table td:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.data-cell:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
 .document-card,
 .doc-info,
 .ticket-row td {
@@ -426,17 +426,17 @@ table td:not(#home-view *):not(#records-view *):not(#manage-view *),
 }
 
 /* Secondary labels: 12–13px (with guaranteed >= 4.5:1 contrast) */
-.secondary-label:not(#home-view *):not(#records-view *):not(#manage-view *),
-.text-muted:not(#home-view *):not(#records-view *):not(#manage-view *),
-.form-hint:not(#home-view *):not(#records-view *):not(#manage-view *),
-.section-subtitle:not(#home-view *):not(#records-view *):not(#manage-view *),
-.service-panel-desc:not(#home-view *):not(#records-view *):not(#manage-view *),
-.form-group label:not(#home-view *):not(#records-view *):not(#manage-view *),
-.form-label:not(#home-view *):not(#records-view *):not(#manage-view *),
-.doc-meta:not(#home-view *):not(#records-view *):not(#manage-view *),
-.activity-meta:not(#home-view *):not(#records-view *):not(#manage-view *),
-.settle-section-subtitle:not(#home-view *):not(#records-view *):not(#manage-view *),
-small:not(#home-view *):not(#records-view *):not(#manage-view *) {
+.secondary-label:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.text-muted:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.form-hint:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.section-subtitle:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.service-panel-desc:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.form-group label:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.form-label:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.doc-meta:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.activity-meta:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+.settle-section-subtitle:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *),
+small:not(#home-view *):not(#records-view *):not(#manage-view *):not(#search-view *) {
     font-size: 13px !important;
     line-height: 1.4 !important;
     color: var(--text-secondary);

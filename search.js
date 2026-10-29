@@ -773,7 +773,7 @@ function highlightText(value, query = searchState.query) {
     let highlighted = text;
     tokens.forEach(token => {
         const safe = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        highlighted = highlighted.replace(new RegExp(`(${safe})`, 'gi'), '<mark class="search-highlight">$1</mark>');
+        highlighted = highlighted.replace(new RegExp(`\\b(${safe})\\b(?![^<]*>)`, 'gi'), '<mark class="search-highlight">$1</mark>');
     });
     return highlighted;
 }
@@ -826,11 +826,6 @@ function renderFilterBar() {
     ).entries()];
 
     bar.innerHTML = `
-        <label>Result Type
-            <select data-filter="activeType">
-                ${TYPES.map(type => `<option value="${type}" ${searchState.activeType === type ? 'selected' : ''}>${type === 'pnr' ? 'PNR' : type[0].toUpperCase() + type.slice(1)}</option>`).join('')}
-            </select>
-        </label>
         <label>Date Range
             <select data-filter="dateRange">
                 <option value="all">All dates</option>
@@ -1318,15 +1313,15 @@ function renderRow(result, hasSubAgent = false) {
         return `
             <tr class="search-row" data-kind="client" data-client-key="${escapeHtml(c.client_key)}">
                 <td>${fmtDateOrDash(c.last_issued)}</td>
-                <td class="strong-cell">
+                <td class="strong-cell" title="${escapeHtml(c.name || '')}">
                     <div class="cell-with-avatar">
                         <span class="cell-avatar">${escapeHtml(initialsOf(c.name))}</span>
-                        <span>${highlightText(c.name)}</span>
+                        <span class="cell-name-text">${highlightText(c.name)}</span>
                     </div>
                 </td>
-                <td>${highlightText(c.account_name ? c.account_name.toUpperCase() : '—')}</td>
+                <td class="account-cell" title="${escapeHtml(c.account_name ? c.account_name.toUpperCase() : '')}">${highlightText(c.account_name ? c.account_name.toUpperCase() : '—')}</td>
                 <td>—</td>
-                <td>Client (${escapeHtml(c.account_type || '—')})</td>
+                <td class="route-cell" title="Client (${escapeHtml(c.account_type || '—')})">Client (${escapeHtml(c.account_type || '—')})</td>
                 ${subAgentCol}
                 <td>${Number(c.ticket_count || 0)} tickets</td>
                 <td>${clientActions(c.client_key)}</td>
@@ -1345,7 +1340,7 @@ function renderRow(result, hasSubAgent = false) {
             ${subFare > 0 ? `
                 <div class="subagent-fare-badge ${subSettled ? 'is-settled' : 'is-unsettled'}" title="${subSettled ? `Settled on ${subSettleDate} via ${subSettleMethod}` : 'Unsettled sub-agent fare'}">
                     <span class="subagent-amt">${subFare.toLocaleString()} MMK</span>
-                    <span class="subagent-tag-status">${subSettled ? `<i class="fa-solid fa-circle-check"></i> Paid` : `<i class="fa-solid fa-clock"></i> Unpaid`}</span>
+                    <span class="subagent-tag-status">${subSettled ? `<i class="fa-solid fa-circle-check"></i> Sub-agent: Paid` : `<i class="fa-solid fa-clock"></i> Sub-agent: Unpaid`}</span>
                 </div>
             ` : '<span class="text-slate-muted">—</span>'}
         </td>
@@ -1354,15 +1349,15 @@ function renderRow(result, hasSubAgent = false) {
     return `
         <tr class="search-row" data-kind="ticket" data-ticket-id="${escapeHtml(t.id || '')}" data-client-key="${escapeHtml(clientKey)}" data-pnr="${escapeHtml(t.booking_reference || '')}" data-account-name="${escapeHtml(t.account_name ? t.account_name.toUpperCase() : '')}">
             <td>${fmtDateOrDash(t.issued_date)}</td>
-            <td class="strong-cell">
+            <td class="strong-cell" title="${escapeHtml(t.name || '')}">
                 <div class="cell-with-avatar">
                     <span class="cell-avatar ticket-avatar"><i class="fa-solid fa-ticket"></i></span>
-                    <span class="${clientKey ? 'clickable-client-link' : ''}" data-client-key="${escapeHtml(clientKey)}" ${clientKey ? 'style="cursor:pointer; color:var(--primary-accent);"' : ''} title="${clientKey ? 'View Client' : ''}">${highlightText(String(t.name || '—').replace(/\([^)]+\)\s*$/i, '').trim())}</span>
+                    <span class="cell-name-text ${clientKey ? 'clickable-client-link' : ''}" data-client-key="${escapeHtml(clientKey)}" ${clientKey ? 'style="cursor:pointer;"' : ''} title="${clientKey ? 'View Client' : ''}">${highlightText(String(t.name || '—').replace(/\([^)]+\)\s*$/i, '').trim())}</span>
                 </div>
             </td>
-            <td>${highlightText(t.account_name ? t.account_name.toUpperCase() : '—')}</td>
+            <td class="account-cell" title="${escapeHtml(t.account_name ? t.account_name.toUpperCase() : '')}">${highlightText(t.account_name ? t.account_name.toUpperCase() : '—')}</td>
             <td><strong>${t.booking_reference ? `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(t.booking_reference)}">${highlightText(t.booking_reference)}</a>` : '—'}</strong></td>
-            <td>${escapeHtml(routeShort(t))}</td>
+            <td class="route-cell" title="${escapeHtml(routeShort(t))}">${escapeHtml(routeShort(t))}</td>
             ${subAgentCol}
             <td>${paymentBadge(result.payment)}</td>
             <td>${ticketActions(Boolean(clientKey), result.payment !== 'paid', t)}</td>

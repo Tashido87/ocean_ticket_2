@@ -1,0 +1,965 @@
+/* ==========================================================================
+   OCEAN TRAVEL SEARCH RESULTS — CANONICAL DASHBOARD STYLE ALIGNMENT
+   Scope: #search-view only
+   Exact token matching: --app-bg #F3F7F7, --border #DCE8E7, --teal-600 #0F7781
+   ========================================================================== */
+
+#search-view {
+    --app-bg: #F3F7F7;
+    --surface: #FFFFFF;
+    --surface-soft: #F8FBFB;
+    --sidebar-bg: #FAFCFC;
+    --border: #DCE8E7;
+    --border-soft: #E9F0F0;
+    --text-strong: #17333B;
+    --text: #294A52;
+    --text-muted: #789097;
+    --text-faint: #9BAEB3;
+    --teal-700: #0C6670;
+    --teal-600: #0F7781;
+    --teal-500: #238E98;
+    --teal-100: #DDF1F1;
+    --teal-050: #EFF8F8;
+    --mint: #2FAE7B;
+    --mint-soft: #E8F8F0;
+    --coral: #F07864;
+    --coral-soft: #FFF0EC;
+    --amber: #E9A33A;
+    --amber-soft: #FFF5DE;
+    --sky: #55AFCB;
+    --sky-soft: #EAF7FB;
+    --violet: #8A78D6;
+    --violet-soft: #F0EDFF;
+    --danger: #E65353;
+    --danger-soft: #FDEBEC;
+    --shadow-sm: 0 1px 2px rgba(23, 51, 59, 0.04), 0 4px 14px rgba(23, 51, 59, 0.05);
+    --shadow-hover: 0 8px 24px rgba(23, 51, 59, 0.09);
+    --font: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Page shell & background */
+html body #search-view,
+section#search-view {
+    background-color: var(--app-bg) !important;
+    min-height: 100vh;
+}
+
+html body #search-view :not(i):not(.fa):not(.fas):not(.fa-solid):not(.fa-regular):not(.fa-brands) {
+    font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+/* Icons preservation */
+html body #search-view i.fa-solid,
+html body #search-view i.fas,
+html body #search-view i.fa-regular,
+html body #search-view i.far,
+html body #search-view i.fa-brands,
+html body #search-view i.fab,
+html body #search-view i[class*="fa-"] {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+    font-style: normal !important;
+}
+html body #search-view i.fa-solid,
+html body #search-view i.fas {
+    font-weight: 900 !important;
+}
+html body #search-view i.fa-regular,
+html body #search-view i.far {
+    font-weight: 400 !important;
+}
+html body #search-view i.fa-brands,
+html body #search-view i.fab {
+    font-weight: 400 !important;
+}
+
+/* Page wrapper */
+html body #search-view .search-view-wrapper {
+    padding: 16px 18px 24px !important;
+    background: transparent !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+
+/* Header */
+html body #search-view .search-view-header {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    margin-bottom: 12px !important;
+}
+
+html body #search-view .search-view-header h2 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    color: var(--text-strong) !important;
+    margin: 0 0 4px !important;
+    letter-spacing: -0.015em !important;
+}
+
+html body #search-view .search-subtitle {
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    color: var(--text-muted) !important;
+    margin: 0 0 4px !important;
+    line-height: 1.4 !important;
+}
+
+html body #search-view .search-subtitle strong {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text) !important;
+}
+
+html body #search-view .search-count-summary {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--teal-700) !important;
+    margin-top: 4px !important;
+    line-height: 1.4 !important;
+}
+
+html body #search-view .search-close-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: 32px !important;
+    padding: 0 12px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: all .15s ease !important;
+}
+html body #search-view .search-close-btn:hover {
+    color: var(--text-strong) !important;
+    background: var(--surface-soft) !important;
+    border-color: var(--border) !important;
+}
+
+/* Type Tabs */
+html body #search-view .search-type-tabs {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin: 0 0 12px !important;
+}
+
+html body #search-view .search-type-tab {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: 32px !important;
+    padding: 0 12px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 9999px !important;
+    background: #FFFFFF !important;
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all .15s ease !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+html body #search-view .search-type-tab span {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+html body #search-view .search-type-tab:hover {
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+
+html body #search-view .search-type-tab.active {
+    background: var(--teal-600) !important;
+    border-color: var(--teal-600) !important;
+    color: #FFFFFF !important;
+}
+
+html body #search-view .search-type-tab.active span {
+    color: #FFFFFF !important;
+}
+
+/* Filter Bar */
+html body #search-view .search-filter-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-end !important;
+    gap: 10px !important;
+    margin-bottom: 12px !important;
+    padding: 10px 14px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 12px !important;
+    background: #FFFFFF !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+html body #search-view .search-filter-bar label {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.035em !important;
+    color: var(--text-muted) !important;
+    flex: 0 1 auto !important;
+    min-width: 140px !important;
+    max-width: 190px !important;
+}
+
+html body #search-view .search-filter-bar select {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    padding: 0 10px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    color: var(--text) !important;
+    font-size: 11.5px !important;
+    font-weight: 400 !important;
+    outline: none !important;
+    transition: border-color .15s ease, box-shadow .15s ease !important;
+}
+
+html body #search-view .search-filter-bar select:focus {
+    border-color: var(--teal-600) !important;
+    box-shadow: 0 0 0 3px rgba(15, 119, 129, 0.18) !important;
+}
+
+html body #search-view .search-more-btn {
+    height: 32px !important;
+    min-height: 32px !important;
+    box-sizing: border-box !important;
+    padding: 0 12px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    color: var(--text) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+    transition: all .15s ease !important;
+    margin-bottom: 0 !important;
+    align-self: flex-end !important;
+}
+
+html body #search-view .search-more-btn:hover {
+    background: var(--surface-soft) !important;
+    border-color: var(--border) !important;
+    color: var(--text-strong) !important;
+}
+
+/* More Filters Drawer / Panel */
+html body #search-view .search-more-filters {
+    margin-bottom: 12px !important;
+    padding: 14px 16px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 12px !important;
+    background: #FFFFFF !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+html body #search-view .search-more-filters[hidden] {
+    display: none !important;
+}
+
+html body #search-view .search-more-head {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 10px !important;
+}
+
+html body #search-view .search-more-head h3 {
+    margin: 0 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--text-strong) !important;
+}
+
+html body #search-view .search-more-head p {
+    margin: 2px 0 0 !important;
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+}
+
+html body #search-view .search-drawer-close {
+    width: 28px !important;
+    height: 28px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 6px !important;
+    background: #FFFFFF !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+}
+
+html body #search-view .search-more-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px 12px !important;
+}
+
+html body #search-view .search-more-grid label {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.035em !important;
+    color: var(--text-muted) !important;
+}
+
+html body #search-view .search-more-grid input,
+html body #search-view .search-more-grid select {
+    height: 32px !important;
+    box-sizing: border-box !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    color: var(--text) !important;
+    font-size: 11.5px !important;
+    padding: 0 10px !important;
+    outline: none !important;
+    transition: border-color .15s ease, box-shadow .15s ease !important;
+}
+
+html body #search-view .search-more-grid input:focus,
+html body #search-view .search-more-grid select:focus {
+    border-color: var(--teal-600) !important;
+    box-shadow: 0 0 0 3px rgba(15, 119, 129, 0.18) !important;
+}
+
+html body #search-view .search-toggle-filter {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 32px !important;
+    box-sizing: border-box !important;
+    padding: 0 10px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    background: var(--surface-soft) !important;
+}
+
+html body #search-view .search-toggle-filter span {
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+
+html body #search-view .search-more-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--border-soft) !important;
+}
+
+html body #search-view .search-more-actions #searchClearFiltersBtn {
+    height: 32px !important;
+    padding: 0 12px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    color: var(--text) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+
+html body #search-view .search-more-actions #searchApplyMoreBtn {
+    height: 32px !important;
+    padding: 0 14px !important;
+    border: 1px solid var(--teal-600) !important;
+    border-radius: 8px !important;
+    background: var(--teal-600) !important;
+    color: #FFFFFF !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+
+/* Results Area & Table Card */
+html body #search-view .search-results-area {
+    min-width: 0 !important;
+}
+
+html body #search-view .search-table-shell {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 12px !important;
+    background: #FFFFFF !important;
+    box-shadow: var(--shadow-sm) !important;
+    margin-bottom: 16px !important;
+}
+
+html body #search-view .search-results-table {
+    width: 100% !important;
+    min-width: 980px !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    font-size: 11.5px !important;
+    color: var(--text) !important;
+}
+
+html body #search-view .search-results-table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+    padding: 8px 10px !important;
+    border-bottom: 1px solid var(--border-soft) !important;
+    background: var(--surface-soft) !important;
+    color: var(--text-muted) !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+}
+
+html body #search-view .search-results-table td {
+    padding: 8px 10px !important;
+    border-bottom: 1px solid var(--border-soft) !important;
+    color: var(--text) !important;
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
+    vertical-align: middle !important;
+    height: 44px !important;
+    box-sizing: border-box !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+html body #search-view .search-results-table tbody tr:last-child td {
+    border-bottom: 0 !important;
+}
+
+html body #search-view .search-row {
+    cursor: pointer !important;
+    height: 44px !important;
+    transition: background-color .15s ease !important;
+}
+
+html body #search-view .search-row:hover {
+    background-color: var(--teal-050) !important;
+}
+
+/* Section Header Rows */
+html body #search-view .search-section-row td {
+    padding: 8px 12px !important;
+    background: var(--surface-soft) !important;
+    color: var(--text-strong) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    border-top: 1px solid var(--border-soft) !important;
+    border-bottom: 1px solid var(--border-soft) !important;
+}
+
+html body #search-view .search-section-row span {
+    margin-left: 6px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: var(--teal-700) !important;
+    background: var(--teal-100) !important;
+    padding: 1px 6px !important;
+    border-radius: 9999px !important;
+}
+
+/* Cell Elements */
+html body #search-view .cell-with-avatar {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    max-width: 100% !important;
+}
+
+html body #search-view .cell-avatar {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 9999px !important;
+    background: var(--teal-100) !important;
+    color: var(--teal-700) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+html body #search-view .cell-avatar.ticket-avatar {
+    background: var(--sky-soft) !important;
+    color: var(--sky) !important;
+}
+
+html body #search-view .strong-cell,
+html body #search-view .strong-cell .cell-name-text {
+    color: var(--text-strong) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
+html body #search-view .cell-name-text {
+    max-width: 200px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+}
+
+html body #search-view .search-results-table td.account-cell {
+    max-width: 180px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 11.5px !important;
+    color: var(--text) !important;
+}
+
+html body #search-view .search-results-table td.route-cell {
+    max-width: 170px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 11.5px !important;
+    color: var(--text) !important;
+}
+
+html body #search-view .clickable-pnr {
+    color: var(--teal-600) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+}
+html body #search-view .clickable-pnr:hover {
+    text-decoration: underline !important;
+}
+
+html body #search-view .clickable-client-link {
+    color: var(--text-strong) !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+}
+html body #search-view .clickable-client-link:hover {
+    color: var(--teal-600) !important;
+    text-decoration: underline !important;
+}
+
+/* Highlight */
+html body #search-view .search-highlight {
+    background: var(--teal-100) !important;
+    color: var(--teal-700) !important;
+    font-size: inherit !important;
+    font-weight: 600 !important;
+    border-radius: 3px !important;
+    padding: 0 2px !important;
+}
+
+/* Payment Status Badges */
+html body #search-view .payment-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 22px !important;
+    padding: 0 8px !important;
+    border-radius: 9999px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    border: 1px solid transparent !important;
+}
+
+html body #search-view .payment-paid {
+    background: var(--mint-soft) !important;
+    color: var(--mint) !important;
+    border-color: rgba(47, 174, 123, 0.2) !important;
+}
+
+html body #search-view .payment-partial {
+    background: var(--amber-soft) !important;
+    color: var(--amber) !important;
+    border-color: rgba(233, 163, 58, 0.2) !important;
+}
+
+html body #search-view .payment-unpaid {
+    background: var(--coral-soft) !important;
+    color: var(--coral) !important;
+    border-color: rgba(240, 120, 100, 0.2) !important;
+}
+
+/* Sub-agent Fare Badge */
+html body #search-view .subagent-fare-badge {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+}
+
+html body #search-view .subagent-fare-badge .subagent-amt {
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    color: var(--text-strong) !important;
+    font-variant-numeric: tabular-nums !important;
+}
+
+html body #search-view .subagent-fare-badge .subagent-tag-status {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 1px 6px !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: fit-content !important;
+}
+
+html body #search-view .subagent-fare-badge.is-settled .subagent-tag-status {
+    background: var(--mint-soft) !important;
+    color: var(--mint) !important;
+    border: 1px solid rgba(47, 174, 123, 0.2) !important;
+}
+
+html body #search-view .subagent-fare-badge.is-unsettled .subagent-tag-status {
+    background: var(--coral-soft) !important;
+    color: var(--coral) !important;
+    border: 1px solid rgba(240, 120, 100, 0.2) !important;
+}
+
+/* Action Column & Buttons */
+html body #search-view .search-results-table th:last-child,
+html body #search-view .search-results-table td:last-child {
+    min-width: 250px !important;
+    width: 250px !important;
+}
+
+html body #search-view .search-row-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 5px !important;
+    align-items: center !important;
+    max-width: 260px !important;
+    white-space: normal !important;
+}
+
+html body #search-view .search-action-btn {
+    height: 30px !important;
+    box-sizing: border-box !important;
+    padding: 0 8px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    color: var(--text) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    transition: all .15s ease !important;
+    box-shadow: 0 1px 2px rgba(23, 51, 59, 0.03) !important;
+    white-space: nowrap !important;
+}
+
+html body #search-view .search-action-btn:hover {
+    background: var(--surface-soft) !important;
+    border-color: var(--border) !important;
+    color: var(--text-strong) !important;
+}
+
+html body #search-view .search-action-btn.primary {
+    background: var(--teal-600) !important;
+    border-color: var(--teal-600) !important;
+    color: #FFFFFF !important;
+}
+
+html body #search-view .search-action-btn.primary:hover {
+    background: var(--teal-700) !important;
+    border-color: var(--teal-700) !important;
+}
+
+html body #search-view .search-action-btn.coral {
+    background: var(--coral-soft) !important;
+    border-color: rgba(240, 120, 100, 0.3) !important;
+    color: var(--coral) !important;
+}
+
+html body #search-view .search-action-btn.coral:hover {
+    background: #ffe6e0 !important;
+    border-color: var(--coral) !important;
+}
+
+/* Sub-agent Account Summary Card */
+html body #search-view .sub-agent-summary-card {
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 12px !important;
+    background: #FFFFFF !important;
+    box-shadow: var(--shadow-sm) !important;
+    padding: 14px 16px !important;
+    margin-bottom: 12px !important;
+}
+
+html body #search-view .sub-agent-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+}
+
+html body #search-view .sub-agent-title-box {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+html body #search-view .sub-agent-icon {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+    background: var(--teal-100) !important;
+    color: var(--teal-700) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+}
+
+html body #search-view .sub-agent-name {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: var(--text-strong) !important;
+    margin: 0 !important;
+}
+
+html body #search-view .sub-agent-tag {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 2px 7px !important;
+    border-radius: 9999px !important;
+    background: var(--teal-100) !important;
+    color: var(--teal-700) !important;
+    margin-left: 6px !important;
+}
+
+html body #search-view .sub-agent-desc {
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+    margin: 2px 0 0 !important;
+}
+
+html body #search-view .btn-settle-subagent-all {
+    height: 32px !important;
+    padding: 0 14px !important;
+    background: var(--teal-600) !important;
+    color: #FFFFFF !important;
+    border-radius: 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+html body #search-view .tag-all-settled {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 4px 10px !important;
+    border-radius: 9999px !important;
+    background: var(--mint-soft) !important;
+    color: var(--mint) !important;
+    border: 1px solid rgba(47, 174, 123, 0.2) !important;
+}
+
+html body #search-view .sub-agent-kpis {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+    margin-top: 12px !important;
+}
+
+html body #search-view .sub-agent-kpi {
+    background: var(--surface-soft) !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+html body #search-view .sub-agent-kpi .kpi-label {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    color: var(--text-muted) !important;
+    letter-spacing: 0.03em !important;
+}
+
+html body #search-view .sub-agent-kpi .kpi-value {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: var(--text-strong) !important;
+    font-variant-numeric: tabular-nums !important;
+    margin-top: 4px !important;
+}
+
+html body #search-view .sub-agent-kpi .kpi-sub {
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+    margin-top: 2px !important;
+}
+
+html body #search-view .sub-agent-kpi.kpi-unsettled .kpi-value {
+    color: var(--coral) !important;
+}
+
+html body #search-view .sub-agent-kpi.kpi-settled .kpi-value {
+    color: var(--mint) !important;
+}
+
+/* Empty State */
+html body #search-view .search-empty-state.search-empty-shell {
+    max-width: 520px !important;
+    margin: 24px auto !important;
+    padding: 24px !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 12px !important;
+    background: #FFFFFF !important;
+    box-shadow: var(--shadow-sm) !important;
+    text-align: center !important;
+}
+
+html body #search-view .search-empty-shell > i {
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 auto 12px !important;
+    border-radius: 10px !important;
+    background: var(--teal-100) !important;
+    color: var(--teal-700) !important;
+    font-size: 20px !important;
+    display: grid !important;
+    place-items: center !important;
+}
+
+html body #search-view .search-empty-shell h3 {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: var(--text-strong) !important;
+    margin: 0 0 6px !important;
+}
+
+html body #search-view .search-empty-shell p {
+    font-size: 11.5px !important;
+    color: var(--text-muted) !important;
+    margin: 0 0 12px !important;
+}
+
+html body #search-view .search-suggestions {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 0 16px !important;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    text-align: left !important;
+    font-size: 11.5px !important;
+    color: var(--text-muted) !important;
+}
+
+html body #search-view .search-suggestions li {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+html body #search-view .search-suggestions li i {
+    color: var(--teal-600) !important;
+    font-size: 10px !important;
+}
+
+html body #search-view #searchClearAllBtn {
+    height: 32px !important;
+    padding: 0 16px !important;
+    border-radius: 8px !important;
+    background: var(--teal-600) !important;
+    border: 1px solid var(--teal-600) !important;
+    color: #FFFFFF !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+
+/* Inline Client Detail */
+html body #search-view #searchClientDetail .client-detail-card,
+html body #search-view #searchClientDetail .client-detail-header-card,
+html body #search-view #searchClientDetail .client-detail-tabs-card {
+    background: #FFFFFF !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-sm) !important;
+    padding: 14px 16px !important;
+    margin-bottom: 12px !important;
+}
+
+html body #search-view #searchClientDetail h2 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: var(--text-strong) !important;
+}
+
+html body #search-view #searchClientDetail h3,
+html body #search-view #searchClientDetail h4 {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--text-strong) !important;
+}
+
+html body #search-view #searchClientDetail p,
+html body #search-view #searchClientDetail span,
+html body #search-view #searchClientDetail td {
+    font-size: 11.5px !important;
+    color: var(--text) !important;
+}
+
+@media (max-width: 980px) {
+    html body #search-view .sub-agent-kpis {
+        grid-template-columns: 1fr !important;
+    }
+    html body #search-view .search-more-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    html body #search-view .search-more-grid {
+        grid-template-columns: 1fr !important;
+    }
+}

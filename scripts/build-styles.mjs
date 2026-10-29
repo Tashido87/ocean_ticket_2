@@ -14,7 +14,8 @@ export const files = [
     'service-colors.css',
     'solid-ui.css',
     'settle-exact.css',
-    'hotel-exact.css'
+    'hotel-exact.css',
+    'search-exact.css'
 ];
 
 export const jsModules = [
@@ -153,6 +154,7 @@ const coreAssetsList = [
     './dashboard-exact.css?v=10',
     './settle-exact.css?v=2',
     './hotel-exact.css?v=1',
+    './search-exact.css?v=1',
     ...corePrecacheModules.map(mod => `./${mod}?v=${moduleHashes.get(mod)}`)
 ];
 
