@@ -12,7 +12,8 @@ export const files = [
     'dashboard.css',
     'page-harmony.css',
     'service-colors.css',
-    'solid-ui.css'
+    'solid-ui.css',
+    'settle-exact.css'
 ];
 
 export const jsModules = [
@@ -149,7 +150,7 @@ const coreAssetsList = [
     './ocean-travel-logo.png',
     `./app-styles.min.css?v=${cssHash}`,
     './dashboard-exact.css?v=10',
-    './settle-exact.css?v=1',
+    './settle-exact.css?v=2',
     ...corePrecacheModules.map(mod => `./${mod}?v=${moduleHashes.get(mod)}`)
 ];
 
