@@ -512,7 +512,7 @@ function openManageDetailsModal(docId) {
             ${ticket.original_net_amount ? `<p><strong>Original Net:</strong> ${money(ticket.original_net_amount)}</p>` : ''}
         </div>
         <div class="form-actions" style="margin-top: 1.5rem;">
-            <button class="btn btn-secondary" id="manageDetailsCloseBtn">Close</button>
+            <button class="btn btn-secondary" id="manageDetailsCloseBtn">Cancel</button>
         </div>
     `, 'large-modal');
     document.getElementById('manageDetailsCloseBtn').addEventListener('click', closeModal);
@@ -1350,7 +1350,7 @@ function openManageModal(docId) {
                     <button type="button" class="btn btn-secondary" id="cancelRefundBtn" style="background-color: rgba(248, 81, 73, 0.2); color: #F85149;">Cancel/Refund...</button>
                     <button type="button" class="btn btn-secondary" id="partialPayBtn" style="background-color: var(--primary-accent); color: white; opacity: 0.8;">Partial Pay...</button>
                 </div>
-                <div><button type="button" class="btn btn-secondary" id="modalBackBtn">Back</button><button type="submit" class="btn btn-primary">Update</button></div>
+                <div><button type="button" class="btn btn-secondary" id="modalBackBtn">Cancel</button><button type="submit" class="btn btn-primary">Update</button></div>
             </div>
         </form>`;
 

@@ -1460,7 +1460,7 @@ export function showDetails(docId) {
 
             <!-- Actions Footer -->
             <div class="aesthetic-actions">
-                <button class="btn-aesthetic-close" id="modalCloseBtn">Close Detail</button>
+                <button class="btn-aesthetic-close" id="modalCloseBtn">Cancel</button>
                 <button class="btn-aesthetic-edit" id="modalEditTicketBtn"><i class="fa-solid fa-pen-to-square"></i> Edit Ticket</button>
             </div>
         </div>
@@ -1548,7 +1548,7 @@ export function showHotelDetails(hotel) {
             </div>
         </div>
         <div class="form-actions" style="margin-top: 1rem; display:flex; gap:0.5rem; justify-content:flex-end;">
-            <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
+            <button class="btn btn-secondary" id="modalCloseBtn">Cancel</button>
             <button class="btn btn-primary" id="modalHotelVoucherBtn" style="background:#0f4c75; border-color:#0f4c75;"><i class="fa-solid fa-file-arrow-down"></i> Download Voucher</button>
             <button class="btn btn-secondary" id="modalHotelVoucherShareBtn"><i class="fa-solid fa-share-nodes"></i> Share</button>
         </div>
@@ -2667,7 +2667,7 @@ export function showGroupDetails(group) {
             </table>
         </div>
         <div class="form-actions" style="margin-top:1rem;">
-            <button class="btn btn-secondary" id="groupCloseBtn">Close</button>
+            <button class="btn btn-secondary" id="groupCloseBtn">Cancel</button>
         </div>
     `;
     openModal(content);

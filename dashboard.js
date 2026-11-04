@@ -1126,7 +1126,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
                     ${isLargePax ? `<span class="pnr-toolbar-badge">${uniquePassengers.length} Passengers</span>` : ''}
                 </div>
                 <div class="pnr-toolbar-actions-group">
-                    <button type="button" id="tripPlanTopCloseBtn" class="pnr-close-circle-btn" aria-label="Close booking details">
+                    <button type="button" id="tripPlanTopCloseBtn" class="pnr-close-circle-btn" aria-label="Close booking details" style="display:none;">
                         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -1278,7 +1278,8 @@ function getFeeRowDateChangeText(t, allRows = []) {
                         </button>
                         ` : ''}
                     </div>
-                    <div class="pnr-footer-action-right">
+                    <div class="pnr-footer-action-right" style="display:flex; gap:8px; align-items:center;">
+                        <button type="button" class="btn btn-secondary" id="tripPlanCancelBtn">Cancel</button>
                         <button type="button" class="btn btn-primary pnr-footer-btn-manage" id="tripPlanManageActionBtn">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Full Detail
                         </button>
@@ -1359,6 +1360,7 @@ function getFeeRowDateChangeText(t, allRows = []) {
     };
 
     document.getElementById('tripPlanTopCloseBtn')?.addEventListener('click', closeModal);
+    document.getElementById('tripPlanCancelBtn')?.addEventListener('click', closeModal);
     document.getElementById('tripPnrCopyBtn')?.addEventListener('click', handleCopyPnr);
     document.getElementById('tripPlanManageActionBtn')?.addEventListener('click', handleJumpManage);
     document.getElementById('tripPlanReminderCardBtn')?.addEventListener('click', () => {
@@ -2455,8 +2457,8 @@ export function openPaymentReminderCardModal({ accountKey = '', pnr = '' } = {})
                     </div>
                     ` : ''}
                 </div>
-                <button type="button" class="pnr-close-circle-btn" id="prcCloseModalBtn" aria-label="Close">
-                    <i class="fa-solid fa-xmark"></i>
+                <button type="button" class="btn btn-secondary prc-action-btn" id="prcCloseModalBtn">
+                    Cancel
                 </button>
             </div>
 

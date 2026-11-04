@@ -950,7 +950,7 @@ export function showBookingDetails(docIdsStr) {
 
             <div class="form-actions" style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
                 <button type="button" class="btn btn-secondary" id="modalCopyBookingBtn"><i class="fa-regular fa-clipboard"></i> Copy Raw Info</button>
-                <button type="button" class="btn btn-secondary" id="modalCloseBtn">Close</button>
+                <button type="button" class="btn btn-secondary" id="modalCloseBtn">Cancel</button>
             </div>
         `;
         openModal(content);

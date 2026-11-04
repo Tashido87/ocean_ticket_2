@@ -2345,7 +2345,6 @@ function openTravelDocumentEditModal(client) {
     openModal(`
         <div class="modal-header">
             <h3><i class="fa-solid fa-passport"></i> Edit Travel Documents</h3>
-            <button class="modal-close-btn" data-close-modal>&times;</button>
         </div>
         <div class="modal-body-content">
             <form id="clientDocsForm" class="client-doc-edit-form">
@@ -2555,7 +2554,6 @@ function openClientOverviewEditModal(client) {
     openModal(`
         <div class="modal-header">
             <h3><i class="fa-solid fa-id-card"></i> Edit Client Overview</h3>
-            <button class="modal-close-btn" data-close-modal>&times;</button>
         </div>
         <div class="modal-body-content">
             <form id="clientOverviewForm" class="client-doc-edit-form">

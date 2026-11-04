@@ -228,9 +228,6 @@ export function reviewPotentialMatches() {
                     <i class="fa-solid fa-user-check" style="color: var(--primary, #0D6E77);"></i>
                     Review Potential Customer Matches (${matches.length})
                 </h3>
-                <button type="button" class="btn btn-secondary" id="closePotentialMatchesTopBtn" style="width: 36px; height: 36px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
             </div>
 
             <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: #b45309; line-height: 1.5;">
@@ -281,13 +278,12 @@ export function reviewPotentialMatches() {
             </div>
 
             <div style="display: flex; justify-content: flex-end; margin-top: 18px; border-top: 1px solid var(--border-color, #e5e7eb); padding-top: 12px;">
-                <button type="button" class="btn btn-secondary" id="closePotentialMatchesBtn">Done</button>
+                <button type="button" class="btn btn-secondary" id="closePotentialMatchesBtn">Cancel</button>
             </div>
         </div>
     `;
 
     openModal(modalContent, 'solid-modal');
-    document.getElementById('closePotentialMatchesTopBtn')?.addEventListener('click', closeModal);
     document.getElementById('closePotentialMatchesBtn')?.addEventListener('click', closeModal);
 
     document.querySelectorAll('.apply-match-btn').forEach(btn => {
@@ -1669,12 +1665,6 @@ function setupEventListeners() {
     // Render recent activity on init
     renderRecentActivity();
 
-    // Global listeners
-    window.addEventListener('click', (event) => {
-        if (event.target == document.getElementById('modal')) closeModal();
-        if (event.target == document.getElementById('exportConfirmModal')) document.getElementById('exportConfirmModal').classList.remove('show');
-    });
-
     // Theme change listener for chart redraw
     document.body.addEventListener('themeChanged', () => {
         updateComparisonChart();
@@ -2588,7 +2578,7 @@ function initializeAirAsiaGenerator() {
         modal.classList.add('show');
     });
 
-    closeBtn?.addEventListener('click', () => modal.classList.remove('show'));
+    if (closeBtn) closeBtn.style.display = 'none';
     cancelBtn?.addEventListener('click', () => modal.classList.remove('show'));
 
     let isAirAsiaDownloading = false;
@@ -3059,12 +3049,8 @@ function initializeChinaHotelGenerator() {
         }
     });
 
-    closeBtn?.addEventListener('click', () => modal.classList.remove('show'));
+    if (closeBtn) closeBtn.style.display = 'none';
     cancelBtn?.addEventListener('click', () => modal.classList.remove('show'));
-
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('show');
-    });
 
     let isChinaHotelDownloading = false;
     downloadPdfBtn?.addEventListener('click', async () => {

@@ -1252,7 +1252,6 @@ function openSettlementDetailModal(s) {
     openModal(`
         <div class="modal-header">
             <h3><i class="fa-solid fa-handshake"></i> Settlement Detail</h3>
-            <button class="modal-close-btn" data-close-modal>&times;</button>
         </div>
         <div class="modal-body-content">
             <div class="settle-detail-grid">
@@ -1268,7 +1267,7 @@ function openSettlementDetailModal(s) {
             <div style="margin-top:1rem"><strong>Notes</strong><p>${escapeHtml(s.notes || '—')}</p></div>
             <div style="margin-top:1rem"><strong>Allocations</strong>${allocHtml}</div>
             <div class="form-actions" style="margin-top:1.25rem">
-                <button class="btn btn-secondary" data-close-modal>Close</button>
+                <button class="btn btn-secondary" data-close-modal>Cancel</button>
             </div>
         </div>
     `, 'large-modal');
@@ -1385,7 +1384,6 @@ export function openNewSettlementModal(existing = null) {
     openModal(`
         <div class="modal-header">
             <h3><i class="fa-solid fa-handshake"></i> ${isEdit ? 'Edit' : 'New'} Settlement</h3>
-            <button class="modal-close-btn" data-close-modal>&times;</button>
         </div>
         <div class="modal-body-content">
             <form id="settlementForm" class="settle-form">
@@ -1738,7 +1736,6 @@ export function openAdjustmentModal() {
     openModal(`
         <div class="modal-header">
             <h3><i class="fa-solid fa-pen-to-square"></i> New Adjustment</h3>
-            <button class="modal-close-btn" data-close-modal>&times;</button>
         </div>
         <div class="modal-body-content">
             <form id="adjustmentForm" class="settle-form">
@@ -1804,7 +1801,6 @@ export function openCloseMonthModal() {
     openModal(`
         <div class="modal-header">
             <h3><i class="fa-solid fa-lock"></i> Close Month</h3>
-            <button class="modal-close-btn" data-close-modal>&times;</button>
         </div>
         <div class="modal-body-content">
             <div class="form-grid">
@@ -1929,7 +1925,6 @@ export function openStatementModal() {
     openModal(`
         <div class="modal-header">
             <h3><i class="fa-solid fa-file-lines"></i> Owner Settlement Statement</h3>
-            <button class="modal-close-btn" data-close-modal>&times;</button>
         </div>
         <div class="modal-body-content statement-view" id="statementBody">
             <header class="statement-header">
@@ -1962,7 +1957,7 @@ export function openStatementModal() {
         <div class="form-actions" style="padding: 0.5rem 1.5rem 1.25rem">
             <button class="btn btn-secondary" id="statementPrintBtn"><i class="fa-solid fa-print"></i> Print</button>
             <button class="btn btn-primary" id="statementPdfBtn"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
-            <button class="btn btn-secondary" data-close-modal>Close</button>
+            <button class="btn btn-secondary" data-close-modal>Cancel</button>
         </div>
     `, 'xlarge-modal');
 

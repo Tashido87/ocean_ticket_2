@@ -309,19 +309,12 @@ export function openModal(content, sizeClass = '') {
         }
     });
 
-    // 5. Keyboard listener for Escape & Focus Trap
+    // 5. Keyboard listener for Focus Trap (Escape close disabled so modals only exit via Cancel)
     if (modalKeydownHandler) {
         document.removeEventListener('keydown', modalKeydownHandler);
     }
     modalKeydownHandler = (e) => {
         if (!modal.classList.contains('show')) return;
-
-        if (e.key === 'Escape' || e.key === 'Esc' || e.keyCode === 27) {
-            e.preventDefault();
-            e.stopPropagation();
-            closeModal();
-            return;
-        }
 
         if (e.key === 'Tab') {
             const focusables = getFocusableElements();
@@ -1085,7 +1078,7 @@ function showUpcomingPnrsModal() {
     modalContent += `
         </div>
         <div class="form-actions" style="margin-top: 1.5rem; padding: 0 1.5rem 1.5rem 1.5rem; background: transparent;">
-            <button class="btn btn-secondary" data-close-upcoming="true">Close</button>
+            <button class="btn btn-secondary" data-close-upcoming="true">Cancel</button>
         </div>
     `;
     openModal(modalContent, 'large-modal');
@@ -1143,13 +1136,15 @@ function openPnrScheduleModal(pnr) {
         openModal(`
             <div class="modal-header">
                 <h3><i class="fa-solid fa-plane" aria-hidden="true"></i> Travel Schedule</h3>
-                <button class="modal-close-btn" id="closePnrScheduleBtn" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="notification-item empty">
                     <i class="fa-solid fa-circle-info"></i>
                     <span>No schedule found for PNR <strong>${pnr}</strong>.</span>
                 </div>
+            </div>
+            <div class="form-actions" style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="closePnrScheduleBtn">Cancel</button>
             </div>
         `, 'large-modal solid-modal');
 
@@ -1182,7 +1177,6 @@ function openPnrScheduleModal(pnr) {
     openModal(`
         <div class="modal-header">
             <h3><i class="fa-solid fa-plane" aria-hidden="true"></i> Travel Schedule</h3>
-            <button class="modal-close-btn" id="closePnrScheduleBtn" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body">
             <div class="pnr-schedule-summary">
@@ -1204,6 +1198,9 @@ function openPnrScheduleModal(pnr) {
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>
+        </div>
+        <div class="form-actions" style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary" id="closePnrScheduleBtn">Cancel</button>
         </div>
     `, 'large-modal solid-modal');
 
@@ -1372,7 +1369,7 @@ export function showNotificationModal() {
     modalContent += `
         </div>
         <div class="form-actions" style="margin-top: 1.5rem; padding: 0 1.5rem 1.5rem 1.5rem; background: transparent;">
-            <button class="btn btn-secondary">Close</button>
+            <button class="btn btn-secondary">Cancel</button>
         </div>
     `;
 
@@ -1928,7 +1925,7 @@ export function setupPnrAutoParser() {
         setTimeout(() => rawInput.focus(), 100);
     });
 
-    closeBtn?.addEventListener('click', closeModalFunc);
+    if (closeBtn) closeBtn.style.display = 'none';
     cancelBtn?.addEventListener('click', closeModalFunc);
 
     const airportMap = {

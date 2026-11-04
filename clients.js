@@ -575,7 +575,7 @@ function _legacyViewClientHistory(clientKey) {
             </div>
             <div class="client-history-actions">
                 <button class="btn btn-primary" id="sellForClientBtn"><i class="fa-solid fa-ticket"></i> Sell New Ticket</button>
-                <button class="btn btn-secondary" id="modalCloseBtn">Close</button>
+                <button class="btn btn-secondary" id="modalCloseBtn">Cancel</button>
             </div>
         </div>
         <div class="client-history-stats">

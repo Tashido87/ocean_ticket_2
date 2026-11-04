@@ -151,17 +151,14 @@ export function openPhotoLightbox(url) {
         lb.id = 'photo-lightbox';
         lb.className = 'photo-lightbox';
         lb.innerHTML = `
-            <button class="pl-close" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            <button class="pl-close" type="button" aria-label="Cancel">Cancel</button>
             <img alt="Passport photo">
         `;
         document.body.appendChild(lb);
         lb.addEventListener('click', (e) => {
-            if (e.target === lb || e.target.closest('.pl-close')) {
+            if (e.target.closest('.pl-close')) {
                 lb.classList.remove('is-open');
             }
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') lb.classList.remove('is-open');
         });
     }
     lb.querySelector('img').src = url;
