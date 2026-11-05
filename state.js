@@ -16,6 +16,10 @@ export const state = {
     allHotels: [],
     filteredHotels: [],
     hotelPage: 1,
+    allVisas: [],
+    filteredVisas: [],
+    visaPage: 1,
+    visasDirty: false,
     featuredClients: [], // For starred clients
     history: [],
     charts: {

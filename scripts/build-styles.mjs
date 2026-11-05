@@ -15,7 +15,8 @@ export const files = [
     'solid-ui.css',
     'settle-exact.css',
     'hotel-exact.css',
-    'search-exact.css'
+    'search-exact.css',
+    'visa-exact.css'
 ];
 
 export const jsModules = [
@@ -47,7 +48,8 @@ export const jsModules = [
     'state.js',
     'tickets.js',
     'ui.js',
-    'utils.js'
+    'utils.js',
+    'visa.js'
 ];
 
 const corePrecacheModules = [
@@ -79,7 +81,8 @@ const corePrecacheModules = [
     'passport-ocr.js',
     'passport-parser.mjs',
     'china-airlines-converter.js',
-    'china-airlines-parser.mjs'
+    'china-airlines-parser.mjs',
+    'visa.js'
 ];
 
 function shortHash(content) {
@@ -155,6 +158,7 @@ const coreAssetsList = [
     './settle-exact.css?v=2',
     './hotel-exact.css?v=1',
     './search-exact.css?v=1',
+    './visa-exact.css?v=1',
     './vendor/datepicker.min.css',
     './vendor/datepicker-full.min.js',
     './vendor/chart.min.js',

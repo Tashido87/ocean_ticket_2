@@ -9,7 +9,8 @@ import { parseSheetDate, formatDateForSheet, formatDateToDDMMYYYY, formatDateToD
 import { showView, openModal, closeModal, scanPassportWithGemini } from './ui.js';
 import { ocrPassport } from './passport-ocr.js';
 import { batchUpdateTickets, updateTicket } from './db.js';
-import { sellTicketForClient, bookForClient, reserveHotelForClient, findClientRecord } from './clients.js';
+import { sellTicketForClient, bookForClient, reserveHotelForClient, applyVisaForClient, findClientRecord } from './clients.js';
+import { formatVisaRef, computeVisaProfit, computeChecklistSummary, VISA_STATUS_META, showVisaDetailsAction, editVisaApplication } from './visa.js';
 import { showDetails } from './tickets.js';
 import { findTicketForManage } from './manage.js';
 import { openPhotoLightbox } from './passport.js';
@@ -161,6 +162,36 @@ function ticketsForClient(clientKey) {
             const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : 0;
             
             return timeB - timeA;
+        });
+}
+
+function visasForClient(client) {
+    if (!client) return [];
+    const targetKey = client.client_key;
+    const cName = normalizeName(client.name);
+    const cPassport = normalize(client.passport_no);
+    const cNrc = normalize(client.nrc_no);
+    const cPhone = digitsOnly(client.phone);
+
+    return (state.allVisas || [])
+        .filter(v => {
+            if (!v) return false;
+            if (v.client_key && v.client_key === targetKey) return true;
+            const vName = normalizeName(v.applicant_name);
+            if (!vName || vName !== cName) return false;
+            const vPassport = normalize(v.passport_no);
+            const vNrc = normalize(v.nrc_no);
+            const vPhone = digitsOnly(v.phone);
+            if (cPassport && vPassport && cPassport === vPassport) return true;
+            if (cNrc && vNrc && cNrc === vNrc) return true;
+            if (cPhone && vPhone && cPhone === vPhone) return true;
+            if (!cPassport && !cNrc && !cPhone) return true;
+            return false;
+        })
+        .sort((a, b) => {
+            const dA = parseSheetDate(a.application_date || a.submission_date) || new Date(a.created_at || 0);
+            const dB = parseSheetDate(b.application_date || b.submission_date) || new Date(b.created_at || 0);
+            return dB - dA;
         });
 }
 
@@ -429,6 +460,9 @@ function rankRecord(record, type, query) {
         ? [
             ['Name', record.name, 1.0],
             ['Account', record.account_name, 0.80],
+            ['Passport', record.passport_no, 0.95],
+            ['NRC', record.nrc_no, 0.90],
+            ['Visa Ref', Array.isArray(record.visa_refs) ? record.visa_refs.join(' ') : '', 0.95],
             ['Account type', record.account_type, 0.35]
         ]
         : [
@@ -1531,13 +1565,21 @@ function renderClientDetailView() {
 
     const tickets = ticketsForClient(client.client_key);
     const activeTickets = tickets.filter(t => !isCanceled(t));
-    const totalSpent = activeTickets.reduce((sum, t) => sum + getTicketAmount(t), 0);
-    const totalProfit = activeTickets.reduce((sum, t) => sum + Number(t.commission || 0) + Number(t.extra_fare || 0), 0);
+    const visas = visasForClient(client);
+    const activeVisas = visas.filter(v => v.status !== 'withdrawn');
+    const ticketSpent = activeTickets.reduce((sum, t) => sum + getTicketAmount(t), 0);
+    const visaSpent = activeVisas.reduce((sum, v) => sum + (Number(v.customer_total_mmk) || 0), 0);
+    const totalSpent = ticketSpent + visaSpent;
+    const ticketProfit = activeTickets.reduce((sum, t) => sum + Number(t.commission || 0) + Number(t.extra_fare || 0), 0);
+    const visaProfit = activeVisas.reduce((sum, v) => sum + computeVisaProfit(v), 0);
+    const totalProfit = ticketProfit + visaProfit;
     const totalTicketCount = activeTickets.length;
     const lastIssuedTicket = [...tickets]
         .sort((a, b) => parseSheetDate(b.issued_date) - parseSheetDate(a.issued_date))
         .find(t => parseSheetDate(t.issued_date)?.getTime?.());
-    const lastBooking = lastIssuedTicket ? lastIssuedTicket.issued_date : null;
+    const lastVisaDate = visas[0]?.application_date || visas[0]?.submission_date || null;
+    const lastBooking = lastIssuedTicket ? lastIssuedTicket.issued_date : lastVisaDate;
+    const visaSubtitleSuffix = visas.length > 0 ? ` · ${visas.length} visa application${visas.length === 1 ? '' : 's'}` : '';
 
     // route insights
     const routeCounts = {};
@@ -1551,7 +1593,7 @@ function renderClientDetailView() {
         else oneWay++;
     });
     const mostFrequentRoute = Object.entries(routeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
-    const avgNet = totalTicketCount ? Math.round(totalSpent / totalTicketCount) : 0;
+    const avgNet = totalTicketCount ? Math.round(ticketSpent / totalTicketCount) : 0;
 
     // payment
     const paidCount = activeTickets.filter(t => getPaymentStatus(t) === 'paid').length;
@@ -1594,7 +1636,7 @@ function renderClientDetailView() {
                             </span>
                             ${passportExpiryBadge(client)}
                         </div>
-                        <p class="client-subtitle">Client since January 2025 · ${totalTicketCount} transaction${totalTicketCount === 1 ? '' : 's'}</p>
+                        <p class="client-subtitle">Client since January 2025 · ${totalTicketCount} transaction${totalTicketCount === 1 ? '' : 's'}${visaSubtitleSuffix}</p>
                     </div>
                 </div>
                 <div class="action-buttons">
@@ -1609,6 +1651,10 @@ function renderClientDetailView() {
                     <button class="btn-action-secondary" data-detail-action="hotel">
                         <i class="fa-solid fa-hotel"></i>
                         Hotel
+                    </button>
+                    <button class="btn-action-secondary" data-detail-action="visa">
+                        <i class="fa-solid fa-passport"></i>
+                        New Visa
                     </button>
                     <button class="btn-action-primary" data-detail-action="sell">
                         <i class="fa-solid fa-plus"></i>
@@ -1702,6 +1748,11 @@ function renderClientDetailView() {
                 </div>
             </div>
 
+            <!-- Visa Applications Section -->
+            <div class="animate-in delay-4">
+                ${visaApplicationsSection(client, visas)}
+            </div>
+
             <!-- Ticket History -->
             <div class="animate-in delay-4">
                 ${ticketHistorySection(client, tickets)}
@@ -1711,7 +1762,7 @@ function renderClientDetailView() {
         </div>
     `;
 
-    wireDetailActions(detail, client, tickets);
+    wireDetailActions(detail, client, tickets, visas);
 }
 
 function passportExpiryBadge(client) {
@@ -2218,17 +2269,119 @@ function ticketHistorySection(client, tickets) {
     `;
 }
 
-function wireDetailActions(detail, client, tickets) {
+function visaApplicationsSection(client, visas) {
+    const list = Array.isArray(visas) ? visas : [];
+    if (list.length === 0) {
+        return `
+            <div class="details-card client-visa-section">
+                <div class="client-visa-header">
+                    <h3><i class="fa-solid fa-passport"></i> Visa Applications <span class="history-count-badge">0</span></h3>
+                </div>
+                <div class="client-visa-empty">
+                    <span>No visa applications for this client yet.</span>
+                    <button type="button" class="btn-action-secondary" data-detail-action="visa">
+                        <i class="fa-solid fa-plus"></i> New Visa Application
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    const rowsHtml = list.map(v => {
+        const ref = formatVisaRef(v.id);
+        const stMeta = VISA_STATUS_META[v.status] || VISA_STATUS_META.draft;
+        const docSummary = computeChecklistSummary(v.documents);
+        const profit = computeVisaProfit(v);
+        const payStatus = v.payment_status || 'unpaid';
+        const payClass = payStatus === 'paid' ? 'tag-completed' : payStatus === 'partial' ? 'tag-pending' : 'tag-cancelled';
+        const payLabel = payStatus === 'paid' ? 'Paid' : payStatus === 'partial' ? 'Partial' : 'Unpaid';
+
+        return `
+            <tr class="client-visa-row" data-visa-id="${escapeHtml(v.id)}">
+                <td><span class="visa-ref-pill">${escapeHtml(ref)}</span></td>
+                <td>
+                    <strong>${escapeHtml(v.country || '-')}</strong>
+                    <div style="font-size: 11px; color: #6E878E;">${escapeHtml(v.visa_type || '-')} (${escapeHtml(v.entries || 'single')})</div>
+                </td>
+                <td>${escapeHtml(v.travel_from || '-')} ${v.travel_to ? `→ ${escapeHtml(v.travel_to)}` : ''}</td>
+                <td><span class="visa-docs-chip ${docSummary.complete ? 'is-complete' : 'is-partial'}">${docSummary.received}/${docSummary.total}</span></td>
+                <td><span class="visa-status-badge tone-${stMeta.tone}">${escapeHtml(stMeta.label)}</span></td>
+                <td class="num-right-align" style="font-weight: 700;">${(Number(v.customer_total_mmk) || 0).toLocaleString()} MMK</td>
+                <td class="num-right-align" style="font-weight: 700; color: #0C6B7A;">${profit >= 0 ? '+' : ''}${profit.toLocaleString()} MMK</td>
+                <td style="text-align: center;"><span class="tag ${payClass}" style="padding: 0.2rem 0.55rem; border-radius: 0.5rem;">${payLabel}</span></td>
+                <td style="text-align: center;">
+                    <button type="button" class="btn-doc-sm" data-client-visa-action="view" data-id="${escapeHtml(v.id)}" title="View Visa"><i class="fa-regular fa-eye"></i></button>
+                    <button type="button" class="btn-doc-sm" data-client-visa-action="edit" data-id="${escapeHtml(v.id)}" title="Edit Visa"><i class="fa-solid fa-pen"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+        <div class="details-card client-visa-section">
+            <div class="client-visa-header">
+                <h3><i class="fa-solid fa-passport"></i> Visa Applications <span class="history-count-badge">${list.length}</span></h3>
+                <button type="button" class="btn-action-secondary" data-detail-action="visa">
+                    <i class="fa-solid fa-plus"></i> New Visa
+                </button>
+            </div>
+            <div class="table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Ref</th>
+                            <th>Country &amp; Type</th>
+                            <th>Travel Dates</th>
+                            <th>Docs</th>
+                            <th>Status</th>
+                            <th class="num-right-align">Customer Total</th>
+                            <th class="num-right-align">Profit</th>
+                            <th style="text-align: center;">Payment</th>
+                            <th style="text-align: center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function wireDetailActions(detail, client, tickets, visas = []) {
     detail.querySelectorAll('[data-detail-action]').forEach(btn => {
         btn.addEventListener('click', () => {
             const action = btn.dataset.detailAction;
             if (action === 'sell') sellTicketForClient(client);
             else if (action === 'booking') bookForClient(client);
             else if (action === 'hotel') reserveHotelForClient(client);
+            else if (action === 'visa') applyVisaForClient(client);
             else if (action === 'back') {
                 searchState.selectedClientKey = '';
                 refreshSearchView(false);
             }
+        });
+    });
+
+    detail.querySelectorAll('[data-client-visa-action]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const action = btn.dataset.clientVisaAction;
+            if (action === 'view') {
+                showVisaDetailsAction(id);
+            } else if (action === 'edit') {
+                showView('visa');
+                editVisaApplication(id);
+            }
+        });
+    });
+
+    detail.querySelectorAll('tr.client-visa-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            showVisaDetailsAction(row.dataset.visaId);
         });
     });
 

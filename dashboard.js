@@ -231,6 +231,10 @@ function hotelProfitAmount(h) {
     return Number(h.commission) || 0;
 }
 
+function visaProfitAmount(v) {
+    return (Number(v.service_fee_mmk) || 0) - (Number(v.other_costs_mmk) || 0) - (Number(v.service_fee_refund_mmk) || 0);
+}
+
 function ticketOwnerPayableAmount(t) {
     if (isCanceledTicket(t)) return 0;
     if (t.source === 'self') return 0;
@@ -255,6 +259,14 @@ function activeHotelRowsInRange(range) {
     return (state.allHotels || []).filter(h => {
         const checkinDate = parseSheetDate(h.checkin);
         return inDashboardRange(checkinDate, range);
+    });
+}
+
+function activeVisaRowsInRange(range) {
+    return (state.allVisas || []).filter(v => {
+        if (v.source !== 'self' || v.status === 'withdrawn') return false;
+        const d = parseSheetDate(v.submission_date) || parseSheetDate(v.application_date);
+        return inDashboardRange(d, range);
     });
 }
 
@@ -658,7 +670,8 @@ function renderDashboardData() {
     // 3b. Self-Purchased Profit
     const curSelfHotelProfit = activeHotelRowsInRange(range).filter(h => h.source === 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
     const curSelfTicketProfit = ticketsInPeriod.filter(t => t.source === 'self').reduce((sum, t) => sum + ticketProfitAmount(t), 0);
-    const curSelfProfit = curSelfHotelProfit + curSelfTicketProfit;
+    const curSelfVisaProfit = activeVisaRowsInRange(range).reduce((sum, v) => sum + visaProfitAmount(v), 0);
+    const curSelfProfit = curSelfHotelProfit + curSelfTicketProfit + curSelfVisaProfit;
 
     const curProfit = curCommission + curExtraFare + curSelfProfit;
 
@@ -669,7 +682,8 @@ function renderDashboardData() {
     
     const prevSelfHotelProfit = activeHotelRowsInRange(prevRange).filter(h => h.source === 'self').reduce((sum, h) => sum + hotelProfitAmount(h), 0);
     const prevSelfTicketProfit = prevTicketsInPeriod.filter(t => t.source === 'self').reduce((sum, t) => sum + ticketProfitAmount(t), 0);
-    const prevSelfProfit = prevSelfHotelProfit + prevSelfTicketProfit;
+    const prevSelfVisaProfit = activeVisaRowsInRange(prevRange).reduce((sum, v) => sum + visaProfitAmount(v), 0);
+    const prevSelfProfit = prevSelfHotelProfit + prevSelfTicketProfit + prevSelfVisaProfit;
 
     const prevProfit = prevCommission + prevExtraFare + prevSelfProfit;
 

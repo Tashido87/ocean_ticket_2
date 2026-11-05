@@ -12,11 +12,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Ocean Travel">
-    <link rel="stylesheet" href="app-styles.min.css?v=350745bf">
+    <link rel="stylesheet" href="app-styles.min.css?v=40414d3d">
     <link rel="stylesheet" href="dashboard-exact.css?v=11">
     <link rel="stylesheet" href="settle-exact.css?v=2">
     <link rel="stylesheet" href="hotel-exact.css?v=1">
     <link rel="stylesheet" href="search-exact.css?v=1">
+    <link rel="stylesheet" href="visa-exact.css?v=1">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,6 +53,7 @@
                 <a class="nav-btn" href="#/manage" data-view="manage"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>Manage Ticket</span></a>
                 <a class="nav-btn" href="#/booking" data-view="booking"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span>Booking</span><span class="sidebar-badge booking-badge" id="sidebarBookingBadge" style="display:none;"></span></a>
                 <a class="nav-btn" href="#/hotel" data-view="hotel"><i class="fa-solid fa-hotel" aria-hidden="true"></i><span>Hotel</span></a>
+                <a class="nav-btn" href="#/visa" data-view="visa"><i class="fa-solid fa-passport" aria-hidden="true"></i><span>Visa</span></a>
                 <a class="nav-btn" href="#/settle" data-view="settle"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span>Settle</span></a>
                 <a class="nav-btn" href="#/services" data-view="services"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i><span>Services</span></a>
             </nav>
@@ -571,7 +573,7 @@
                                 </span>
                                 <div>
                                     <h3>Self-Purchased Bookings & Profit</h3>
-                                    <p class="settle-section-subtitle">Directly purchased tickets & hotels (independent of owner payable)</p>
+                                    <p class="settle-section-subtitle">Directly purchased tickets, hotels & visas (independent of owner payable)</p>
                                 </div>
                             </div>
                             <div class="settle-section-badge-wrap" id="settleSelfBadgeWrap"></div>
@@ -787,6 +789,601 @@
                     
                     <!-- Pagination -->
                     <div id="hotelResPagination" class="pagination-container"></div>
+                </div>
+            </section>
+
+            <section id="visa-view" class="view" style="display: none;">
+                <!-- NEW / EDIT VISA APPLICATION FORM -->
+                <div id="visa-form-container" class="form-container glass-card" style="display: none;">
+                    <h2><i class="fa-solid fa-passport"></i> <span id="visaFormTitle">New Visa Application</span></h2>
+                    <form id="newVisaForm" onsubmit="return false;" novalidate>
+                        <input type="hidden" id="visa_id">
+                        <input type="hidden" id="visa_client_key">
+                        <input type="hidden" id="visa_passport_photo_url">
+                        <input type="hidden" id="visa_passport_photo_path">
+                        <input type="hidden" id="visa_nrc_front_url">
+                        <input type="hidden" id="visa_nrc_front_path">
+                        <input type="hidden" id="visa_nrc_back_url">
+                        <input type="hidden" id="visa_nrc_back_path">
+                        <input type="hidden" id="visa_household_booklet_url">
+                        <input type="hidden" id="visa_household_booklet_path">
+
+                        <!-- Section 1: Applicant & Passport -->
+                        <div class="sell-section-header">
+                            <span class="section-icon"><i class="fa-solid fa-passport"></i></span>
+                            <div class="section-titles">
+                                <h3>Applicant &amp; Passport</h3>
+                                <p class="section-subtitle">Scan the passport — fields fill themselves, then check them</p>
+                            </div>
+                        </div>
+
+                        <div class="visa-ocr-zone-wrap">
+                            <div class="visa-photo-dropzone" id="visa_passport_dropzone" data-role="photo-zone">
+                                <input type="file" id="visa_passport_file" accept="image/*" hidden>
+                                <div class="visa-dz-body" id="visa_passport_dz_prompt">
+                                    <span class="visa-dz-icon"><i class="fa-solid fa-camera"></i></span>
+                                    <div class="visa-dz-text">
+                                        <strong>Drop passport photo here or click to browse</strong>
+                                        <span>Scans with Gemini OCR → Document AI → Tesseract to auto-fill applicant &amp; passport details</span>
+                                    </div>
+                                </div>
+                                <div class="visa-dz-progress-track">
+                                    <div class="visa-dz-progress-bar" id="visa_passport_progress" data-role="progress"></div>
+                                </div>
+                                <div class="pz-ocr-status" id="visa_ocr_status" data-role="ocr-status"></div>
+                            </div>
+                            <div class="visa-photo-preview" id="visa_passport_preview" data-role="photo-preview">
+                                <img id="visa_passport_preview_img" data-role="photo-img" alt="Passport preview">
+                                <div class="visa-photo-preview-meta">
+                                    <span class="visa-photo-preview-name" id="visa_passport_preview_name" data-role="photo-name">Passport photo</span>
+                                    <div class="visa-photo-preview-actions">
+                                        <button type="button" class="btn-doc-sm" id="visa_passport_view_btn" data-action="photo-view"><i class="fa-regular fa-eye"></i> View</button>
+                                        <button type="button" class="btn-doc-sm btn-doc-danger" id="visa_passport_remove_btn" data-action="photo-remove"><i class="fa-solid fa-trash"></i> Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group client-autosuggest-group" style="position: relative;">
+                                <label for="visa_applicant_name">Full Name (EN) <span class="req">*</span></label>
+                                <input type="text" id="visa_applicant_name" placeholder="AS ON PASSPORT (UPPERCASE)" required autocomplete="off" style="text-transform: uppercase;">
+                                <div class="autosuggest-box" id="visa_applicant_autosuggest" hidden></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_applicant_name_mm">Myanmar Name</label>
+                                <input type="text" id="visa_applicant_name_mm" placeholder="Optional Myanmar name" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_phone">Phone <span class="req">*</span></label>
+                                <input type="tel" id="visa_phone" placeholder="e.g. 09964403435" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_email">Email</label>
+                                <input type="email" id="visa_email" placeholder="applicant@example.com" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label>Gender</label>
+                                <div class="trip-type-segment" role="radiogroup">
+                                    <input type="radio" name="visa_gender" id="visa_gender_m" value="M" checked>
+                                    <label for="visa_gender_m">MR (M)</label>
+                                    <input type="radio" name="visa_gender" id="visa_gender_f" value="F">
+                                    <label for="visa_gender_f">MS (F)</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_dob">Date of Birth <span class="req">*</span></label>
+                                <input type="text" id="visa_dob" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_nationality">Nationality</label>
+                                <input type="text" id="visa_nationality" value="MMR" placeholder="MMR" autocomplete="off" style="text-transform: uppercase;">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_place_of_birth">Place of Birth</label>
+                                <input type="text" id="visa_place_of_birth" placeholder="e.g. Yangon" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_passport_no">Passport No. <span class="req">*</span></label>
+                                <input type="text" id="visa_passport_no" placeholder="e.g. MJ123456" autocomplete="off" style="text-transform: uppercase;">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_passport_issue_date">Passport Issue Date</label>
+                                <input type="text" id="visa_passport_issue_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_passport_expiry">Passport Expiry <span class="req">*</span></label>
+                                <input type="text" id="visa_passport_expiry" placeholder="DD/MM/YYYY" autocomplete="off">
+                                <div id="visa_passport_expiry_warning" class="visa-expiry-warning" hidden></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_nrc_no">NRC No.</label>
+                                <input type="text" id="visa_nrc_no" placeholder="e.g. 12/YaKaNa(N)123456" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="visa-aux-uploads-grid">
+                            <div class="visa-mini-upload" data-aux-doc="nrc_front">
+                                <div class="visa-mini-upload-head">
+                                    <span><i class="fa-solid fa-id-card"></i> NRC Front Photo</span>
+                                    <label class="btn-doc-sm"><i class="fa-solid fa-upload"></i> Upload<input type="file" id="visa_nrc_front_file" accept="image/*" hidden></label>
+                                </div>
+                                <div class="visa-mini-preview" id="visa_nrc_front_preview" hidden>
+                                    <img id="visa_nrc_front_img" alt="NRC Front">
+                                    <div class="visa-mini-actions">
+                                        <button type="button" class="btn-doc-sm" data-aux-view="nrc_front"><i class="fa-regular fa-eye"></i> View</button>
+                                        <button type="button" class="btn-doc-sm btn-doc-danger" data-aux-remove="nrc_front"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="visa-mini-upload" data-aux-doc="nrc_back">
+                                <div class="visa-mini-upload-head">
+                                    <span><i class="fa-solid fa-id-card"></i> NRC Back Photo</span>
+                                    <label class="btn-doc-sm"><i class="fa-solid fa-upload"></i> Upload<input type="file" id="visa_nrc_back_file" accept="image/*" hidden></label>
+                                </div>
+                                <div class="visa-mini-preview" id="visa_nrc_back_preview" hidden>
+                                    <img id="visa_nrc_back_img" alt="NRC Back">
+                                    <div class="visa-mini-actions">
+                                        <button type="button" class="btn-doc-sm" data-aux-view="nrc_back"><i class="fa-regular fa-eye"></i> View</button>
+                                        <button type="button" class="btn-doc-sm btn-doc-danger" data-aux-remove="nrc_back"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="visa-mini-upload" data-aux-doc="household_booklet">
+                                <div class="visa-mini-upload-head">
+                                    <span><i class="fa-solid fa-people-roof"></i> Household Booklet</span>
+                                    <label class="btn-doc-sm"><i class="fa-solid fa-upload"></i> Upload<input type="file" id="visa_household_booklet_file" accept="image/*" hidden></label>
+                                </div>
+                                <div class="visa-mini-preview" id="visa_household_booklet_preview" hidden>
+                                    <img id="visa_household_booklet_img" alt="Household Booklet">
+                                    <div class="visa-mini-actions">
+                                        <button type="button" class="btn-doc-sm" data-aux-view="household_booklet"><i class="fa-regular fa-eye"></i> View</button>
+                                        <button type="button" class="btn-doc-sm btn-doc-danger" data-aux-remove="household_booklet"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Trip & Background -->
+                        <div class="sell-section-header">
+                            <span class="section-icon"><i class="fa-solid fa-plane"></i></span>
+                            <div class="section-titles">
+                                <h3>Trip &amp; Background</h3>
+                                <p class="section-subtitle">Where, when, and who — embassies ask for all of it</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="visa_country">Country <span class="req">*</span></label>
+                                <select id="visa_country" required>
+                                    <option value="Taiwan">Taiwan</option>
+                                    <option value="Thailand">Thailand</option>
+                                    <option value="China">China</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="visa_country_other_group" hidden>
+                                <label for="visa_country_other">Specify Country <span class="req">*</span></label>
+                                <input type="text" id="visa_country_other" placeholder="e.g. Japan, Singapore..." autocomplete="off">
+                            </div>
+                            <div class="form-group" id="visa_type_select_group">
+                                <label for="visa_type">Visa Type <span class="req">*</span></label>
+                                <select id="visa_type" required></select>
+                            </div>
+                            <div class="form-group" id="visa_type_other_group" hidden>
+                                <label for="visa_type_other">Visa Type (Free Text) <span class="req">*</span></label>
+                                <input type="text" id="visa_type_other" placeholder="e.g. Tourist / Business" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label>Entries</label>
+                                <div class="trip-type-segment" role="radiogroup">
+                                    <input type="radio" name="visa_entries" id="visa_entries_single" value="single" checked>
+                                    <label for="visa_entries_single">Single</label>
+                                    <input type="radio" name="visa_entries" id="visa_entries_multiple" value="multiple">
+                                    <label for="visa_entries_multiple">Multiple</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_purpose">Purpose <span class="req">*</span></label>
+                                <select id="visa_purpose" required>
+                                    <option value="Tourism">Tourism</option>
+                                    <option value="Visit family">Visit family</option>
+                                    <option value="Business">Business</option>
+                                    <option value="Study">Study</option>
+                                    <option value="Medical">Medical</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="visa_entry_route_group" hidden>
+                                <label for="visa_entry_route">Entry Route (Thailand)</label>
+                                <select id="visa_entry_route">
+                                    <option value="air">International Airport (Air)</option>
+                                    <option value="land">Land Border</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_travel_from">Travel From <span class="req">*</span></label>
+                                <input type="text" id="visa_travel_from" placeholder="DD/MM/YYYY" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_travel_to">Travel To <span class="req">*</span></label>
+                                <input type="text" id="visa_travel_to" placeholder="DD/MM/YYYY" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_destination_city">Destination City</label>
+                                <input type="text" id="visa_destination_city" placeholder="e.g. Taipei, Bangkok, Kunming" autocomplete="off">
+                            </div>
+                            <div class="form-group form-group-wide" id="visa_thailand_exemption_warning" hidden>
+                                <div class="visa-inline-alert visa-alert-amber">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                    <span><strong>14-Day Bilateral Visa Exemption Notice:</strong> Myanmar passport holders arriving by international airport for ≤ 14 days may not need a tourist visa at all (TDAC required within 72 h of arrival). Confirm with the Royal Thai Embassy before quoting.</span>
+                                </div>
+                            </div>
+                            <div class="form-group form-group-wide">
+                                <label for="visa_accommodation">Accommodation (Hotel / Host Name, Address, Phone)</label>
+                                <textarea id="visa_accommodation" rows="2" placeholder="Hotel name or host name, full address, and contact phone"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Host Group -->
+                        <div class="visa-collapsible-box" id="visa_host_collapsible">
+                            <button type="button" class="visa-collapsible-toggle" id="visa_host_toggle" aria-expanded="false">
+                                <span><i class="fa-solid fa-house-user"></i> Visiting someone? (Host / Inviter Details)</span>
+                                <i class="fa-solid fa-chevron-down visa-chevron"></i>
+                            </button>
+                            <div class="visa-collapsible-body" id="visa_host_body" hidden>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="visa_host_name">Host Name</label>
+                                        <input type="text" id="visa_host_name" placeholder="Full name of host / contact" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="visa_host_relationship">Relationship</label>
+                                        <input type="text" id="visa_host_relationship" placeholder="e.g. Relative, Friend, Business Partner" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="visa_host_phone">Host Phone</label>
+                                        <input type="tel" id="visa_host_phone" placeholder="Host phone number" autocomplete="off">
+                                    </div>
+                                    <div class="form-group form-group-wide">
+                                        <label for="visa_host_address">Host Address</label>
+                                        <input type="text" id="visa_host_address" placeholder="Full address in destination country" autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="margin-top: 12px;">
+                            <div class="form-group">
+                                <label for="visa_occupation">Occupation</label>
+                                <input type="text" id="visa_occupation" placeholder="e.g. Business Owner, Engineer" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_employer">Employer / Company</label>
+                                <input type="text" id="visa_employer" placeholder="Company or business name" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_work_address">Work Address</label>
+                                <input type="text" id="visa_work_address" placeholder="Office / work address" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_monthly_income_mmk">Monthly Income (MMK, Optional)</label>
+                                <input type="number" id="visa_monthly_income_mmk" min="0" placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_emergency_contact_name">Emergency Contact Name</label>
+                                <input type="text" id="visa_emergency_contact_name" placeholder="Family / emergency contact" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_emergency_contact_phone">Emergency Contact Phone</label>
+                                <input type="tel" id="visa_emergency_contact_phone" placeholder="09..." autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_emergency_contact_relation">Emergency Contact Relationship</label>
+                                <input type="text" id="visa_emergency_contact_relation" placeholder="e.g. Spouse, Parent" autocomplete="off">
+                            </div>
+                            <div class="form-group form-group-wide">
+                                <label for="visa_address_mm">Current Home Address in Myanmar</label>
+                                <textarea id="visa_address_mm" rows="2" placeholder="Current residential address in Myanmar"></textarea>
+                            </div>
+                            <div class="form-group form-group-wide">
+                                <label for="visa_companions">Travelling Companions (One per line)</label>
+                                <textarea id="visa_companions" rows="2" placeholder="Names of travelling companions (if any)"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Previous Visit & Immigration History -->
+                        <div class="visa-history-toggle-box">
+                            <div class="visa-history-row">
+                                <label class="visa-switch-label">
+                                    <span>Previous visit to this country?</span>
+                                    <div class="trip-type-segment" role="radiogroup">
+                                        <input type="radio" name="visa_previous_visit" id="visa_prev_visit_no" value="no" checked>
+                                        <label for="visa_prev_visit_no">No</label>
+                                        <input type="radio" name="visa_previous_visit" id="visa_prev_visit_yes" value="yes">
+                                        <label for="visa_prev_visit_yes">Yes</label>
+                                    </div>
+                                </label>
+                                <label class="visa-check-inline">
+                                    <input type="checkbox" id="visa_previous_refusal">
+                                    <span>Visa refused before</span>
+                                </label>
+                                <label class="visa-check-inline">
+                                    <input type="checkbox" id="visa_previous_overstay">
+                                    <span>Overstayed before</span>
+                                </label>
+                            </div>
+                            <div class="form-grid" id="visa_prev_visit_fields" hidden style="margin-top: 10px;">
+                                <div class="form-group">
+                                    <label for="visa_previous_visa_no">Previous Visa No.</label>
+                                    <input type="text" id="visa_previous_visa_no" placeholder="Old visa sticker number" autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <label for="visa_previous_visit_from">Previous Visit From</label>
+                                    <input type="text" id="visa_previous_visit_from" placeholder="DD/MM/YYYY" autocomplete="off">
+                                </div>
+                                <div class="form-group">
+                                    <label for="visa_previous_visit_to">Previous Visit To</label>
+                                    <input type="text" id="visa_previous_visit_to" placeholder="DD/MM/YYYY" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="form-group" id="visa_prev_refusal_note_group" hidden style="margin-top: 10px;">
+                                <label for="visa_previous_refusal_note">Previous Refusal Note / Details</label>
+                                <input type="text" id="visa_previous_refusal_note" placeholder="When and why the visa was refused" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Documents & Workflow -->
+                        <div class="sell-section-header">
+                            <span class="section-icon"><i class="fa-solid fa-folder-open"></i></span>
+                            <div class="section-titles">
+                                <h3>Documents &amp; Embassy Checklist</h3>
+                                <p class="section-subtitle">Embassy checklist for the selected country — nothing submits until this is complete</p>
+                            </div>
+                        </div>
+
+                        <div id="visa_country_notes_banner" class="visa-country-notes-banner"></div>
+
+                        <div class="visa-checklist-progress-wrap">
+                            <div class="visa-checklist-progress-head">
+                                <span id="visa_checklist_progress_text">0 / 0 documents received</span>
+                                <span id="visa_checklist_progress_pct">0%</span>
+                            </div>
+                            <div class="visa-checklist-bar-track">
+                                <div class="visa-checklist-bar-fill" id="visa_checklist_bar_fill" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div id="visa_checklist_container" class="visa-checklist-list"></div>
+
+                        <div id="visa_other_doc_add_bar" class="visa-other-doc-add-bar" hidden>
+                            <input type="text" id="visa_new_doc_label" placeholder="New document name (e.g. Invitation Letter, Tax Return)">
+                            <button type="button" class="btn btn-secondary" id="visa_add_doc_row_btn"><i class="fa-solid fa-plus"></i> Add Document Row</button>
+                        </div>
+
+                        <!-- Workflow & Dates -->
+                        <div class="form-grid" style="margin-top: 14px;">
+                            <div class="form-group">
+                                <label for="visa_status">Application Status <span class="req">*</span></label>
+                                <select id="visa_status" required>
+                                    <option value="draft">Draft</option>
+                                    <option value="collecting">Collecting Documents</option>
+                                    <option value="submitted">Submitted</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="refused">Refused</option>
+                                    <option value="withdrawn">Withdrawn</option>
+                                    <option value="collected">Collected</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_application_date">Application Date (Handed In)</label>
+                                <input type="text" id="visa_application_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_submission_date">Submission Date (Embassy / e-Visa)</label>
+                                <input type="text" id="visa_submission_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_expected_collection_date">Expected Collection Date</label>
+                                <input type="text" id="visa_expected_collection_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_decision_date">Decision Date</label>
+                                <input type="text" id="visa_decision_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_collection_date">Passport Collected Date</label>
+                                <input type="text" id="visa_collection_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_no">Visa / Sticker Approval No.</label>
+                                <input type="text" id="visa_no" placeholder="When issued" autocomplete="off" style="text-transform: uppercase;">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_valid_from">Visa Valid From</label>
+                                <input type="text" id="visa_valid_from" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_valid_until">Visa Valid Until</label>
+                                <input type="text" id="visa_valid_until" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_stay_days">Stay Duration (Days)</label>
+                                <input type="number" id="visa_stay_days" min="0" value="0">
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Fees & Payment -->
+                        <div class="sell-section-header">
+                            <span class="section-icon"><i class="fa-solid fa-coins"></i></span>
+                            <div class="section-titles">
+                                <h3>Fees &amp; Payment</h3>
+                                <p class="section-subtitle">Embassy fee is pass-through — only the service fee is profit</p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="visa_fee_amount">Visa Fee Amount <span class="req">*</span></label>
+                                <input type="number" id="visa_fee_amount" min="0" step="any" placeholder="Embassy fee">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_fee_currency">Visa Fee Currency</label>
+                                <select id="visa_fee_currency">
+                                    <option value="USD">USD</option>
+                                    <option value="THB">THB</option>
+                                    <option value="CNY">CNY</option>
+                                    <option value="EUR">EUR</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_fee_rate_mmk">Exchange Rate (MMK per 1 unit) <span class="req">*</span></label>
+                                <input type="number" id="visa_fee_rate_mmk" min="0" step="any" placeholder="Typed per application">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_fee_mmk">Visa Fee (MMK — Frozen)</label>
+                                <input type="number" id="visa_fee_mmk" value="0" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_fee_paid">Client Paid Embassy Fee?</label>
+                                <select id="visa_fee_paid">
+                                    <option value="unpaid">Unpaid</option>
+                                    <option value="paid">Paid</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_service_fee_mmk">Service Fee (MMK) <span class="req">*</span></label>
+                                <input type="number" id="visa_service_fee_mmk" min="0" step="any" placeholder="Your service fee (MMK)">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_other_costs_mmk">Other Costs (MMK)</label>
+                                <input type="number" id="visa_other_costs_mmk" min="0" step="any" value="0" placeholder="Courier / photos / print">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_service_fee_refund_mmk">Service-Fee Refund (MMK)</label>
+                                <input type="number" id="visa_service_fee_refund_mmk" min="0" step="any" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_fee_refund_mmk">Visa-Fee Refund (MMK)</label>
+                                <input type="number" id="visa_fee_refund_mmk" min="0" step="any" value="0">
+                            </div>
+                        </div>
+
+                        <!-- Live Summary Box -->
+                        <div class="visa-live-summary-box">
+                            <div class="visa-summary-col">
+                                <span class="visa-summary-label">Customer Total (MMK)</span>
+                                <strong class="visa-summary-value" id="visa_summary_customer_total">0 MMK</strong>
+                                <small class="visa-summary-sub">Visa fee MMK + Service fee + Other costs</small>
+                            </div>
+                            <div class="visa-summary-col">
+                                <span class="visa-summary-label">Your Profit (MMK)</span>
+                                <strong class="visa-summary-value is-profit" id="visa_summary_profit">+0 MMK</strong>
+                                <small class="visa-summary-sub">Service fee − Other costs − Service refund</small>
+                            </div>
+                            <div class="visa-summary-col">
+                                <span class="visa-summary-label">Visa Fee Pass-Through</span>
+                                <strong class="visa-summary-value is-muted" id="visa_summary_passthrough">0 MMK</strong>
+                                <small class="visa-summary-sub">Goes to the embassy, not profit</small>
+                            </div>
+                        </div>
+
+                        <div class="form-grid" style="margin-top: 14px;">
+                            <div class="form-group">
+                                <label for="visa_customer_total_mmk">Customer Total (MMK)</label>
+                                <input type="number" id="visa_customer_total_mmk" value="0" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_amount_paid_mmk">Amount Paid (MMK)</label>
+                                <input type="number" id="visa_amount_paid_mmk" min="0" step="any" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_payment_status">Payment Status</label>
+                                <select id="visa_payment_status">
+                                    <option value="unpaid" selected>Unpaid</option>
+                                    <option value="partial">Partial</option>
+                                    <option value="paid">Paid</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_payment_method">Payment Method</label>
+                                <select id="visa_payment_method">
+                                    <option value="">Select Method</option>
+                                    <option value="KBZ Pay">KBZ Pay</option>
+                                    <option value="Mobile Banking">Mobile Banking</option>
+                                    <option value="Aya Pay">Aya Pay</option>
+                                    <option value="UAB Pay">UAB Pay</option>
+                                    <option value="Cash">Cash</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_payment_date">Payment Date</label>
+                                <input type="text" id="visa_payment_date" placeholder="DD/MM/YYYY" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="visa_receipt_no">Receipt No.</label>
+                                <input type="text" id="visa_receipt_no" placeholder="Optional receipt / transaction ref" autocomplete="off">
+                            </div>
+                            <div class="form-group form-group-wide">
+                                <label for="visa_notes">Notes</label>
+                                <textarea id="visa_notes" rows="3" placeholder="Special instructions, TAC eligibility notes, courier tracking, or embassy remarks"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelVisaBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="saveVisaBtn"><i class="fa-solid fa-check"></i> Save Visa Application</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- VISA DISPLAY CONTAINER (LIST / KPIs) -->
+                <div id="visa-display-container" class="results-section glass-card">
+                    <div class="table-header">
+                        <div class="visa-header-titles">
+                            <h3><i class="fa-solid fa-passport"></i> Visa Applications</h3>
+                            <p class="visa-header-subtitle">China · Taiwan · Thailand visa service — documents, fees and status in one place</p>
+                        </div>
+                        <div class="table-controls">
+                            <button id="newVisaBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Visa Application</button>
+                        </div>
+                    </div>
+
+                    <!-- KPIs -->
+                    <div id="visaKpiGrid" class="booking-kpi-grid"></div>
+
+                    <!-- Filters -->
+                    <div class="booking-search-section">
+                        <input type="search" id="visaSearchText" placeholder="Search applicant, passport no., NRC, VSA ref, country..." autocomplete="off">
+                        <select id="visaStatusFilter">
+                            <option value="all">All statuses</option>
+                            <option value="draft">Draft</option>
+                            <option value="collecting">Collecting</option>
+                            <option value="submitted">Submitted</option>
+                            <option value="processing">Processing</option>
+                            <option value="approved">Approved</option>
+                            <option value="refused">Refused</option>
+                            <option value="withdrawn">Withdrawn</option>
+                            <option value="collected">Collected</option>
+                        </select>
+                        <select id="visaCountryFilter">
+                            <option value="all">All countries</option>
+                            <option value="China">China</option>
+                            <option value="Taiwan">Taiwan</option>
+                            <option value="Thailand">Thailand</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <button id="visaSearchBtn" class="btn btn-primary"><i class="fa-solid fa-search"></i> Search</button>
+                        <button id="visaClearBtn" class="btn btn-secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div id="visaTableContainer" class="table-container"></div>
+
+                    <!-- Pagination -->
+                    <div id="visaPagination" class="pagination-container"></div>
                 </div>
             </section>
 
@@ -2044,10 +2641,10 @@
     "./booking.js": "./booking.js?v=8a6613e3",
     "./china-airlines-converter.js": "./china-airlines-converter.js?v=80f8de58",
     "./china-airlines-parser.mjs": "./china-airlines-parser.mjs?v=569d8f51",
-    "./clients.js": "./clients.js?v=33d2dbb3",
+    "./clients.js": "./clients.js?v=2ef52bef",
     "./config.js": "./config.js?v=147a2e3d",
-    "./dashboard.js": "./dashboard.js?v=1dabc220",
-    "./db.js": "./db.js?v=944a0ed0",
+    "./dashboard.js": "./dashboard.js?v=a9740ecc",
+    "./db.js": "./db.js?v=584fb002",
     "./document-libraries.js": "./document-libraries.js?v=7c5a726d",
     "./documents.js": "./documents.js?v=cfee9d8d",
     "./firebase-config.js": "./firebase-config.js?v=aab230c1",
@@ -2055,21 +2652,22 @@
     "./hotel.js": "./hotel.js?v=1c18b49d",
     "./invoice-selection.mjs": "./invoice-selection.mjs?v=2d426669",
     "./invoice.js": "./invoice.js?v=8c3cc9bd",
-    "./main.js": "./main.js?v=a3a8f1cf",
+    "./main.js": "./main.js?v=6fec36b4",
     "./manage.js": "./manage.js?v=2424fc3e",
     "./passport-ocr.js": "./passport-ocr.js?v=456777f7",
     "./passport-parser.mjs": "./passport-parser.mjs?v=d0633dfa",
-    "./passport.js": "./passport.js?v=d63fff57",
+    "./passport.js": "./passport.js?v=9d5fa102",
     "./reports.js": "./reports.js?v=a96e72e7",
-    "./search.js": "./search.js?v=8db53e95",
-    "./settlement.js": "./settlement.js?v=5d54fe52",
-    "./state.js": "./state.js?v=24a8744d",
+    "./search.js": "./search.js?v=4a7c24e5",
+    "./settlement.js": "./settlement.js?v=d6df63a3",
+    "./state.js": "./state.js?v=7bc2f9f5",
     "./tickets.js": "./tickets.js?v=6d8f8578",
     "./ui.js": "./ui.js?v=47d75110",
-    "./utils.js": "./utils.js?v=83eec376"
+    "./utils.js": "./utils.js?v=83eec376",
+    "./visa.js": "./visa.js?v=c850ef13"
   }
 }
     </script>
-    <script src="main.js?v=a3a8f1cf" type="module"></script>
+    <script src="main.js?v=6fec36b4" type="module"></script>
 </body>
 </html>

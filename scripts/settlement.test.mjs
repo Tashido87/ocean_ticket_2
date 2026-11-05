@@ -23,7 +23,7 @@ const allocation = (ticketId, amount) => ({ ticketId, amount });
 
 function harness(tickets = [], settlements = []) {
     const state = {
-        allTickets: tickets, allSettlements: settlements, allHotels: [],
+        allTickets: tickets, allSettlements: settlements, allHotels: [], allVisas: [],
         allAdjustments: [], allClosedPeriods: [], isSubmitting: false
     };
     const elements = new Map();
@@ -291,4 +291,60 @@ test('allocation metadata does not alter opening balance, revenue, commission or
     assert.deepEqual(totals(), expected);
     h.state.allSettlements[1].allocations.push(allocation('current', 90));
     assert.deepEqual(totals(), expected);
+});
+
+test('visa applications never affect owner settlement math and only add net service fee to selfProfit', () => {
+    const h = harness([ticket('current', { issued_date: '2026-08-05' })], [settlement('s1', [], 40)]);
+    vm.runInContext("ui.period = 'custom'; ui.customStart = new Date(2026, 7, 1); ui.customEnd = new Date(2026, 7, 31);", h.context);
+
+    const baseline = h.context.getSettlementSummary();
+
+    // (a), (b), (c): active visa with embassy fee 200,000 MMK, service fee 80,000 MMK, other costs 10,000 MMK, service refund 5,000 MMK
+    h.state.allVisas.push({
+        id: 'visa01abcdef',
+        source: 'self',
+        status: 'submitted',
+        applicant_name: 'AUNG MIN',
+        country: 'Taiwan',
+        visa_type: 'Tourist (single)',
+        submission_date: '2026-08-12',
+        visa_fee_mmk: 200000,
+        service_fee_mmk: 80000,
+        other_costs_mmk: 10000,
+        service_fee_refund_mmk: 5000
+    });
+
+    // (d): withdrawn visa should contribute 0
+    h.state.allVisas.push({
+        id: 'visa02withdr',
+        source: 'self',
+        status: 'withdrawn',
+        applicant_name: 'WITHDRAWN APPLICANT',
+        country: 'Thailand',
+        visa_type: 'Tourist TR (single)',
+        application_date: '2026-08-15',
+        visa_fee_mmk: 120000,
+        service_fee_mmk: 60000,
+        other_costs_mmk: 0,
+        service_fee_refund_mmk: 0
+    });
+
+    const after = h.context.getSettlementSummary();
+
+    // (a) Owner settlement fields are completely unchanged
+    for (const key of ['opening', 'totalRevenue', 'ownerPayable', 'paidToOwner', 'myCommission', 'extraProfit', 'remainingDue', 'closing']) {
+        assert.equal(after[key], baseline[key], `${key} must not change when visa applications are added`);
+    }
+
+    // (b) & (c) Only service_fee_mmk - other_costs_mmk - service_fee_refund_mmk (80,000 - 10,000 - 5,000 = 65,000) is added to selfProfit; visa_fee_mmk (200,000) is excluded from profit
+    assert.equal(after.selfProfit, baseline.selfProfit + 65000);
+    assert.equal(after.grandTotalProfit, baseline.grandTotalProfit + 65000);
+
+    // (d) Only the active visa appears in selfItems (withdrawn visa is excluded)
+    const visaItems = after.selfItems.filter(i => i.kind === 'visa');
+    assert.equal(visaItems.length, 1);
+    assert.equal(visaItems[0].pnr, 'VSA-VISA01');
+    assert.equal(visaItems[0].revenue, 290000);
+    assert.equal(visaItems[0].cost, 210000);
+    assert.equal(visaItems[0].profit, 65000);
 });

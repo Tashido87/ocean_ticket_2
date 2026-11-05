@@ -77,7 +77,7 @@ export async function uploadPassportPhoto(file, opts = {}) {
         throw new Error('File too large (max 5 MB).');
     }
 
-    const { passportNo = 'unknown', onProgress } = opts;
+    const { passportNo = 'unknown', onProgress, storagePath } = opts;
 
     // Compress first (handles HEIC/large originals down to ~200-500 KB)
     let blob;
@@ -93,7 +93,9 @@ export async function uploadPassportPhoto(file, opts = {}) {
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, '') || 'unknown';
     const stamp = Date.now();
-    const path = `passports/${uid}/${stamp}.jpg`;
+    const path = storagePath
+        ? storagePath.replace('{uid}', uid).replace('{stamp}', String(stamp))
+        : `passports/${uid}/${stamp}.jpg`;
     const ref = storageRef(storage, path);
 
     const task = uploadBytesResumable(ref, blob, { contentType: 'image/jpeg' });

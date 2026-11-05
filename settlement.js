@@ -308,6 +308,13 @@ export function getSettlementSummary(customRange = null) {
         return checkin && checkin.getTime && inRange(checkin, start, end);
     });
 
+    const selfVisas = (state.allVisas || []).filter(v => {
+        if (v.source !== 'self') return false;
+        if (v.status === 'withdrawn') return false;
+        const d = parseSheetDate(v.submission_date) || parseSheetDate(v.application_date);
+        return d && d.getTime && inRange(d, start, end);
+    });
+
     let selfProfit = 0;
     const selfItems = [];
 
@@ -346,6 +353,30 @@ export function getSettlementSummary(customRange = null) {
             pnr: h.booking_ref || `HTL-${h.id || ''}`,
             client: h.client_name || '—',
             route: `${h.hotel_name || 'Hotel'}${h.city ? ` (${h.city})` : ''}`,
+            revenue,
+            cost,
+            profit
+        });
+    });
+
+    selfVisas.forEach(v => {
+        const visaFeeMmk = n(v.visa_fee_mmk) || 0;
+        const serviceFeeMmk = n(v.service_fee_mmk) || 0;
+        const otherCostsMmk = n(v.other_costs_mmk) || 0;
+        const serviceRefundMmk = n(v.service_fee_refund_mmk) || 0;
+        const revenue = visaFeeMmk + serviceFeeMmk + otherCostsMmk;
+        const cost = visaFeeMmk + otherCostsMmk;
+        const profit = serviceFeeMmk - otherCostsMmk - serviceRefundMmk;
+        selfProfit += profit;
+        const dStr = v.submission_date || v.application_date;
+        selfItems.push({
+            id: v.id,
+            kind: 'visa',
+            date: parseSheetDate(dStr),
+            dateStr: dStr,
+            pnr: `VSA-${String(v.id || '').slice(0, 6).toUpperCase()}`,
+            client: v.applicant_name || '—',
+            route: `${v.country || 'Visa'} · ${v.visa_type || ''}`.trim(),
             revenue,
             cost,
             profit
@@ -953,7 +984,7 @@ function renderSelfPurchasedSection() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="settle-empty" style="text-align: center; padding: 2rem; color: #94A3B8;">
-                    No self-purchased tickets or hotels in this period.
+                    No self-purchased tickets, hotels or visas in this period.
                 </td>
             </tr>
         `;
@@ -962,7 +993,10 @@ function renderSelfPurchasedSection() {
 
     tbody.innerHTML = items.map(item => {
         const isHotel = item.kind === 'hotel';
-        const typeBadge = isHotel
+        const isVisa = item.kind === 'visa';
+        const typeBadge = isVisa
+            ? `<span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; border-radius:999px; background:#E2F2F3; color:#0C6B7A; font-weight:600;"><i class="fa-solid fa-passport"></i> Visa</span>`
+            : isHotel
             ? `<span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; border-radius:999px; background:#E0F2FE; color:#0369A1; font-weight:600;"><i class="fa-solid fa-hotel"></i> Hotel</span>`
             : `<span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; border-radius:999px; background:#EDE9FE; color:#6D28D9; font-weight:600;"><i class="fa-solid fa-plane"></i> Flight</span>`;
 

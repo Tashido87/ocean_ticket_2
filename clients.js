@@ -41,8 +41,24 @@ function looksLikePassport(value) {
     return /^[A-Z]{1,3}\d{5,9}$/.test(v) && !looksLikeNrc(v);
 }
 
+export function normalizeClientKey(rawName, rawDocId, rawPhone, rawAccountName = '') {
+    const baseName = String(rawName || '').replace(/\([^)]+\)\s*$/i, '').trim().toUpperCase();
+    const docIdentifier = String(rawDocId || '').toUpperCase().trim();
+    const phone = rawPhone && rawPhone !== 'undefined' ? String(rawPhone).trim() : '';
+    const accountName = rawAccountName && rawAccountName !== 'undefined' ? String(rawAccountName).trim().toUpperCase() : '';
+
+    if (docIdentifier) {
+        return `${baseName}|${docIdentifier}|${phone}`;
+    } else if (phone) {
+        return `${baseName}|${phone}|${accountName}`;
+    } else if (accountName) {
+        return `${baseName}||${accountName}`;
+    }
+    return `${baseName}||`;
+}
+
 /**
- * Builds a comprehensive list of unique clients from the ticket data.
+ * Builds a comprehensive list of unique clients from the ticket and visa data.
  */
 export function buildClientList() {
     const clients = {};
@@ -82,6 +98,7 @@ export function buildClientList() {
             clients[clientKey] = {
                 client_id: clientId,
                 client_key: clientKey,
+                key: clientKey,
                 name: baseName,
                 phone: phone,
                 account_name: accountName,
@@ -98,6 +115,8 @@ export function buildClientList() {
                 nationality: ticket.nationality || 'MMR',
                 gender: ticket.gender,
                 ticket_count: 0,
+                visa_count: 0,
+                visa_refs: [],
                 total_spent: 0,
                 last_travel: new Date(0),
                 last_issued: new Date(0)
@@ -152,9 +171,124 @@ export function buildClientList() {
         }
     });
 
+    // Fold visaApplications into the client directory using the same client_key rules (§7.1)
+    (state.allVisas || []).forEach(visa => {
+        const baseName = String(visa.applicant_name || '').replace(/\([^)]+\)\s*$/i, '').trim();
+        if (!baseName) return;
+        const phone = visa.phone && visa.phone !== 'undefined' ? String(visa.phone).trim() : '';
+        const visaNrc = visa.nrc_no ? String(visa.nrc_no).trim() : '';
+        const visaPassport = visa.passport_no ? String(visa.passport_no).trim().toUpperCase() : '';
+        const docIdentifier = (visaPassport || visaNrc || '').toUpperCase().trim();
+
+        // Try matching an existing client by explicit client_key, or by name+passport/NRC, or by name+phone
+        let clientKey = '';
+        if (visa.client_key && clients[visa.client_key]) {
+            clientKey = visa.client_key;
+        } else {
+            const matchExisting = Object.values(clients).find(c => {
+                const sameName = (c.name || '').trim().toUpperCase() === baseName.toUpperCase();
+                if (!sameName) return false;
+                if (visaPassport && c.passport_no && c.passport_no.toUpperCase() === visaPassport) return true;
+                if (visaNrc && c.nrc_no && c.nrc_no.toUpperCase() === visaNrc.toUpperCase()) return true;
+                if (phone && c.phone && String(c.phone).replace(/\D/g, '') === phone.replace(/\D/g, '')) return true;
+                return false;
+            });
+            if (matchExisting) {
+                clientKey = matchExisting.client_key;
+            } else if (visa.client_key) {
+                clientKey = visa.client_key;
+            } else if (docIdentifier) {
+                clientKey = `${baseName}|${docIdentifier}|${phone}`;
+            } else if (phone) {
+                clientKey = `${baseName}|${phone}|`;
+            } else {
+                clientKey = `${baseName}|VISA-${visa.id || 'ANON'}`;
+            }
+        }
+
+        const cleanVisaExpiry = (visa.passport_expiry && !isPlaceholderDate(visa.passport_expiry)) ? visa.passport_expiry : '';
+        if (!clients[clientKey]) {
+            const hash = Math.abs(clientKey.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0));
+            const clientId = 'CLT-202501-' + String(hash).slice(-4).padStart(4, '0');
+            clients[clientKey] = {
+                client_id: clientId,
+                client_key: clientKey,
+                key: clientKey,
+                name: baseName,
+                phone: phone,
+                account_name: '',
+                account_type: '',
+                account_link: '',
+                id_no: visaNrc || visaPassport || '',
+                nrc_no: visaNrc || '',
+                document_type: visaPassport ? 'Passport' : 'NRC',
+                passport_no: visaPassport || '',
+                passport_expiry: cleanVisaExpiry,
+                passport_photo_url: visa.passport_photo_url || '',
+                passport_photo_path: visa.passport_photo_path || '',
+                dob: visa.dob || '',
+                nationality: visa.nationality || 'MMR',
+                gender: visa.gender === 'F' ? 'MS' : 'MR',
+                ticket_count: 0,
+                visa_count: 0,
+                visa_refs: [],
+                total_spent: 0,
+                last_travel: new Date(0),
+                last_issued: new Date(0)
+            };
+        }
+
+        const appDate = parseSheetDate(visa.application_date || visa.submission_date);
+        const isNewerVisa = appDate && !isNaN(appDate.getTime()) && appDate >= clients[clientKey].last_issued;
+
+        if (!clients[clientKey].phone && phone) clients[clientKey].phone = phone;
+        if (visaNrc && (!clients[clientKey].nrc_no || isNewerVisa)) clients[clientKey].nrc_no = visaNrc;
+        if (visaPassport && (!clients[clientKey].passport_no || isNewerVisa)) {
+            clients[clientKey].passport_no = visaPassport;
+            clients[clientKey].document_type = 'Passport';
+        }
+        if (cleanVisaExpiry) {
+            const curExpDate = clients[clientKey].passport_expiry ? parseSheetDate(clients[clientKey].passport_expiry) : null;
+            const newExpDate = parseSheetDate(cleanVisaExpiry);
+            if (!clients[clientKey].passport_expiry || isNewerVisa || (newExpDate && curExpDate && newExpDate > curExpDate)) {
+                clients[clientKey].passport_expiry = cleanVisaExpiry;
+            }
+        }
+        if (visa.passport_photo_url && (!clients[clientKey].passport_photo_url || isNewerVisa)) {
+            clients[clientKey].passport_photo_url = visa.passport_photo_url;
+        }
+        if (visa.passport_photo_path && (!clients[clientKey].passport_photo_path || isNewerVisa)) {
+            clients[clientKey].passport_photo_path = visa.passport_photo_path;
+        }
+        if (visa.dob && !isPlaceholderDate(visa.dob) && (!clients[clientKey].dob || isNewerVisa)) {
+            clients[clientKey].dob = visa.dob;
+        }
+        if (visa.nationality && (!clients[clientKey].nationality || clients[clientKey].nationality === 'MMR' || isNewerVisa)) {
+            clients[clientKey].nationality = visa.nationality;
+        }
+
+        const vsaRef = 'VSA-' + String(visa.id || '').slice(0, 6).toUpperCase();
+        if (!clients[clientKey].visa_refs) clients[clientKey].visa_refs = [];
+        if (visa.id && !clients[clientKey].visa_refs.includes(vsaRef)) {
+            clients[clientKey].visa_refs.push(vsaRef);
+        }
+
+        if (visa.status !== 'withdrawn') {
+            clients[clientKey].visa_count = (clients[clientKey].visa_count || 0) + 1;
+            clients[clientKey].total_spent += (Number(visa.customer_total_mmk) || 0);
+        }
+
+        const travelDate = parseSheetDate(visa.travel_from);
+        if (travelDate && travelDate > clients[clientKey].last_travel) {
+            clients[clientKey].last_travel = travelDate;
+        }
+        if (appDate && appDate > clients[clientKey].last_issued) {
+            clients[clientKey].last_issued = appDate;
+        }
+    });
+
     state.allClients = Object.values(clients);
     state.clientsDirty = true;
-    // Sort logic removed from here as it will be handled directly in renderClientsView
 }
 
 /**
@@ -397,11 +531,11 @@ export function renderClientsView(page) {
  */
 export function computePassportExpiryStatus(expiryStr) {
     const raw = String(expiryStr || '').trim();
-    if (!raw || isPlaceholderDate(raw)) return { level: 'ok' };
+    if (!raw || isPlaceholderDate(raw)) return { level: 'ok', state: 'valid', label: 'Valid' };
 
     const expiry = parseSheetDate(raw);
     if (!expiry || isNaN(expiry.getTime()) || expiry.getTime() <= 0 || expiry.getFullYear() <= 1970) {
-        return { level: 'ok' };
+        return { level: 'ok', state: 'valid', label: 'Valid' };
     }
 
     const now = new Date();
@@ -410,9 +544,9 @@ export function computePassportExpiryStatus(expiryStr) {
     const daysDiff = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
     const formatted = expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    if (expiry < today) return { level: 'expired', formatted, expiryDate: expiry, daysDiff, daysAbs: Math.abs(daysDiff) };
-    if (expiry < sixMonthsFromNow) return { level: 'soon', formatted, expiryDate: expiry, daysDiff, daysUntil: daysDiff };
-    return { level: 'ok', formatted, expiryDate: expiry, daysDiff };
+    if (expiry < today) return { level: 'expired', state: 'expired', label: `Expired (${Math.abs(daysDiff)}d ago)`, formatted, expiryDate: expiry, daysDiff, daysAbs: Math.abs(daysDiff) };
+    if (expiry < sixMonthsFromNow) return { level: 'soon', state: 'expiring', label: `Expires in ${daysDiff}d`, formatted, expiryDate: expiry, daysDiff, daysUntil: daysDiff };
+    return { level: 'ok', state: 'valid', label: 'Valid (≥ 6m)', formatted, expiryDate: expiry, daysDiff };
 }
 
 /**
@@ -775,6 +909,28 @@ export function reserveHotelForClient(clientOrKey) {
     }
 
     showToast(`Hotel form pre-filled for ${client.name}.`, 'info');
+}
+
+/**
+ * Pre-fills the "New Visa Application" form for a specific client.
+ * @param {string|Object} clientOrKey The client object or unique key.
+ */
+export function applyVisaForClient(clientOrKey) {
+    const client = findClientRecord(clientOrKey);
+    if (!client) {
+        showToast('Could not find client details.', 'error');
+        return;
+    }
+
+    showView('visa');
+    closeModal();
+
+    import('./visa.js').then(mod => {
+        if (typeof mod.showNewVisaForm === 'function') {
+            mod.showNewVisaForm(client);
+            showToast(`Visa form pre-filled for ${client.name}.`, 'info');
+        }
+    });
 }
 
 // Local helper duplicated from hotel.js to ensure formatDMY is standalone

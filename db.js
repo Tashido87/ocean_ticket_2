@@ -42,6 +42,7 @@ const closedPeriodsCol = collection(db, 'closedPeriods');
 const adjustmentsCol = collection(db, 'settlementAdjustments');
 const dashboardTasksCol = collection(db, 'dashboardTasks');
 const hotelsCol = collection(db, 'hotelReservations');
+const visasCol = collection(db, 'visaApplications');
 
 // --- SCALABLE ARCHIVE & DELTA SYNC CONFIGURATION ---
 const ACTIVE_REALTIME_TICKET_LIMIT = 400;
@@ -818,4 +819,38 @@ export async function updateHotelReservation(docId, data) {
 
 export async function deleteHotelReservation(docId) {
     await deleteDoc(doc(db, 'hotelReservations', docId));
+}
+
+// --- VISA APPLICATIONS ---
+
+export function onVisasChange(callback, errorCallback) {
+    const q = query(visasCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+        const visas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        callback(visas);
+    }, (error) => {
+        console.error("Firestore onVisasChange error:", error);
+        if (errorCallback) errorCallback(error);
+    });
+}
+
+export async function addVisaApplication(data) {
+    const docRef = await addDoc(visasCol, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+}
+
+export async function updateVisaApplication(docId, data) {
+    const docRef = doc(db, 'visaApplications', docId);
+    await updateDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+    });
+}
+
+export async function deleteVisaApplication(docId) {
+    await deleteDoc(doc(db, 'visaApplications', docId));
 }

@@ -7,7 +7,7 @@
 // Core Modules
 import { initAuth, handleAuthClick } from './auth.js';
 import { state, setCurrentUser } from './state.js';
-import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, batchUpdateTickets, batchUpdateWithAudit } from './db.js';
+import { onTicketsChange, onBookingsChange, onHistoryChange, onSettlementsChange, onClosedPeriodsChange, onAdjustmentsChange, onDashboardTasksChange, addDashboardTask, updateDashboardTask, deleteDashboardTask, onHotelsChange, onVisasChange, batchUpdateTickets, batchUpdateWithAudit } from './db.js';
 import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, isTicketPaid, isFeeEntryRow, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta, formatDateForSheet } from './utils.js';
 
 // Feature Modules
@@ -24,6 +24,8 @@ import { selectPassengerTickets } from './invoice-selection.mjs';
 let hotelModule;
 const renderHotelReservations = () => hotelModule?.renderHotelReservations();
 const hideHotelReservationForm = () => hotelModule?.hideHotelReservationForm();
+const renderVisaApplications = () => visaModule?.renderVisaApplications();
+const hideVisaForm = () => visaModule?.hideVisaForm();
 import { getAllDocuments, uploadDocument, deleteDocument, renameDocument, formatFileSize, formatUploadDate } from './documents.js';
 import { loadDocumentLibraries } from './document-libraries.js';
 let extractTextFromPdf, parseItineraryText, renderAirAsiaTicketHtml, downloadAirAsiaPdf, downloadAirAsiaImage, shareAirAsiaTicket, formatCheckedBaggageLine, parseTripScheduleImage, parseItinerarySchedule, formatPassengerName, generateRandomSeat;
@@ -553,6 +555,23 @@ export async function initializeApp() {
             })
         );
 
+        state.unsubscribers.push(
+            onVisasChange((visas) => {
+                state.allVisas = visas;
+                buildClientList();
+                if (isViewCurrentlyActive('visa')) {
+                    state.visasDirty = false;
+                    renderVisaApplications();
+                } else {
+                    state.visasDirty = true;
+                }
+                if (isViewCurrentlyActive('settle')) {
+                    updateSettlementDashboard();
+                }
+                updateDashboardData();
+            })
+        );
+
         initSettlementView();
 
         // Defer history collection listener until after startup to save bandwidth and initial latency
@@ -646,6 +665,10 @@ function handleHashRoute() {
         if (viewName === 'hotel') {
             hideHotelReservationForm();
             renderHotelReservations();
+        }
+        if (viewName === 'visa') {
+            hideVisaForm();
+            renderVisaApplications();
         }
     }
 }
@@ -3102,10 +3125,12 @@ function initializeChinaHotelGenerator() {
 // --- APP START ---
 let hotelPageReady = false;
 let servicesPageReady = false;
+let visaPageReady = false;
+let visaModule;
 const featureLoads = new Map();
 async function loadPageFeatures(viewName) {
-    if (!['hotel', 'services'].includes(viewName)) return;
-    if ((viewName === 'hotel' && hotelPageReady) || (viewName === 'services' && servicesPageReady)) return;
+    if (!['hotel', 'services', 'visa'].includes(viewName)) return;
+    if ((viewName === 'hotel' && hotelPageReady) || (viewName === 'services' && servicesPageReady) || (viewName === 'visa' && visaPageReady)) return;
     if (featureLoads.has(viewName)) return featureLoads.get(viewName);
     const view = document.getElementById(`${viewName}-view`);
     view.inert = true;
@@ -3115,6 +3140,22 @@ async function loadPageFeatures(viewName) {
     notice.textContent = 'Loading page tools…';
     view.before(notice);
     const task = (async () => {
+        if (viewName === 'visa') {
+            if (!visaModule) {
+                try {
+                    visaModule = await import('./visa.js');
+                } catch (err) {
+                    console.warn('Initial visa.js import failed, retrying...', err);
+                    visaModule = await import(`./visa.js?t=${Date.now()}`);
+                }
+            }
+            if (!visaPageReady) {
+                visaModule.initVisaSystem();
+                visaPageReady = true;
+                visaModule.renderVisaApplications();
+            }
+            return;
+        }
         if (!hotelModule) {
             try {
                 hotelModule = await import('./hotel.js');
@@ -3173,6 +3214,9 @@ document.addEventListener('ocean:viewchange', event => {
     } else if (viewName === 'hotel' && state.hotelsDirty) {
         state.hotelsDirty = false;
         if (typeof renderHotelReservations === 'function') renderHotelReservations();
+    } else if (viewName === 'visa' && state.visasDirty) {
+        state.visasDirty = false;
+        if (typeof renderVisaApplications === 'function') renderVisaApplications();
     }
 });
 window.addEventListener('ocean:document-load-error', event => showToast(event.detail, 'error'));
