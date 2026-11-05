@@ -13,7 +13,7 @@ import { sellTicketForClient, bookForClient, reserveHotelForClient, applyVisaFor
 import { formatVisaRef, computeVisaProfit, computeChecklistSummary, VISA_STATUS_META, showVisaDetailsAction, editVisaApplication } from './visa.js';
 import { showDetails } from './tickets.js';
 import { findTicketForManage } from './manage.js';
-import { openPhotoLightbox } from './passport.js';
+import { openPhotoLightbox, downloadPassportPhoto } from './passport.js';
 
 const RECENT_SEARCH_KEY = 'oceanRecentSearches';
 const RESULT_LIMIT = 120;
@@ -1992,6 +1992,7 @@ function documentsCard(c) {
                 <!-- Actions -->
                 <div class="passport-actions">
                     <button class="btn-doc-inline" data-doc-action="view" ${photo ? '' : 'disabled'}><i class="fa-regular fa-eye"></i> View</button>
+                    <button class="btn-doc-inline" data-doc-action="download" ${photo ? '' : 'disabled'}><i class="fa-solid fa-download"></i> Download</button>
                     <button class="btn-doc-inline" data-doc-action="replace"><i class="fa-solid fa-rotate"></i> Replace</button>
                     <button class="btn-doc-inline-primary" data-doc-action="upload"><i class="fa-solid fa-upload"></i> Upload</button>
                 </div>
@@ -2388,7 +2389,12 @@ function wireDetailActions(detail, client, tickets, visas = []) {
     detail.querySelectorAll('[data-doc-action]').forEach(btn => {
         btn.addEventListener('click', () => {
             const action = btn.dataset.docAction;
-            if (action === 'view' && client.passport_photo_url) openPhotoLightbox(client.passport_photo_url);
+            if (action === 'view' && client.passport_photo_url) {
+                openPhotoLightbox(client.passport_photo_url, `${client.name || 'client'}_passport`);
+            } else if (action === 'download' && client.passport_photo_url) {
+                downloadPassportPhoto(client.passport_photo_url, `${client.name || 'client'}_passport.jpg`);
+                showToast('Downloading passport photo…', 'info');
+            }
             if (['edit', 'replace', 'upload'].includes(action)) openTravelDocumentEditModal(client);
         });
     });

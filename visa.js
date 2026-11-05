@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { addVisaApplication, updateVisaApplication, deleteVisaApplication } from './db.js';
 import { showToast, escapeHtml, parseSheetDate, formatDateForSheet } from './utils.js';
 import { openModal, closeModal, showConfirmModal } from './ui.js';
-import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox } from './passport.js';
+import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox, downloadPassportPhoto } from './passport.js';
 import { ocrPassport } from './passport-ocr.js';
 import { computePassportExpiryStatus, normalizeClientKey } from './clients.js';
 
@@ -15,6 +15,19 @@ function parseDate(str) {
 function formatDate(date) {
     if (!date) return '';
     return formatDateForSheet(date);
+}
+
+function buildVisaDocFilename(applicantName, docKeyOrLabel) {
+    const cleanApplicant = String(applicantName || 'Applicant')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'APPLICANT';
+    const cleanDoc = String(docKeyOrLabel || 'document')
+        .trim()
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'document';
+    return `${cleanApplicant}_${cleanDoc}.jpg`;
 }
 
 async function showConfirm(message) {
@@ -325,6 +338,7 @@ function wirePassportOcrDropzone() {
     const dropzone = document.getElementById('visa_passport_dropzone');
     const fileInput = document.getElementById('visa_passport_file');
     const viewBtn = document.getElementById('visa_passport_view_btn');
+    const downloadBtn = document.getElementById('visa_passport_download_btn');
     const removeBtn = document.getElementById('visa_passport_remove_btn');
 
     if (!dropzone || dropzone.dataset.wired) return;
@@ -356,7 +370,16 @@ function wirePassportOcrDropzone() {
     viewBtn?.addEventListener('click', () => {
         const url = document.getElementById('visa_passport_photo_url')?.value;
         const name = document.getElementById('visa_applicant_name')?.value || 'Passport photo';
-        if (url) openPhotoLightbox(url, name);
+        if (url) openPhotoLightbox(url, buildVisaDocFilename(name, 'passport_bio_page'));
+    });
+
+    downloadBtn?.addEventListener('click', () => {
+        const url = document.getElementById('visa_passport_photo_url')?.value;
+        const name = document.getElementById('visa_applicant_name')?.value || 'Applicant';
+        if (url) {
+            downloadPassportPhoto(url, buildVisaDocFilename(name, 'passport_bio_page'));
+            showToast('Downloading passport bio-page photo…', 'info');
+        }
     });
 
     removeBtn?.addEventListener('click', async () => {
@@ -530,6 +553,7 @@ function wireAuxDocumentUploads() {
     auxTypes.forEach(({ key, label }) => {
         const fileInput = document.getElementById(`visa_${key}_file`);
         const viewBtn = document.querySelector(`[data-aux-view="${key}"]`);
+        const downloadBtn = document.querySelector(`[data-aux-download="${key}"]`);
         const removeBtn = document.querySelector(`[data-aux-remove="${key}"]`);
 
         if (fileInput && !fileInput.dataset.wired) {
@@ -561,7 +585,20 @@ function wireAuxDocumentUploads() {
             viewBtn.dataset.wired = '1';
             viewBtn.addEventListener('click', () => {
                 const url = document.getElementById(`visa_${key}_url`)?.value;
-                if (url) openPhotoLightbox(url, label);
+                const name = document.getElementById('visa_applicant_name')?.value || 'Applicant';
+                if (url) openPhotoLightbox(url, buildVisaDocFilename(name, key));
+            });
+        }
+
+        if (downloadBtn && !downloadBtn.dataset.wired) {
+            downloadBtn.dataset.wired = '1';
+            downloadBtn.addEventListener('click', () => {
+                const url = document.getElementById(`visa_${key}_url`)?.value;
+                const name = document.getElementById('visa_applicant_name')?.value || 'Applicant';
+                if (url) {
+                    downloadPassportPhoto(url, buildVisaDocFilename(name, key));
+                    showToast(`Downloading ${label}…`, 'info');
+                }
             });
         }
 
@@ -1050,12 +1087,31 @@ function renderChecklistRows() {
     const progText = document.getElementById('visa_checklist_progress_text');
     const progPct = document.getElementById('visa_checklist_progress_pct');
     const progFill = document.getElementById('visa_checklist_bar_fill');
+    const downloadAllBtn = document.getElementById('visa_download_all_docs_btn');
     if (!container) return;
 
     const summary = computeChecklistSummary(currentChecklistItems);
+    const uploadedDocs = currentChecklistItems.filter(d => d && d.file_url);
     if (progText) progText.textContent = `${summary.received} / ${summary.total} documents received (${summary.verified} verified)`;
     if (progPct) progPct.textContent = `${summary.pct}%`;
     if (progFill) progFill.style.width = `${summary.pct}%`;
+    if (downloadAllBtn) {
+        downloadAllBtn.hidden = uploadedDocs.length === 0;
+        downloadAllBtn.innerHTML = `<i class="fa-solid fa-file-arrow-down"></i> Download All (${uploadedDocs.length})`;
+        if (!downloadAllBtn.dataset.wired) {
+            downloadAllBtn.dataset.wired = '1';
+            downloadAllBtn.addEventListener('click', async () => {
+                const docsWithFiles = currentChecklistItems.filter(d => d && d.file_url);
+                if (!docsWithFiles.length) return;
+                const applicantName = document.getElementById('visa_applicant_name')?.value || 'Applicant';
+                showToast(`Downloading ${docsWithFiles.length} document(s)…`, 'info');
+                for (const d of docsWithFiles) {
+                    await downloadPassportPhoto(d.file_url, buildVisaDocFilename(applicantName, d.key || d.label));
+                    await new Promise(r => setTimeout(r, 250));
+                }
+            });
+        }
+    }
 
     const countryKey = getSelectedCountryKey();
 
@@ -1094,6 +1150,9 @@ function renderChecklistRows() {
                     ${doc.file_url ? `
                         <button type="button" class="visa-doc-thumb-btn" data-doc-action="view-file" data-idx="${idx}" title="View uploaded scan">
                             <img src="${escapeHtml(doc.file_url)}" alt="${escapeHtml(doc.label)}">
+                        </button>
+                        <button type="button" class="btn-doc-sm" data-doc-action="download-file" data-idx="${idx}" title="Download ${escapeHtml(doc.label)}">
+                            <i class="fa-solid fa-download"></i> Download
                         </button>
                         <button type="button" class="btn-doc-sm btn-doc-danger" data-doc-action="remove-file" data-idx="${idx}" title="Remove file">
                             <i class="fa-solid fa-trash"></i>
@@ -1172,7 +1231,18 @@ function renderChecklistRows() {
     container.querySelectorAll('[data-doc-action="view-file"]').forEach(btn => {
         btn.addEventListener('click', () => {
             const item = currentChecklistItems[Number(btn.dataset.idx)];
-            if (item?.file_url) openPhotoLightbox(item.file_url, item.label);
+            const applicantName = document.getElementById('visa_applicant_name')?.value || 'Applicant';
+            if (item?.file_url) openPhotoLightbox(item.file_url, buildVisaDocFilename(applicantName, item.key || item.label));
+        });
+    });
+
+    container.querySelectorAll('[data-doc-action="download-file"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const item = currentChecklistItems[Number(btn.dataset.idx)];
+            if (!item?.file_url) return;
+            const applicantName = document.getElementById('visa_applicant_name')?.value || 'Applicant';
+            downloadPassportPhoto(item.file_url, buildVisaDocFilename(applicantName, item.key || item.label));
+            showToast(`Downloading ${item.label}…`, 'info');
         });
     });
 
@@ -1914,10 +1984,12 @@ export function showVisaDetailsAction(id) {
     const balance = Math.max(0, total - paid);
     const expStatus = computePassportExpiryStatus(v.passport_expiry);
 
+    const uploadedModalDocs = (v.documents || []).filter(d => d && d.file_url);
     const docsHtml = (v.documents || []).map(d => {
         const st = d.status || 'missing';
         const pillClass = st === 'verified' ? 'is-verified' : st === 'received' ? 'is-received' : 'is-missing';
         const stLabel = st === 'verified' ? 'Verified' : st === 'received' ? 'Received' : 'Missing';
+        const docFilename = buildVisaDocFilename(v.applicant_name, d.key || d.label);
         return `
             <div class="visa-modal-doc-card ${pillClass}">
                 <div class="visa-modal-doc-head">
@@ -1925,10 +1997,17 @@ export function showVisaDetailsAction(id) {
                     <span class="visa-doc-status-pill ${pillClass}">${stLabel}</span>
                 </div>
                 ${d.file_url ? `
-                    <button type="button" class="visa-modal-doc-thumb" data-lightbox-url="${escapeHtml(d.file_url)}" data-lightbox-caption="${escapeHtml(d.label)}">
+                    <button type="button" class="visa-modal-doc-thumb" data-lightbox-url="${escapeHtml(d.file_url)}" data-lightbox-caption="${escapeHtml(docFilename)}">
                         <img src="${escapeHtml(d.file_url)}" alt="${escapeHtml(d.label)}">
-                        <span><i class="fa-solid fa-magnifying-glass-plus"></i> View scan</span>
                     </button>
+                    <div class="visa-modal-doc-actions">
+                        <button type="button" class="btn-doc-sm" data-lightbox-url="${escapeHtml(d.file_url)}" data-lightbox-caption="${escapeHtml(docFilename)}">
+                            <i class="fa-regular fa-eye"></i> View
+                        </button>
+                        <button type="button" class="btn-doc-sm" data-download-url="${escapeHtml(d.file_url)}" data-download-filename="${escapeHtml(docFilename)}" data-download-label="${escapeHtml(d.label)}">
+                            <i class="fa-solid fa-download"></i> Download
+                        </button>
+                    </div>
                 ` : `<div class="visa-modal-doc-empty">No scan attached</div>`}
             </div>
         `;
@@ -1983,9 +2062,14 @@ export function showVisaDetailsAction(id) {
                         <div><span>NRC No.</span><strong>${escapeHtml(v.nrc_no || '-')}</strong></div>
                     </div>
                     ${v.passport_photo_url ? `
-                        <button type="button" class="btn-doc-sm" style="margin-top:8px;" data-lightbox-url="${escapeHtml(v.passport_photo_url)}" data-lightbox-caption="Passport — ${escapeHtml(v.applicant_name || '')}">
-                            <i class="fa-regular fa-image"></i> View Passport Bio-Page Photo
-                        </button>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+                            <button type="button" class="btn-doc-sm" data-lightbox-url="${escapeHtml(v.passport_photo_url)}" data-lightbox-caption="${escapeHtml(buildVisaDocFilename(v.applicant_name, 'passport_bio_page'))}">
+                                <i class="fa-regular fa-image"></i> View Passport Photo
+                            </button>
+                            <button type="button" class="btn-doc-sm" data-download-url="${escapeHtml(v.passport_photo_url)}" data-download-filename="${escapeHtml(buildVisaDocFilename(v.applicant_name, 'passport_bio_page'))}" data-download-label="Passport Bio-Page Photo">
+                                <i class="fa-solid fa-download"></i> Download Passport
+                            </button>
+                        </div>
                     ` : ''}
                 </div>
 
@@ -2003,7 +2087,14 @@ export function showVisaDetailsAction(id) {
             </div>
 
             <div class="visa-modal-section">
-                <h4><i class="fa-solid fa-folder-open"></i> Embassy Checklist (${docSummary.received}/${docSummary.total})</h4>
+                <div class="visa-modal-section-head">
+                    <h4><i class="fa-solid fa-folder-open"></i> Embassy Checklist (${docSummary.received}/${docSummary.total})</h4>
+                    ${uploadedModalDocs.length > 0 ? `
+                        <button type="button" class="btn-doc-sm" id="visaModalDownloadAllBtn">
+                            <i class="fa-solid fa-file-arrow-down"></i> Download All (${uploadedModalDocs.length})
+                        </button>
+                    ` : ''}
+                </div>
                 <div class="visa-modal-docs-grid">
                     ${docsHtml}
                 </div>
@@ -2083,5 +2174,26 @@ export function showVisaDetailsAction(id) {
         btn.addEventListener('click', () => {
             openPhotoLightbox(btn.dataset.lightboxUrl, btn.dataset.lightboxCaption || 'Document scan');
         });
+    });
+
+    document.querySelectorAll('[data-download-url]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const url = btn.dataset.downloadUrl;
+            const filename = btn.dataset.downloadFilename || 'document.jpg';
+            const label = btn.dataset.downloadLabel || 'document';
+            if (url) {
+                downloadPassportPhoto(url, filename);
+                showToast(`Downloading ${label}…`, 'info');
+            }
+        });
+    });
+
+    document.getElementById('visaModalDownloadAllBtn')?.addEventListener('click', async () => {
+        if (!uploadedModalDocs.length) return;
+        showToast(`Downloading ${uploadedModalDocs.length} document(s)…`, 'info');
+        for (const d of uploadedModalDocs) {
+            await downloadPassportPhoto(d.file_url, buildVisaDocFilename(v.applicant_name, d.key || d.label));
+            await new Promise(r => setTimeout(r, 250));
+        }
     });
 }

@@ -98,7 +98,10 @@ export async function uploadPassportPhoto(file, opts = {}) {
         : `passports/${uid}/${stamp}.jpg`;
     const ref = storageRef(storage, path);
 
-    const task = uploadBytesResumable(ref, blob, { contentType: 'image/jpeg' });
+    const task = uploadBytesResumable(ref, blob, {
+        contentType: 'image/jpeg',
+        contentDisposition: 'attachment'
+    });
 
     return new Promise((resolve, reject) => {
         task.on(
@@ -140,12 +143,85 @@ export async function deletePassportPhoto(path) {
 }
 
 /**
+ * Downloads an uploaded passport or document image by URL with a clean filename.
+ * Uses fetch -> Blob -> object URL first; falls back to canvas or direct anchor download.
+ *
+ * @param {string} url - The download URL of the document/image.
+ * @param {string} [suggestedFilename='document.jpg'] - Suggested filename for saving.
+ */
+export async function downloadPassportPhoto(url, suggestedFilename = 'document.jpg') {
+    if (!url) return;
+    const rawName = String(suggestedFilename || 'document')
+        .trim()
+        .replace(/[^a-zA-Z0-9._-]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'document';
+    const filename = /\.(jpe?g|png|webp|pdf)$/i.test(rawName) ? rawName : `${rawName}.jpg`;
+
+    const triggerBlobDownload = (blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+    };
+
+    try {
+        const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+        if (res.ok) {
+            const blob = await res.blob();
+            triggerBlobDownload(blob);
+            return;
+        }
+    } catch (_) {
+        // Fallback to image-canvas or direct link if CORS blocks fetch
+    }
+
+    try {
+        const blob = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth || img.width;
+                    canvas.height = img.naturalHeight || img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/jpeg', 0.92);
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            img.onerror = () => reject(new Error('Image load failed'));
+            img.src = url;
+        });
+        triggerBlobDownload(blob);
+        return;
+    } catch (_) {
+        // Final fallback: direct anchor with download attribute
+    }
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+/**
  * Opens a fullscreen lightbox displaying the given image URL.
  * Creates a one-off DOM overlay; safe to call repeatedly.
  *
  * @param {string} url
+ * @param {string} [caption]
  */
-export function openPhotoLightbox(url) {
+export function openPhotoLightbox(url, caption = '') {
     if (!url) return;
     let lb = document.getElementById('photo-lightbox');
     if (!lb) {
@@ -153,16 +229,31 @@ export function openPhotoLightbox(url) {
         lb.id = 'photo-lightbox';
         lb.className = 'photo-lightbox';
         lb.innerHTML = `
-            <button class="pl-close" type="button" aria-label="Cancel">Cancel</button>
-            <img alt="Passport photo">
+            <div class="pl-toolbar" style="position:fixed; top:20px; right:24px; display:flex; align-items:center; gap:10px; z-index:10002;">
+                <button class="pl-download" type="button" aria-label="Download" style="height:36px; padding:0 14px; border-radius:9px; border:1px solid #0C6B7A; background:#0C6B7A; color:#FFFFFF; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+                    <i class="fa-solid fa-download"></i> Download
+                </button>
+                <button class="pl-close" type="button" aria-label="Cancel" style="position:static; height:36px; padding:0 14px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer;">Cancel</button>
+            </div>
+            <img alt="Document photo">
         `;
         document.body.appendChild(lb);
         lb.addEventListener('click', (e) => {
             if (e.target.closest('.pl-close')) {
                 lb.classList.remove('is-open');
+            } else if (e.target.closest('.pl-download')) {
+                const currentUrl = lb.dataset.currentUrl || lb.querySelector('img')?.src;
+                const currentCaption = lb.dataset.currentCaption || 'document';
+                if (currentUrl) downloadPassportPhoto(currentUrl, currentCaption);
             }
         });
     }
-    lb.querySelector('img').src = url;
+    lb.dataset.currentUrl = url;
+    lb.dataset.currentCaption = caption || 'document';
+    const imgEl = lb.querySelector('img');
+    if (imgEl) {
+        imgEl.src = url;
+        imgEl.alt = caption || 'Document photo';
+    }
     lb.classList.add('is-open');
 }

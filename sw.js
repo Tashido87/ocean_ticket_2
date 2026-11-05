@@ -1,10 +1,10 @@
-const CACHE_NAME = 'ocean-travel-6822b7c6';
+const CACHE_NAME = 'ocean-travel-2bb440c1';
 const CORE_ASSETS = [
     './',
     './index.html',
     './manifest.json',
     './ocean-travel-logo.png',
-    './app-styles.min.css?v=40414d3d',
+    './app-styles.min.css?v=c7aed098',
     './dashboard-exact.css?v=11',
     './settle-exact.css?v=2',
     './hotel-exact.css?v=1',
@@ -27,7 +27,7 @@ const CORE_ASSETS = [
     './settlement.js?v=d6df63a3',
     './clients.js?v=2ef52bef',
     './reports.js?v=a96e72e7',
-    './search.js?v=4a7c24e5',
+    './search.js?v=b7895f72',
     './manage.js?v=2424fc3e',
     './history.js?v=e9920af2',
     './hotel.js?v=1c18b49d',
@@ -37,12 +37,12 @@ const CORE_ASSETS = [
     './invoice-selection.mjs?v=2d426669',
     './documents.js?v=cfee9d8d',
     './config.js?v=147a2e3d',
-    './passport.js?v=9d5fa102',
+    './passport.js?v=fdb568f2',
     './passport-ocr.js?v=456777f7',
     './passport-parser.mjs?v=d0633dfa',
     './china-airlines-converter.js?v=80f8de58',
     './china-airlines-parser.mjs?v=569d8f51',
-    './visa.js?v=c850ef13'
+    './visa.js?v=ba9cca2c'
 ];
 
 self.addEventListener('install', (event) => {
