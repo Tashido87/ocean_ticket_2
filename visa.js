@@ -3,7 +3,8 @@ import { addVisaApplication, updateVisaApplication, deleteVisaApplication } from
 import { showToast, escapeHtml, parseSheetDate, formatDateForSheet, isPlaceholderDate } from './utils.js';
 import { openModal, closeModal, showConfirmModal, scanPassportWithGemini } from './ui.js';
 import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox, downloadPassportPhoto } from './passport.js';
-import { ocrPassport } from './passport-ocr.js';
+import { ocrPassport, ocrPassportVisualFields } from './passport-ocr.js';
+import { deriveMyanmarIssueDateFromExpiry } from './passport-parser.mjs';
 import { computePassportExpiryStatus, normalizeClientKey } from './clients.js';
 
 function parseDate(str) {
@@ -556,6 +557,17 @@ async function handlePassportFileSelected(file) {
             if (typeof scanPassportWithGemini === 'function') {
                 const gemResult = await scanPassportWithGemini(file, 0);
                 if (hasValidPassportFields(gemResult)) {
+                    if (!gemResult.placeOfBirth || !gemResult.issueDate) {
+                        const visExtras = await ocrPassportVisualFields(file).catch(() => null);
+                        if (visExtras) {
+                            if (!gemResult.placeOfBirth && visExtras.placeOfBirth) {
+                                gemResult.placeOfBirth = visExtras.placeOfBirth;
+                            }
+                            if (!gemResult.issueDate && visExtras.issueDate) {
+                                gemResult.issueDate = visExtras.issueDate;
+                            }
+                        }
+                    }
                     return gemResult;
                 }
             }
@@ -567,7 +579,7 @@ async function handlePassportFileSelected(file) {
             if (statusEl && msg) {
                 statusEl.textContent = typeof msg === 'string' ? msg : (msg.message || '');
             }
-        });
+        }, { includeVisualFields: true });
     };
 
     const [uploadOutcome, ocrOutcome] = await Promise.allSettled([
@@ -603,9 +615,10 @@ async function handlePassportFileSelected(file) {
         const passportNo = String(parsed.passportNumber || parsed.passportNo || parsed.passport_no || '').trim().toUpperCase();
         const dobRaw = parsed.dateOfBirth || parsed.dob || '';
         const expiryRaw = parsed.expiryDate || parsed.expiry || parsed.expirationDate || parsed.dateOfExpiry || parsed.date_of_expiry || parsed.passport_expiry || '';
-        const issueRaw = parsed.issueDate || parsed.dateOfIssue || parsed.passport_issue_date || '';
+        const normalizedExpiry = normalizeVisaOcrDate(expiryRaw, { isBirth: false });
         const nationality = String(parsed.nationality || 'MMR').trim().toUpperCase();
-        const placeOfBirth = String(parsed.placeOfBirth || parsed.birthPlace || parsed.place_of_birth || '').trim();
+        const issueRaw = parsed.issueDate || parsed.dateOfIssue || parsed.passport_issue_date || deriveMyanmarIssueDateFromExpiry(normalizedExpiry, nationality) || '';
+        const placeOfBirth = String(parsed.placeOfBirth || parsed.birthPlace || parsed.place_of_birth || '').trim().toUpperCase();
         const title = String(parsed.title || '').trim().toUpperCase();
         const sex = String(parsed.sex || parsed.gender || '').trim().toUpperCase();
 
@@ -623,11 +636,11 @@ async function handlePassportFileSelected(file) {
         if (dobRaw && setVisaDateFieldFromOcr('visa_dob', dobRaw, { isBirth: true })) {
             filled.push('DOB');
         }
-        if (expiryRaw && setVisaDateFieldFromOcr('visa_passport_expiry', expiryRaw, { isBirth: false })) {
-            filled.push('Expiry');
-        }
         if (issueRaw && setVisaDateFieldFromOcr('visa_passport_issue_date', issueRaw, { isBirth: false })) {
             filled.push('Issue Date');
+        }
+        if (expiryRaw && setVisaDateFieldFromOcr('visa_passport_expiry', expiryRaw, { isBirth: false })) {
+            filled.push('Expiry');
         }
         if (nationality) {
             setOcrField('visa_nationality', nationality);
@@ -635,6 +648,7 @@ async function handlePassportFileSelected(file) {
         }
         if (placeOfBirth) {
             setOcrField('visa_place_of_birth', placeOfBirth);
+            filled.push('Place of Birth');
         }
 
         if (title === 'MS' || title === 'MISS' || title === 'MRS' || sex === 'F' || sex === 'FEMALE') {
@@ -672,6 +686,11 @@ async function handlePassportFileSelected(file) {
                 const nrcEl = document.getElementById('visa_nrc_no');
                 if (nrcEl && !nrcEl.value.trim() && matchedClient.nrc_no) {
                     setOcrField('visa_nrc_no', matchedClient.nrc_no);
+                }
+                const pobEl = document.getElementById('visa_place_of_birth');
+                if (pobEl && !pobEl.value.trim() && matchedClient.place_of_birth) {
+                    setOcrField('visa_place_of_birth', String(matchedClient.place_of_birth).toUpperCase());
+                    if (!filled.includes('Place of Birth')) filled.push('Place of Birth');
                 }
             }
         }
@@ -854,13 +873,18 @@ export function applyClientPrefillToVisaForm(client) {
         const el = document.getElementById(id);
         if (el && val) el.value = val;
     };
+    const nat = (client.nationality || 'MMR').toUpperCase();
+    const expNorm = normalizeVisaOcrDate(client.passport_expiry || '', { isBirth: false });
+    const issueVal = client.passport_issue_date || deriveMyanmarIssueDateFromExpiry(expNorm, nat) || '';
     setVal('visa_client_key', client.key || '');
     setVal('visa_applicant_name', (client.name || '').toUpperCase());
     setVal('visa_phone', client.phone || '');
     setVal('visa_passport_no', (client.passport_no || '').toUpperCase());
-    setVal('visa_passport_expiry', client.passport_expiry || '');
-    setVal('visa_dob', client.dob || '');
-    setVal('visa_nationality', (client.nationality || 'MMR').toUpperCase());
+    if (issueVal) setVisaDateFieldFromOcr('visa_passport_issue_date', issueVal, { isBirth: false });
+    if (expNorm) setVisaDateFieldFromOcr('visa_passport_expiry', expNorm, { isBirth: false });
+    if (client.dob) setVisaDateFieldFromOcr('visa_dob', client.dob, { isBirth: true });
+    setVal('visa_nationality', nat);
+    setVal('visa_place_of_birth', (client.place_of_birth || '').toUpperCase());
     setVal('visa_nrc_no', client.nrc_no || '');
     if (client.title === 'MS' || client.gender === 'F') {
         const f = document.getElementById('visa_gender_f');

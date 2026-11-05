@@ -3132,10 +3132,12 @@ export async function scanPassportWithGemini(file, passengerIndex = 0) {
             if (data && data.ok) {
                 return {
                     fullName: data.fullName || '',
-                    passportNumber: data.passportNo || '',
-                    dateOfBirth: data.dob || '',
-                    expiryDate: data.expiry || '',
+                    passportNumber: data.passportNo || data.passportNumber || '',
+                    dateOfBirth: data.dob || data.dateOfBirth || '',
+                    issueDate: data.issueDate || data.dateOfIssue || data.rawGemini?.issueDate || data.rawGemini?.dateOfIssue || '',
+                    expiryDate: data.expiry || data.expiryDate || '',
                     nationality: data.nationality || '',
+                    placeOfBirth: data.placeOfBirth || data.birthPlace || data.rawGemini?.placeOfBirth || '',
                     sex: data.sex || '',
                     title: data.title || '',
                 };
@@ -3160,7 +3162,9 @@ export async function scanPassportWithGemini(file, passengerIndex = 0) {
                 : (getVal('full_name') || '').toUpperCase();
             const passportNumber = (getVal('document_id') || getVal('passport_number') || '').toUpperCase();
             const dob = getVal('birth_date') || getVal('dob') || '';
+            const issueDate = getVal('issue_date') || getVal('date_of_issue') || '';
             const expiry = getVal('expiration_date') || getVal('expiry') || '';
+            const placeOfBirth = (getVal('place_of_birth') || getVal('birth_place') || '').toUpperCase();
             const sex = (getVal('sex') || getVal('gender') || '').toUpperCase();
             const nationality = (getVal('nationality') || 'MMR').toUpperCase();
 
@@ -3169,8 +3173,10 @@ export async function scanPassportWithGemini(file, passengerIndex = 0) {
                     fullName,
                     passportNumber,
                     dateOfBirth: dob,
+                    issueDate,
                     expiryDate: expiry,
                     nationality,
+                    placeOfBirth,
                     sex,
                     title: sex === 'M' ? 'MR' : (sex === 'F' ? 'MS' : '')
                 };

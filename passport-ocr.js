@@ -3,7 +3,7 @@
  * Strategy: strict MRZ-first parsing with visual OCR only as a validated fallback.
  */
 
-import { mergePassportOcr } from './passport-parser.mjs';
+import { mergePassportOcr, parseVisualFallback } from './passport-parser.mjs';
 
 const OCR_MRZ_PARAMS = {
     tessedit_pageseg_mode: '7',
@@ -172,7 +172,49 @@ async function ensureTesseract() {
     } catch { return false; }
 }
 
-export async function ocrPassport(imageSource, onStatus) {
+export async function ocrPassportVisualFields(imageSource, onStatus) {
+    if (!window.Tesseract) {
+        await ensureTesseract();
+    }
+    if (!window.Tesseract) return null;
+
+    let src = imageSource;
+    let ownsObjectUrl = false;
+    let worker = null;
+
+    try {
+        if (imageSource instanceof Blob) {
+            src = URL.createObjectURL(imageSource);
+            ownsObjectUrl = true;
+        }
+        const img = await loadImage(src);
+        worker = await Tesseract.createWorker('eng', 1);
+        await worker.setParameters(OCR_VISUAL_PARAMS);
+
+        onStatus?.('Reading Place of Birth & Issue Date…');
+        const rightCrop = createProcessedCrop(img, { left: 0.42, top: 0.34, width: 0.54, height: 0.34 }, 2.5, false);
+        const fullVisualCrop = createProcessedCrop(img, { left: 0.22, top: 0.12, width: 0.74, height: 0.60 }, 2.2, false);
+        const [rightText, fullText] = await Promise.all([
+            recognize(worker, rightCrop),
+            recognize(worker, fullVisualCrop)
+        ]);
+        console.log('[Passport Visual OCR] rightText:', JSON.stringify(rightText), 'fullText:', JSON.stringify(fullText));
+        const parsedRight = parseVisualFallback(rightText);
+        const parsedFull = parseVisualFallback(`${rightText}\n${fullText}`);
+        return {
+            placeOfBirth: parsedRight.placeOfBirth || parsedFull.placeOfBirth || '',
+            issueDate: parsedFull.issueDate || parsedRight.issueDate || ''
+        };
+    } catch (err) {
+        console.warn('[Passport Visual OCR] Failed:', err);
+        return null;
+    } finally {
+        if (worker) await worker.terminate();
+        if (ownsObjectUrl) URL.revokeObjectURL(src);
+    }
+}
+
+export async function ocrPassport(imageSource, onStatus, options = {}) {
     onStatus?.('Initialising OCR...');
     if (!window.Tesseract) {
         onStatus?.('Loading OCR engine...');
@@ -248,12 +290,17 @@ export async function ocrPassport(imageSource, onStatus) {
         let visualText = '';
         let result = mergePassportOcr({ mrzText: mrzTexts.join('\n'), warnings });
 
-        if (isMissingAnyRequiredField(result)) {
+        if (isMissingAnyRequiredField(result) || options.includeVisualFields) {
             onStatus?.('Scanning visible passport fields...');
             await worker.setParameters(OCR_VISUAL_PARAMS);
             const visualCrop = createProcessedCrop(img, { left: 0, top: 0, width: 1, height: 0.72 }, 2.5, false);
+            const rightCrop = createProcessedCrop(img, { left: 0.42, top: 0.34, width: 0.54, height: 0.34 }, 2.5, false);
             console.log(`[Passport OCR] Visual crop size: ${visualCrop.width}x${visualCrop.height}`);
-            visualText = await recognize(worker, visualCrop);
+            const [fullVisText, rightVisText] = await Promise.all([
+                recognize(worker, visualCrop),
+                recognize(worker, rightCrop)
+            ]);
+            visualText = `${rightVisText}\n${fullVisText}`;
             console.log('[Passport OCR] Visual OCR raw text:\n', visualText);
             result = mergePassportOcr({ mrzText: mrzTexts.join('\n'), visualText, warnings });
         }

@@ -146,6 +146,10 @@ const visualFallback = mergePassportOcr({
         17 MAY 2000
         Sex
         M
+        Place of birth
+        MOGOK
+        Date of issue
+        31 MAY 2022
         Date of expiry
         30 MAY 2027
     `,
@@ -154,9 +158,29 @@ const visualFallback = mergePassportOcr({
 assert.equal(visualFallback.fullName, 'YE MIN KHANT');
 assert.equal(visualFallback.passportNo, 'MF971828');
 assert.equal(visualFallback.dob, '17/05/2000');
+assert.equal(visualFallback.issueDate, '31/05/2022');
 assert.equal(visualFallback.expiry, '30/05/2027');
+assert.equal(visualFallback.placeOfBirth, 'MOGOK');
 assert.equal(visualFallback.sex, 'M');
 assert.equal(visualFallback.title, 'MR');
 assert.equal(visualFallback.source.expiry, 'visual');
+
+// Verify 5-year Myanmar passport issueDate derivation when Date of issue is obscured by glare
+const aungMyoLwin = mergePassportOcr({
+    mrzText: `PVMMRAUNG<MYO<LWIN<<<<<<<<<<<<<<<<<<<<<<<<<<\nMG555644<3MMR6805089M2709271<<<<<<<<<<<<<<4`,
+    visualText: `
+        Place of birth
+        MOGOK
+        Authority
+        MOHA, YANGON
+    `,
+    referenceDate: REFERENCE_DATE
+});
+assert.equal(aungMyoLwin.fullName, 'AUNG MYO LWIN');
+assert.equal(aungMyoLwin.passportNo, 'MG555644');
+assert.equal(aungMyoLwin.dob, '08/05/1968');
+assert.equal(aungMyoLwin.issueDate, '28/09/2022');
+assert.equal(aungMyoLwin.expiry, '27/09/2027');
+assert.equal(aungMyoLwin.placeOfBirth, 'MOGOK');
 
 console.log('passport-parser tests passed');

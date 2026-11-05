@@ -192,8 +192,10 @@ JSON format:
   "fullName": "",
   "passportNo": "",
   "dateOfBirth": "",
+  "issueDate": "",
   "expiryDate": "",
   "nationality": "",
+  "placeOfBirth": "",
   "sex": "",
   "mrzLine1": "",
   "mrzLine2": "",
@@ -206,8 +208,10 @@ Rules:
 - passportNo must be Myanmar passport format: two uppercase letters followed by six digits, e.g. MF971828.
 - The 6 characters after the two letters MUST be digits 0-9 only. Never write O, I, S, B, Z, G as letters in the digits portion. If the printed character looks like O write 0, like I write 1, like S write 5, like B write 8, like Z write 2, like G write 6.
 - dateOfBirth format: DD/MM/YYYY.
+- issueDate format: DD/MM/YYYY (from "Date of issue"). For Myanmar (MMR) passports, validity is 5 years minus 1 day (e.g. if Date of expiry is 27 SEP 2027 and the year of Date of issue has camera glare over "28 SEP 20..", issueDate is 28/09/2022).
 - expiryDate format: DD/MM/YYYY.
 - nationality should be MMR for Myanmar passports.
+- placeOfBirth must be uppercase English letters, spaces, commas, or hyphens from the "Place of birth" field (e.g. "MOGOK", "YANGON", "MANDALAY"). Do NOT return the Authority field ("MOHA, YANGON").
 - sex must be M or F.
 - Prefer MRZ if readable.
 - For MRZ names, convert < into spaces and remove trailing filler.
@@ -312,6 +316,8 @@ function validatePassportResult(input = {}) {
   const dateOfBirth = cleanDate(input.dateOfBirth || '');
   const expiryDate = cleanDate(input.expiryDate || '');
   const nationality = cleanNationality(input.nationality || '');
+  const placeOfBirth = cleanPlaceOfBirth(input.placeOfBirth || input.birthPlace || '');
+  const issueDate = cleanDate(input.issueDate || input.dateOfIssue || '') || deriveMyanmarIssueDate(expiryDate, nationality);
   const sex = cleanSex(input.sex || '');
   const title = inferTitle(sex, dateOfBirth);
 
@@ -326,14 +332,41 @@ function validatePassportResult(input = {}) {
     fullName,
     passportNo,
     dob: dateOfBirth,
+    issueDate,
     expiry: expiryDate,
     nationality,
+    placeOfBirth,
     sex,
     title,
     mrzLine1: typeof input.mrzLine1 === 'string' ? input.mrzLine1 : '',
     mrzLine2: typeof input.mrzLine2 === 'string' ? input.mrzLine2 : '',
     warnings,
   };
+}
+
+function cleanPlaceOfBirth(value) {
+  let place = String(value || '')
+    .toUpperCase()
+    .replace(/\b(PLACE\s+OF\s+BIRTH|AUTHORITY|MOHA|HOLDER|SIGNATURE)\b/g, ' ')
+    .replace(/[^A-Z\s,\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,\-\s]+|[,\-\s]+$/g, '')
+    .trim();
+  if (!place || place.length > 40) return '';
+  return place;
+}
+
+function deriveMyanmarIssueDate(expiryDDMMYYYY, nationality) {
+  if (nationality !== 'MMR' || !/^\d{2}\/\d{2}\/\d{4}$/.test(expiryDDMMYYYY)) return '';
+  const [dd, mm, yyyy] = expiryDDMMYYYY.split('/').map(Number);
+  const expUtc = new Date(Date.UTC(yyyy, mm - 1, dd));
+  if (Number.isNaN(expUtc.getTime())) return '';
+  expUtc.setUTCDate(expUtc.getUTCDate() + 1);
+  expUtc.setUTCFullYear(expUtc.getUTCFullYear() - 5);
+  const idd = String(expUtc.getUTCDate()).padStart(2, '0');
+  const imm = String(expUtc.getUTCMonth() + 1).padStart(2, '0');
+  const iyyyy = expUtc.getUTCFullYear();
+  return `${idd}/${imm}/${iyyyy}`;
 }
 
 function cleanFullName(value) {

@@ -45,7 +45,9 @@ function emptySources() {
         passportNo: 'empty',
         nationality: 'empty',
         dob: 'empty',
+        issueDate: 'empty',
         expiry: 'empty',
+        placeOfBirth: 'empty',
         sex: 'empty',
         title: 'empty'
     };
@@ -66,7 +68,9 @@ export function createEmptyPassportResult(warnings = []) {
         passportNo: '',
         nationality: '',
         dob: '',
+        issueDate: '',
         expiry: '',
+        placeOfBirth: '',
         sex: '',
         title: '',
         source: emptySources(),
@@ -436,6 +440,64 @@ function extractVisualDate(upperText, labelRe) {
     return formatVisualDate(segment);
 }
 
+export function deriveMyanmarIssueDateFromExpiry(expiryStr, nationality = 'MMR') {
+    if (nationality !== 'MMR' || !/^\d{2}\/\d{2}\/\d{4}$/.test(String(expiryStr || ''))) return '';
+    const [dd, mm, yyyy] = expiryStr.split('/').map(Number);
+    const expUtc = new Date(Date.UTC(yyyy, mm - 1, dd));
+    if (Number.isNaN(expUtc.getTime())) return '';
+    expUtc.setUTCDate(expUtc.getUTCDate() + 1);
+    expUtc.setUTCFullYear(expUtc.getUTCFullYear() - 5);
+    const idd = String(expUtc.getUTCDate()).padStart(2, '0');
+    const imm = String(expUtc.getUTCMonth() + 1).padStart(2, '0');
+    const iyyyy = expUtc.getUTCFullYear();
+    return `${idd}/${imm}/${iyyyy}`;
+}
+
+function cleanPlaceCandidate(rawLine) {
+    const cleaned = String(rawLine || '')
+        .toUpperCase()
+        .replace(/\b(PLACE\s+OF\s+BIRTH|PLACE|BIRTH|AUTHORITY|HOLDER|SIGNATURE|SEX|DATE\s+OF\s+ISSUE|DATE\s+OF\s+EXPIRY)\b/g, ' ')
+        .replace(/\b[0-9]{1,2}\s+[A-Z]{3,9}\b.*$/g, ' ')
+        .replace(/^\s*[MF]\s+(?=[A-Z]{3,})/, '')
+        .replace(/[^A-Z\s,\-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/^[,\-\s]+|[,\-\s]+$/g, '')
+        .trim();
+    if (!cleaned || cleaned.length < 3 || cleaned.length > 32) return '';
+    if (/\bMOHA\b/.test(cleaned)) return '';
+    if (NAME_LABEL_RE.test(cleaned) || hasFillerNoise(cleaned)) return '';
+    return cleaned;
+}
+
+function extractVisualPlaceOfBirth(upperText) {
+    // 1) Explicit "Place of birth" label
+    const segment = segmentAfterLabel(
+        upperText,
+        /\bPLACE\s+OF\s+BIRTH\b\s*[:\-]*/i,
+        /\b(DATE\s+OF\s+(?:ISSUE|EXPIRY|BIRTH)|AUTHORITY|MOHA|HOLDER|SIGNATURE|PASSPORT|NATIONALITY)\b/i,
+        80
+    );
+    if (segment) {
+        const lines = segment
+            .split(/\r?\n/)
+            .map(cleanPlaceCandidate)
+            .filter(Boolean);
+        if (lines[0]) return lines[0];
+    }
+
+    // 2) Line immediately preceding "Authority" or "MOHA, YANGON"
+    const allLines = String(upperText || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const mohaIdx = allLines.findIndex(l => /\b(AUTHORITY|MOHA)\b/i.test(l));
+    if (mohaIdx > 0) {
+        for (let i = mohaIdx - 1; i >= Math.max(0, mohaIdx - 2); i--) {
+            const candidate = cleanPlaceCandidate(allLines[i]);
+            if (candidate) return candidate;
+        }
+    }
+
+    return '';
+}
+
 function extractVisualSex(upperText) {
     const segment = segmentAfterLabel(
         upperText,
@@ -494,11 +556,23 @@ export function parseVisualFallback(text, options = {}) {
         result.validations.dobValid = true;
     }
 
+    const issueDate = extractVisualDate(upperText, /\bDATE\s+OF\s+ISSUE\b\s*[:\-]*/i);
+    if (issueDate) {
+        result.issueDate = issueDate;
+        result.source.issueDate = 'visual';
+    }
+
     const expiry = extractVisualDate(upperText, /\bDATE\s+OF\s+EXPIR(?:Y|E)?\b\s*[:\-]*/i);
     if (expiry) {
         result.expiry = expiry;
         result.source.expiry = 'visual';
         result.validations.expiryValid = true;
+    }
+
+    const placeOfBirth = extractVisualPlaceOfBirth(upperText);
+    if (placeOfBirth) {
+        result.placeOfBirth = placeOfBirth;
+        result.source.placeOfBirth = 'visual';
     }
 
     const sex = extractVisualSex(upperText);
@@ -536,7 +610,9 @@ export function mergePassportOcr({ mrzText = '', visualText = '', warnings = [],
     fillFromPriority(result, 'fullName', mrz, visual);
     fillFromPriority(result, 'passportNo', mrz, visual);
     fillFromPriority(result, 'dob', mrz, visual);
+    fillFromPriority(result, 'issueDate', mrz, visual);
     fillFromPriority(result, 'expiry', mrz, visual);
+    fillFromPriority(result, 'placeOfBirth', mrz, visual);
     fillFromPriority(result, 'sex', mrz, visual);
 
     if (mrz.nationality === 'MMR') {
@@ -548,6 +624,14 @@ export function mergePassportOcr({ mrzText = '', visualText = '', warnings = [],
     } else if (result.fullName || result.passportNo || result.dob || result.expiry || result.sex || textHasMyanmarEvidence(`${mrzText}\n${visualText}`)) {
         result.nationality = 'MMR';
         result.source.nationality = 'defaultMMR';
+    }
+
+    if (!result.issueDate && result.expiry && result.nationality === 'MMR') {
+        const derivedIssue = deriveMyanmarIssueDateFromExpiry(result.expiry, result.nationality);
+        if (derivedIssue) {
+            result.issueDate = derivedIssue;
+            result.source.issueDate = 'derived5yr';
+        }
     }
 
     result.validations.mrzStructureValid = mrz.validations.mrzStructureValid;
