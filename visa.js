@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { addVisaApplication, updateVisaApplication, deleteVisaApplication } from './db.js';
-import { showToast, escapeHtml, parseSheetDate, formatDateForSheet } from './utils.js';
-import { openModal, closeModal, showConfirmModal } from './ui.js';
+import { showToast, escapeHtml, parseSheetDate, formatDateForSheet, isPlaceholderDate } from './utils.js';
+import { openModal, closeModal, showConfirmModal, scanPassportWithGemini } from './ui.js';
 import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox, downloadPassportPhoto } from './passport.js';
 import { ocrPassport } from './passport-ocr.js';
 import { computePassportExpiryStatus, normalizeClientKey } from './clients.js';
@@ -412,17 +412,100 @@ function setPassportPreview(url, path, labelText) {
     if (dz) dz.classList.toggle('has-photo', Boolean(url));
 }
 
-function setOcrField(fieldId, value) {
-    if (!value) return;
-    const el = document.getElementById(fieldId);
-    if (!el) return;
-    const current = (el.value || '').trim();
-    const prevAuto = _ocrFilledValues[fieldId];
-    if (!current || current === prevAuto) {
-        el.value = value;
-        _ocrFilledValues[fieldId] = value;
-        el.dispatchEvent(new Event('change', { bubbles: true }));
+function normalizeVisaOcrDate(value, { isBirth = false } = {}) {
+    const raw = String(value || '').trim();
+    if (!raw || isPlaceholderDate(raw)) return '';
+
+    const namedMonths = {
+        JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+        JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12'
+    };
+
+    const mrzDate = raw.match(/^(\d{2})(\d{2})(\d{2})$/);
+    if (mrzDate) {
+        const yy = parseInt(mrzDate[1], 10);
+        const currentYear = new Date().getFullYear() % 100;
+        const yyyy = isBirth && yy > currentYear ? 1900 + yy : 2000 + yy;
+        return `${mrzDate[3]}/${mrzDate[2]}/${yyyy}`;
     }
+
+    const named = raw.match(/(\d{1,2})\s+([A-Z]{3})[A-Z]*\.?\s+(\d{2,4})/i);
+    if (named) {
+        const dd = named[1].padStart(2, '0');
+        const mm = namedMonths[named[2].toUpperCase()];
+        let yyyy = named[3];
+        if (yyyy.length === 2) {
+            const yy = parseInt(yyyy, 10);
+            const currentYear = new Date().getFullYear() % 100;
+            yyyy = String(isBirth && yy > currentYear ? 1900 + yy : 2000 + yy);
+        }
+        return mm ? `${dd}/${mm}/${yyyy}` : raw;
+    }
+
+    const iso = raw.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+    if (iso) return `${iso[3].padStart(2, '0')}/${iso[2].padStart(2, '0')}/${iso[1]}`;
+
+    const numeric = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+    if (numeric) {
+        const first = parseInt(numeric[1], 10);
+        const second = parseInt(numeric[2], 10);
+        let yyyy = numeric[3];
+        if (yyyy.length === 2) {
+            const yy = parseInt(yyyy, 10);
+            const currentYear = new Date().getFullYear() % 100;
+            yyyy = String(isBirth && yy > currentYear ? 1900 + yy : 2000 + yy);
+        }
+        let dd, mm;
+        if (first > 12) {
+            dd = first; mm = second;
+        } else if (second > 12) {
+            dd = second; mm = first;
+        } else {
+            dd = first; mm = second;
+        }
+        return `${String(dd).padStart(2, '0')}/${String(mm).padStart(2, '0')}/${yyyy}`;
+    }
+
+    return raw;
+}
+
+function setVisaDateFieldFromOcr(fieldId, rawValue, { isBirth = false } = {}) {
+    const el = document.getElementById(fieldId);
+    if (!el || !rawValue) return false;
+    const normalized = normalizeVisaOcrDate(rawValue, { isBirth });
+    if (!normalized) return false;
+
+    try {
+        if (el.datepicker) el.datepicker.destroy();
+    } catch (_) {}
+
+    el.value = normalized;
+    _ocrFilledValues[fieldId] = normalized;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+
+    try {
+        if (window.Datepicker) {
+            const opts = { format: 'dd/mm/yyyy', autohide: true, todayHighlight: true };
+            if (isBirth) {
+                opts.minDate = new Date(1900, 0, 1);
+                opts.maxDate = new Date();
+            }
+            new window.Datepicker(el, opts);
+        }
+    } catch (_) {}
+
+    return true;
+}
+
+function setOcrField(fieldId, value) {
+    if (!value) return false;
+    const el = document.getElementById(fieldId);
+    if (!el) return false;
+    el.value = value;
+    _ocrFilledValues[fieldId] = value;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
 }
 
 function clearOcrFilledFieldsIfUnchanged() {
@@ -430,6 +513,9 @@ function clearOcrFilledFieldsIfUnchanged() {
         if (fieldId === '__gender') return;
         const el = document.getElementById(fieldId);
         if (el && el.value === autoVal) {
+            try {
+                if (el.datepicker) el.datepicker.setDate({ clear: true });
+            } catch (_) {}
             el.value = fieldId === 'visa_nationality' ? 'MMR' : '';
         }
     });
@@ -438,6 +524,12 @@ function clearOcrFilledFieldsIfUnchanged() {
 }
 
 async function handlePassportFileSelected(file) {
+    if (!file) return;
+    if (file.type && !file.type.startsWith('image/')) {
+        showToast('Please choose an image file.', 'error');
+        return;
+    }
+
     const dz = document.getElementById('visa_passport_dropzone');
     const progressBar = document.getElementById('visa_passport_progress');
     const statusEl = document.getElementById('visa_ocr_status');
@@ -450,33 +542,40 @@ async function handlePassportFileSelected(file) {
         statusEl.dataset.tone = 'info';
     }
 
+    const hasValidPassportFields = (res) => Boolean(
+        res && (
+            res.fullName || res.name ||
+            res.passportNumber || res.passportNo || res.passport_no ||
+            res.expiryDate || res.expiry || res.passport_expiry ||
+            res.dateOfBirth || res.dob
+        )
+    );
+
     const runOcrChain = async () => {
         try {
-            const { scanPassportWithGemini } = await import('./ui.js');
             if (typeof scanPassportWithGemini === 'function') {
-                const gemResult = await scanPassportWithGemini(file, {
-                    onStatus: (s) => {
-                        if (statusEl && s?.message) statusEl.textContent = s.message;
-                    }
-                });
-                if (gemResult && (gemResult.passport_no || gemResult.name || gemResult.passport_expiry)) {
+                const gemResult = await scanPassportWithGemini(file, 0);
+                if (hasValidPassportFields(gemResult)) {
                     return gemResult;
                 }
             }
         } catch (err) {
-            console.warn('Gemini OCR fallback to Tesseract:', err);
+            console.warn('[Visa OCR] Gemini OCR fallback to Tesseract:', err);
+            if (statusEl) statusEl.textContent = 'Gemini unavailable, falling back to MRZ OCR…';
         }
-        return ocrPassport(file, {
-            onStatus: (s) => {
-                if (statusEl && s?.message) statusEl.textContent = s.message;
+        return ocrPassport(file, (msg) => {
+            if (statusEl && msg) {
+                statusEl.textContent = typeof msg === 'string' ? msg : (msg.message || '');
             }
         });
     };
 
     const [uploadOutcome, ocrOutcome] = await Promise.allSettled([
         uploadPassportPhoto(file, {
+            passportNo: document.getElementById('visa_passport_no')?.value || 'unknown',
             onProgress: (pct) => {
-                if (progressBar) progressBar.style.width = `${Math.max(5, Math.round(pct * 100))}%`;
+                const normalizedPct = pct <= 1 ? Math.round(pct * 100) : Math.round(pct);
+                if (progressBar) progressBar.style.width = `${Math.max(5, normalizedPct)}%`;
             }
         }),
         runOcrChain()
@@ -498,48 +597,101 @@ async function handlePassportFileSelected(file) {
 
     if (ocrOutcome.status === 'fulfilled' && ocrOutcome.value) {
         const parsed = ocrOutcome.value;
+        console.log('[Visa applyOcrResults] OCR data:', JSON.stringify(parsed));
+
+        const fullName = String(parsed.fullName || parsed.name || '').trim().toUpperCase();
+        const passportNo = String(parsed.passportNumber || parsed.passportNo || parsed.passport_no || '').trim().toUpperCase();
+        const dobRaw = parsed.dateOfBirth || parsed.dob || '';
+        const expiryRaw = parsed.expiryDate || parsed.expiry || parsed.expirationDate || parsed.dateOfExpiry || parsed.date_of_expiry || parsed.passport_expiry || '';
+        const issueRaw = parsed.issueDate || parsed.dateOfIssue || parsed.passport_issue_date || '';
+        const nationality = String(parsed.nationality || 'MMR').trim().toUpperCase();
+        const placeOfBirth = String(parsed.placeOfBirth || parsed.birthPlace || parsed.place_of_birth || '').trim();
+        const title = String(parsed.title || '').trim().toUpperCase();
+        const sex = String(parsed.sex || parsed.gender || '').trim().toUpperCase();
+
         const filled = [];
-        if (parsed.name) {
-            setOcrField('visa_applicant_name', String(parsed.name).toUpperCase());
+        if (fullName) {
+            setOcrField('visa_applicant_name', fullName);
+            const suggestBox = document.getElementById('visa_applicant_autosuggest');
+            if (suggestBox) suggestBox.hidden = true;
             filled.push('Name');
         }
-        if (parsed.passport_no) {
-            setOcrField('visa_passport_no', String(parsed.passport_no).toUpperCase());
+        if (passportNo) {
+            setOcrField('visa_passport_no', passportNo);
             filled.push('Passport No.');
         }
-        if (parsed.passport_expiry) {
-            setOcrField('visa_passport_expiry', parsed.passport_expiry);
-            filled.push('Expiry');
-        }
-        if (parsed.dob) {
-            setOcrField('visa_dob', parsed.dob);
+        if (dobRaw && setVisaDateFieldFromOcr('visa_dob', dobRaw, { isBirth: true })) {
             filled.push('DOB');
         }
-        if (parsed.nationality) {
-            setOcrField('visa_nationality', String(parsed.nationality).toUpperCase());
+        if (expiryRaw && setVisaDateFieldFromOcr('visa_passport_expiry', expiryRaw, { isBirth: false })) {
+            filled.push('Expiry');
+        }
+        if (issueRaw && setVisaDateFieldFromOcr('visa_passport_issue_date', issueRaw, { isBirth: false })) {
+            filled.push('Issue Date');
+        }
+        if (nationality) {
+            setOcrField('visa_nationality', nationality);
             filled.push('Nationality');
         }
-        if (parsed.title === 'MS' || parsed.sex === 'F' || parsed.gender === 'F') {
+        if (placeOfBirth) {
+            setOcrField('visa_place_of_birth', placeOfBirth);
+        }
+
+        if (title === 'MS' || title === 'MISS' || title === 'MRS' || sex === 'F' || sex === 'FEMALE') {
             const fRadio = document.getElementById('visa_gender_f');
-            if (fRadio) fRadio.checked = true;
+            if (fRadio) {
+                fRadio.checked = true;
+                fRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             _ocrFilledValues.__gender = 'F';
-        } else if (parsed.title === 'MR' || parsed.sex === 'M' || parsed.gender === 'M') {
+            filled.push('Gender');
+        } else if (title === 'MR' || title === 'MSTR' || sex === 'M' || sex === 'MALE') {
             const mRadio = document.getElementById('visa_gender_m');
-            if (mRadio) mRadio.checked = true;
+            if (mRadio) {
+                mRadio.checked = true;
+                mRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             _ocrFilledValues.__gender = 'M';
+            filled.push('Gender');
+        }
+
+        // Also match existing client by passport number or full name to pre-fill phone / NRC if empty
+        if (passportNo || fullName) {
+            const matchedClient = (state.allClients || []).find(c => {
+                const cPass = String(c.passport_no || '').trim().toUpperCase();
+                const cName = String(c.name || '').trim().toUpperCase();
+                return (passportNo && cPass === passportNo) || (fullName && cName === fullName);
+            });
+            if (matchedClient) {
+                const clientKeyEl = document.getElementById('visa_client_key');
+                if (clientKeyEl && !clientKeyEl.value && matchedClient.key) clientKeyEl.value = matchedClient.key;
+                const phoneEl = document.getElementById('visa_phone');
+                if (phoneEl && !phoneEl.value.trim() && matchedClient.phone) {
+                    setOcrField('visa_phone', matchedClient.phone);
+                }
+                const nrcEl = document.getElementById('visa_nrc_no');
+                if (nrcEl && !nrcEl.value.trim() && matchedClient.nrc_no) {
+                    setOcrField('visa_nrc_no', matchedClient.nrc_no);
+                }
+            }
         }
 
         if (statusEl) {
             if (filled.length > 0) {
-                statusEl.textContent = `Auto-filled ${filled.join(' · ')} — please verify against passport`;
-                statusEl.dataset.tone = parsed.mrzValid ? 'ok' : 'warn';
+                statusEl.textContent = `✓ Auto-filled ${filled.join(' · ')} — please verify against passport`;
+                statusEl.dataset.tone = 'ok';
+                showToast('Passport uploaded & data extracted!', 'success');
             } else {
-                statusEl.textContent = 'Photo uploaded — could not read MRZ automatically, please type fields below';
+                statusEl.textContent = 'Photo uploaded — could not read passport fields automatically, please type below';
                 statusEl.dataset.tone = 'warn';
+                showToast('Passport uploaded. OCR could not extract data.', 'info');
             }
         }
         updatePassportExpiryWarning();
         refreshChecklistDynamicVisibility();
+    } else if (statusEl) {
+        statusEl.textContent = 'Photo uploaded — OCR unavailable, please enter passport fields manually';
+        statusEl.dataset.tone = 'warn';
     }
 }
 

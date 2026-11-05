@@ -332,6 +332,11 @@
     color: var(--ink-2);
 }
 
+#visa-view .pz-ocr-status:not(:empty) {
+    display: block !important;
+    opacity: 1 !important;
+}
+
 #visa-view .pz-ocr-status[data-tone="ok"] {
     color: var(--sage);
 }
