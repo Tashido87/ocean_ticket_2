@@ -151,7 +151,7 @@ const coreAssetsList = [
     './manifest.json',
     './ocean-travel-logo.png',
     `./app-styles.min.css?v=${cssHash}`,
-    './dashboard-exact.css?v=10',
+    './dashboard-exact.css?v=11',
     './settle-exact.css?v=2',
     './hotel-exact.css?v=1',
     './search-exact.css?v=1',
