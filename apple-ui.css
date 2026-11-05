@@ -2942,7 +2942,7 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 }
 .airasia-modal-layout {
     display: grid;
-    grid-template-columns: minmax(460px, 480px) 1fr;
+    grid-template-columns: 460px 1fr;
     gap: 20px;
     align-items: start;
     max-height: 82vh;
@@ -2958,11 +2958,26 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 .airasia-preview-scroll {
     max-height: 78vh;
     overflow-y: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     background: #525659;
-    padding: 20px;
+    padding: 20px 24px;
     border-radius: 12px;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+}
+.airasia-ticket-wrapper {
+    width: 780px !important;
+    min-width: 780px !important;
+    max-width: 780px !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+}
+#airAsiaModal .modal-content,
+#chinaHotelModal .modal-content {
+    max-width: min(1360px, 96vw) !important;
+    width: 96vw !important;
 }
 .airasia-form-group {
     display: flex;
