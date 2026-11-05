@@ -2942,15 +2942,15 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
 }
 .airasia-modal-layout {
     display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 18px;
+    grid-template-columns: minmax(460px, 480px) 1fr;
+    gap: 20px;
     align-items: start;
     max-height: 82vh;
 }
 .airasia-form-scroll {
     max-height: 78vh;
     overflow-y: auto;
-    padding-right: 8px;
+    padding-right: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -2968,11 +2968,15 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
 }
 .airasia-form-group label {
     font-size: 0.78rem;
     font-weight: 600;
     color: var(--apple-text-secondary);
+    line-height: 1.35;
+    word-break: normal;
+    overflow-wrap: break-word;
 }
 .airasia-form-group input,
 .airasia-form-group select,
@@ -2984,11 +2988,12 @@ body.material-theme.sidebar-collapsed .sticky-summary-bar {
     color: var(--apple-text);
     font-size: 0.85rem;
     box-sizing: border-box;
+    width: 100%;
 }
 .airasia-form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
 }
 .airasia-form-section-title {
     font-size: 0.82rem;
