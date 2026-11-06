@@ -537,10 +537,12 @@ export function displayTickets(tickets, page = 1) {
         const statusBadgeHtml = renderRecordStatusBadge(ticket, isGroup);
 
         let pnrCellHtml = '—';
+        let rowPnrs = [];
         if (isGroup) {
             const groupPnrs = [...new Set((ticket.tickets || [])
                 .map(t => String(t.booking_reference || '').trim())
                 .filter(p => p && p !== 'No PNR' && p !== '—' && p !== 'N/A'))];
+            rowPnrs = groupPnrs.map(p => p.toUpperCase());
             if (groupPnrs.length) {
                 pnrCellHtml = groupPnrs.map(p => `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(p)}" title="View Booking Details: ${escapeHtml(p)}">${escapeHtml(p)}</a>`).join(', ');
             }
@@ -554,11 +556,18 @@ export function displayTickets(tickets, page = 1) {
         } else {
             const rawPnr = String(ticket.booking_reference || '').trim();
             if (rawPnr && rawPnr !== 'No PNR' && rawPnr !== '—' && rawPnr !== 'N/A') {
+                rowPnrs = [rawPnr.toUpperCase()];
                 pnrCellHtml = `<a href="#" class="clickable-pnr" data-pnr="${escapeHtml(rawPnr)}" title="View Booking Details: ${escapeHtml(rawPnr)}">${escapeHtml(rawPnr)}</a>`;
             } else if (rawPnr) {
                 pnrCellHtml = escapeHtml(rawPnr);
             }
         }
+
+        const queuedPnrsSet = new Set(getQueuedInvoicePnrs());
+        const isRowQueued = rowPnrs.length > 0 && rowPnrs.every(p => queuedPnrsSet.has(p));
+        const invoiceBtnTitle = isRowQueued
+            ? `Added to Invoice / Receipt (${rowPnrs.join(', ')})`
+            : (rowPnrs.length ? `Add ${rowPnrs.join(', ')} to Invoice / Receipt` : 'No PNR available for Invoice / Receipt');
 
         row.innerHTML = `
             <td class="col-issued-date" data-col="issued_date">${formatDateToDMMMY(ticket.issued_date || ticket.dateRange || '')}</td>
@@ -574,6 +583,7 @@ export function displayTickets(tickets, page = 1) {
             <td class="col-status col-pinned">${statusBadgeHtml}</td>
             <td class="actions-cell col-actions col-pinned">
                 <button class="icon-btn icon-btn-table" title="View Details" data-action="view"><i class="fa-solid fa-eye"></i></button>
+                ${!ticket._isHotel ? `<button class="icon-btn icon-btn-table${isRowQueued ? ' is-queued' : ''}" title="${escapeHtml(invoiceBtnTitle)}" data-action="add-invoice" data-pnrs="${escapeHtml(rowPnrs.join(','))}" aria-pressed="${isRowQueued ? 'true' : 'false'}" ${rowPnrs.length === 0 ? 'disabled' : ''}><i class="fa-solid fa-file-invoice-dollar"></i></button>` : ''}
                 <button class="icon-btn icon-btn-table" title="Edit" data-action="edit"><i class="fa-solid fa-pen-to-square"></i></button>
                 ${isGroup ? '' : '<button class="icon-btn icon-btn-table" title="Delete" data-action="delete"><i class="fa-solid fa-trash-can"></i></button>'}
             </td>
@@ -591,6 +601,8 @@ export function displayTickets(tickets, page = 1) {
                     } else {
                         showDetails(ticket.id);
                     }
+                } else if (action === 'add-invoice') {
+                    addPnrsToInvoiceInput(rowPnrs);
                 } else if (action === 'edit') {
                     if (isGroup) {
                         openEditGroupModal(ticket);
@@ -611,6 +623,7 @@ export function displayTickets(tickets, page = 1) {
         });
     });
 
+    bindInvoiceInputSyncOnce();
     setupPagination(tickets);
 
     // Setup event listeners for inline excel inputs
@@ -795,6 +808,89 @@ async function saveFieldUpdate(id, isHotel, field, value, isGrouped = false) {
     }
 }
 
+function getQueuedInvoicePnrs() {
+    const pnrInput = document.getElementById('invoice_pnr_list');
+    if (!pnrInput) return [];
+    return pnrInput.value
+        .split(/[\n,]+/)
+        .map(p => p.trim().toUpperCase())
+        .filter(Boolean);
+}
+
+export function syncInvoiceQueueButtons() {
+    const queuedSet = new Set(getQueuedInvoicePnrs());
+    const tbody = document.getElementById('resultsBody');
+    if (!tbody) return;
+    tbody.querySelectorAll('button[data-action="add-invoice"]').forEach(btn => {
+        const rawPnrs = (btn.dataset.pnrs || '')
+            .split(',')
+            .map(p => p.trim().toUpperCase())
+            .filter(Boolean);
+        const isQueued = rawPnrs.length > 0 && rawPnrs.every(p => queuedSet.has(p));
+        btn.classList.toggle('is-queued', isQueued);
+        btn.setAttribute('aria-pressed', isQueued ? 'true' : 'false');
+        btn.title = isQueued
+            ? `Added to Invoice / Receipt (${rawPnrs.join(', ')})`
+            : (rawPnrs.length ? `Add ${rawPnrs.join(', ')} to Invoice / Receipt` : 'No PNR available for Invoice / Receipt');
+    });
+}
+
+function bindInvoiceInputSyncOnce() {
+    const pnrInput = document.getElementById('invoice_pnr_list');
+    if (pnrInput && pnrInput.dataset.recordsSyncBound !== 'true') {
+        pnrInput.addEventListener('input', syncInvoiceQueueButtons);
+        pnrInput.addEventListener('change', syncInvoiceQueueButtons);
+        pnrInput.dataset.recordsSyncBound = 'true';
+    }
+    const clearBtn = document.getElementById('invoiceClearBtn');
+    if (clearBtn && clearBtn.dataset.recordsSyncBound !== 'true') {
+        clearBtn.addEventListener('click', () => setTimeout(syncInvoiceQueueButtons, 0));
+        clearBtn.dataset.recordsSyncBound = 'true';
+    }
+}
+
+export function addPnrsToInvoiceInput(pnrsToAdd = []) {
+    const validPnrs = [...new Set(
+        pnrsToAdd
+            .map(p => String(p || '').trim().toUpperCase())
+            .filter(p => p && p !== 'NO PNR' && p !== '—' && p !== 'N/A')
+    )];
+    if (!validPnrs.length) {
+        showToast('No valid PNR found for this record.', 'error');
+        return;
+    }
+
+    const pnrInput = document.getElementById('invoice_pnr_list');
+    if (!pnrInput) {
+        showToast('Invoice / Receipt input not found.', 'error');
+        return;
+    }
+
+    const existing = getQueuedInvoicePnrs();
+    const existingSet = new Set(existing);
+    const newlyAdded = [];
+
+    validPnrs.forEach(p => {
+        if (!existingSet.has(p)) {
+            existing.push(p);
+            existingSet.add(p);
+            newlyAdded.push(p);
+        }
+    });
+
+    pnrInput.value = existing.join(', ');
+    pnrInput.dispatchEvent(new Event('input', { bubbles: true }));
+    pnrInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+    syncInvoiceQueueButtons();
+
+    if (newlyAdded.length > 0) {
+        showToast(`Added PNR ${newlyAdded.join(', ')} to Invoice / Receipt (${existing.join(', ')})`, 'success');
+    } else {
+        showToast(`PNR ${validPnrs.join(', ')} is already in Invoice / Receipt (${existing.join(', ')})`, 'info');
+    }
+}
+
 function escapeHtml(value) {
     const div = document.createElement('div');
     div.textContent = String(value ?? '');
@@ -945,12 +1041,22 @@ export function showDetails(docId) {
                 border-radius: 18px !important;
                 overflow: hidden !important;
                 max-width: 500px !important;
+                max-height: min(88vh, calc(100dvh - 32px)) !important;
+                display: flex !important;
+                flex-direction: column !important;
                 box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
                 border: none !important;
             }
             
-            .solid-modal .modal-content {
+            .solid-modal .modal-content,
+            .solid-modal #modalBody {
                 padding: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                flex: 1 1 auto !important;
+                min-height: 0 !important;
+                max-height: 100% !important;
+                overflow: hidden !important;
             }
 
             .aesthetic-details-container {
@@ -959,17 +1065,22 @@ export function showDetails(docId) {
                 background: #F8FBFB;
                 display: flex;
                 flex-direction: column;
+                flex: 1 1 auto;
+                min-height: 0;
+                max-height: min(88vh, calc(100dvh - 32px));
+                overflow: hidden;
             }
 
             /* Ocean Teal gradient header */
             .aesthetic-header-banner {
                 background: linear-gradient(135deg, #0F7781 0%, #0C6670 100%);
-                padding: 1.75rem 1.5rem;
+                padding: 1.35rem 1.5rem;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 color: #ffffff;
                 position: relative;
+                flex-shrink: 0;
             }
 
             .aesthetic-header-banner .route-city-box {
@@ -1019,11 +1130,12 @@ export function showDetails(docId) {
 
             /* Cards block */
             .aesthetic-body-content {
-                padding: 1.25rem;
+                padding: 1.15rem 1.25rem;
                 display: flex;
                 flex-direction: column;
                 gap: 0.85rem;
-                max-height: 65vh;
+                flex: 1 1 auto;
+                min-height: 0;
                 overflow-y: auto;
             }
 
@@ -1212,13 +1324,16 @@ export function showDetails(docId) {
 
             /* Actions */
             .aesthetic-actions {
-                padding: 1rem 1.25rem 1.25rem;
+                padding: 0.9rem 1.25rem 1.1rem;
                 background: #ffffff;
                 border-top: 1px solid #E9F0F0;
                 display: flex;
                 gap: 0.75rem;
                 justify-content: center;
                 align-items: center;
+                flex-shrink: 0;
+                position: relative;
+                z-index: 2;
             }
 
             .btn-aesthetic-close {
