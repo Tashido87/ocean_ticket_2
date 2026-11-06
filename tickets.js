@@ -818,7 +818,12 @@ function getQueuedInvoicePnrs() {
 }
 
 export function syncInvoiceQueueButtons() {
-    const queuedSet = new Set(getQueuedInvoicePnrs());
+    const queuedList = getQueuedInvoicePnrs();
+    const queuedSet = new Set(queuedList);
+    const pnrClearBtn = document.getElementById('invoicePnrClearBtn');
+    if (pnrClearBtn) {
+        pnrClearBtn.hidden = queuedList.length === 0;
+    }
     const tbody = document.getElementById('resultsBody');
     if (!tbody) return;
     tbody.querySelectorAll('button[data-action="add-invoice"]').forEach(btn => {
@@ -846,6 +851,16 @@ function bindInvoiceInputSyncOnce() {
     if (clearBtn && clearBtn.dataset.recordsSyncBound !== 'true') {
         clearBtn.addEventListener('click', () => setTimeout(syncInvoiceQueueButtons, 0));
         clearBtn.dataset.recordsSyncBound = 'true';
+    }
+    const pnrInlineClearBtn = document.getElementById('invoicePnrClearBtn');
+    if (pnrInlineClearBtn && pnrInput && pnrInlineClearBtn.dataset.clearBound !== 'true') {
+        pnrInlineClearBtn.addEventListener('click', () => {
+            pnrInput.value = '';
+            pnrInput.dispatchEvent(new Event('input', { bubbles: true }));
+            pnrInput.dispatchEvent(new Event('change', { bubbles: true }));
+            pnrInput.focus();
+        });
+        pnrInlineClearBtn.dataset.clearBound = 'true';
     }
 }
 

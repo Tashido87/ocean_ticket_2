@@ -57,3 +57,59 @@ body.dark-theme #services-view #airAsiaPanel { --service-tint: #392C22; --servic
 body.dark-theme #services-view #invoicePanel :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #6DD6CD; }
 body.dark-theme #services-view :is(#chinaHotelPanel, #hotelPanel) :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #C6ADFA; }
 body.dark-theme #services-view #airAsiaPanel :is(.service-panel-icon, .service-dropzone-icon, .service-quick-hint i) { color: #F9B778; }
+
+/* Clear (X) button inside PNR Code(s) input */
+.input-with-clear {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.input-with-clear > input {
+    width: 100%;
+    padding-right: 2.25rem !important;
+}
+
+.input-with-clear > .input-clear-btn {
+    position: absolute !important;
+    right: 8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 999px !important;
+    background: rgba(15, 23, 42, 0.08) !important;
+    color: var(--text-secondary, #64748B) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+    z-index: 2 !important;
+    box-shadow: none !important;
+    transition: background-color 140ms ease, color 140ms ease !important;
+}
+
+.input-with-clear > .input-clear-btn:hover {
+    background: rgba(13, 110, 119, 0.16) !important;
+    color: #0D6E77 !important;
+}
+
+.input-with-clear > .input-clear-btn[hidden] {
+    display: none !important;
+}
+
+body.dark-theme .input-with-clear > .input-clear-btn {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: var(--text-secondary, #CBD5E1) !important;
+}
+
+body.dark-theme .input-with-clear > .input-clear-btn:hover {
+    background: rgba(109, 214, 205, 0.22) !important;
+    color: #6DD6CD !important;
+}

@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Ocean Travel">
-    <link rel="stylesheet" href="app-styles.min.css?v=f6a4639e">
+    <link rel="stylesheet" href="app-styles.min.css?v=f98ad775">
     <link rel="stylesheet" href="dashboard-exact.css?v=11">
     <link rel="stylesheet" href="settle-exact.css?v=2">
     <link rel="stylesheet" href="hotel-exact.css?v=1">
@@ -1848,7 +1848,12 @@
                             <form id="invoiceForm" class="invoice-horizontal-form" onsubmit="return false;">
                                 <div class="form-group">
                                     <label for="invoice_pnr_list">PNR Code(s)</label>
-                                    <input type="text" id="invoice_pnr_list" placeholder="ABC123, DEF456 …" required autocomplete="off">
+                                    <div class="input-with-clear">
+                                        <input type="text" id="invoice_pnr_list" placeholder="ABC123, DEF456 …" required autocomplete="off">
+                                        <button type="button" class="input-clear-btn" id="invoicePnrClearBtn" title="Clear PNR Code(s)" aria-label="Clear PNR Code(s)" hidden>
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="form-group short-input">
@@ -2661,7 +2666,7 @@
     "./hotel.js": "./hotel.js?v=1c18b49d",
     "./invoice-selection.mjs": "./invoice-selection.mjs?v=2d426669",
     "./invoice.js": "./invoice.js?v=8c3cc9bd",
-    "./main.js": "./main.js?v=6fec36b4",
+    "./main.js": "./main.js?v=e511edfc",
     "./manage.js": "./manage.js?v=2424fc3e",
     "./passport-ocr.js": "./passport-ocr.js?v=a2735b46",
     "./passport-parser.mjs": "./passport-parser.mjs?v=318d5b2e",
@@ -2670,13 +2675,13 @@
     "./search.js": "./search.js?v=b7895f72",
     "./settlement.js": "./settlement.js?v=d6df63a3",
     "./state.js": "./state.js?v=7bc2f9f5",
-    "./tickets.js": "./tickets.js?v=399dcd39",
+    "./tickets.js": "./tickets.js?v=37a14b5a",
     "./ui.js": "./ui.js?v=774de552",
     "./utils.js": "./utils.js?v=83eec376",
     "./visa.js": "./visa.js?v=6cdecfcb"
   }
 }
     </script>
-    <script src="main.js?v=6fec36b4" type="module"></script>
+    <script src="main.js?v=e511edfc" type="module"></script>
 </body>
 </html>

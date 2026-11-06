@@ -1175,11 +1175,32 @@ function setupEventListeners() {
 
     // Attach listeners to input to dynamically load adjustment fields
     const pnrListInput = document.getElementById('invoice_pnr_list');
+    const invoicePnrClearBtn = document.getElementById('invoicePnrClearBtn');
+    const syncInvoicePnrClearBtn = () => {
+        if (!invoicePnrClearBtn || !pnrListInput) return;
+        invoicePnrClearBtn.hidden = !pnrListInput.value.trim();
+    };
     if (pnrListInput) {
-        pnrListInput.addEventListener('input', updateInvoiceAdjustmentsSection);
-        pnrListInput.addEventListener('change', updateInvoiceAdjustmentsSection);
+        pnrListInput.addEventListener('input', () => {
+            syncInvoicePnrClearBtn();
+            updateInvoiceAdjustmentsSection();
+        });
+        pnrListInput.addEventListener('change', () => {
+            syncInvoicePnrClearBtn();
+            updateInvoiceAdjustmentsSection();
+        });
         // Sync on initialization
+        syncInvoicePnrClearBtn();
         updateInvoiceAdjustmentsSection();
+    }
+    if (invoicePnrClearBtn && pnrListInput && invoicePnrClearBtn.dataset.clearBound !== 'true') {
+        invoicePnrClearBtn.addEventListener('click', () => {
+            pnrListInput.value = '';
+            pnrListInput.dispatchEvent(new Event('input', { bubbles: true }));
+            pnrListInput.dispatchEvent(new Event('change', { bubbles: true }));
+            pnrListInput.focus();
+        });
+        invoicePnrClearBtn.dataset.clearBound = 'true';
     }
 
     // Passenger mode is an export-only selection; no booking/payment records are written.
@@ -1349,6 +1370,7 @@ function setupEventListeners() {
             grouping.value = 'pnr';
             grouping.dispatchEvent(new Event('change'));
             document.getElementById('invoice_pnr_list').value = '';
+            syncInvoicePnrClearBtn();
             document.getElementById('invoice_date').value = '';
             document.getElementById('document_type').value = 'Invoice';
             document.getElementById('invoice_brand').value = 'ocean';
