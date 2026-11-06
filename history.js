@@ -56,12 +56,69 @@ export function createAuditPayload(ticket, details = '', opts = {}) {
 }
 
 /**
- * Loads the modification history from Firestore.
+ * Parses date string in DD-MMM-YYYY or ISO format into millisecond timestamp.
+ * @param {string} str Date string.
+ * @returns {number} Milliseconds since epoch.
+ */
+export function parseHistoryDate(str) {
+    if (!str) return 0;
+    const parts = String(str).trim().match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?/i);
+    if (parts) {
+        const day = parseInt(parts[1], 10);
+        const months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+        const month = months[parts[2].toLowerCase()] ?? 0;
+        const year = parseInt(parts[3], 10);
+        let hour = parts[4] ? parseInt(parts[4], 10) : 0;
+        const min = parts[5] ? parseInt(parts[5], 10) : 0;
+        const ampm = parts[7]?.toUpperCase();
+        if (ampm === 'PM' && hour < 12) hour += 12;
+        if (ampm === 'AM' && hour === 12) hour = 0;
+        return new Date(year, month, day, hour, min).getTime();
+    }
+    const t = new Date(str).getTime();
+    return isNaN(t) ? 0 : t;
+}
+
+/**
+ * Extracts comparable timestamp from history record across different schemas.
+ * @param {Object} entry History record.
+ * @returns {number} Milliseconds timestamp.
+ */
+export function getHistoryItemTimestamp(entry) {
+    if (!entry) return 0;
+    if (entry.createdAt?.toMillis) {
+        return entry.createdAt.toMillis();
+    }
+    if (entry.createdAt?.seconds) {
+        return entry.createdAt.seconds * 1000;
+    }
+    if (entry.isoDate) {
+        const t = new Date(entry.isoDate).getTime();
+        if (!isNaN(t)) return t;
+    }
+    if (entry.date) {
+        return parseHistoryDate(entry.date);
+    }
+    return 0;
+}
+
+/**
+ * Sorts history records with most recent changes first.
+ * @param {Array<Object>} historyList History records.
+ * @returns {Array<Object>} Sorted records array.
+ */
+export function sortHistoryNewestFirst(historyList) {
+    if (!Array.isArray(historyList)) return [];
+    return [...historyList].sort((a, b) => getHistoryItemTimestamp(b) - getHistoryItemTimestamp(a));
+}
+
+/**
+ * Loads the modification history from Firestore sorted newest first.
  */
 export async function loadHistory() {
     try {
         const history = await getHistory();
-        state.history = history.reverse(); // Show most recent first
+        state.history = sortHistoryNewestFirst(history);
     } catch (error) {
         console.error("Error loading history:", error);
     }
@@ -391,7 +448,7 @@ export async function renderLogsView(page = 1) {
     }
 
     state.logsPage = page;
-    const allHistory = state.history || [];
+    const allHistory = sortHistoryNewestFirst(state.history || []);
 
     const searchQuery = (document.getElementById('logsSearchInput')?.value || '').trim().toLowerCase();
     const actionFilter = document.getElementById('logsActionFilter')?.value || 'all';

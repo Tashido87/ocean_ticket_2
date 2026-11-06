@@ -13,7 +13,7 @@ import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, set
 // Feature Modules
 import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets, initRecordsColumnVisibility, applyRecordsColumnVisibility } from './tickets.js';
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
-import { initLogsView, renderLogsView, loadHistory } from './history.js';
+import { initLogsView, renderLogsView, loadHistory, sortHistoryNewestFirst } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
 import { buildClientList, loadFeaturedClients, getExpiringPassportClients, viewClientHistory } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
@@ -644,7 +644,7 @@ export function attachHistoryListener() {
     state.historyListenerAttached = true;
     state.unsubscribers.push(
         onHistoryChange((history) => {
-            state.history = history;
+            state.history = sortHistoryNewestFirst(history);
             if (window._refreshLogsView) {
                 window._refreshLogsView();
             }

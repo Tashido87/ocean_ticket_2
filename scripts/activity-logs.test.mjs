@@ -85,4 +85,23 @@ test('Activity Logs & Audit System', async (t) => {
         const formattedFs = formatLogTimestamp(entryFirestore);
         assert.ok(formattedFs.includes('Nov-2026'), 'Should format Firestore toDate() timestamp');
     });
+
+    await t.test('sortHistoryNewestFirst sorts November 2026 ahead of May 2026 regardless of input order', () => {
+        const { sortHistoryNewestFirst } = context;
+
+        const mayItem = { date: '16-May-2026 07:47 PM', name: 'SAN AUNG' };
+        const novItem = { date: '06-Nov-2026 11:20 AM', name: 'AYE AYE LATT' };
+        const octItem = { date: '25-Oct-2026 07:22 AM', name: 'AYE AYE MYAT' };
+
+        // Test with oldest first as input
+        const sorted1 = sortHistoryNewestFirst([mayItem, octItem, novItem]);
+        assert.equal(sorted1[0].name, 'AYE AYE LATT', 'Nov 2026 should be first');
+        assert.equal(sorted1[1].name, 'AYE AYE MYAT', 'Oct 2026 should be second');
+        assert.equal(sorted1[2].name, 'SAN AUNG', 'May 2026 should be last');
+
+        // Test with newest first as input
+        const sorted2 = sortHistoryNewestFirst([novItem, mayItem, octItem]);
+        assert.equal(sorted2[0].name, 'AYE AYE LATT', 'Nov 2026 should remain first');
+        assert.equal(sorted2[2].name, 'SAN AUNG', 'May 2026 should remain last');
+    });
 });
