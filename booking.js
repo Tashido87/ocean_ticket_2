@@ -41,6 +41,7 @@ import {
     populatePassengerCardFromClient,
     applyTripTypeToUI
 } from './ui.js';
+import { saveHistory } from './history.js';
 
 const BOOKING_STATUS_LABELS = {
     active: 'Active',
@@ -639,6 +640,11 @@ export async function updateBookingStatus(docIds, remarks) {
                 remark: remarks,
                 [timestampField]: nowIso
             });
+            saveHistory(booking, `${remarks === 'cancel' ? 'Canceled' : 'Updated'} booking status to ${nextStatus} for ${booking.name || 'passenger'} (PNR: ${booking.booking_reference || '—'})`, {
+                action: remarks === 'cancel' ? 'CANCELED' : 'BOOKING_MODIFIED',
+                financial: true,
+                changes: [{ field: 'status', from: booking.status || 'active', to: nextStatus }]
+            }).catch(err => console.warn('Failed to save booking status history:', err));
         }
         showToast('Booking updated successfully!', 'success');
     } catch (error) {
@@ -1267,6 +1273,13 @@ export async function handleNewBookingSubmit(e) {
             }
 
             await addBookings(bookingObjects);
+            for (const b of bookingObjects) {
+                saveHistory(b, `Created booking for ${b.name || 'passenger'} (PNR: ${b.booking_reference || '—'}) - ${b.departure || ''} → ${b.destination || ''}`, {
+                    action: 'BOOKING_CREATED',
+                    financial: true,
+                    changes: [{ field: 'record', from: 'None', to: 'Created' }]
+                }).catch(err => console.warn('Failed to save booking creation history:', err));
+            }
             showToast(`Booking for ${passengerData.length} passenger(s) saved!`, 'success');
             hideNewBookingForm();
             // Data and UI will update automatically via real-time listeners

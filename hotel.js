@@ -8,6 +8,8 @@ import { loadDocumentLibraries } from './document-libraries.js';
 import { state } from './state.js';
 import { showToast, formatDateToDMMMY, setButtonLoading, showServiceToast, hideServiceToast, addRecentActivity, renderRecentActivity, escapeHtml, parseSheetDate } from './utils.js';
 import { addHotelReservation, updateHotelReservation, deleteHotelReservation } from './db.js';
+import { openModal, closeModal } from './ui.js';
+import { saveHistory } from './history.js';
 
 /* =========================================
    HOTEL BOOKING VOUCHER MODULE
@@ -1034,9 +1036,18 @@ async function saveHotelReservation() {
 
         if (id) {
             await updateHotelReservation(id, data);
+            saveHistory({ ...data, id, name: data.client_name, booking_reference: data.booking_ref || '—' }, `Updated hotel reservation for ${data.client_name} at ${data.hotel_name}`, {
+                action: 'HOTEL_MODIFIED',
+                financial: true
+            }).catch(err => console.warn('Failed to save hotel edit history:', err));
             showToast('Hotel reservation updated successfully.', 'success');
         } else {
-            await addHotelReservation(data);
+            const newDocId = await addHotelReservation(data);
+            saveHistory({ ...data, id: newDocId, name: data.client_name, booking_reference: data.booking_ref || '—' }, `Created hotel reservation for ${data.client_name} at ${data.hotel_name} (Ref: ${data.booking_ref || '—'})`, {
+                action: 'HOTEL_CREATED',
+                financial: true,
+                changes: [{ field: 'record', from: 'None', to: 'Created' }]
+            }).catch(err => console.warn('Failed to save hotel creation history:', err));
             showToast('Hotel reservation saved successfully.', 'success');
         }
 
@@ -1106,13 +1117,76 @@ export function editHotelReservation(id) {
  * @param {string} id The document ID.
  */
 export async function deleteHotelReservationAction(id) {
-    if (!confirm('Are you sure you want to delete this hotel reservation? This action cannot be undone.')) return;
-    try {
-        await deleteHotelReservation(id);
-        showToast('Hotel reservation deleted successfully.', 'success');
-    } catch (error) {
-        console.error(error);
-        showToast('Failed to delete reservation.', 'error');
+    const res = (state.allHotels || []).find(h => h.id === id);
+    const guestName = res?.client_name || res?.guest_name || 'Guest';
+    const hotelName = res?.hotel_name || res?.property_name || 'Hotel';
+    const ref = res?.booking_ref || res?.booking_reference || res?.confirmation_no || '—';
+    const totalAmount = ((Number(res?.base_fare) || 0) + (Number(res?.commission) || 0) || Number(res?.selling_price) || 0).toLocaleString() + ' MMK';
+
+    const modalHtml = `
+        <div class="delete-confirm-box" style="padding: 0.5rem 0.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.25rem;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--ink, #0D2B33);">Delete Hotel Reservation?</h3>
+                    <p style="margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--text-muted, #64748b);">Are you sure you want to delete this reservation? This action cannot be undone.</p>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #64748b; font-size: 0.82rem;">Guest:</span>
+                    <strong style="color: #0f172a; font-size: 0.92rem;">${escapeHtml(guestName)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #64748b; font-size: 0.82rem;">Hotel:</span>
+                    <span style="color: #334155; font-weight: 500;">${escapeHtml(hotelName)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #64748b; font-size: 0.82rem;">Booking Ref:</span>
+                    <span style="font-family: monospace; font-weight: 700; color: #0C6B7A; background: #e2f2f3; padding: 2px 8px; border-radius: 4px; font-size: 0.88rem;">${escapeHtml(ref)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; margin-top: 0.2rem;">
+                    <span style="color: #64748b; font-size: 0.82rem;">Total Amount:</span>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">${escapeHtml(totalAmount)}</strong>
+                </div>
+            </div>
+
+            <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" id="cancelDeleteHotelBtn" class="btn btn-secondary" style="padding: 0.55rem 1.25rem; font-weight: 600;">Cancel</button>
+                <button type="button" id="confirmDeleteHotelBtn" class="btn btn-danger" style="padding: 0.55rem 1.25rem; font-weight: 600; background: #dc2626; color: #fff; border: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-trash"></i> Delete Reservation
+                </button>
+            </div>
+        </div>
+    `;
+
+    openModal(modalHtml, 'small-modal');
+
+    const cancelBtn = document.getElementById('cancelDeleteHotelBtn');
+    const confirmBtn = document.getElementById('confirmDeleteHotelBtn');
+
+    if (cancelBtn) cancelBtn.onclick = closeModal;
+    if (confirmBtn) {
+        confirmBtn.onclick = async () => {
+            setButtonLoading(confirmBtn, true);
+            try {
+                await deleteHotelReservation(id);
+                saveHistory(res || { id, name: guestName, booking_reference: ref }, `Deleted hotel reservation for ${guestName} at ${hotelName} (Ref: ${ref})`, {
+                    action: 'HOTEL_DELETED',
+                    financial: true,
+                    changes: [{ field: 'record', from: 'Active', to: 'Deleted' }]
+                }).catch(err => console.warn('Failed to save hotel deletion history:', err));
+                showToast('Hotel reservation deleted successfully.', 'success');
+                closeModal();
+            } catch (error) {
+                console.error(error);
+                showToast('Failed to delete reservation.', 'error');
+                setButtonLoading(confirmBtn, false);
+            }
+        };
     }
 }
 

@@ -13,7 +13,7 @@ import { showToast, parseSheetDate, parseDateInput, parseDeadline, debounce, set
 // Feature Modules
 import { performSearch, clearSearch, setDateRangePreset, handleSellTicket, handleAirlineChange, populateSearchAirlines, displayInitialTickets, updateUnpaidCount, displayTickets, initRecordsColumnVisibility, applyRecordsColumnVisibility } from './tickets.js';
 import { loadBookingData, handleNewBookingSubmit, performBookingSearch, clearBookingSearch, displayBookings } from './booking.js';
-import {  } from './history.js';
+import { initLogsView, renderLogsView, loadHistory } from './history.js';
 import { loadSettlementData, showNewSettlementForm, hideNewSettlementForm, handleNewSettlementSubmit, updateSettlementDashboard, displaySettlements, initSettlementView, getSettlementSummary } from './settlement.js';
 import { buildClientList, loadFeaturedClients, getExpiringPassportClients, viewClientHistory } from './clients.js';
 import { initGlobalSearch, initSearchView } from './search.js';
@@ -575,15 +575,6 @@ export async function initializeApp() {
         initSettlementView();
 
         // Defer history collection listener until after startup to save bandwidth and initial latency
-        const attachHistoryListener = () => {
-            if (state.historyListenerAttached) return;
-            state.historyListenerAttached = true;
-            state.unsubscribers.push(
-                onHistoryChange((history) => {
-                    state.history = history;
-                })
-            );
-        };
         if ('requestIdleCallback' in window) {
             requestIdleCallback(attachHistoryListener, { timeout: 3500 });
         } else {
@@ -648,6 +639,19 @@ async function migrateSelfTicketCommissions() {
 
 let lastHandledHash = null;
 
+export function attachHistoryListener() {
+    if (state.historyListenerAttached) return;
+    state.historyListenerAttached = true;
+    state.unsubscribers.push(
+        onHistoryChange((history) => {
+            state.history = history;
+            if (window._refreshLogsView) {
+                window._refreshLogsView();
+            }
+        })
+    );
+}
+
 /**
  * Handle URL hash routing for all views.
  */
@@ -669,6 +673,10 @@ function handleHashRoute() {
         if (viewName === 'visa') {
             hideVisaForm();
             renderVisaApplications();
+        }
+        if (viewName === 'logs') {
+            attachHistoryListener();
+            initLogsView();
         }
     }
 }
@@ -3239,6 +3247,9 @@ document.addEventListener('ocean:viewchange', event => {
     } else if (viewName === 'visa' && state.visasDirty) {
         state.visasDirty = false;
         if (typeof renderVisaApplications === 'function') renderVisaApplications();
+    } else if (viewName === 'logs') {
+        attachHistoryListener();
+        initLogsView();
     }
 });
 window.addEventListener('ocean:document-load-error', event => showToast(event.detail, 'error'));

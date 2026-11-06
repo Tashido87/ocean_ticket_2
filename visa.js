@@ -6,6 +6,7 @@ import { uploadPassportPhoto, deletePassportPhoto, openPhotoLightbox, downloadPa
 import { ocrPassport, ocrPassportVisualFields } from './passport-ocr.js';
 import { deriveMyanmarIssueDateFromExpiry } from './passport-parser.mjs';
 import { computePassportExpiryStatus, normalizeClientKey } from './clients.js';
+import { saveHistory } from './history.js';
 
 function parseDate(str) {
     if (!str) return null;
@@ -1785,9 +1786,18 @@ export async function saveVisaApplication() {
     try {
         if (currentEditingVisaId) {
             await updateVisaApplication(currentEditingVisaId, visaData);
+            saveHistory({ ...visaData, id: currentEditingVisaId, name: visaData.applicant_name, booking_reference: formatVisaRef(currentEditingVisaId) }, `Updated visa application for ${visaData.applicant_name}`, {
+                action: 'VISA_MODIFIED',
+                financial: true
+            }).catch(err => console.warn('Failed to save visa edit history:', err));
             showToast('Visa application updated.', 'success');
         } else {
-            await addVisaApplication(visaData);
+            const newDocId = await addVisaApplication(visaData);
+            saveHistory({ ...visaData, id: newDocId, name: visaData.applicant_name, booking_reference: formatVisaRef(newDocId) }, `Created visa application for ${visaData.applicant_name} (${visaData.target_country || ''} ${visaData.visa_category || ''})`, {
+                action: 'VISA_CREATED',
+                financial: true,
+                changes: [{ field: 'record', from: 'None', to: 'Created' }]
+            }).catch(err => console.warn('Failed to save visa creation history:', err));
             showToast('Visa application saved.', 'success');
         }
         hideVisaForm();
@@ -1957,6 +1967,11 @@ export async function deleteVisaApplicationAction(id) {
             paths.forEach(p => deletePassportPhoto(p).catch(() => {}));
         }
         await deleteVisaApplication(id);
+        saveHistory(v || { id, name: v?.applicant_name, booking_reference: formatVisaRef(id) }, `Deleted visa application for ${v?.applicant_name || 'applicant'}`, {
+            action: 'VISA_DELETED',
+            financial: true,
+            changes: [{ field: 'record', from: 'Active', to: 'Deleted' }]
+        }).catch(err => console.warn('Failed to save visa deletion history:', err));
         showToast('Visa application deleted.', 'success');
         renderVisaApplications();
     } catch (err) {

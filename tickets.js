@@ -6,7 +6,7 @@
 
 import { state } from './state.js';
 import { getTickets, addTickets, updateTicket, batchUpdateTickets, deleteDocument, updateHotelReservation, updateBooking, updateTicketWithAudit, batchUpdateWithAudit, addHistory } from './db.js';
-import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta, compactPlace } from './utils.js';
+import { showToast, parseSheetDate, renderEmptyState, formatDateForSheet, calculateAgentCut, makeClickable, formatDateToDMMMY, formatPaymentMethod, isTicketPaid, isCanceledTicket, renderAirlineName, renderPhoneticExpansionHtml, wirePhoneticToggle, formatSafeAccountLink, getSocialPlatformMeta, compactPlace, setButtonLoading } from './utils.js';
 import { showView, openModal, closeModal, showConfirmModal, resetPassengerForms, populateFlightLocations, updateToggleLabels, updateNotifications, setupPagination, addPassengerForm, removePassengerForm } from './ui.js';
 import { updateBookingStatus } from './booking.js';
 import { updateDashboardData } from './main.js';
@@ -2267,6 +2267,17 @@ async function saveTicket(sharedData, passengerData, returnSharedData = null) {
     });
 
     await addTickets(ticketObjects);
+
+    // Structured audit logging for new ticket entries
+    for (const t of ticketObjects) {
+        const pnrLabel = t.booking_reference || 'PNR';
+        const routeLabel = t.route || ((t.departure && t.destination) ? `${t.departure} → ${t.destination}` : 'Route');
+        saveHistory(t, `Created ticket for ${t.name || 'Passenger'} (${pnrLabel}) - ${routeLabel}`, {
+            action: 'CREATED',
+            financial: true,
+            changes: [{ field: 'record', from: 'None', to: 'Created' }]
+        }).catch(err => console.warn('Failed to save ticket creation history:', err));
+    }
 }
 
 
@@ -2653,20 +2664,53 @@ export function openEditTicketModal(ticket) {
             finalIssuedDate = formatDateForSheet(pid);
         }
 
+        const oldNetAmount = Number(ticket.net_amount) || 0;
+        const newNetAmount = Number(document.getElementById('editNetAmount').value) || 0;
+        const oldCommission = Number(ticket.commission) || 0;
+        const newCommission = Number(document.getElementById('editCommission').value) || 0;
+        const oldExtraFare = Number(ticket.extra_fare) || 0;
+        const newExtraFare = Number(document.getElementById('editExtraFare').value) || 0;
+        const oldSubAgentFare = Number(ticket.sub_agent_fare) || 0;
+        const newSubAgentFare = Number(document.getElementById('editSubAgentFare').value) || 0;
+        const oldDateChange = Number(ticket.date_change) || 0;
+        const newDateChange = Number(document.getElementById('editDateChange').value) || 0;
+        const oldName = ticket.name || '';
+        const newName = document.getElementById('editName').value.trim().toUpperCase();
+        const oldPnr = ticket.booking_reference || '';
+        const newPnr = document.getElementById('editPnr').value.trim().toUpperCase();
+
+        const diffs = [];
+        if (oldName !== newName) diffs.push({ field: 'name', from: oldName, to: newName });
+        if (oldPnr !== newPnr) diffs.push({ field: 'pnr', from: oldPnr, to: newPnr });
+        if (oldNetAmount !== newNetAmount) diffs.push({ field: 'net_amount', from: oldNetAmount.toLocaleString(), to: newNetAmount.toLocaleString() });
+        if (oldCommission !== newCommission) diffs.push({ field: 'commission', from: oldCommission.toLocaleString(), to: newCommission.toLocaleString() });
+        if (oldExtraFare !== newExtraFare) diffs.push({ field: 'extra_fare', from: oldExtraFare.toLocaleString(), to: newExtraFare.toLocaleString() });
+        if (oldSubAgentFare !== newSubAgentFare) diffs.push({ field: 'sub_agent_fare', from: oldSubAgentFare.toLocaleString(), to: newSubAgentFare.toLocaleString() });
+        if (oldDateChange !== newDateChange) diffs.push({ field: 'date_change', from: oldDateChange.toLocaleString(), to: newDateChange.toLocaleString() });
+
         await updateTicket(ticket.id, {
             issued_date: finalIssuedDate,
-            name: document.getElementById('editName').value.trim().toUpperCase(),
-            booking_reference: document.getElementById('editPnr').value.trim().toUpperCase(),
+            name: newName,
+            booking_reference: newPnr,
             airline: document.getElementById('editAirline').value.trim(),
             departure: dep || ticket.departure,
             destination: dest || ticket.destination,
             departing_on: finalDate,
-            net_amount: Number(document.getElementById('editNetAmount').value) || 0,
-            commission: Number(document.getElementById('editCommission').value) || 0,
-            extra_fare: Number(document.getElementById('editExtraFare').value) || 0,
-            sub_agent_fare: Number(document.getElementById('editSubAgentFare').value) || 0,
-            date_change: Number(document.getElementById('editDateChange').value) || 0
+            net_amount: newNetAmount,
+            commission: newCommission,
+            extra_fare: newExtraFare,
+            sub_agent_fare: newSubAgentFare,
+            date_change: newDateChange
         });
+
+        if (diffs.length > 0) {
+            saveHistory(ticket, `Updated ticket details for ${newName} (${newPnr})`, {
+                action: 'MODIFIED',
+                financial: diffs.some(d => ['net_amount', 'commission', 'extra_fare', 'sub_agent_fare', 'date_change'].includes(d.field)),
+                changes: diffs
+            }).catch(err => console.warn('Failed to save ticket modification history:', err));
+        }
+
         showToast('Ticket updated successfully', 'success');
         closeModal();
         // Data and UI will update automatically via real-time listeners
@@ -2727,10 +2771,12 @@ export function openEditGroupModal(group) {
         };
 
         const perTicketData = ticketRows.map(() => ({}));
+        const groupDiffs = [];
         fields.forEach(({ key, inputId }) => {
             const newTotal = Math.round(Number(document.getElementById(inputId).value) || 0);
             const oldTotal = ticketRows.reduce((sum, t) => sum + (Number(t[key]) || 0), 0);
             if (newTotal === oldTotal) return;
+            groupDiffs.push({ field: key, from: oldTotal.toLocaleString(), to: newTotal.toLocaleString() });
             splitExact(newTotal, ticketRows.length).forEach((share, i) => {
                 perTicketData[i][key] = share;
             });
@@ -2748,6 +2794,13 @@ export function openEditGroupModal(group) {
 
         try {
             await batchUpdateTickets(updates);
+            if (groupDiffs.length > 0) {
+                saveHistory(ticketRows[0], `Updated group totals for ${group.accountName || 'group'} (${group.count} tickets)`, {
+                    action: 'GROUP_MODIFIED',
+                    financial: true,
+                    changes: groupDiffs
+                }).catch(err => console.warn('Failed to save group update history:', err));
+            }
             showToast('Group updated successfully', 'success');
             closeModal();
         } catch (err) {
@@ -2759,14 +2812,84 @@ export function openEditGroupModal(group) {
 }
 
 export function deleteTicketWithConfirm(ticketId) {
-    showConfirmModal(
-        '<h3>Delete Ticket?</h3><p>This action cannot be undone.</p>',
-        async () => {
-            await deleteDocument('tickets', ticketId);
-            showToast('Ticket deleted', 'success');
-            // Data and UI will update automatically via real-time listeners
-        }
-    );
+    const ticket = (state.allTickets || []).find(t => t.id === ticketId);
+    const passengerName = ticket?.name || ticket?.passenger_name || 'Unknown Passenger';
+    const pnr = ticket?.booking_reference || ticket?.pnr || '—';
+    const route = (ticket?.departure && ticket?.destination)
+        ? `${ticket.departure} → ${ticket.destination}`
+        : (ticket?.route || '—');
+    const totalAmount = ((ticket?.total || ticket?.selling_price || ticket?.total_cost || ((ticket?.net_amount || 0) + (ticket?.commission || 0) + (ticket?.extra_fare || 0) + (ticket?.date_change || 0))) || 0).toLocaleString() + ' MMK';
+    const airline = ticket?.airline || '—';
+
+    const modalHtml = `
+        <div class="delete-confirm-box" style="padding: 0.5rem 0.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.25rem;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--ink, #0D2B33);">Delete Ticket Record?</h3>
+                    <p style="margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--text-muted, #64748b);">Are you sure you want to delete this record? This action cannot be undone.</p>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #64748b; font-size: 0.82rem;">Passenger:</span>
+                    <strong style="color: #0f172a; font-size: 0.92rem;">${escapeHtml(passengerName)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #64748b; font-size: 0.82rem;">PNR / Ref:</span>
+                    <span style="font-family: monospace; font-weight: 700; color: #0C6B7A; background: #e2f2f3; padding: 2px 8px; border-radius: 4px; font-size: 0.88rem;">${escapeHtml(pnr)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #64748b; font-size: 0.82rem;">Route:</span>
+                    <span style="color: #334155; font-weight: 500;">${escapeHtml(route)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #64748b; font-size: 0.82rem;">Airline:</span>
+                    <span style="color: #334155;">${escapeHtml(airline)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; margin-top: 0.2rem;">
+                    <span style="color: #64748b; font-size: 0.82rem;">Total Amount:</span>
+                    <strong style="color: #0f172a; font-size: 0.95rem;">${escapeHtml(totalAmount)}</strong>
+                </div>
+            </div>
+
+            <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" id="cancelDeleteTicketBtn" class="btn btn-secondary" style="padding: 0.55rem 1.25rem; font-weight: 600;">Cancel</button>
+                <button type="button" id="confirmDeleteTicketBtn" class="btn btn-danger" style="padding: 0.55rem 1.25rem; font-weight: 600; background: #dc2626; color: #fff; border: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-trash"></i> Delete Ticket
+                </button>
+            </div>
+        </div>
+    `;
+
+    openModal(modalHtml, 'small-modal');
+
+    const cancelBtn = document.getElementById('cancelDeleteTicketBtn');
+    const confirmBtn = document.getElementById('confirmDeleteTicketBtn');
+
+    if (cancelBtn) cancelBtn.onclick = closeModal;
+    if (confirmBtn) {
+        confirmBtn.onclick = async () => {
+            setButtonLoading(confirmBtn, true);
+            try {
+                await deleteDocument('tickets', ticketId);
+                await saveHistory(ticket || { id: ticketId, name: passengerName, booking_reference: pnr }, `Deleted ticket for ${passengerName} (PNR: ${pnr}) - Route: ${route}`, {
+                    action: 'DELETED',
+                    financial: true,
+                    changes: [{ field: 'record', from: 'Active', to: 'Deleted' }]
+                });
+                showToast('Ticket deleted successfully', 'success');
+                closeModal();
+            } catch (err) {
+                console.error('Failed to delete ticket:', err);
+                showToast('Failed to delete ticket: ' + (err.message || err), 'error');
+                setButtonLoading(confirmBtn, false);
+            }
+        };
+    }
 }
 
 export function showGroupDetails(group) {
