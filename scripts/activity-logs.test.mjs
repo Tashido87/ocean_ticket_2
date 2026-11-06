@@ -104,4 +104,47 @@ test('Activity Logs & Audit System', async (t) => {
         assert.equal(sorted2[0].name, 'AYE AYE LATT', 'Nov 2026 should remain first');
         assert.equal(sorted2[2].name, 'SAN AUNG', 'May 2026 should remain last');
     });
+
+    await t.test('parseLegacyDetailsToChanges converts legacy strings into structured diff chips', () => {
+        const { parseLegacyDetailsToChanges } = context;
+
+        // 1. PAYMENT UPDATE string
+        const p1 = parseLegacyDetailsToChanges('PAYMENT UPDATE: Paid via KBZ Pay on 09/10/2026');
+        assert.equal(p1.changes.length, 3);
+        assert.equal(p1.changes[0].field, 'payment');
+        assert.equal(p1.changes[0].to, 'paid');
+        assert.equal(p1.changes[1].field, 'payment method');
+        assert.equal(p1.changes[1].to, 'KBZ Pay');
+        assert.equal(p1.changes[2].field, 'paid date');
+        assert.equal(p1.changes[2].to, '09/10/2026');
+
+        // 2. DATE CHANGE FEE string
+        const p2 = parseLegacyDetailsToChanges('DATE CHANGE FEE ADDED: Fee=90,000, Comm=0, Extra=0 (Unpaid)');
+        assert.equal(p2.changes.length, 2);
+        assert.equal(p2.changes[0].field, 'date change fee');
+        assert.equal(p2.changes[0].to, '90,000 MMK');
+        assert.equal(p2.changes[1].field, 'status');
+        assert.equal(p2.changes[1].to, 'Unpaid');
+
+        // 3. FINANCIAL & DATE UPDATE string
+        const p3 = parseLegacyDetailsToChanges('FINANCIAL & DATE UPDATE: Travel Date: 11/10/2026 to 20/10/2026.');
+        assert.equal(p3.changes.length, 1);
+        assert.equal(p3.changes[0].field, 'Travel Date');
+        assert.equal(p3.changes[0].from, '11/10/2026');
+        assert.equal(p3.changes[0].to, '20/10/2026');
+
+        // 4. Long format dates
+        const p4 = parseLegacyDetailsToChanges('Travel Date: MON AUG 04 2025 00:00:00 GMT+0630 (MYANMAR TIME) to 03-Aug-2025');
+        assert.equal(p4.changes.length, 1);
+        assert.equal(p4.changes[0].from, '04-AUG-2025');
+        assert.equal(p4.changes[0].to, '03-Aug-2025');
+
+        // 5. CANCELED partial refund
+        const p5 = parseLegacyDetailsToChanges('CANCELED: Partial. Refunded: 519,500 MMK via KBZ Pay (ID: 01003894030362904483). New Net Amount: 210,000');
+        assert.equal(p5.changes.length, 2);
+        assert.equal(p5.changes[0].field, 'refund');
+        assert.ok(p5.changes[0].to.includes('519,500 MMK'));
+        assert.equal(p5.changes[1].field, 'new net');
+        assert.equal(p5.changes[1].to, '210,000');
+    });
 });

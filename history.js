@@ -189,6 +189,186 @@ export function getCleanAuditNote(details, changes = []) {
 }
 
 /**
+ * Normalizes legacy long date strings (e.g. 'MON AUG 04 2025 00:00:00 GMT+0630 (MYANMAR TIME)') to DD-MMM-YYYY.
+ * @param {string} d
+ * @returns {string}
+ */
+export function cleanDateForDiff(d) {
+    if (!d) return '';
+    const longMatch = String(d).match(/[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/i);
+    if (longMatch) {
+        return `${longMatch[2].padStart(2, '0')}-${longMatch[1]}-${longMatch[3]}`;
+    }
+    return String(d).trim();
+}
+
+/**
+ * Parses un-structured legacy history details strings into structured changes chips.
+ * Ensures consistent chip styling across old and new logs.
+ * @param {string} details
+ * @returns {{ changes: Array<{field: string, from: any, to: any}>, note: string|null }}
+ */
+export function parseLegacyDetailsToChanges(details) {
+    if (!details || typeof details !== 'string') return { changes: [], note: null };
+    const text = details.trim();
+    const changes = [];
+
+    // 1. PAYMENT UPDATE: Paid via <method> on <date>
+    const paymentUpdateMatch = text.match(/PAYMENT UPDATE:\s*Paid via\s+([^on]+?)\s+on\s+([0-9\/\-]+)/i);
+    if (paymentUpdateMatch) {
+        changes.push({ field: 'payment', from: 'unpaid', to: 'paid' });
+        changes.push({ field: 'payment method', from: '—', to: paymentUpdateMatch[1].trim() });
+        changes.push({ field: 'paid date', from: '—', to: paymentUpdateMatch[2].trim() });
+        return { changes, note: null };
+    }
+
+    // 2. DATE CHANGE FEE ADDED: Fee=..., Comm=..., Extra=... (Paid|Unpaid)
+    const dateChangeFeeMatch = text.match(/DATE CHANGE FEE ADDED:\s*Fee=(.*?),\s*Comm=(.*?),\s*Extra=(.*?)(?:\s*\((Paid|Unpaid)\))?$/i);
+    if (dateChangeFeeMatch) {
+        changes.push({ field: 'date change fee', from: '—', to: dateChangeFeeMatch[1].trim() + ' MMK' });
+        if (dateChangeFeeMatch[3].trim() && dateChangeFeeMatch[3].trim() !== '0') {
+            changes.push({ field: 'extra fare', from: '—', to: dateChangeFeeMatch[3].trim() });
+        }
+        if (dateChangeFeeMatch[4]) {
+            changes.push({ field: 'status', from: '—', to: dateChangeFeeMatch[4].trim() });
+        }
+        return { changes, note: null };
+    }
+
+    // 3. CANCELED format
+    const refundMatch = text.match(/CANCELED:\s*(?:Partial\.\s*)?Refunded:\s*([^\(]+?)\s*via\s*([^\(]+?)(?:\s*\(.*?\))?\.\s*New Net Amount:\s*(.*?)$/i);
+    if (refundMatch) {
+        changes.push({ field: 'refund', from: '—', to: refundMatch[1].trim() + ' (' + refundMatch[2].trim() + ')' });
+        changes.push({ field: 'new net', from: '—', to: refundMatch[3].trim() });
+        return { changes, note: null };
+    }
+
+    if (/CANCELED:\s*Full Refund/i.test(text)) {
+        changes.push({ field: 'status', from: 'issued', to: 'full refund' });
+        return { changes, note: null };
+    }
+
+    // 4. Semicolon or colon separated changes, e.g.:
+    // 'Payment: Not Paid to Paid; Payment Method: KBZ PAY; Paid Date: 06-Aug-2025'
+    // 'Travel Date: 11-Aug-2025 to 10-Sep-2025; Added Extra Fare: 20000; Added Date Change Fees: 30000'
+    // 'FINANCIAL & DATE UPDATE: Travel Date: 11/10/2026 to 20/10/2026.'
+    // 'MODIFIED: Status: Unpaid to Paid; Payment Method: to KBZ PAY; Paid Date: to 09/10/2025'
+    const cleanPrefix = text.replace(/^(?:FINANCIAL & DATE UPDATE|MODIFIED|UPDATE):\s*/i, '').replace(/\.$/, '');
+    const parts = cleanPrefix.split(/;\s*/);
+    let matchedCount = 0;
+
+    for (const part of parts) {
+        const p = part.trim();
+        // Pattern: Field: [from] to [to]
+        const fromToMatch = p.match(/^([^:]+?):\s*(.*?)\s+to\s+(.*?)$/i);
+        if (fromToMatch) {
+            const field = fromToMatch[1].trim();
+            const from = cleanDateForDiff(fromToMatch[2].trim()) || '—';
+            const to = cleanDateForDiff(fromToMatch[3].trim());
+            changes.push({ field, from, to });
+            matchedCount++;
+            continue;
+        }
+
+        // Pattern: Added <field>: <amount>
+        const addedMatch = p.match(/^Added\s+([^:]+?):\s*(.*?)$/i);
+        if (addedMatch) {
+            changes.push({ field: addedMatch[1].trim(), from: '—', to: '+' + addedMatch[2].trim() });
+            matchedCount++;
+            continue;
+        }
+
+        // Pattern: Payment Method: <method> or Paid Date: <date> or Status: <status>
+        const simpleFieldMatch = p.match(/^(Payment Method|Paid Date|Status|Reason):\s*(.*?)$/i);
+        if (simpleFieldMatch) {
+            const field = simpleFieldMatch[1].trim();
+            const to = simpleFieldMatch[2].replace(/^to\s+/i, '').trim();
+            changes.push({ field, from: '—', to });
+            matchedCount++;
+            continue;
+        }
+    }
+
+    if (changes.length > 0) {
+        let note = null;
+        if (matchedCount < parts.length) {
+            const leftover = parts.slice(matchedCount).join('; ');
+            if (leftover && leftover.length > 2) note = leftover;
+        }
+        return { changes, note };
+    }
+
+    return { changes: [], note: text };
+}
+
+/**
+ * Renders changes chips and/or notes into a details cell.
+ * @param {HTMLElement} detailsCell
+ * @param {Object} entry
+ */
+export function renderDetailsCellContent(detailsCell, entry) {
+    let effectiveChanges = Array.isArray(entry.changes) && entry.changes.length > 0 ? entry.changes : [];
+    let effectiveNote = entry.details;
+
+    if (effectiveChanges.length === 0 && entry.details) {
+        const parsed = parseLegacyDetailsToChanges(entry.details);
+        if (parsed.changes && parsed.changes.length > 0) {
+            effectiveChanges = parsed.changes;
+            effectiveNote = parsed.note;
+        }
+    }
+
+    if (effectiveChanges.length > 0) {
+        const diffContainer = document.createElement('div');
+        diffContainer.className = 'audit-diff-container';
+        effectiveChanges.forEach(c => {
+            const chip = document.createElement('span');
+            chip.className = 'audit-diff-chip';
+            const fieldName = String(c.field || '').replace(/_/g, ' ');
+            const fromVal = String(c.from ?? '—');
+            const toVal = String(c.to ?? '—');
+
+            let toClass = 'diff-to';
+            const fieldLower = fieldName.toLowerCase();
+            const toLower = toVal.toLowerCase();
+            if (fieldLower.includes('paid')) {
+                if (toLower === 'true' || toLower === 'paid') {
+                    toClass += ' diff-to-paid';
+                } else if (toLower === 'false' || toLower === 'unpaid') {
+                    toClass += ' diff-to-unpaid';
+                }
+            } else if (toLower === 'deleted' || toLower.includes('refund')) {
+                toClass += ' diff-to-unpaid';
+            } else if (toLower === 'created') {
+                toClass += ' diff-to-paid';
+            }
+
+            chip.innerHTML = `<strong>${escapeHtml(fieldName)}:</strong> <span class="diff-from">${escapeHtml(fromVal)}</span> <i class="fa-solid fa-arrow-right-long"></i> <span class="${toClass}">${escapeHtml(toVal)}</span>`;
+            diffContainer.appendChild(chip);
+        });
+        detailsCell.appendChild(diffContainer);
+
+        const noteToShow = getCleanAuditNote(effectiveNote, effectiveChanges);
+        if (noteToShow) {
+            const note = document.createElement('div');
+            note.className = 'audit-note';
+            note.textContent = noteToShow;
+            detailsCell.appendChild(note);
+        }
+    } else {
+        const noteToShow = getCleanAuditNote(entry.details, []);
+        if (noteToShow) {
+            const note = document.createElement('div');
+            note.className = 'audit-note';
+            note.textContent = noteToShow;
+            detailsCell.appendChild(note);
+        } else {
+            detailsCell.textContent = '—';
+        }
+    }
+}
+
+/**
  * Displays the modification history with pagination and structured diffs.
  * @param {number} page The page number to display.
  * @param {Array<Object>} [historyToShow=state.history] The history records to display.
@@ -254,45 +434,7 @@ export function displayHistory(page, historyToShow = state.history) {
         }
 
         // Details cell
-        if (Array.isArray(entry.changes) && entry.changes.length > 0) {
-            const diffContainer = document.createElement('div');
-            diffContainer.className = 'audit-diff-container';
-            entry.changes.forEach(c => {
-                const chip = document.createElement('span');
-                chip.className = 'audit-diff-chip';
-                const fieldName = String(c.field || '').replace(/_/g, ' ');
-                const fromVal = String(c.from ?? '—');
-                const toVal = String(c.to ?? '—');
-
-                let toClass = 'diff-to';
-                const fieldLower = fieldName.toLowerCase();
-                const toLower = toVal.toLowerCase();
-                if (fieldLower.includes('paid')) {
-                    if (toLower === 'true' || toLower === 'paid') {
-                        toClass += ' diff-to-paid';
-                    } else if (toLower === 'false' || toLower === 'unpaid') {
-                        toClass += ' diff-to-unpaid';
-                    }
-                }
-
-                chip.innerHTML = `<strong>${escapeHtml(fieldName)}:</strong> <span class="diff-from">${escapeHtml(fromVal)}</span> <i class="fa-solid fa-arrow-right-long"></i> <span class="${toClass}">${escapeHtml(toVal)}</span>`;
-                diffContainer.appendChild(chip);
-            });
-            detailsCell.appendChild(diffContainer);
-
-            // Deduplication rule: show note only if it adds a genuinely new fact
-            const noteToShow = getCleanAuditNote(entry.details, entry.changes);
-            if (noteToShow) {
-                const note = document.createElement('div');
-                note.className = 'audit-note';
-                note.textContent = noteToShow;
-                detailsCell.appendChild(note);
-            }
-        } else {
-            // Plain-text detail rows: suppress empty/dangling labels
-            const noteToShow = getCleanAuditNote(entry.details, []);
-            detailsCell.textContent = noteToShow || '—';
-        }
+        renderDetailsCellContent(detailsCell, entry);
     });
 
     setupGenericPagination(historyToShow, 'modificationHistoryPagination', (p) => displayHistory(p, historyToShow), page);
@@ -566,48 +708,7 @@ export async function renderLogsView(page = 1) {
         // 6. Changes & Details
         const detailsCell = row.insertCell(5);
         detailsCell.className = 'logs-col-details';
-
-        if (Array.isArray(entry.changes) && entry.changes.length > 0) {
-            const diffContainer = document.createElement('div');
-            diffContainer.className = 'audit-diff-container';
-            entry.changes.forEach(c => {
-                const chip = document.createElement('span');
-                chip.className = 'audit-diff-chip';
-                const fieldName = String(c.field || '').replace(/_/g, ' ');
-                const fromVal = String(c.from ?? '—');
-                const toVal = String(c.to ?? '—');
-
-                let toClass = 'diff-to';
-                const fieldLower = fieldName.toLowerCase();
-                const toLower = toVal.toLowerCase();
-                if (fieldLower.includes('paid')) {
-                    if (toLower === 'true' || toLower === 'paid') {
-                        toClass += ' diff-to-paid';
-                    } else if (toLower === 'false' || toLower === 'unpaid') {
-                        toClass += ' diff-to-unpaid';
-                    }
-                } else if (toLower === 'deleted') {
-                    toClass += ' diff-to-unpaid';
-                } else if (toLower === 'created') {
-                    toClass += ' diff-to-paid';
-                }
-
-                chip.innerHTML = `<strong>${escapeHtml(fieldName)}:</strong> <span class="diff-from">${escapeHtml(fromVal)}</span> <i class="fa-solid fa-arrow-right-long"></i> <span class="${toClass}">${escapeHtml(toVal)}</span>`;
-                diffContainer.appendChild(chip);
-            });
-            detailsCell.appendChild(diffContainer);
-
-            const noteToShow = getCleanAuditNote(entry.details, entry.changes);
-            if (noteToShow) {
-                const note = document.createElement('div');
-                note.className = 'audit-note';
-                note.textContent = noteToShow;
-                detailsCell.appendChild(note);
-            }
-        } else {
-            const noteToShow = getCleanAuditNote(entry.details, []);
-            detailsCell.textContent = noteToShow || '—';
-        }
+        renderDetailsCellContent(detailsCell, entry);
     });
 
     setupGenericPagination(filtered, 'logsPagination', (p) => renderLogsView(p), page);

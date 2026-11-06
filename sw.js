@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ocean-travel-e371bebd';
+const CACHE_NAME = 'ocean-travel-87f52741';
 const CORE_ASSETS = [
     './',
     './index.html',
@@ -29,7 +29,7 @@ const CORE_ASSETS = [
     './reports.js?v=a96e72e7',
     './search.js?v=b7895f72',
     './manage.js?v=2424fc3e',
-    './history.js?v=3b73e375',
+    './history.js?v=e6df389c',
     './hotel.js?v=50d2169e',
     './agoda-hotel-converter.js?v=8d8c81ec',
     './airasia-converter.js?v=89192a13',
